@@ -1,0 +1,2903 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="icon-192.png?v=1">
+<link rel="apple-touch-icon" href="icon-180.png?v=1">
+<link rel="manifest" href="data:application/manifest+json;base64,ew0KICAibmFtZSI6ICLmiL/lsYvosrjmrL7oqabnrpciLA0KICAic2hvcnRfbmFtZSI6ICLmiL/osrjoqabnrpciLA0KICAic3RhcnRfdXJsIjogIi4vIiwNCiAgInNjb3BlIjogIi4vIiwNCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsDQogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmMGYwZjAiLA0KICAidGhlbWVfY29sb3IiOiAiIzI2YTY5YSIsDQogICJpY29ucyI6IFsNCiAgICB7DQogICAgICAic3JjIjogImljb24tMTkyLnBuZz92PTEiLA0KICAgICAgInNpemVzIjogIjE5MngxOTIiLA0KICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwNCiAgICAgICJwdXJwb3NlIjogImFueSINCiAgICB9LA0KICAgIHsNCiAgICAgICJzcmMiOiAiaWNvbi01MTIucG5nP3Y9MSIsDQogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsDQogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLA0KICAgICAgInB1cnBvc2UiOiAiYW55Ig0KICAgIH0NCiAgXQ0KfQ==">
+<meta name="theme-color" content="#26a69a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="房屋貸款試算">
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+</script>
+  <title>房屋貸款試算</title>
+  <style>
+    :root {
+      --teal: #26a69a;
+      --teal-dark: #1f8f86;
+      --teal-light: #e0f2f1;
+      --bg: #ececec;
+      --card: #fff;
+      --text: #222;
+      --muted: #666;
+      --border: #e5e5e5;
+      --input-bg: #f2f2f2;
+      --chip-h: 40px;
+      --chip-w: 44px;
+      --chip-r: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px 16px;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; }
+    .main-panel {
+      margin-bottom: 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(38, 166, 154, 0.14);
+      box-shadow: 0 8px 28px rgba(26, 133, 124, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 32px 36px 36px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .main-panel .card {
+      border-radius: 0 0 14px 14px;
+      margin-bottom: 0;
+      padding-top: 28px;
+    }
+    .app-hero {
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      margin: 0;
+      padding: 22px 36px 20px;
+      background:
+        linear-gradient(165deg, rgba(255, 255, 255, 0.14) 0%, transparent 38%),
+        linear-gradient(128deg, #32c4b6 0%, var(--teal) 36%, #1f9589 72%, #167a72 100%);
+      color: #fff;
+      border-radius: 14px 14px 0 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    .app-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 22px 22px;
+      mask-image: linear-gradient(120deg, rgba(0, 0, 0, 0.55) 0%, transparent 62%);
+      pointer-events: none;
+    }
+    .app-hero::after {
+      content: '';
+      position: absolute;
+      right: -30px;
+      top: -50px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 68%);
+      pointer-events: none;
+    }
+    .app-hero-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .app-hero-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+    }
+    .app-hero-accent {
+      width: 4px;
+      height: 40px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.28) 100%);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+      flex-shrink: 0;
+    }
+    .app-hero h1 {
+      font-size: 1.58rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      line-height: 1.25;
+      margin-bottom: 0;
+      color: #fff;
+    }
+    .app-hero-en {
+      margin: 3px 0 0;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.62);
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0;
+      color: var(--text);
+    }
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .page-header h1 {
+      flex: 1;
+      min-width: 0;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .app-hero .clear-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 9px;
+      backdrop-filter: blur(6px);
+      padding: 9px 14px;
+    }
+    .app-hero .clear-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.9;
+    }
+    .app-hero .clear-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.42);
+    }
+    .app-hero .restore-btn {
+      display: inline-flex;
+      align-items: center;
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 9px;
+      padding: 9px 14px;
+    }
+    .app-hero .restore-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+    .clear-btn {
+      background: var(--teal);
+      color: #fff;
+      border: 1px solid var(--teal-dark);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .clear-btn:hover { background: var(--teal-dark); }
+    .clear-btn:active { transform: scale(0.97); }
+    .restore-btn {
+      background: transparent;
+      color: var(--teal-dark);
+      border: 1px solid var(--teal);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .restore-btn:hover { background: var(--teal-light); border-color: var(--teal-dark); }
+    .restore-btn:active { transform: scale(0.97); }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1a1a1a;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 24px;
+      font-size: 0.82rem;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.25s;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .app-alert {
+      position: fixed;
+      inset: 0;
+      z-index: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(18, 24, 28, 0.42);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease-out;
+    }
+    .app-alert.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .app-alert-card {
+      width: 100%;
+      max-width: 320px;
+      background: #fff;
+      border-radius: 18px;
+      border: 1.5px solid rgba(38, 166, 154, 0.32);
+      padding: 24px 22px 18px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(38, 166, 154, 0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      animation: appAlertPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes appAlertPop {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .app-alert-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(38, 166, 154, 0.1);
+      border: 1.5px solid rgba(38, 166, 154, 0.34);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--teal);
+    }
+    .app-alert-icon svg {
+      width: 26px;
+      height: 26px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .app-alert-text {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.55;
+      letter-spacing: 0.02em;
+    }
+    .app-alert-btn {
+      width: 100%;
+      margin-top: 2px;
+      padding: 12px 0;
+      border: none;
+      border-radius: 12px;
+      background: var(--teal);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .app-alert-btn:hover { background: var(--teal-dark); }
+    .app-alert-btn:active { transform: scale(0.98); }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px 24px;
+      margin-bottom: 28px;
+    }
+    .field {
+      min-width: 0;
+    }
+    .field.span-2 {
+      grid-column: 1 / -1;
+    }
+    .field label {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .input-box {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      background: var(--input-bg);
+      border-radius: 16px;
+      height: 48px;
+      padding: 0 16px;
+    }
+    .input-box input {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-size: 1rem;
+      outline: none;
+      min-width: 0;
+      color: var(--text);
+    }
+    .input-box .unit {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+    .input-box.readonly { color: var(--muted); }
+    input.calc-field {
+      cursor: pointer;
+      caret-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input.calc-field.calc-active {
+      color: var(--teal-dark);
+      animation: amountPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes amountPulse {
+      0%, 100% { opacity: 0.45; }
+      50% { opacity: 1; }
+    }
+    @keyframes calcSlideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .calc-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      background: transparent;
+    }
+    .calc-sheet-panel {
+      width: calc(100% - 32px);
+      max-width: 680px;
+      background: #fff;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+      animation: calcSlideUp 0.2s ease-out;
+      touch-action: none;
+    }
+    .calc-expr {
+      min-height: 40px;
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--input-bg);
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-align: right;
+      color: var(--text);
+      word-break: break-all;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .calc-btn {
+      border: none;
+      background: #f5f5f5;
+      color: var(--text);
+      font-size: 1.25rem;
+      font-weight: 500;
+      padding: 14px 0;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.08s ease-out, background 0.08s ease-out;
+      user-select: none;
+    }
+    .calc-btn:active { transform: scale(0.92); }
+    .calc-btn.calc-btn-pressed { transform: scale(0.92); }
+    .calc-btn-fn { color: #888; font-size: 1.05rem; }
+    .calc-btn-op { color: var(--teal); font-weight: 600; }
+    .calc-btn-op.calc-btn-pressed { background: rgba(38, 166, 154, 0.14); }
+    .calc-btn:not(.calc-btn-op):not(.calc-btn-eq).calc-btn-pressed { background: #e0e0e0; }
+    .calc-btn-fn.calc-btn-pressed { background: #ebebeb; }
+    .calc-btn-eq {
+      background: var(--teal);
+      color: #fff;
+      font-weight: 700;
+    }
+    .calc-btn-eq:active { filter: brightness(0.9); }
+    .calc-btn-eq.calc-btn-pressed { filter: brightness(0.9); transform: scale(0.92); }
+    .calc-btn-done {
+      width: 100%;
+      margin-top: 10px;
+      padding: 14px 0;
+      border: none;
+      border-radius: 12px;
+      background: var(--teal);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .calc-btn-done:active { filter: brightness(0.9); }
+    .calc-btn-done.calc-btn-pressed { filter: brightness(0.9); transform: scale(0.98); }
+    .calc-btn-zero { grid-column: span 2; }
+    /* 快捷鈕：固定尺寸，選中不改大小 */
+    .quick-pills {
+      display: inline-flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .quick-pills.fill {
+      display: flex;
+      width: 100%;
+      gap: 6px;
+    }
+    .quick-pills.fill .qp {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+    }
+    .qp {
+      width: var(--chip-w);
+      height: var(--chip-h);
+      min-width: var(--chip-w);
+      max-width: var(--chip-w);
+      padding: 0;
+      border: none;
+      border-radius: var(--chip-r);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .qp:hover { background: #e5e5e5; }
+    .qp.active {
+      background: var(--teal);
+      color: #fff;
+      font-weight: 400;
+    }
+    /* 寬限期：同一排 */
+    .grace-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
+      width: 100%;
+    }
+    .grace-input {
+      width: 120px;
+      height: 48px;
+      flex-shrink: 0;
+      padding: 0 8px;
+      justify-content: center;
+    }
+    .grace-input input {
+      flex: 1;
+      width: 100%;
+      text-align: center;
+      padding: 0;
+      -moz-appearance: textfield;
+    }
+    .grace-input input::-webkit-outer-spin-button,
+    .grace-input input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .grace-line .quick-pills.fill {
+      flex: 1;
+      margin-top: 0;
+      min-width: 0;
+    }
+    .grace-line .quick-pills.fill .qp-text {
+      font-size: 0.86rem;
+    }
+    .unit-switch {
+      display: inline-flex;
+      align-items: center;
+      height: 36px;
+      padding: 3px;
+      gap: 0;
+      background: #e6e6e6;
+      border: 1px solid #d8d8d8;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .unit-switch button {
+      width: 38px;
+      height: 100%;
+      min-width: 38px;
+      padding: 0;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+    .unit-switch button:hover:not(.active) {
+      color: var(--text);
+    }
+    .unit-switch button.active {
+      background: #fff;
+      color: var(--teal-dark);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+    .grace-line .unit-switch {
+      margin-right: 4px;
+    }
+  /* 大圓角膠囊切換（參考圖風格，無灰底軌道） */
+    .section { margin-bottom: 24px; }
+    .section > label {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .choice-group {
+      display: flex;
+      gap: 10px;
+    }
+    .choice-group.cols-3 { gap: 8px; }
+    .choice-btn {
+      flex: 1;
+      height: 48px;
+      border: none;
+      border-radius: 999px;
+      background: var(--input-bg);
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 400;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+      padding: 0 12px;
+    }
+    .choice-group.cols-3 .choice-btn {
+      font-size: 0.82rem;
+      padding: 0 8px;
+    }
+    .choice-btn:hover { background: #e5e5e5; }
+    .choice-btn.active {
+      background: var(--teal);
+      color: #fff;
+      font-weight: 400;
+    }
+    .rate-full .input-box { max-width: 100%; }
+    .rate-segments { margin-top: 8px; }
+    #rateRows {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .rate-row-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: nowrap;
+      background: var(--input-bg);
+      border-radius: 14px;
+      padding: 12px 12px 12px 16px;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+    .rate-row-line .row-seg {
+      color: var(--teal-dark);
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-width: 52px;
+      margin-right: 4px;
+    }
+    .rate-row-line .row-txt {
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .rate-row-line input {
+      width: 76px;
+      height: 42px;
+      border: none;
+      border-radius: 12px;
+      background: #fff;
+      text-align: center;
+      font-size: 0.95rem;
+      outline: none;
+      flex-shrink: 0;
+      padding: 0 8px;
+    }
+    .rate-row-line input[type="number"] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .rate-row-line input[type="number"]::-webkit-outer-spin-button,
+    .rate-row-line input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .rate-row-line input.rate-val {
+      width: 88px;
+    }
+    .rate-row-line .btn-remove {
+      margin-left: auto;
+      margin-right: 6px;
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #c5c5c5;
+      background: transparent;
+      border: 1.5px solid transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.15rem;
+      font-weight: 400;
+      line-height: 1;
+      padding: 0;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease,
+        border-color 0.2s ease, background 0.2s ease;
+    }
+    .rate-row-line .btn-remove:hover {
+      color: #e57373;
+      background: #fff;
+      border-color: #ef9a9a;
+      box-shadow: 0 6px 16px rgba(229, 115, 115, 0.22);
+      transform: translateY(-3px);
+    }
+    .rate-row-line .btn-remove:active {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(229, 115, 115, 0.18);
+    }
+    .btn-add {
+      color: var(--teal);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: 4px;
+      padding: 4px 0;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .btn-calc {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      min-width: 200px;
+      padding: 14px 48px;
+      border: none;
+      border-radius: 999px;
+      background: var(--teal);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-calc:hover { background: var(--teal-dark); }
+    .btn-calc.btn-calc-pending {
+      animation: calc-pending-glow 4.8s ease-in-out infinite;
+    }
+    .btn-calc.btn-calc-pending::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 38%,
+        rgba(255, 255, 255, 0.1) 46%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(255, 255, 255, 0.1) 54%,
+        transparent 62%,
+        transparent 100%
+      );
+      transform: translateX(-130%);
+      opacity: 0.55;
+      animation: calc-pending-shimmer 5.6s ease-in-out infinite;
+    }
+    @keyframes calc-pending-glow {
+      0%, 100% {
+        box-shadow: 0 2px 8px rgba(38, 166, 154, 0.22);
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow: 0 4px 18px rgba(38, 166, 154, 0.42), 0 0 28px rgba(77, 182, 172, 0.18);
+        filter: brightness(1.05);
+      }
+    }
+    @keyframes calc-pending-shimmer {
+      0%, 100% { transform: translateX(-130%); opacity: 0.35; }
+      50% { transform: translateX(130%); opacity: 0.65; }
+    }
+    .results { display: none; }
+    .results.show { display: block; }
+    .results-heading {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 8px 0 16px;
+      color: var(--text);
+    }
+    .conditions-box {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .conditions-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+    }
+    .conditions-head h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--text);
+    }
+    .conditions-toggle {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.2rem;
+      line-height: 1;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .conditions-toggle:hover { background: #eee; color: var(--text); }
+    .conditions-body { padding: 16px 18px; }
+    .conditions-box.collapsed .conditions-body { display: none; }
+    .conditions-box.collapsed .conditions-head { border-bottom: none; }
+    .conditions-box.collapsed .conditions-toggle { transform: rotate(0deg); }
+    .conditions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 24px;
+    }
+    .cond-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px 10px;
+      align-items: start;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+    .cond-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .cond-label { color: var(--muted); min-width: 0; }
+    .cond-value {
+      font-weight: 600;
+      color: var(--text);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .conditions-rates {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #eee;
+    }
+    .conditions-rates-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .cond-rate-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 8px;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      text-align: center;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .cond-rate-row:last-child { border-bottom: none; }
+    .cond-rate-period { color: #666; }
+    .cond-rate-tag { color: #888; }
+    .cond-rate-value {
+      font-weight: 600;
+      color: var(--teal);
+      white-space: nowrap;
+    }
+    .export-capture .conditions-box.collapsed .conditions-body { display: block !important; }
+    .export-capture .conditions-toggle { display: none !important; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .summary-item {
+      background: var(--input-bg);
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+    }
+    .summary-item .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+    .summary-item .value { font-size: 1.1rem; font-weight: 600; color: var(--teal); }
+    /* 每期應還款本利和 — 重點區塊 */
+    .period-summary {
+      margin-bottom: 28px;
+      padding: 8px 0 4px;
+    }
+    .period-title {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .period-title .title-line {
+      flex: 1;
+      height: 1px;
+      background: #d0d0d0;
+    }
+    .period-title h3 {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      margin: 0;
+    }
+    .payment-table {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .payment-head {
+      display: grid;
+      grid-template-columns: 3fr 2fr 5fr;
+      background: #f5f5f5;
+      border-bottom: 1px solid #e5e5e5;
+      font-size: 0.8rem;
+      color: #666;
+      font-weight: 500;
+    }
+    .payment-head span {
+      padding: 10px 12px;
+      text-align: center;
+      border-right: 1px solid #e5e5e5;
+    }
+    .payment-head span:last-child { border-right: none; }
+    .payment-row {
+      display: grid;
+      grid-template-columns: 3fr 2fr 5fr;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .payment-row:last-child { border-bottom: none; }
+    .payment-row > div {
+      padding: 14px 12px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid #e5e5e5;
+      line-height: 1.45;
+      min-height: 48px;
+    }
+    .payment-row > div:last-child { border-right: none; }
+    .payment-row .period-range {
+      background: #f7f7f7;
+      font-size: 0.88rem;
+      color: #444;
+    }
+    .payment-row .period-mid {
+      background: #fafafa;
+      font-size: 0.92rem;
+      color: #444;
+      font-weight: 500;
+    }
+    .payment-row .period-amount {
+      background: #fff;
+      letter-spacing: 0.02em;
+      flex-wrap: nowrap;
+    }
+    .payment-row .amount-val {
+      display: inline-block;
+      min-width: 6.8em;
+      text-align: right;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--teal);
+      font-variant-numeric: tabular-nums;
+    }
+    .payment-row .amount-val .grace-note {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #999;
+      margin-left: 2px;
+    }
+    .apr-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      padding: 14px 4px 4px;
+      border-top: 1px solid #e0e0e0;
+    }
+    .apr-footer .apr-label {
+      font-size: 0.95rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .apr-footer .apr-val {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--teal);
+    }
+    .year-accordion { margin-top: 0; }
+    .detail-section { margin-top: 8px; }
+    .detail-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .detail-title {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .detail-sub {
+      color: #aaa;
+      font-weight: 400;
+    }
+    .detail-eye-btn {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      color: #888;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .detail-eye-btn .eye-icon {
+      width: 14px;
+      height: 14px;
+    }
+    .detail-eye-btn:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+      background: var(--teal-light);
+    }
+    .detail-eye-btn.active {
+      border-color: var(--teal);
+      color: var(--teal-dark);
+      background: var(--teal-light);
+    }
+    .detail-section:not(.show-cum) .col-cum { display: none; }
+    .year-item {
+      border-radius: 14px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      background: var(--input-bg);
+    }
+    .year-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .year-header:hover { background: #e8e8e8; }
+    .year-item.open .year-header .arrow { transform: rotate(180deg); }
+    .year-header .year-summary { font-size: 0.82rem; color: var(--muted); }
+    .year-body {
+      display: none;
+      background: #fff;
+      overflow-x: hidden;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+    }
+    .year-item.open .year-body { display: block; }
+    .year-body table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      border-spacing: 0;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+    .year-body col.col-period { width: 9%; }
+    .year-body col.col-payment { width: 20%; }
+    .year-body col.col-principal { width: 20%; }
+    .year-body col.col-interest { width: 17%; }
+    .year-body col.col-balance { width: 17%; }
+    .year-body col.col-cum { width: 0; }
+    .detail-section.show-cum .year-body col.col-period { width: 9%; }
+    .detail-section.show-cum .year-body col.col-payment { width: 18%; }
+    .detail-section.show-cum .year-body col.col-principal { width: 18%; }
+    .detail-section.show-cum .year-body col.col-interest { width: 14%; }
+    .detail-section.show-cum .year-body col.col-balance { width: 14%; }
+    .detail-section.show-cum .year-body col.col-cum { width: 14%; }
+    .year-body th,
+    .year-body td {
+      vertical-align: middle;
+      text-align: center;
+      line-height: 1.4;
+      position: relative;
+    }
+    .year-body th {
+      background: var(--teal);
+      color: #fff;
+      font-weight: 500;
+      padding: 10px 8px;
+      border-bottom: none;
+      white-space: nowrap;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+    }
+    .year-body th.col-payment,
+    .year-body th.col-principal,
+    .year-body td.col-payment,
+    .year-body td.col-principal {
+      padding-right: 22px;
+    }
+    .detail-section.show-cum .year-body th {
+      font-size: 0.7rem;
+      padding: 10px 6px;
+    }
+    .detail-section.show-cum .year-body th.col-payment,
+    .detail-section.show-cum .year-body th.col-principal,
+    .detail-section.show-cum .year-body td.col-payment,
+    .detail-section.show-cum .year-body td.col-principal {
+      padding-right: 20px;
+    }
+    .year-body td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #e8e8e8;
+      font-variant-numeric: tabular-nums;
+      color: #333;
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+    }
+    .detail-section.show-cum .year-body td {
+      padding: 10px 6px;
+      font-size: 0.78rem;
+    }
+    .year-body td.col-payment::after,
+    .year-body td.col-principal::after {
+      content: '';
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      text-align: center;
+      color: #bbb;
+      font-size: 0.88em;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .year-body td.col-payment::after { content: '='; }
+    .year-body td.col-principal::after { content: '+'; }
+    .year-body th.col-period,
+    .year-body td.col-period {
+      color: #444;
+      font-weight: 500;
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+    .year-body td.col-period {
+      background: #eef6f5;
+    }
+    .year-body th.col-period {
+      background: var(--teal);
+      color: #fff;
+    }
+    .year-body td.payment-col {
+      color: var(--teal-dark);
+      font-weight: 600;
+    }
+    .year-body tbody tr:nth-child(even) { background: #fafcfc; }
+    .year-body tbody tr:nth-child(even) td.col-period { background: #e8f3f1; }
+    .year-body tbody tr:hover { background: #f0faf8; }
+    .year-body tbody tr:hover td.col-period { background: #e3f2ef; }
+    .year-body tbody tr:last-child td { border-bottom: none; }
+    .note { font-size: 0.7rem; color: #444; margin-top: 16px; line-height: 1.65; }
+    .export-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .export-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .export-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .export-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 72px;
+      padding: 10px 8px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fafafa;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .export-btn:hover:not(:disabled) {
+      background: var(--teal-light);
+      border-color: var(--teal);
+    }
+    .export-btn:active:not(:disabled) { transform: scale(0.98); }
+    .export-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .export-btn.share {
+      background: var(--teal);
+      border-color: var(--teal-dark);
+      color: #fff;
+    }
+    .export-btn.share:hover:not(:disabled) {
+      background: var(--teal-dark);
+      border-color: var(--teal-dark);
+    }
+    .export-btn svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .export-capture .export-section,
+    .export-capture .detail-eye-btn { display: none !important; }
+    .export-capture .year-item { border-color: #d8ece9; }
+    .export-capture .year-item .year-body { display: block !important; }
+    .export-capture .year-item .arrow { transform: rotate(180deg); }
+    .hidden { display: none !important; }
+    .ver-line {
+      text-align: center;
+      font-size: 0.76rem;
+      color: var(--muted);
+      opacity: 0.72;
+      letter-spacing: 0.02em;
+      margin-top: 8px;
+      padding: 12px 0 4px;
+    }
+    @media (max-width: 600px) {
+      .card { padding: 24px 18px; border-radius: 20px; }
+      .main-panel { border-radius: 12px; }
+      .main-panel .card { border-radius: 0 0 12px 12px; padding-top: 24px; }
+      .app-hero {
+        padding: 18px 18px 16px;
+        border-radius: 12px 12px 0 0;
+      }
+      .app-hero h1 { font-size: 1.32rem; }
+      .app-hero-accent { height: 34px; }
+      .app-hero-en { font-size: 0.64rem; letter-spacing: 0.12em; }
+      .form-grid { grid-template-columns: 1fr; gap: 20px; }
+      .choice-group.cols-3 { flex-direction: column; }
+      .choice-group.cols-3 .choice-btn { font-size: 0.88rem; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .grace-line {
+        flex-wrap: wrap;
+      }
+      .grace-line .quick-pills.fill {
+        width: 100%;
+        flex: none;
+      }
+      .header-actions { gap: 6px; }
+      .clear-btn, .restore-btn { padding: 7px 10px; font-size: 0.78rem; }
+      .export-actions { grid-template-columns: repeat(2, 1fr); }
+      .conditions-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="main-panel">
+    <header class="app-hero">
+      <div class="app-hero-row">
+        <div class="app-hero-brand">
+          <span class="app-hero-accent" aria-hidden="true"></span>
+          <div>
+            <h1>房屋貸款試算</h1>
+            <p class="app-hero-en">Mortgage Calculator</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="restore-btn" id="restoreBtn" title="恢復清空前的數值" style="display:none;">恢復數值</button>
+          <button type="button" class="clear-btn" id="clearBtn" title="清空所有輸入欄位">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            清空數值
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="card">
+    <div class="form-grid">
+      <div class="field">
+        <label>購屋價格</label>
+        <div class="input-box">
+          <input type="text" id="price" class="calc-field" value="3000" readonly inputmode="none" autocomplete="off">
+          <span class="unit">萬元</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>貸款成數</label>
+        <div class="input-box">
+          <input type="text" id="ratio" class="calc-field" value="80" readonly inputmode="none" autocomplete="off">
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>貸款金額</label>
+        <div class="input-box readonly">
+          <input type="text" id="amount" readonly value="2,400">
+          <span class="unit">萬元</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>貸款期間</label>
+        <div class="input-box">
+          <input type="text" id="term" class="calc-field" value="30" readonly inputmode="none" autocomplete="off">
+          <span class="unit">年</span>
+        </div>
+        <div class="quick-pills fill" id="termPills">
+          <button type="button" class="qp" data-val="20">20</button>
+          <button type="button" class="qp" data-val="25">25</button>
+          <button type="button" class="qp active" data-val="30">30</button>
+          <button type="button" class="qp" data-val="35">35</button>
+          <button type="button" class="qp" data-val="40">40</button>
+        </div>
+      </div>
+      <div class="field span-2">
+        <label>寬限期</label>
+        <div class="grace-line">
+          <div class="input-box grace-input">
+            <input type="text" id="grace" class="calc-field" value="2" readonly inputmode="none" autocomplete="off">
+          </div>
+          <div class="unit-switch">
+            <button type="button" class="active" id="graceYear">年</button>
+            <button type="button" id="graceMonth">月</button>
+          </div>
+          <div class="quick-pills fill" id="gracePills">
+            <button type="button" class="qp qp-text" data-val="0">無</button>
+            <button type="button" class="qp" data-val="1">1</button>
+            <button type="button" class="qp active" data-val="2">2</button>
+            <button type="button" class="qp" data-val="3">3</button>
+            <button type="button" class="qp" data-val="4">4</button>
+            <button type="button" class="qp" data-val="5">5</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <label>還款方式</label>
+      <div class="choice-group">
+        <button type="button" class="choice-btn active" data-method="amortize">本息平均攤還</button>
+        <button type="button" class="choice-btn" data-method="principal">本金平均攤還</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <label>利率計算方式</label>
+      <div class="choice-group">
+        <button type="button" class="choice-btn active" data-rate-type="single">單一利率</button>
+        <button type="button" class="choice-btn" data-rate-type="multi">多段式利率</button>
+      </div>
+    </div>
+
+    <div class="section rate-full" id="rateField">
+      <label>單一利率年利率</label>
+      <div class="input-box">
+        <input type="text" id="rate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
+        <span class="unit">%</span>
+      </div>
+    </div>
+
+    <div id="multiRate" class="section rate-segments hidden">
+      <label>多段式利率設定</label>
+      <div id="rateRows"></div>
+      <button type="button" class="btn-add" id="addRate">＋ 新增利率段</button>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-calc" id="calc">開始試算</button>
+    </div>
+  </div>
+  </div>
+
+  <div class="card results" id="results">
+    <div class="conditions-box" id="conditionsBox">
+      <div class="conditions-head">
+        <h3>試算條件</h3>
+        <button type="button" class="conditions-toggle" id="conditionsToggle" aria-expanded="true" title="收合試算條件">−</button>
+      </div>
+      <div class="conditions-body">
+        <div class="conditions-grid" id="conditionsGrid"></div>
+        <div class="conditions-rates hidden" id="conditionsRates">
+          <div class="conditions-rates-grid" id="conditionsRatesGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="results-heading">試算結果</h2>
+
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="label">貸款總額</div>
+        <div class="value" id="resTotal">—</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">還款期間</div>
+        <div class="value" id="resTerm">—</div>
+      </div>
+    </div>
+
+    <div class="period-summary">
+      <div class="period-title">
+        <span class="title-line"></span>
+        <h3>每期應還款本利和</h3>
+        <span class="title-line"></span>
+      </div>
+      <div class="payment-table" id="periodLines"></div>
+      <div class="apr-footer">
+        <span class="apr-label">總費用年百分率</span>
+        <span class="apr-val" id="resApr">—</span>
+      </div>
+    </div>
+
+    <div class="detail-section" id="detailSection">
+      <div class="detail-section-head">
+        <span class="detail-title">每月還款明細 <span class="detail-sub">共 <span id="detailMonths">—</span> 個月（<span id="detailMonths2">—</span>期）</span></span>
+        <button type="button" class="detail-eye-btn" id="toggleCumBtn" title="顯示累積利息" aria-pressed="false" aria-label="顯示累積利息">
+          <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="year-accordion" id="yearAccordion"></div>
+    </div>
+    <p class="note">※ 本試算結果僅供參考，不構成任何貸款承諾或保證。實際貸款金額、利率、期數、寬限期、每月應繳金額、相關費用及其他貸款條件，均應以各金融機構最終核准結果及正式簽訂之貸款契約為準。本系統已盡力提供正確之試算結果，但因各銀行計息方式、四捨五入規則、作業流程、政策調整或其他因素可能產生差異，本系統對試算結果之誤差或因此衍生之任何損失，不負任何法律責任或賠償責任。</p>
+
+    <div class="export-section" id="exportSection">
+      <div class="export-title">匯出與分享</div>
+      <div class="export-actions">
+        <button type="button" class="export-btn" id="exportPdfBtn" title="下載 PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          PDF
+        </button>
+        <button type="button" class="export-btn" id="exportPngBtn" title="下載 PNG">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          PNG
+        </button>
+        <button type="button" class="export-btn" id="exportJpgBtn" title="下載 JPG">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          JPG
+        </button>
+        <button type="button" class="export-btn share" id="shareBtn" title="分享試算結果">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="18" cy="5" r="3"/>
+            <circle cx="6" cy="12" r="3"/>
+            <circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          分享
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ver-line" id="verLine"></div>
+</div>
+
+<div class="toast" id="toast">已清空，可以開始輸入</div>
+
+<div class="app-alert" id="appAlert" role="alertdialog" aria-modal="true" aria-labelledby="appAlertText" hidden>
+  <div class="app-alert-card" id="appAlertCard">
+    <div class="app-alert-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="app-alert-text" id="appAlertText"></div>
+    <button type="button" class="app-alert-btn" id="appAlertBtn">我知道了</button>
+  </div>
+</div>
+
+<script>
+const APP_VERSION = "2026.08.02F";
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+let graceIsYear = true;
+const GRACE_PILLS_YEAR = [0, 1, 2, 3, 4, 5];
+const GRACE_PILLS_MONTH = [0, 3, 6, 12, 18, 24];
+let rateType = 'single';
+let method = 'amortize';
+let rateSegments = [{ from: 1, to: 360, rate: 2.5 }];
+let clearSnapshot = null;
+let showCumInterest = false;
+
+function showToast(msg) {
+  const toast = $('#toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+function closeAppAlert() {
+  const backdrop = $('#appAlert');
+  if (!backdrop) return;
+  backdrop.classList.remove('show');
+  backdrop.hidden = true;
+}
+
+function showAppAlert(message) {
+  const backdrop = $('#appAlert');
+  const textEl = $('#appAlertText');
+  if (!backdrop || !textEl) return;
+  textEl.textContent = message;
+  backdrop.hidden = false;
+  backdrop.classList.add('show');
+  try { if (navigator.vibrate) navigator.vibrate([30, 50, 30]); } catch {}
+  $('#appAlertBtn')?.focus();
+}
+
+$('#appAlertBtn')?.addEventListener('click', closeAppAlert);
+$('#appAlert')?.addEventListener('click', (e) => {
+  if (e.target === $('#appAlert')) closeAppAlert();
+});
+$('#appAlertCard')?.addEventListener('click', (e) => e.stopPropagation());
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $('#appAlert')?.classList.contains('show')) {
+    e.preventDefault();
+    closeAppAlert();
+  }
+});
+
+function getActivePillVal(containerId) {
+  const active = document.querySelector('#' + containerId + ' .qp.active');
+  return active ? active.dataset.val : '';
+}
+
+function captureFormState() {
+  return {
+    price: $('#price').value,
+    ratio: $('#ratio').value,
+    term: $('#term').value,
+    grace: $('#grace').value,
+    graceIsYear: graceIsYear,
+    rate: $('#rate').value,
+    rateType: rateType,
+    method: method,
+    rateSegments: JSON.parse(JSON.stringify(rateSegments)),
+    termPillVal: getActivePillVal('termPills'),
+    gracePillVal: getActivePillVal('gracePills'),
+    resultsVisible: $('#results').classList.contains('show')
+  };
+}
+
+function applyFormState(state) {
+  $('#price').value = state.price;
+  $('#ratio').value = state.ratio;
+  $('#term').value = state.term;
+  graceIsYear = state.graceIsYear;
+  $('#graceYear').classList.toggle('active', graceIsYear);
+  $('#graceMonth').classList.toggle('active', !graceIsYear);
+  if (state.grace === '') {
+    renderGracePills(0);
+    $('#grace').value = '';
+  } else {
+    renderGracePills(+state.grace);
+  }
+
+  $$('#termPills .qp').forEach(p => {
+    p.classList.toggle('active', state.termPillVal !== '' && p.dataset.val === state.termPillVal);
+  });
+
+  method = state.method;
+  rateType = state.rateType;
+  rateSegments = JSON.parse(JSON.stringify(state.rateSegments));
+
+  $$('.choice-btn[data-method]').forEach(b => {
+    b.classList.toggle('active', b.dataset.method === method);
+  });
+  $$('.choice-btn[data-rate-type]').forEach(b => {
+    b.classList.toggle('active', b.dataset.rateType === rateType);
+  });
+  $('#rateField').classList.toggle('hidden', rateType !== 'single');
+  $('#multiRate').classList.toggle('hidden', rateType !== 'multi');
+  $('#rate').value = state.rate;
+  if (rateType === 'multi') renderRateRows();
+
+  updateAmount();
+  if (state.resultsVisible && getTotalMonths() > 0 && getLoanYuan() > 0) {
+    renderResults(false);
+  } else {
+    $('#results').classList.remove('show');
+  }
+}
+
+function formHasContent(state) {
+  state = state || captureFormState();
+  return state.price !== '' || state.ratio !== '' || state.term !== '' ||
+    state.grace !== '' || state.rate !== '';
+}
+
+function updateClearRestoreBtns() {
+  $('#restoreBtn').style.display = clearSnapshot ? '' : 'none';
+}
+
+function enterClearedState(opts) {
+  opts = opts || {};
+  const hadContent = formHasContent();
+  if (hadContent) clearSnapshot = captureFormState();
+
+  $('#price').value = '';
+  $('#ratio').value = '';
+  $('#term').value = '';
+  graceIsYear = true;
+  $('#graceYear').classList.add('active');
+  $('#graceMonth').classList.remove('active');
+  renderGracePills(0);
+  $$('#termPills .qp').forEach(p => p.classList.remove('active'));
+
+  method = 'amortize';
+  rateType = 'single';
+  rateSegments = [{ from: 1, to: 360, rate: 2.5 }];
+  $$('.choice-btn[data-method]').forEach(b => {
+    b.classList.toggle('active', b.dataset.method === 'amortize');
+  });
+  $$('.choice-btn[data-rate-type]').forEach(b => {
+    b.classList.toggle('active', b.dataset.rateType === 'single');
+  });
+  $('#rateField').classList.remove('hidden');
+  $('#multiRate').classList.add('hidden');
+  $('#rate').value = '';
+
+  updateAmount();
+  $('#results').classList.remove('show');
+  clearCalcPending();
+  updateClearRestoreBtns();
+  if (!opts.silent) showToast('已清空，可以開始輸入');
+}
+
+function restoreClearedState() {
+  if (!clearSnapshot) return;
+  const snap = clearSnapshot;
+  clearSnapshot = null;
+  applyFormState(snap);
+  clearCalcPending();
+  updateClearRestoreBtns();
+  showToast('已恢復原本數值');
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('zh-TW'); }
+function fmtWan(yuan) { return (yuan / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }); }
+
+/** 依所有利率輸入的最大小數位數，統一全站顯示（不四捨五入） */
+function collectRateInputValues() {
+  if (rateType === 'single') {
+    const v = $('#rate').value;
+    return v !== '' ? [v] : [];
+  }
+  return rateSegments.map((seg) => String(seg.rate ?? '')).filter((v) => v !== '');
+}
+
+function getRateDecimalPlaces(rate) {
+  const raw = String(rate ?? '').trim();
+  if (!raw || isNaN(Number(raw))) return 0;
+  const normalized = raw.replace(/^-/, '');
+  const dot = normalized.indexOf('.');
+  if (dot < 0) return 0;
+  return normalized.length - dot - 1;
+}
+
+function getRateDisplayPrecision() {
+  const values = collectRateInputValues();
+  if (!values.length) return 0;
+  return Math.max(0, ...values.map(getRateDecimalPlaces));
+}
+
+function formatRatePct(rate, precision) {
+  const p = precision ?? getRateDisplayPrecision();
+  const raw = String(rate ?? '').trim();
+  if (!raw || isNaN(Number(raw))) {
+    return p > 0 ? '0.' + '0'.repeat(p) : '0';
+  }
+  const negative = raw.startsWith('-');
+  const normalized = negative ? raw.slice(1) : raw;
+  const [intPart, decPart = ''] = normalized.split('.');
+  if (p === 0) return (negative ? '-' : '') + (intPart || '0');
+  const dec = (decPart + '0'.repeat(p)).slice(0, p);
+  return (negative ? '-' : '') + (intPart || '0') + '.' + dec;
+}
+
+function formatRateDisplay(rate, precision) {
+  return formatRatePct(rate, precision) + '%';
+}
+
+function formatComputedRatePct(n, precision) {
+  const p = precision ?? getRateDisplayPrecision();
+  if (!isFinite(n)) return formatRatePct('0', p);
+  const factor = Math.pow(10, p);
+  const truncated = Math.trunc(Math.abs(n) * factor) / factor;
+  const negative = n < 0;
+  const val = negative ? -truncated : truncated;
+  if (p === 0) return String(Math.trunc(val));
+  const intPart = Math.trunc(Math.abs(val));
+  const frac = Math.trunc((Math.abs(val) - intPart) * factor + 1e-9);
+  const dec = String(frac).padStart(p, '0');
+  return (val < 0 ? '-' : '') + intPart + '.' + dec;
+}
+
+const calcKeyboard = {
+  expr: '',
+  pristine: true,
+  allowNegative: false,
+  inputEl: null,
+  backdropEl: null
+};
+
+function calcEvalExpr(expr) {
+  try {
+    if (!/^[0-9+\-*/.]*$/.test(expr)) return null;
+    if (!expr) return 0;
+    const clean = expr.replace(/[+\-*/]+$/, '');
+    if (!clean) return 0;
+    const result = Function('"use strict"; return (' + clean + ')')();
+    if (!Number.isFinite(result)) return null;
+    return Math.round(result * 10000) / 10000;
+  } catch {
+    return null;
+  }
+}
+
+function calcFmtExprDisplay(expr) {
+  if (!expr) return '0';
+  return expr.replace(/\*/g, '×').replace(/\//g, '÷').replace(/-/g, '−');
+}
+
+function calcHaptic(key) {
+  try {
+    if (!navigator.vibrate) return;
+    if (key === '=' || key === 'C' || key === 'DONE') navigator.vibrate(20);
+    else if (['+', '-', '*', '/', '%', 'BACK'].includes(key)) navigator.vibrate(12);
+    else navigator.vibrate(8);
+  } catch {}
+}
+
+function calcUpdateDisplay() {
+  const el = calcKeyboard.backdropEl && calcKeyboard.backdropEl.querySelector('.calc-expr');
+  if (el) el.textContent = calcFmtExprDisplay(calcKeyboard.expr) || '0';
+}
+
+function calcCommitValue(rawExpr) {
+  const input = calcKeyboard.inputEl;
+  if (!input) return;
+  let next = rawExpr == null ? calcKeyboard.expr : rawExpr;
+  if (String(next).trim() !== '') {
+    const result = calcEvalExpr(String(next));
+    if (result !== null) next = String(result);
+  } else {
+    next = '';
+  }
+  input.value = next;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function closeCalcKeyboard(applyValue) {
+  const input = calcKeyboard.inputEl;
+  if (applyValue && input) {
+    const raw = calcKeyboard.expr || '';
+    if (raw.trim() !== '') {
+      const result = calcEvalExpr(raw);
+      if (result !== null) calcCommitValue(String(result));
+      else calcCommitValue(raw);
+    } else {
+      calcCommitValue('');
+    }
+  }
+  if (input) input.classList.remove('calc-active');
+  if (calcKeyboard.backdropEl) calcKeyboard.backdropEl.remove();
+  calcKeyboard.backdropEl = null;
+  calcKeyboard.inputEl = null;
+  calcKeyboard.expr = '';
+  calcKeyboard.pristine = true;
+  detachCalcKeyListener();
+}
+
+function calcKeyFromEvent(e) {
+  const key = e.key;
+  if (/^[0-9]$/.test(key)) return key;
+  if (key === '.' || key === ',') return '.';
+  if (['+', '-', '*', '/'].includes(key)) return key;
+  if (key === '%') return '%';
+  const code = e.code || '';
+  if (code.startsWith('Numpad')) {
+    const tail = code.slice(6);
+    if (tail >= '0' && tail <= '9') return tail;
+    if (tail === 'Decimal') return '.';
+    if (tail === 'Add') return '+';
+    if (tail === 'Subtract') return '-';
+    if (tail === 'Multiply') return '*';
+    if (tail === 'Divide') return '/';
+  }
+  return null;
+}
+
+function calcFlashButton(key) {
+  const backdrop = calcKeyboard.backdropEl;
+  if (!backdrop) return;
+  let btn = null;
+  if (key === 'DONE') btn = backdrop.querySelector('.calc-btn-done');
+  else if (key === 'BACK') btn = backdrop.querySelector('[data-key="BACK"]');
+  else btn = backdrop.querySelector(`[data-key="${key}"]`);
+  if (!btn) return;
+  btn.classList.add('calc-btn-pressed');
+  clearTimeout(btn._calcFlashTimer);
+  btn._calcFlashTimer = setTimeout(() => btn.classList.remove('calc-btn-pressed'), 140);
+}
+
+function calcOnKeyDown(e) {
+  if (!calcKeyboard.backdropEl) return;
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    calcFlashButton('DONE');
+    setTimeout(() => closeCalcKeyboard(true), 90);
+    return;
+  }
+  if (e.key === 'Enter' || e.code === 'NumpadEnter') {
+    e.preventDefault();
+    calcHaptic('DONE');
+    calcFlashButton('DONE');
+    setTimeout(() => closeCalcKeyboard(true), 90);
+    return;
+  }
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    e.preventDefault();
+    calcPress('BACK');
+    return;
+  }
+  if (e.key === '=') {
+    e.preventDefault();
+    calcPress('=');
+    return;
+  }
+  if (e.key === 'c' || e.key === 'C') {
+    e.preventDefault();
+    calcPress('C');
+    return;
+  }
+
+  const mapped = calcKeyFromEvent(e);
+  if (mapped) {
+    e.preventDefault();
+    calcPress(mapped);
+  }
+}
+
+function attachCalcKeyListener() {
+  detachCalcKeyListener();
+  document.addEventListener('keydown', calcOnKeyDown, true);
+}
+
+function detachCalcKeyListener() {
+  document.removeEventListener('keydown', calcOnKeyDown, true);
+}
+
+function calcPress(key) {
+  calcFlashButton(key);
+  calcHaptic(key);
+  let cur = calcKeyboard.expr || '';
+  if (key === 'C') {
+    calcKeyboard.expr = '';
+    calcKeyboard.pristine = false;
+    calcUpdateDisplay();
+    return;
+  }
+  if (key === 'BACK') {
+    calcKeyboard.expr = cur.slice(0, -1);
+    calcKeyboard.pristine = false;
+    calcUpdateDisplay();
+    return;
+  }
+  if (key === '=') {
+    const result = calcEvalExpr(cur);
+    if (result !== null) calcKeyboard.expr = String(result);
+    calcKeyboard.pristine = false;
+    calcUpdateDisplay();
+    return;
+  }
+  if (key === '%') {
+    calcKeyboard.pristine = false;
+    if (!cur || /[+\-*/]$/.test(cur)) return;
+    const m = cur.match(/^(.*?)([+\-*/])([0-9.]+)$/);
+    if (!m) {
+      const n = parseFloat(cur);
+      if (!isNaN(n)) calcKeyboard.expr = String(n / 100);
+    } else {
+      const [, prefix, op, lastNum] = m;
+      const lastN = parseFloat(lastNum);
+      const baseVal = calcEvalExpr(prefix);
+      if (!isNaN(lastN) && baseVal !== null) {
+        let result;
+        if (op === '+') result = baseVal + (baseVal * lastN / 100);
+        else if (op === '-') result = baseVal - (baseVal * lastN / 100);
+        else if (op === '*') result = baseVal * lastN / 100;
+        else if (op === '/') result = baseVal / lastN / 100;
+        if (Number.isFinite(result)) calcKeyboard.expr = String(Math.round(result * 10000) / 10000);
+      }
+    }
+    calcUpdateDisplay();
+    return;
+  }
+  if (['+', '-', '*', '/'].includes(key)) {
+    calcKeyboard.pristine = false;
+    if (/[+\-*/]$/.test(cur)) {
+      calcKeyboard.expr = cur.slice(0, -1) + key;
+    } else if (cur === '') {
+      if (calcKeyboard.allowNegative && key === '-') calcKeyboard.expr = '-';
+    } else {
+      calcKeyboard.expr = cur + key;
+    }
+    calcUpdateDisplay();
+    return;
+  }
+  const startFresh = calcKeyboard.pristine;
+  calcKeyboard.pristine = false;
+  const base = startFresh ? '' : cur;
+  if (key === '.') {
+    const lastNum = (base.match(/[0-9.]*$/) || [''])[0];
+    if (lastNum.includes('.')) return;
+    calcKeyboard.expr = lastNum === '' ? base + '0.' : base + '.';
+    calcUpdateDisplay();
+    return;
+  }
+  const lastNum = (base.match(/[0-9.]*$/) || [''])[0];
+  if (lastNum === '0' && key !== '.') {
+    calcKeyboard.expr = base.slice(0, -1) + key;
+  } else {
+    calcKeyboard.expr = base + key;
+  }
+  calcUpdateDisplay();
+}
+
+function renderCalcSheet() {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'calc-backdrop';
+  backdrop.dataset.calcBackdrop = 'true';
+  backdrop.innerHTML = `
+    <div class="calc-sheet-panel">
+      <div class="calc-expr">${calcFmtExprDisplay(calcKeyboard.expr) || '0'}</div>
+      <div class="calc-grid">
+        <button type="button" class="calc-btn calc-btn-fn" data-key="C">C</button>
+        <button type="button" class="calc-btn calc-btn-fn" data-key="BACK">⌫</button>
+        <button type="button" class="calc-btn calc-btn-op" data-key="%">%</button>
+        <button type="button" class="calc-btn calc-btn-op" data-key="/">÷</button>
+        <button type="button" class="calc-btn" data-key="7">7</button>
+        <button type="button" class="calc-btn" data-key="8">8</button>
+        <button type="button" class="calc-btn" data-key="9">9</button>
+        <button type="button" class="calc-btn calc-btn-op" data-key="*">×</button>
+        <button type="button" class="calc-btn" data-key="4">4</button>
+        <button type="button" class="calc-btn" data-key="5">5</button>
+        <button type="button" class="calc-btn" data-key="6">6</button>
+        <button type="button" class="calc-btn calc-btn-op" data-key="-">−</button>
+        <button type="button" class="calc-btn" data-key="1">1</button>
+        <button type="button" class="calc-btn" data-key="2">2</button>
+        <button type="button" class="calc-btn" data-key="3">3</button>
+        <button type="button" class="calc-btn calc-btn-op" data-key="+">+</button>
+        <button type="button" class="calc-btn calc-btn-zero" data-key="0">0</button>
+        <button type="button" class="calc-btn" data-key=".">.</button>
+        <button type="button" class="calc-btn calc-btn-eq" data-key="=">=</button>
+      </div>
+      <button type="button" class="calc-btn-done">完成</button>
+    </div>`;
+  backdrop.addEventListener('click', () => closeCalcKeyboard(true));
+  backdrop.querySelector('.calc-sheet-panel').addEventListener('click', (e) => e.stopPropagation());
+  backdrop.querySelectorAll('[data-key]').forEach((btn) => {
+    btn.addEventListener('click', () => calcPress(btn.dataset.key));
+  });
+  backdrop.querySelector('.calc-btn-done').addEventListener('click', () => {
+    calcHaptic('DONE');
+    calcFlashButton('DONE');
+    setTimeout(() => closeCalcKeyboard(true), 90);
+  });
+  document.body.appendChild(backdrop);
+  calcKeyboard.backdropEl = backdrop;
+  attachCalcKeyListener();
+}
+
+function scrollCalcTriggerIntoView(el) {
+  setTimeout(() => {
+    const panel = document.querySelector('.calc-sheet-panel');
+    const h = panel ? panel.offsetHeight : 380;
+    const rect = el.getBoundingClientRect();
+    const delta = rect.bottom - (window.innerHeight - h - 24);
+    if (delta > 0) window.scrollBy({ top: delta, behavior: 'smooth' });
+  }, 180);
+}
+
+function openCalcKeyboard(inputEl, options) {
+  options = options || {};
+  if (calcKeyboard.backdropEl) closeCalcKeyboard(true);
+  const ae = document.activeElement;
+  if (ae && ae !== inputEl && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
+  calcKeyboard.inputEl = inputEl;
+  calcKeyboard.expr = String(inputEl.value || '');
+  calcKeyboard.pristine = true;
+  calcKeyboard.allowNegative = !!options.allowNegative;
+  inputEl.classList.add('calc-active');
+  renderCalcSheet();
+  scrollCalcTriggerIntoView(inputEl);
+}
+
+function bindCalcField(el) {
+  if (!el || el.dataset.calcBound === '1') return;
+  el.dataset.calcBound = '1';
+  el.setAttribute('readonly', 'readonly');
+  el.setAttribute('inputmode', 'none');
+  el.setAttribute('autocomplete', 'off');
+  el.classList.add('calc-field');
+  el.addEventListener('pointerdown', () => {
+    const ae = document.activeElement;
+    if (ae && ae !== el && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
+  });
+  el.addEventListener('click', (e) => {
+    e.preventDefault();
+    openCalcKeyboard(el, { allowNegative: el.dataset.calcNegative === 'true' });
+  });
+}
+
+function initCalcFields(root) {
+  (root || document).querySelectorAll('input.calc-field').forEach(bindCalcField);
+}
+
+let exportBusy = false;
+
+function exportFileName(ext) {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  return `房屋貸款試算_${stamp}.${ext}`;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function getYearOpenState() {
+  return Array.from($$('.year-item')).map((el) => el.classList.contains('open'));
+}
+
+function setYearOpenState(states) {
+  $$('.year-item').forEach((el, i) => {
+    el.classList.toggle('open', !!states[i]);
+  });
+}
+
+function expandAllYears(expand) {
+  $$('.year-item').forEach((el) => {
+    el.classList.toggle('open', expand);
+  });
+}
+
+function getMethodLabel() {
+  return {
+    amortize: '本息平均攤還',
+    principal: '本金平均攤還'
+  }[method] || '';
+}
+
+function buildConditionsData() {
+  const totalMonths = getTotalMonths();
+  syncGraceUnitFromDom();
+  const graceVal = +$('#grace').value || 0;
+  const graceUnit = graceIsYear ? '年' : '月';
+  const graceText = graceVal === 0 ? '無' : `${graceVal} ${graceUnit}`;
+  const price = +$('#price').value || 0;
+  const basic = [
+    ['購屋價格', `${price.toLocaleString('zh-TW')} 萬元`],
+    ['貸款成數', `${$('#ratio').value || 0} %`],
+    ['自備金額', `${getSelfFundWan().toLocaleString('zh-TW')} 萬元`],
+    ['貸款金額', `${fmtWan(getLoanYuan())} 萬元`],
+    ['貸款年限', `${$('#term').value} 年`],
+    ['寬限期', graceText],
+    ['還款方式', getMethodLabel()],
+    ['利率計算方式', rateType === 'single' ? '單一利率' : '多段式利率']
+  ];
+  let rates = [];
+  if (rateType === 'single') {
+    const rateVal = $('#rate').value;
+    if (rateVal !== '') {
+      rates = [['年利率', `${formatRatePct(rateVal)} %`]];
+    }
+  } else {
+    rates = rateSegments.map((seg) => {
+      const from = String(seg.from).padStart(3, '0');
+      const to = seg.to || totalMonths;
+      return [`第 ${from} ~ ${to} 個月 年利率`, `${formatRatePct(seg.rate)} %`];
+    });
+  }
+  return { basic, rates };
+}
+
+function buildConditionsRows() {
+  const { basic, rates } = buildConditionsData();
+  return [...basic, ...rates];
+}
+
+function renderCondItem([label, value]) {
+  return `<div class="cond-item">
+    <span class="cond-dot" aria-hidden="true"></span>
+    <span class="cond-label">${label}</span>
+    <span class="cond-value">${value}</span>
+  </div>`;
+}
+
+function renderRateCondItem([label, value]) {
+  const isPeriod = label.includes('個月');
+  let periodPart = '';
+  let tagPart = label;
+  if (isPeriod) {
+    periodPart = label.replace(/\s*年利率$/, '');
+    tagPart = '年利率';
+  }
+  return `<div class="cond-rate-row">
+    ${periodPart ? `<span class="cond-rate-period">${periodPart}</span>` : ''}
+    <span class="cond-rate-tag">${tagPart}</span>
+    <span class="cond-rate-value">${value}</span>
+  </div>`;
+}
+
+function renderConditions() {
+  const { basic, rates } = buildConditionsData();
+  $('#conditionsGrid').innerHTML = basic.map(renderCondItem).join('');
+  const ratesBox = $('#conditionsRates');
+  if (rates.length) {
+    ratesBox.classList.remove('hidden');
+    $('#conditionsRatesGrid').innerHTML = rates.map(renderRateCondItem).join('');
+  } else {
+    ratesBox.classList.add('hidden');
+    $('#conditionsRatesGrid').innerHTML = '';
+  }
+}
+
+function getShareText() {
+  const condLines = buildConditionsRows().map(([label, value]) => `${label}：${value}`);
+  return [
+    '房屋貸款試算結果',
+    '',
+    '【試算條件】',
+    ...condLines,
+    '',
+    `貸款總額：${$('#resTotal').textContent}`,
+    `還款期間：${$('#resTerm').textContent}`,
+    `總費用年百分率：${$('#resApr').textContent}`
+  ].join('\n');
+}
+
+async function captureResultsCanvas() {
+  if (typeof html2canvas !== 'function') {
+    throw new Error('html2canvas not loaded');
+  }
+  const results = $('#results');
+  const prevOpen = getYearOpenState();
+  expandAllYears(true);
+  results.classList.add('export-capture');
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  try {
+    return await html2canvas(results, {
+      scale: 2,
+      backgroundColor: '#ececec',
+      useCORS: true,
+      logging: false,
+      width: results.scrollWidth,
+      height: results.scrollHeight,
+      windowWidth: results.scrollWidth,
+      windowHeight: results.scrollHeight
+    });
+  } finally {
+    results.classList.remove('export-capture');
+    setYearOpenState(prevOpen);
+  }
+}
+
+async function withExportLock(task, busyMsg) {
+  if (exportBusy) return;
+  if (!$('#results').classList.contains('show')) {
+    showToast('請先按「開始試算」');
+    return;
+  }
+  exportBusy = true;
+  $$('.export-btn').forEach((btn) => { btn.disabled = true; });
+  if (busyMsg) showToast(busyMsg);
+  try {
+    await task();
+  } catch (err) {
+    console.error(err);
+    showToast('匯出失敗，請稍後再試');
+  } finally {
+    exportBusy = false;
+    $$('.export-btn').forEach((btn) => { btn.disabled = false; });
+  }
+}
+
+function canvasToPdf(canvas) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('jsPDF not loaded');
+  }
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+  let heightLeft = imgHeight;
+  let position = 0;
+
+  pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+
+  return pdf;
+}
+
+async function exportAsPdf() {
+  await withExportLock(async () => {
+    const canvas = await captureResultsCanvas();
+    canvasToPdf(canvas).save(exportFileName('pdf'));
+    showToast('PDF 已下載');
+  }, '正在產生 PDF…');
+}
+
+async function exportAsImage(mime, ext) {
+  await withExportLock(async () => {
+    const canvas = await captureResultsCanvas();
+    const quality = mime === 'image/jpeg' ? 0.92 : undefined;
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), mime, quality);
+    });
+    downloadBlob(blob, exportFileName(ext));
+    showToast(`${ext.toUpperCase()} 已下載`);
+  }, `正在產生 ${ext.toUpperCase()}…`);
+}
+
+async function shareResults() {
+  await withExportLock(async () => {
+    const canvas = await captureResultsCanvas();
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+    });
+    const file = new File([blob], exportFileName('png'), { type: 'image/png' });
+    const shareData = {
+      title: '房屋貸款試算結果',
+      text: getShareText(),
+      files: [file]
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      await navigator.share(shareData);
+      showToast('已開啟分享');
+      return;
+    }
+
+    if (navigator.share) {
+      await navigator.share({
+        title: shareData.title,
+        text: shareData.text,
+        url: location.href
+      });
+      showToast('已開啟分享');
+      return;
+    }
+
+    downloadBlob(blob, exportFileName('png'));
+    showToast('此裝置不支援分享，已改為下載 PNG');
+  }, '正在準備分享…');
+}
+
+function updateAmount() {
+  const price = +$('#price').value || 0;
+  const ratio = +$('#ratio').value || 0;
+  $('#amount').value = fmtWan(price * 10000 * ratio / 100);
+}
+
+let calcPending = false;
+
+function markCalcPending() {
+  const btn = $('#calc');
+  if (!btn || calcPending) return;
+  btn.classList.add('btn-calc-pending');
+  calcPending = true;
+}
+
+function clearCalcPending() {
+  calcPending = false;
+  const btn = $('#calc');
+  if (!btn) return;
+  btn.classList.remove('btn-calc-pending');
+}
+
+function maybeRecalc() {
+  markCalcPending();
+}
+
+function getLoanYuan() {
+  return (+$('#price').value || 0) * 10000 * (+$('#ratio').value || 0) / 100;
+}
+
+function getSelfFundWan() {
+  const price = +$('#price').value || 0;
+  const ratio = +$('#ratio').value || 0;
+  return price * (1 - ratio / 100);
+}
+function getTotalMonths() { return (+$('#term').value || 0) * 12; }
+
+function syncGraceUnitFromDom() {
+  graceIsYear = $('#graceYear').classList.contains('active');
+}
+
+function getGraceMonths() {
+  syncGraceUnitFromDom();
+  const g = +$('#grace').value || 0;
+  return graceIsYear ? g * 12 : g;
+}
+
+function renderGracePills(selectVal) {
+  const vals = graceIsYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+  const current = selectVal != null ? selectVal : (+$('#grace').value || 0);
+  $('#gracePills').innerHTML = vals.map(v => {
+    const isNone = v === 0;
+    const cls = 'qp' + (isNone ? ' qp-text' : '') + (v === current ? ' active' : '');
+    return `<button type="button" class="${cls}" data-val="${v}">${isNone ? '無' : v}</button>`;
+  }).join('');
+  $('#grace').value = current;
+}
+
+function setGraceUnit(isYear) {
+  if (isYear === graceIsYear) return;
+  const prevVal = +$('#grace').value || 0;
+  let newVal = 0;
+  if (prevVal > 0) {
+    newVal = isYear ? Math.max(1, Math.round(prevVal / 12)) : prevVal * 12;
+    const vals = isYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+    const max = vals[vals.length - 1];
+    if (newVal > max) newVal = max;
+  }
+  graceIsYear = isYear;
+  $('#graceYear').classList.toggle('active', isYear);
+  $('#graceMonth').classList.toggle('active', !isYear);
+  renderGracePills(newVal);
+  maybeRecalc();
+}
+function getRateForMonth(m, totalMonths) {
+  if (rateType === 'single') return (+$('#rate').value || 0) / 100;
+  for (const seg of rateSegments) {
+    const to = seg.to === 0 ? totalMonths : seg.to;
+    if (m >= seg.from && m <= to) return seg.rate / 100;
+  }
+  const last = rateSegments[rateSegments.length - 1];
+  return last ? last.rate / 100 : 0;
+}
+
+function getRatePercentForMonth(m, totalMonths) {
+  if (rateType === 'single') return $('#rate').value || '0';
+  for (const seg of rateSegments) {
+    const to = seg.to === 0 ? totalMonths : seg.to;
+    if (m >= seg.from && m <= to) return String(seg.rate ?? '0');
+  }
+  const last = rateSegments[rateSegments.length - 1];
+  return last ? String(last.rate ?? '0') : '0';
+}
+
+function getWeightedNominalRate(totalMonths) {
+  if (rateType === 'single') return +$('#rate').value || 0;
+  let weighted = 0;
+  for (const seg of rateSegments) {
+    const from = Math.max(1, seg.from);
+    const to = Math.min(seg.to || totalMonths, totalMonths);
+    if (to >= from) weighted += (to - from + 1) * (+seg.rate || 0);
+  }
+  return weighted / totalMonths;
+}
+
+function formatDecimal(n, precision) {
+  const factor = Math.pow(10, precision);
+  return Math.round(n * factor) / factor;
+}
+
+function buildPeriodList(totalMonths) {
+  const list = [];
+  for (let m = 0; m < totalMonths; m++) {
+    list.push({ rate: getRateForMonth(m + 1, totalMonths) * 100 });
+  }
+  return list;
+}
+
+/** 中信 calAvgWithInterests：本息平均攤還 */
+function calAvgWithInterests(totalAmount, totalPeriod, periodList, totalGrace) {
+  const details = [];
+  let balance = totalAmount;
+  let totalBalance = totalAmount;
+  let gracePeriod = totalGrace;
+  let grandTotalPrincipal = 0;
+
+  for (let i = totalPeriod; i > 0; i--) {
+    const period = totalPeriod - i;
+
+    if (period > 1 && periodList[period].rate != periodList[period - 1].rate) {
+      totalBalance = balance;
+      if (period > totalGrace) gracePeriod = period;
+    }
+
+    const nonExtenPeriod = totalPeriod - gracePeriod;
+    const periodRate = periodList[period].rate;
+    const rate = formatDecimal(periodRate / 12 / 100, 14);
+    const x = formatDecimal(Math.pow(1 + rate, nonExtenPeriod), 14);
+    const avgRate = formatDecimal((x * rate) / (x - 1), 14);
+    let repayment = Math.ceil(avgRate * totalBalance);
+    const paymentInterest = Math.round(balance * rate);
+    let paymentPrincipal = 0;
+
+    if (period < totalGrace) {
+      paymentPrincipal = 0;
+      repayment = paymentPrincipal + paymentInterest;
+    } else if (period === totalPeriod - 1) {
+      paymentPrincipal = totalAmount - grandTotalPrincipal;
+      repayment = paymentPrincipal + paymentInterest;
+    } else {
+      paymentPrincipal = repayment - paymentInterest;
+    }
+
+    balance -= paymentPrincipal;
+    grandTotalPrincipal += paymentPrincipal;
+
+    details.push({
+      period: period + 1,
+      principal: paymentPrincipal,
+      interest: paymentInterest,
+      payment: repayment,
+      balance: balance
+    });
+  }
+
+  details.sort((a, b) => a.period - b.period);
+  return details;
+}
+
+/** 中信 calAvgPrincipalOnly：本金平均攤還 */
+function calAvgPrincipalOnly(totalAmount, totalPeriod, periodList, totalGrace) {
+  const details = [];
+  let balance = totalAmount;
+  let gracePeriod = totalGrace;
+  let grandTotalPrincipal = 0;
+
+  for (let i = totalPeriod; i > 0; i--) {
+    const period = totalPeriod - i;
+
+    if (period > 1 && periodList[period].rate != periodList[period - 1].rate) {
+      gracePeriod = period;
+    }
+
+    const nonExtenPeriod = totalPeriod - totalGrace;
+    const periodRate = periodList[period].rate;
+    const rate = formatDecimal(periodRate / 12 / 100, 14);
+    const periodPaymentAmt = formatDecimal(totalAmount / nonExtenPeriod, 14);
+    const repayment = Math.ceil(periodPaymentAmt);
+    const paymentInterest = Math.round(balance * rate);
+    let paymentPrincipal = 0;
+
+    if (period < totalGrace) {
+      paymentPrincipal = 0;
+    } else if (period === totalPeriod - 1) {
+      paymentPrincipal = totalAmount - grandTotalPrincipal;
+    } else {
+      paymentPrincipal = repayment;
+    }
+
+    balance -= paymentPrincipal;
+    grandTotalPrincipal += paymentPrincipal;
+
+    details.push({
+      period: period + 1,
+      principal: paymentPrincipal,
+      interest: paymentInterest,
+      payment: paymentInterest + paymentPrincipal,
+      balance: balance
+    });
+  }
+
+  details.sort((a, b) => a.period - b.period);
+  return details;
+}
+
+function buildSchedule() {
+  const principal = getLoanYuan();
+  const totalMonths = getTotalMonths();
+  const graceMonths = Math.min(getGraceMonths(), totalMonths);
+
+  const periodList = buildPeriodList(totalMonths);
+  if (method === 'amortize') {
+    return calAvgWithInterests(principal, totalMonths, periodList, graceMonths);
+  }
+  if (method === 'principal') {
+    return calAvgPrincipalOnly(principal, totalMonths, periodList, graceMonths);
+  }
+  return [];
+}
+
+function groupPeriodSummary(schedule, graceMonths, totalMonths) {
+  const groups = [];
+  let cur = null;
+  for (const row of schedule) {
+    const rateChanged = row.period > 1 &&
+      getRateForMonth(row.period, totalMonths) !== getRateForMonth(row.period - 1, totalMonths);
+    const graceBoundary = graceMonths > 0 && row.period === graceMonths + 1;
+    const isGrace = row.period <= graceMonths;
+    const isLast = row.period === totalMonths;
+    let shouldSplit;
+    if (method === 'amortize') {
+      shouldSplit = !cur || cur.payment !== row.payment || graceBoundary || rateChanged;
+    } else {
+      shouldSplit = !cur || graceBoundary || rateChanged || isGrace !== cur.isGrace;
+    }
+    if (shouldSplit) {
+      if (cur) groups.push(cur);
+      cur = {
+        start: row.period,
+        end: row.period,
+        payment: row.payment,
+        paymentEnd: row.payment,
+        isGrace: isGrace,
+        isLast: isLast,
+        rate: getRateForMonth(row.period, totalMonths)
+      };
+    } else {
+      cur.end = row.period;
+      cur.paymentEnd = row.payment;
+    }
+  }
+  if (cur) groups.push(cur);
+  return groups.map(g => {
+    const s = String(g.start).padStart(3, '0'), e = String(g.end).padStart(3, '0');
+    const rateText = formatRateDisplay(getRatePercentForMonth(g.start, totalMonths));
+    let paymentDisplay;
+    if (g.start === g.end) {
+      paymentDisplay = fmt(g.payment);
+    } else if (method === 'principal' && g.payment !== g.paymentEnd) {
+      paymentDisplay = fmt(g.payment) + ' ~ ' + fmt(g.paymentEnd);
+    } else {
+      paymentDisplay = fmt(g.payment);
+    }
+    return {
+      period: `第${s}期～${e}期`,
+      isGrace: g.isGrace,
+      rateText,
+      paymentDisplay
+    };
+  });
+}
+
+function calcAPR(schedule, principal) {
+  const precision = getRateDisplayPrecision();
+  if (!schedule.length || !principal) return formatComputedRatePct(0, precision);
+  const payments = schedule.map(r => r.payment);
+  const npv = (monthlyRate) => {
+    let sum = -principal;
+    for (let i = 0; i < payments.length; i++) {
+      sum += payments[i] / Math.pow(1 + monthlyRate, i + 1);
+    }
+    return sum;
+  };
+  if (npv(0) <= 0) return formatComputedRatePct(getWeightedNominalRate(schedule.length), precision);
+  let low = 0, high = 0.02, guard = 0;
+  while (npv(high) < 0 && guard++ < 25) high *= 2;
+  if (guard >= 25) return formatComputedRatePct(getWeightedNominalRate(schedule.length), precision);
+  for (let i = 0; i < 80; i++) {
+    const mid = (low + high) / 2;
+    if (npv(mid) > 0) low = mid;
+    else high = mid;
+  }
+  const monthly = (low + high) / 2;
+  return formatComputedRatePct((Math.pow(1 + monthly, 12) - 1) * 100, precision);
+}
+
+function renderResults(scrollToResults) {
+  const principal = getLoanYuan();
+  const graceMonths = getGraceMonths();
+  const schedule = buildSchedule();
+  syncGraceUnitFromDom();
+  const graceVal = +$('#grace').value || 0;
+  const graceUnit = graceIsYear ? '年' : '月';
+
+  renderConditions();
+
+  $('#resTotal').textContent = fmt(principal) + ' 元';
+  $('#resApr').textContent = calcAPR(schedule, principal) + ' %';
+  $('#resTerm').textContent = graceVal === 0
+    ? `${$('#term').value} 年（無寬限期）`
+    : `${$('#term').value} 年（寬限期 ${graceVal} ${graceUnit}）`;
+
+  const rowsHtml = groupPeriodSummary(schedule, graceMonths, getTotalMonths()).map(l => {
+    const amountText = l.isGrace
+      ? `${l.paymentDisplay} 元<span class="grace-note">（寬限期）</span>`
+      : `${l.paymentDisplay} 元`;
+    return `<div class="payment-row">
+      <div class="period-range">${l.period}</div>
+      <div class="period-mid">${l.rateText}</div>
+      <div class="period-amount"><span class="amount-val">${amountText}</span></div>
+    </div>`;
+  }).join('');
+  $('#periodLines').innerHTML = `
+    <div class="payment-head">
+      <span>期數</span>
+      <span>利率</span>
+      <span>應繳金額</span>
+    </div>
+    ${rowsHtml}`;
+
+  const byYear = {};
+  schedule.forEach(r => {
+    const y = Math.ceil(r.period / 12);
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(r);
+  });
+
+  $('#detailMonths').textContent = schedule.length;
+  $('#detailMonths2').textContent = schedule.length;
+  $('#detailSection').classList.toggle('show-cum', showCumInterest);
+  $('#toggleCumBtn').classList.toggle('active', showCumInterest);
+
+  let cumInterest = 0;
+  $('#yearAccordion').innerHTML = Object.keys(byYear).map(y => {
+    const rows = byYear[y];
+    const total = rows.reduce((s, r) => s + r.payment, 0);
+    const lastRow = rows[rows.length - 1];
+    const bodyRows = rows.map(r => {
+      cumInterest += r.interest;
+      return `<tr>
+        <td class="col-period">${r.period}</td>
+        <td class="payment-col col-payment">${fmt(r.payment)}</td>
+        <td class="col-principal">${fmt(r.principal)}</td>
+        <td class="col-interest">${fmt(r.interest)}</td>
+        <td class="col-balance">${fmt(r.balance)}</td>
+        <td class="col-cum">${fmt(cumInterest)}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="year-item">
+      <div class="year-header" onclick="this.parentElement.classList.toggle('open')">
+        <div><strong>第 ${y} 年</strong>
+          <span class="year-summary">（第${rows[0].period}~${lastRow.period}期 · 合計年付 ${fmt(total)} 元）</span></div>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="year-body"><table>
+        <colgroup>
+          <col class="col-period">
+          <col class="col-payment">
+          <col class="col-principal">
+          <col class="col-interest">
+          <col class="col-balance">
+          <col class="col-cum">
+        </colgroup>
+        <thead><tr>
+          <th class="col-period">期數</th>
+          <th class="col-payment">還款月付金額</th>
+          <th class="col-principal">當期還本金額</th>
+          <th class="col-interest">當期利息金額</th>
+          <th class="col-balance">本金餘額</th>
+          <th class="col-cum">累積利息</th>
+        </tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table></div></div>`;
+  }).join('');
+
+  $('#results').classList.add('show');
+  if (scrollToResults) {
+    $('#results').scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function renderRateRows() {
+  const total = getTotalMonths();
+  $('#rateRows').innerHTML = rateSegments.map((seg, i) => `
+    <div class="rate-row-line">
+      <span class="row-seg">第 ${i + 1} 段</span>
+      <span class="row-txt">第</span>
+      <input type="text" class="calc-field" value="${seg.from}" data-i="${i}" data-f="from" readonly inputmode="none" autocomplete="off">
+      <span class="row-txt">期～第</span>
+      <input type="text" class="calc-field" value="${seg.to || total}" data-i="${i}" data-f="to" readonly inputmode="none" autocomplete="off">
+      <span class="row-txt">期</span>
+      <input type="text" class="rate-val calc-field" value="${seg.rate}" data-i="${i}" data-f="rate" readonly inputmode="none" autocomplete="off">
+      <span class="row-txt">%</span>
+      ${rateSegments.length > 1 ? `<button type="button" class="btn-remove" data-rm="${i}" title="刪除此段" aria-label="刪除此段">×</button>` : ''}
+    </div>`).join('');
+
+  $('#rateRows').querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const field = inp.dataset.f;
+      rateSegments[+inp.dataset.i][field] = field === 'rate'
+        ? (inp.value === '' ? '0' : inp.value)
+        : +inp.value;
+      maybeRecalc();
+    });
+  });
+  initCalcFields($('#rateRows'));
+  $('#rateRows').querySelectorAll('.btn-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const total = getTotalMonths();
+      const idx = +btn.dataset.rm;
+      const removed = rateSegments.splice(idx, 1)[0];
+      if (rateSegments[idx]) {
+        rateSegments[idx].from = removed.from;
+      } else if (rateSegments[idx - 1]) {
+        rateSegments[idx - 1].to = removed.to || total;
+      }
+      renderRateRows();
+      maybeRecalc();
+    });
+  });
+}
+
+$('#price').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
+$('#ratio').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
+$('#term').addEventListener('input', maybeRecalc);
+$('#rate').addEventListener('input', maybeRecalc);
+
+$('#termPills').addEventListener('click', e => {
+  if (!e.target.classList.contains('qp')) return;
+  $$('#termPills .qp').forEach(p => p.classList.remove('active'));
+  e.target.classList.add('active');
+  $('#term').value = e.target.dataset.val;
+  maybeRecalc();
+});
+
+$('#gracePills').addEventListener('click', e => {
+  if (!e.target.classList.contains('qp')) return;
+  $$('#gracePills .qp').forEach(p => p.classList.remove('active'));
+  e.target.classList.add('active');
+  $('#grace').value = e.target.dataset.val;
+  maybeRecalc();
+});
+
+$('#grace').addEventListener('input', () => {
+  syncGraceUnitFromDom();
+  const val = $('#grace').value;
+  $$('#gracePills .qp').forEach(p => {
+    p.classList.toggle('active', p.dataset.val === val);
+  });
+  maybeRecalc();
+});
+
+$('#graceYear').addEventListener('click', () => setGraceUnit(true));
+$('#graceMonth').addEventListener('click', () => setGraceUnit(false));
+
+$$('.choice-btn[data-method]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.choice-btn[data-method]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    method = btn.dataset.method;
+    maybeRecalc();
+  });
+});
+
+$$('.choice-btn[data-rate-type]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.choice-btn[data-rate-type]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rateType = btn.dataset.rateType;
+    $('#rateField').classList.toggle('hidden', rateType !== 'single');
+    $('#multiRate').classList.toggle('hidden', rateType !== 'multi');
+    if (rateType === 'multi') {
+      rateSegments = [{ from: 1, to: getTotalMonths(), rate: $('#rate').value || '2.5' }];
+      renderRateRows();
+    }
+    maybeRecalc();
+  });
+});
+
+$('#addRate').addEventListener('click', () => {
+  const total = getTotalMonths();
+  const last = rateSegments[rateSegments.length - 1];
+  const end = last.to || total;
+  if (last.from >= end) return;
+  const mid = Math.floor((last.from + end) / 2);
+  if (mid >= end) return;
+  last.to = mid;
+  rateSegments.push({ from: mid + 1, to: end, rate: last.rate });
+  renderRateRows();
+  maybeRecalc();
+});
+
+$('#calc').addEventListener('click', () => {
+  try {
+    if (getTotalMonths() <= 0) {
+      showAppAlert('請輸入有效的貸款期間');
+      return;
+    }
+    if (getLoanYuan() <= 0) {
+      showAppAlert('請輸入購屋價格與貸款成數');
+      return;
+    }
+    renderResults(true);
+    clearCalcPending();
+  } catch (err) {
+    console.error(err);
+    showAppAlert('試算時發生錯誤，請重新整理頁面後再試');
+  }
+});
+$('#clearBtn').addEventListener('click', () => enterClearedState());
+$('#restoreBtn').addEventListener('click', () => restoreClearedState());
+
+$('#toggleCumBtn').addEventListener('click', () => {
+  showCumInterest = !showCumInterest;
+  $('#detailSection').classList.toggle('show-cum', showCumInterest);
+  $('#toggleCumBtn').classList.toggle('active', showCumInterest);
+  $('#toggleCumBtn').setAttribute('aria-pressed', showCumInterest);
+  $('#toggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
+  $('#toggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
+});
+
+$('#exportPdfBtn').addEventListener('click', exportAsPdf);
+$('#exportPngBtn').addEventListener('click', () => exportAsImage('image/png', 'png'));
+$('#exportJpgBtn').addEventListener('click', () => exportAsImage('image/jpeg', 'jpg'));
+$('#shareBtn').addEventListener('click', shareResults);
+
+$('#conditionsToggle').addEventListener('click', () => {
+  const box = $('#conditionsBox');
+  const collapsed = box.classList.toggle('collapsed');
+  const btn = $('#conditionsToggle');
+  btn.textContent = collapsed ? '+' : '−';
+  btn.setAttribute('aria-expanded', !collapsed);
+  btn.title = collapsed ? '展開試算條件' : '收合試算條件';
+});
+
+updateAmount();
+initCalcFields();
+(function () {
+  const v = document.getElementById('verLine');
+  if (v) v.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
+})();
+</script>
+</body>
+</html>
