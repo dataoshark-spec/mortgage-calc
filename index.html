@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=3">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=3">
-<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=3">
-<link rel="manifest" href="data:application/manifest+json;base64,ew0KICAibmFtZSI6ICLmiL/lsYvosrjmrL7oqabnrpciLA0KICAic2hvcnRfbmFtZSI6ICLmiL/osrjoqabnrpciLA0KICAic3RhcnRfdXJsIjogIi4vIiwNCiAgInNjb3BlIjogIi4vIiwNCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsDQogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmMGYwZjAiLA0KICAidGhlbWVfY29sb3IiOiAiI0M5OTIyQSIsDQogICJpY29ucyI6IFsNCiAgICB7DQogICAgICAic3JjIjogImljb24tMTkyLnBuZz92PTMiLA0KICAgICAgInNpemVzIjogIjE5MngxOTIiLA0KICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwNCiAgICAgICJwdXJwb3NlIjogImFueSINCiAgICB9LA0KICAgIHsNCiAgICAgICJzcmMiOiAiaWNvbi01MTIucG5nP3Y9MyIsDQogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsDQogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLA0KICAgICAgInB1cnBvc2UiOiAiYW55Ig0KICAgIH0NCiAgXQ0KfQ==">
+<link rel="icon" href="favicon.ico?v=5" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=5">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=5">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoi5oi/5bGL6LK45qy+6Kmm566XIiwic2hvcnRfbmFtZSI6IuaIv+iyuOippueulyIsInN0YXJ0X3VybCI6Ii4vIiwic2NvcGUiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmMGYwZjAiLCJ0aGVtZV9jb2xvciI6IiNDOTkyMkEiLCJpY29ucyI6W3sic3JjIjoiaWNvbi0xOTIucG5nP3Y9NSIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55In0seyJzcmMiOiJpY29uLTUxMi5wbmc/dj01Iiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJhbnkifV19">
 <meta name="theme-color" content="#C9922A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -34,6 +35,7 @@ if ("serviceWorker" in navigator) {
       --chip-h: 40px;
       --chip-w: 44px;
       --chip-r: 12px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -252,6 +254,23 @@ if ("serviceWorker" in navigator) {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+    /* ===== install banner (同物件／客戶總覽) ===== */
+    .install-bar{position:fixed;z-index:60;left:50%;bottom:calc(16px + var(--safe-bottom));transform:translateX(-50%) translateY(220%);
+      width:min(470px,calc(100% - 24px));display:flex;align-items:center;gap:11px;
+      background:var(--card);border:1px solid var(--border);border-radius:16px;padding:11px 13px;
+      box-shadow:0 14px 36px rgba(0,0,0,.30);transition:transform .32s cubic-bezier(.2,.75,.3,1);
+      visibility:hidden;}
+    .install-bar.show{transform:translateX(-50%) translateY(0);visibility:visible;}
+    .install-bar .ib-ic{flex:none;width:40px;height:40px;border-radius:11px;background:var(--teal-light);
+      display:grid;place-items:center;color:var(--teal-dark);}
+    .install-bar .ib-ic svg{width:22px;height:22px;}
+    .install-bar .ib-txt{flex:1;min-width:0;font-size:.85rem;line-height:1.4;color:var(--text);font-weight:500;}
+    .install-bar .ib-install{flex:none;font-family:inherit;font-weight:700;font-size:.9rem;cursor:pointer;
+      background:var(--teal);color:#fff;border:none;border-radius:10px;padding:10px 17px;transition:filter .15s ease;}
+    .install-bar .ib-install:hover{filter:brightness(1.08);}
+    .install-bar .ib-close{flex:none;width:30px;height:30px;border:none;background:none;color:var(--muted);
+      font-size:.95rem;cursor:pointer;border-radius:8px;display:grid;place-items:center;transition:background .15s ease;}
+    .install-bar .ib-close:hover{background:var(--input-bg);}
     .app-alert {
       position: fixed;
       inset: 0;
@@ -1516,6 +1535,13 @@ if ("serviceWorker" in navigator) {
   <div class="ver-line" id="verLine"></div>
 </div>
 
+<div class="install-bar" id="installBar" role="dialog" aria-label="安裝應用程式">
+  <span class="ib-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+  <span class="ib-txt">將「房屋貸款試算」安裝至桌面，離線也能用</span>
+  <button class="ib-install" id="ibInstall" type="button">安裝</button>
+  <button class="ib-close" id="ibClose" type="button" aria-label="關閉">✕</button>
+</div>
+
 <div class="toast" id="toast">已清空，可以開始輸入</div>
 
 <div class="app-alert" id="appAlert" role="alertdialog" aria-modal="true" aria-labelledby="appAlertText" hidden>
@@ -1529,7 +1555,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.07A";
+const APP_VERSION = "2026.08.07C";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -1574,7 +1600,14 @@ $('#appAlert')?.addEventListener('click', (e) => {
 });
 $('#appAlertCard')?.addEventListener('click', (e) => e.stopPropagation());
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && $('#appAlert')?.classList.contains('show')) {
+  if (e.key !== 'Escape') return;
+  const ib = document.getElementById('installBar');
+  if (ib && ib.classList.contains('show')) {
+    ib.classList.remove('show');
+    try { localStorage.setItem('mortgage_app_install_dismiss_v1', '1'); } catch (err) {}
+    return;
+  }
+  if ($('#appAlert')?.classList.contains('show')) {
     e.preventDefault();
     closeAppAlert();
   }
@@ -2898,6 +2931,51 @@ initCalcFields();
 (function () {
   const v = document.getElementById('verLine');
   if (v) v.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
+})();
+
+// ===== 安裝橫幅 (自訂安裝提示，同物件／客戶總覽) =====
+(function () {
+  const bar = document.getElementById('installBar');
+  if (!bar) return;
+  let deferred = null;
+  const DKEY = 'mortgage_app_install_dismiss_v1';
+  const ibTxt = bar.querySelector('.ib-txt');
+  const ibInstall = document.getElementById('ibInstall');
+  const ibClose = document.getElementById('ibClose');
+  const dismissed = () => { try { return localStorage.getItem(DKEY) === '1'; } catch (e) { return false; } };
+  const standalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function showInstallBar(iosMode) {
+    if (dismissed() || standalone()) return;
+    if (iosMode) {
+      if (ibTxt) ibTxt.textContent = '在 Safari 點「分享」→「加入主畫面」，離線也能用';
+      if (ibInstall) ibInstall.style.display = 'none';
+    } else {
+      if (ibTxt) ibTxt.textContent = '將「房屋貸款試算」安裝至桌面，離線也能用';
+      if (ibInstall) ibInstall.style.display = '';
+    }
+    bar.classList.add('show');
+    setTimeout(() => { try { if (ibClose) ibClose.focus(); } catch (e) {} }, 80);
+  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e;
+    showInstallBar(false);
+  });
+  if (isIOS() && !standalone() && !dismissed()) setTimeout(() => showInstallBar(true), 1200);
+  ibInstall.addEventListener('click', async () => {
+    bar.classList.remove('show');
+    if (deferred) {
+      deferred.prompt();
+      try { await deferred.userChoice; } catch (e) {}
+      deferred = null;
+    }
+  });
+  ibClose.addEventListener('click', () => {
+    bar.classList.remove('show');
+    try { localStorage.setItem(DKEY, '1'); } catch (e) {}
+  });
+  window.addEventListener('appinstalled', () => { bar.classList.remove('show'); deferred = null; });
 })();
 </script>
 </body>
