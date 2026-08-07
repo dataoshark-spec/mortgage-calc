@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
 <link rel="shortcut icon" type="image/png" href="icon-192.png?v=5">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=5">
@@ -35,21 +35,118 @@ if ("serviceWorker" in navigator) {
       --chip-w: 44px;
       --chip-r: 12px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --hero-pad-y: 28px;
+      --hero-pad-x: 36px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overscroll-behavior: none;
+    }
     body {
       font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      padding: 24px 16px;
+      padding: 0 16px 24px;
+      -webkit-font-smoothing: antialiased;
     }
     .wrap { max-width: 680px; margin: 0 auto; }
+    .sticky-top {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      margin: 0 -16px 16px;
+      padding-top: var(--safe-top);
+      background: var(--bg);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    /* === 模式切換（比照房地合一 成屋/預售）=== */
+    .ver-switch {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 8px 10px 10px;
+      background: #8A6218;
+    }
+    .ver-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 9px 6px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .ver-btn.active {
+      background: #fff;
+      color: var(--teal-dark);
+      border-color: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    }
+    .ver-btn:active { transform: scale(0.98); }
+    .mode-panel { display: block; }
+    .mode-panel[hidden] { display: none !important; }
+    .mode-placeholder-panel {
+      margin-bottom: 20px;
+      padding: 52px 28px 60px;
+      text-align: center;
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid rgba(201, 146, 42, 0.14);
+      box-shadow: 0 8px 28px rgba(154, 107, 24, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .mode-placeholder-panel .ph-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 18px;
+      border-radius: 14px;
+      background: var(--teal-light);
+      color: var(--teal-dark);
+      display: grid;
+      place-items: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .mode-placeholder-panel h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--teal-dark);
+      margin-bottom: 10px;
+      letter-spacing: 0.04em;
+    }
+    .mode-placeholder-panel p {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.75;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    .mode-placeholder-panel .ph-tag {
+      display: inline-block;
+      margin-top: 22px;
+      padding: 7px 16px;
+      border-radius: 999px;
+      background: var(--teal-light);
+      color: var(--teal-dark);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
     .main-panel {
       margin-bottom: 20px;
       border-radius: 14px;
       border: 1px solid rgba(201, 146, 42, 0.14);
       box-shadow: 0 8px 28px rgba(154, 107, 24, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
     }
     .card {
       background: var(--card);
@@ -59,21 +156,20 @@ if ("serviceWorker" in navigator) {
       overflow: hidden;
     }
     .main-panel .card {
-      border-radius: 0 0 14px 14px;
+      border-radius: 0;
       margin-bottom: 0;
-      padding-top: 28px;
+      padding-top: 32px;
     }
     .app-hero {
-      position: sticky;
-      top: 0;
-      z-index: 90;
+      position: relative;
+      z-index: 1;
       margin: 0;
-      padding: 22px 36px 20px;
+      padding: var(--hero-pad-y) var(--hero-pad-x) calc(var(--hero-pad-y) - 4px);
       background:
         linear-gradient(165deg, rgba(255, 255, 255, 0.14) 0%, transparent 38%),
         linear-gradient(128deg, #E0B04A 0%, var(--teal) 36%, #A6751F 72%, #8A6218 100%);
       color: #fff;
-      border-radius: 14px 14px 0 0;
+      border-radius: 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.06);
       overflow: hidden;
@@ -117,23 +213,23 @@ if ("serviceWorker" in navigator) {
     }
     .app-hero-accent {
       width: 4px;
-      height: 40px;
+      height: 48px;
       border-radius: 4px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.28) 100%);
       box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
       flex-shrink: 0;
     }
     .app-hero h1 {
-      font-size: 1.58rem;
+      font-size: 1.82rem;
       font-weight: 700;
       letter-spacing: 0.05em;
-      line-height: 1.25;
+      line-height: 1.2;
       margin-bottom: 0;
       color: #fff;
     }
     .app-hero-en {
-      margin: 3px 0 0;
-      font-size: 0.7rem;
+      margin: 5px 0 0;
+      font-size: 0.74rem;
       font-weight: 500;
       letter-spacing: 0.16em;
       text-transform: uppercase;
@@ -1288,16 +1384,19 @@ if ("serviceWorker" in navigator) {
       padding: 12px 0 4px;
     }
     @media (max-width: 600px) {
+      :root {
+        --hero-pad-y: 22px;
+        --hero-pad-x: 18px;
+      }
       .card { padding: 24px 18px; border-radius: 20px; }
       .main-panel { border-radius: 12px; }
-      .main-panel .card { border-radius: 0 0 12px 12px; padding-top: 24px; }
-      .app-hero {
-        padding: 18px 18px 16px;
-        border-radius: 12px 12px 0 0;
-      }
-      .app-hero h1 { font-size: 1.32rem; }
-      .app-hero-accent { height: 34px; }
-      .app-hero-en { font-size: 0.64rem; letter-spacing: 0.12em; }
+      .main-panel .card { padding-top: 24px; }
+      .sticky-top { margin-bottom: 12px; }
+      .ver-btn { font-size: 0.74rem; padding: 8px 4px; letter-spacing: 0; }
+      .mode-placeholder-panel { padding: 40px 18px 48px; }
+      .app-hero h1 { font-size: 1.42rem; }
+      .app-hero-accent { height: 40px; }
+      .app-hero-en { font-size: 0.66rem; letter-spacing: 0.12em; }
       .form-grid { grid-template-columns: 1fr; gap: 20px; }
       .choice-group.cols-3 { flex-direction: column; }
       .choice-group.cols-3 .choice-btn { font-size: 0.88rem; }
@@ -1320,7 +1419,7 @@ if ("serviceWorker" in navigator) {
 </head>
 <body>
 <div class="wrap">
-  <div class="main-panel">
+  <div class="sticky-top">
     <header class="app-hero">
       <div class="app-hero-row">
         <div class="app-hero-brand">
@@ -1339,7 +1438,15 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </header>
+    <div class="ver-switch" role="tablist" aria-label="試算模式">
+      <button class="ver-btn active" data-mode="general" type="button" role="tab" aria-selected="true">一般貸款</button>
+      <button class="ver-btn" data-mode="youth" type="button" role="tab" aria-selected="false">新青安3.0</button>
+      <button class="ver-btn" data-mode="burden" type="button" role="tab" aria-selected="false">負擔推估</button>
+    </div>
+  </div>
 
+  <div class="mode-panel" id="modeGeneral">
+  <div class="main-panel">
     <div class="card">
     <div class="form-grid">
       <div class="field">
@@ -1532,6 +1639,21 @@ if ("serviceWorker" in navigator) {
   </div>
 
   <div class="ver-line" id="verLine"></div>
+  </div>
+
+  <div class="mode-panel mode-placeholder-panel" id="modeYouth" hidden>
+    <div class="ph-icon" aria-hidden="true">3.0</div>
+    <h2>新青安 3.0</h2>
+    <p>青年安心成家購屋優惠貸款試算功能建置中，之後可在此切換使用。</p>
+    <span class="ph-tag">即將推出</span>
+  </div>
+
+  <div class="mode-panel mode-placeholder-panel" id="modeBurden" hidden>
+    <div class="ph-icon" aria-hidden="true">¥</div>
+    <h2>負擔推估</h2>
+    <p>依收入與支出反推可負擔房價與貸款額度，功能建置中，敬請期待。</p>
+    <span class="ph-tag">即將推出</span>
+  </div>
 </div>
 
 <div class="install-bar" id="installBar" role="dialog" aria-label="安裝應用程式">
@@ -1554,7 +1676,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.07E";
+const APP_VERSION = "2026.08.07G";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2930,6 +3052,54 @@ initCalcFields();
 (function () {
   const v = document.getElementById('verLine');
   if (v) v.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
+})();
+
+// ===== 模式切換（一般貸款 / 新青安3.0 / 負擔推估）=====
+(function () {
+  const MODE_KEY = 'mortgage_calc_mode_v1';
+  const btns = document.querySelectorAll('.ver-btn[data-mode]');
+  const panels = {
+    general: document.getElementById('modeGeneral'),
+    youth: document.getElementById('modeYouth'),
+    burden: document.getElementById('modeBurden')
+  };
+  const clearBtn = document.getElementById('clearBtn');
+  const restoreBtn = document.getElementById('restoreBtn');
+  let clearBtnDisplay = clearBtn ? clearBtn.style.display : '';
+
+  function applyMode(mode) {
+    if (!panels.general) return;
+    document.body.dataset.mode = mode;
+    btns.forEach((btn) => {
+      const on = btn.dataset.mode === mode;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    Object.entries(panels).forEach(([key, panel]) => {
+      if (!panel) return;
+      panel.hidden = key !== mode;
+    });
+    if (clearBtn) {
+      if (mode === 'general') {
+        clearBtn.style.display = clearBtnDisplay || '';
+      } else {
+        clearBtn.style.display = 'none';
+      }
+    }
+    if (restoreBtn && mode !== 'general') restoreBtn.style.display = 'none';
+    try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
+  }
+
+  btns.forEach((btn) => {
+    btn.addEventListener('click', () => applyMode(btn.dataset.mode));
+  });
+
+  let saved = 'general';
+  try {
+    saved = localStorage.getItem(MODE_KEY) || 'general';
+  } catch (e) {}
+  if (!panels[saved]) saved = 'general';
+  applyMode(saved);
 })();
 
 // ===== 安裝橫幅 (自訂安裝提示，同物件／客戶總覽) =====
