@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="favicon.ico?v=5" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
 <link rel="shortcut icon" type="image/png" href="icon-192.png?v=5">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=5">
@@ -23,9 +22,9 @@ if ("serviceWorker" in navigator) {
   <title>房屋貸款試算</title>
   <style>
     :root {
-      --teal: #26a69a;
-      --teal-dark: #1f8f86;
-      --teal-light: #e0f2f1;
+      --teal: #C9922A;
+      --teal-dark: #9A6B18;
+      --teal-light: #FBF0D9;
       --bg: #ececec;
       --card: #fff;
       --text: #222;
@@ -49,8 +48,8 @@ if ("serviceWorker" in navigator) {
     .main-panel {
       margin-bottom: 20px;
       border-radius: 14px;
-      border: 1px solid rgba(38, 166, 154, 0.14);
-      box-shadow: 0 8px 28px rgba(26, 133, 124, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(201, 146, 42, 0.14);
+      box-shadow: 0 8px 28px rgba(154, 107, 24, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
     }
     .card {
       background: var(--card);
@@ -72,7 +71,7 @@ if ("serviceWorker" in navigator) {
       padding: 22px 36px 20px;
       background:
         linear-gradient(165deg, rgba(255, 255, 255, 0.14) 0%, transparent 38%),
-        linear-gradient(128deg, #32c4b6 0%, var(--teal) 36%, #1f9589 72%, #167a72 100%);
+        linear-gradient(128deg, #E0B04A 0%, var(--teal) 36%, #A6751F 72%, #8A6218 100%);
       color: #fff;
       border-radius: 14px 14px 0 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.14);
@@ -295,9 +294,9 @@ if ("serviceWorker" in navigator) {
       max-width: 320px;
       background: #fff;
       border-radius: 18px;
-      border: 1.5px solid rgba(38, 166, 154, 0.32);
+      border: 1.5px solid rgba(201, 146, 42, 0.32);
       padding: 24px 22px 18px;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(38, 166, 154, 0.06);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(201, 146, 42, 0.06);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -312,8 +311,8 @@ if ("serviceWorker" in navigator) {
       width: 54px;
       height: 54px;
       border-radius: 50%;
-      background: rgba(38, 166, 154, 0.1);
-      border: 1.5px solid rgba(38, 166, 154, 0.34);
+      background: rgba(201, 146, 42, 0.1);
+      border: 1.5px solid rgba(201, 146, 42, 0.34);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -470,7 +469,7 @@ if ("serviceWorker" in navigator) {
     .calc-btn.calc-btn-pressed { transform: scale(0.92); }
     .calc-btn-fn { color: #888; font-size: 1.05rem; }
     .calc-btn-op { color: var(--teal); font-weight: 600; }
-    .calc-btn-op.calc-btn-pressed { background: rgba(38, 166, 154, 0.14); }
+    .calc-btn-op.calc-btn-pressed { background: rgba(201, 146, 42, 0.14); }
     .calc-btn:not(.calc-btn-op):not(.calc-btn-eq).calc-btn-pressed { background: #e0e0e0; }
     .calc-btn-fn.calc-btn-pressed { background: #ebebeb; }
     .calc-btn-eq {
@@ -796,11 +795,11 @@ if ("serviceWorker" in navigator) {
     }
     @keyframes calc-pending-glow {
       0%, 100% {
-        box-shadow: 0 2px 8px rgba(38, 166, 154, 0.22);
+        box-shadow: 0 2px 8px rgba(201, 146, 42, 0.22);
         filter: brightness(1);
       }
       50% {
-        box-shadow: 0 4px 18px rgba(38, 166, 154, 0.42), 0 0 28px rgba(77, 182, 172, 0.18);
+        box-shadow: 0 4px 18px rgba(201, 146, 42, 0.42), 0 0 28px rgba(224, 176, 74, 0.18);
         filter: brightness(1.05);
       }
     }
@@ -1555,7 +1554,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.07C";
+const APP_VERSION = "2026.08.07E";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
