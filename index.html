@@ -634,18 +634,27 @@ if ("serviceWorker" in navigator) {
       color: #fff;
       font-weight: 400;
     }
-    /* 寬限期：同一排 */
-    .grace-line {
+    /* 寬限期：左欄輸入+切換，右欄快捷鈕對齊上方貸款期間 */
+    .grace-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 24px;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+    }
+    .grace-left {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex-wrap: nowrap;
-      width: 100%;
+      gap: 8px;
+      min-width: 0;
+      grid-column: 1;
     }
     .grace-input {
-      width: 120px;
-      height: 48px;
-      flex-shrink: 0;
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      height: var(--chip-h);
       padding: 0 8px;
       justify-content: center;
     }
@@ -661,18 +670,27 @@ if ("serviceWorker" in navigator) {
       -webkit-appearance: none;
       margin: 0;
     }
-    .grace-line .quick-pills.fill {
-      flex: 1;
+    .grace-block .quick-pills.fill {
+      grid-column: 2;
+      display: flex;
+      gap: 6px;
       margin-top: 0;
       min-width: 0;
+      width: 100%;
     }
-    .grace-line .quick-pills.fill .qp-text {
+    .grace-block .quick-pills.fill .qp {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+    }
+    .grace-block .quick-pills.fill .qp-text {
       font-size: 0.86rem;
     }
     .unit-switch {
       display: inline-flex;
       align-items: center;
-      height: 36px;
+      height: var(--chip-h);
       padding: 3px;
       gap: 0;
       background: #e6e6e6;
@@ -681,9 +699,9 @@ if ("serviceWorker" in navigator) {
       flex-shrink: 0;
     }
     .unit-switch button {
-      width: 38px;
+      width: 34px;
+      min-width: 34px;
       height: 100%;
-      min-width: 38px;
       padding: 0;
       border: none;
       border-radius: 999px;
@@ -706,9 +724,6 @@ if ("serviceWorker" in navigator) {
       color: var(--teal-dark);
       font-weight: 600;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    }
-    .grace-line .unit-switch {
-      margin-right: 4px;
     }
   /* 大圓角膠囊切換（參考圖風格，無灰底軌道） */
     .section { margin-bottom: 24px; }
@@ -755,40 +770,42 @@ if ("serviceWorker" in navigator) {
       gap: 10px;
     }
     .rate-row-line {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto auto minmax(44px, 1fr) auto minmax(44px, 1fr) auto minmax(44px, 1fr) auto auto;
       align-items: center;
-      gap: 12px;
-      flex-wrap: nowrap;
+      column-gap: 8px;
+      row-gap: 6px;
       background: var(--input-bg);
       border-radius: 14px;
-      padding: 12px 12px 12px 16px;
-      font-size: 0.9rem;
-      overflow-x: auto;
+      padding: 10px 12px;
+      font-size: 0.86rem;
+      overflow: visible;
     }
     .rate-row-line .row-seg {
       color: var(--teal-dark);
       font-weight: 600;
+      font-size: 0.98rem;
       white-space: nowrap;
-      flex-shrink: 0;
-      min-width: 52px;
-      margin-right: 4px;
+      min-width: 0;
+      margin-right: 2px;
+      letter-spacing: 0.02em;
     }
     .rate-row-line .row-txt {
       color: var(--muted);
       white-space: nowrap;
-      flex-shrink: 0;
+      padding: 0 2px;
     }
     .rate-row-line input {
-      width: 76px;
-      height: 42px;
+      width: 100%;
+      min-width: 0;
+      height: 40px;
       border: none;
       border-radius: 12px;
       background: #fff;
       text-align: center;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       outline: none;
-      flex-shrink: 0;
-      padding: 0 8px;
+      padding: 0 6px;
     }
     .rate-row-line input[type="number"] {
       -moz-appearance: textfield;
@@ -799,15 +816,28 @@ if ("serviceWorker" in navigator) {
       -webkit-appearance: none;
       margin: 0;
     }
+    .rate-row-line input.rate-period,
     .rate-row-line input.rate-val {
-      width: 88px;
+      width: 100%;
+    }
+    .rate-row-line .rate-readonly {
+      width: 100%;
+      min-width: 0;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.88rem;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.45);
+      border-radius: 12px;
     }
     .rate-row-line .btn-remove {
-      margin-left: auto;
-      margin-right: 6px;
-      flex-shrink: 0;
-      width: 34px;
-      height: 34px;
+      margin-left: 0;
+      margin-right: 0;
+      justify-self: end;
+      width: 30px;
+      height: 30px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1225,7 +1255,8 @@ if ("serviceWorker" in navigator) {
     .year-body {
       display: none;
       background: #fff;
-      overflow-x: hidden;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border: 1px solid #ddd;
       border-radius: 12px;
     }
@@ -1235,7 +1266,7 @@ if ("serviceWorker" in navigator) {
       table-layout: fixed;
       border-collapse: collapse;
       border-spacing: 0;
-      font-size: 0.82rem;
+      font-size: clamp(0.62rem, 2.35vw, 0.82rem);
       text-align: center;
     }
     .year-body col.col-period { width: 9%; }
@@ -1261,51 +1292,54 @@ if ("serviceWorker" in navigator) {
       background: var(--teal);
       color: #fff;
       font-weight: 500;
-      padding: 10px 8px;
+      padding: 0.7em 0.35em;
       border-bottom: none;
-      white-space: nowrap;
-      font-size: 0.74rem;
-      letter-spacing: 0.04em;
+      white-space: normal;
+      word-break: keep-all;
+      line-height: 1.2;
+      font-size: 0.92em;
+      letter-spacing: 0.02em;
     }
     .year-body th.col-payment,
     .year-body th.col-principal,
     .year-body td.col-payment,
     .year-body td.col-principal {
-      padding-right: 22px;
+      padding-right: 1.35em;
     }
     .detail-section.show-cum .year-body th {
-      font-size: 0.7rem;
-      padding: 10px 6px;
+      font-size: 0.88em;
+      padding: 0.65em 0.28em;
     }
     .detail-section.show-cum .year-body th.col-payment,
     .detail-section.show-cum .year-body th.col-principal,
     .detail-section.show-cum .year-body td.col-payment,
     .detail-section.show-cum .year-body td.col-principal {
-      padding-right: 20px;
+      padding-right: 1.2em;
     }
     .year-body td {
-      padding: 10px 8px;
+      padding: 0.7em 0.3em;
       border-bottom: 1px solid #e8e8e8;
       font-variant-numeric: tabular-nums;
       color: #333;
-      font-size: 0.82rem;
-      letter-spacing: 0.02em;
+      font-size: 1em;
+      letter-spacing: 0;
+      line-height: 1.25;
     }
     .detail-section.show-cum .year-body td {
-      padding: 10px 6px;
-      font-size: 0.78rem;
+      padding: 0.65em 0.25em;
+      font-size: 0.96em;
     }
     .year-body td.col-payment::after,
     .year-body td.col-principal::after {
       content: '';
       position: absolute;
-      right: 4px;
+      right: 0.15em;
       top: 50%;
       transform: translateY(-50%);
-      width: 16px;
+      width: 0.9em;
       text-align: center;
       color: #bbb;
-      font-size: 0.88em;
+      font-size: 0.85em;
       font-weight: 500;
       line-height: 1;
     }
@@ -1315,8 +1349,8 @@ if ("serviceWorker" in navigator) {
     .year-body td.col-period {
       color: #444;
       font-weight: 500;
-      padding-left: 4px;
-      padding-right: 4px;
+      padding-left: 0.25em;
+      padding-right: 0.25em;
     }
     .year-body td.col-period {
       background: #eef6f5;
@@ -1421,21 +1455,103 @@ if ("serviceWorker" in navigator) {
       .app-hero h1 { font-size: 1.42rem; }
       .app-hero-accent { height: 40px; }
       .app-hero-en { font-size: 0.66rem; letter-spacing: 0.12em; }
-      .form-grid { grid-template-columns: 1fr; gap: 20px; }
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 10px;
+        margin-bottom: 22px;
+      }
+      .form-grid .field label {
+        font-size: 0.86rem;
+        margin-bottom: 8px;
+      }
+      .form-grid .input-box {
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 14px;
+      }
+      .form-grid .input-box input {
+        font-size: 0.95rem;
+      }
+      .form-grid .input-box .unit {
+        font-size: 0.84rem;
+        margin-left: 6px;
+      }
+      #termPills .qp {
+        font-size: 0.8rem;
+      }
+      .rate-row-line {
+        grid-template-columns: auto auto minmax(34px, 1fr) auto minmax(34px, 1fr) auto minmax(34px, 1fr) auto auto;
+        column-gap: 5px;
+        padding: 8px 8px 8px 10px;
+        font-size: 0.74rem;
+      }
+      .rate-row-line .row-seg {
+        font-size: 0.9rem;
+      }
+      .rate-row-line .row-txt {
+        font-size: 0.7rem;
+        padding: 0 1px;
+      }
+      .rate-row-line input {
+        height: 36px;
+        font-size: 0.8rem;
+        padding: 0 3px;
+        border-radius: 10px;
+      }
+      .rate-row-line .rate-readonly {
+        height: 36px;
+        font-size: 0.8rem;
+        border-radius: 10px;
+      }
+      .rate-row-line .btn-remove {
+        width: 26px;
+        height: 26px;
+        font-size: 0.95rem;
+      }
       .choice-group.cols-3 { flex-direction: column; }
       .choice-group.cols-3 .choice-btn { font-size: 0.88rem; }
       .summary-grid { grid-template-columns: 1fr; }
-      .grace-line {
-        flex-wrap: wrap;
+      .grace-block {
+        column-gap: 10px;
       }
-      .grace-line .quick-pills.fill {
-        width: 100%;
-        flex: none;
+      .grace-left {
+        gap: 6px;
+      }
+      .grace-block .quick-pills.fill .qp {
+        font-size: 0.8rem;
+      }
+      .unit-switch button {
+        width: 30px;
+        min-width: 30px;
+        font-size: 0.78rem;
       }
       .header-actions { gap: 6px; }
       .clear-btn, .restore-btn { padding: 7px 10px; font-size: 0.78rem; }
       .export-actions { grid-template-columns: repeat(2, 1fr); }
       .conditions-grid { grid-template-columns: 1fr; }
+      .year-body {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .year-body table {
+        font-size: clamp(0.54rem, 2.15vw, 0.72rem);
+      }
+      .year-body col.col-period { width: 8%; }
+      .year-body col.col-payment { width: 19%; }
+      .year-body col.col-principal { width: 19%; }
+      .year-body col.col-interest { width: 18%; }
+      .year-body col.col-balance { width: 18%; }
+      .detail-section.show-cum .year-body col.col-period { width: 7%; }
+      .detail-section.show-cum .year-body col.col-payment { width: 15%; }
+      .detail-section.show-cum .year-body col.col-principal { width: 15%; }
+      .detail-section.show-cum .year-body col.col-interest { width: 14%; }
+      .detail-section.show-cum .year-body col.col-balance { width: 15%; }
+      .detail-section.show-cum .year-body col.col-cum { width: 15%; }
+      .year-body th.col-period,
+      .year-body td.col-period {
+        padding-left: 0.15em;
+        padding-right: 0.15em;
+      }
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1501,30 +1617,28 @@ if ("serviceWorker" in navigator) {
           <span class="unit">年</span>
         </div>
         <div class="quick-pills fill" id="termPills">
-          <button type="button" class="qp" data-val="20">20</button>
-          <button type="button" class="qp" data-val="25">25</button>
-          <button type="button" class="qp active" data-val="30">30</button>
-          <button type="button" class="qp" data-val="35">35</button>
-          <button type="button" class="qp" data-val="40">40</button>
+          <button type="button" class="qp" data-val="20">20年</button>
+          <button type="button" class="qp active" data-val="30">30年</button>
+          <button type="button" class="qp" data-val="40">40年</button>
         </div>
       </div>
       <div class="field span-2">
         <label>寬限期</label>
-        <div class="grace-line">
-          <div class="input-box grace-input">
-            <input type="text" id="grace" class="calc-field" value="2" readonly inputmode="none" autocomplete="off">
-          </div>
-          <div class="unit-switch">
-            <button type="button" class="active" id="graceYear">年</button>
-            <button type="button" id="graceMonth">月</button>
+        <div class="grace-block">
+          <div class="grace-left">
+            <div class="input-box grace-input">
+              <input type="text" id="grace" class="calc-field" value="2" readonly inputmode="none" autocomplete="off">
+            </div>
+            <div class="unit-switch">
+              <button type="button" class="active" id="graceYear">年</button>
+              <button type="button" id="graceMonth">月</button>
+            </div>
           </div>
           <div class="quick-pills fill" id="gracePills">
             <button type="button" class="qp qp-text" data-val="0">無</button>
             <button type="button" class="qp" data-val="1">1</button>
             <button type="button" class="qp active" data-val="2">2</button>
             <button type="button" class="qp" data-val="3">3</button>
-            <button type="button" class="qp" data-val="4">4</button>
-            <button type="button" class="qp" data-val="5">5</button>
           </div>
         </div>
       </div>
@@ -1700,17 +1814,101 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.07H";
+const APP_VERSION = "2026.08.08L";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
 let graceIsYear = true;
-const GRACE_PILLS_YEAR = [0, 1, 2, 3, 4, 5];
-const GRACE_PILLS_MONTH = [0, 3, 6, 12, 18, 24];
+const GRACE_PILLS_YEAR = [0, 1, 2, 3];
+const GRACE_PILLS_MONTH = [0, 18, 30, 42];
+
+function snapGraceToPill(val, isYear) {
+  const vals = isYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+  if (!val) return 0;
+  if (vals.includes(val)) return val;
+  let nearest = vals[0];
+  let minDiff = Math.abs(val - nearest);
+  for (let i = 1; i < vals.length; i++) {
+    const diff = Math.abs(val - vals[i]);
+    if (diff < minDiff) {
+      minDiff = diff;
+      nearest = vals[i];
+    }
+  }
+  return nearest;
+}
 let rateType = 'single';
 let method = 'amortize';
-let rateSegments = [{ from: 1, to: 360, rate: 2.5 }];
+let rateSegments = [{ from: 1, to: 360, rate: '2.5' }];
+
+function rebuildRateSegmentsFromSplits(splits, rates, total) {
+  const n = splits.length + 1;
+  rateSegments = [];
+  let from = 1;
+  for (let i = 0; i < n; i++) {
+    const to = i === n - 1 ? total : splits[i];
+    rateSegments.push({ from, to, rate: String(rates[i] ?? '2.5') });
+    from = to + 1;
+  }
+}
+
+function syncRateSegmentsContiguous() {
+  if (rateType !== 'multi') return;
+  const total = getTotalMonths();
+  if (total <= 0) return;
+  const rates = (rateSegments.length ? rateSegments : [{ rate: $('#rate').value || '2.5' }])
+    .map(s => String(s.rate ?? $('#rate').value ?? '2.5'));
+  const n = Math.max(1, rates.length);
+  let splits = [];
+  if (rateSegments.length === n && rateSegments[n - 1]) {
+    for (let i = 0; i < n - 1; i++) splits.push(+rateSegments[i].to || i + 1);
+  } else {
+    const per = Math.floor(total / n);
+    let end = 0;
+    for (let i = 0; i < n - 1; i++) {
+      end = Math.min(end + per, total - (n - 1 - i));
+      splits.push(end);
+    }
+  }
+  for (let i = 0; i < splits.length; i++) {
+    const minTo = i + 1;
+    const maxTo = total - (n - 1 - i);
+    splits[i] = Math.max(minTo, Math.min(splits[i] || minTo, maxTo));
+  }
+  for (let i = 1; i < splits.length; i++) {
+    if (splits[i] <= splits[i - 1]) {
+      splits[i] = Math.min(splits[i - 1] + 1, total - (n - 1 - i));
+    }
+  }
+  for (let i = splits.length - 2; i >= 0; i--) {
+    if (splits[i] >= splits[i + 1]) splits[i] = splits[i + 1] - 1;
+    splits[i] = Math.max(splits[i], i + 1);
+  }
+  rebuildRateSegmentsFromSplits(splits, rates, total);
+}
+
+function setRateSegmentEnd(index, rawTo) {
+  syncRateSegmentsContiguous();
+  const total = getTotalMonths();
+  const n = rateSegments.length;
+  if (index < 0 || index >= n - 1) return;
+  const rates = rateSegments.map(s => s.rate);
+  const splits = rateSegments.slice(0, -1).map(s => s.to);
+  let to = Math.round(+rawTo);
+  const minTo = index === 0 ? 1 : splits[index - 1] + 1;
+  const maxTo = total - (n - 1 - index);
+  splits[index] = Math.max(minTo, Math.min(to, maxTo));
+  for (let j = index + 1; j < splits.length; j++) {
+    splits[j] = Math.max(splits[j], splits[j - 1] + 1);
+    splits[j] = Math.min(splits[j], total - (n - 1 - j));
+  }
+  for (let j = index - 1; j >= 0; j--) {
+    splits[j] = Math.min(splits[j], splits[j + 1] - 1);
+    splits[j] = Math.max(splits[j], j + 1);
+  }
+  rebuildRateSegmentsFromSplits(splits, rates, total);
+}
 let clearSnapshot = null;
 let showCumInterest = false;
 
@@ -1801,6 +1999,7 @@ function applyFormState(state) {
   method = state.method;
   rateType = state.rateType;
   rateSegments = JSON.parse(JSON.stringify(state.rateSegments));
+  syncRateSegmentsContiguous();
 
   $$('.choice-btn[data-method]').forEach(b => {
     b.classList.toggle('active', b.dataset.method === method);
@@ -1847,7 +2046,7 @@ function enterClearedState(opts) {
 
   method = 'amortize';
   rateType = 'single';
-  rateSegments = [{ from: 1, to: 360, rate: 2.5 }];
+  rateSegments = [{ from: 1, to: 360, rate: '2.5' }];
   $$('.choice-btn[data-method]').forEach(b => {
     b.classList.toggle('active', b.dataset.method === 'amortize');
   });
@@ -2566,7 +2765,8 @@ function getGraceMonths() {
 
 function renderGracePills(selectVal) {
   const vals = graceIsYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
-  const current = selectVal != null ? selectVal : (+$('#grace').value || 0);
+  let current = selectVal != null ? selectVal : (+$('#grace').value || 0);
+  current = snapGraceToPill(current, graceIsYear);
   $('#gracePills').innerHTML = vals.map(v => {
     const isNone = v === 0;
     const cls = 'qp' + (isNone ? ' qp-text' : '') + (v === current ? ' active' : '');
@@ -2581,9 +2781,7 @@ function setGraceUnit(isYear) {
   let newVal = 0;
   if (prevVal > 0) {
     newVal = isYear ? Math.max(1, Math.round(prevVal / 12)) : prevVal * 12;
-    const vals = isYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
-    const max = vals[vals.length - 1];
-    if (newVal > max) newVal = max;
+    newVal = snapGraceToPill(newVal, isYear);
   }
   graceIsYear = isYear;
   $('#graceYear').classList.toggle('active', isYear);
@@ -2791,7 +2989,7 @@ function groupPeriodSummary(schedule, graceMonths, totalMonths) {
       paymentDisplay = fmt(g.payment);
     }
     return {
-      period: `第${s}期～${e}期`,
+      period: `${s}期～${e}期`,
       isGrace: g.isGrace,
       rateText,
       paymentDisplay
@@ -2921,26 +3119,41 @@ function renderResults(scrollToResults) {
 }
 
 function renderRateRows() {
+  syncRateSegmentsContiguous();
   const total = getTotalMonths();
-  $('#rateRows').innerHTML = rateSegments.map((seg, i) => `
+  const lastIdx = rateSegments.length - 1;
+  $('#rateRows').innerHTML = rateSegments.map((seg, i) => {
+    const isLast = i === lastIdx;
+    const toCell = isLast
+      ? `<span class="rate-readonly">${seg.to || total}</span>`
+      : `<input type="text" class="calc-field rate-period" value="${seg.to}" data-i="${i}" data-f="to" readonly inputmode="none" autocomplete="off">`;
+    const rmBtn = rateSegments.length > 1
+      ? `<button type="button" class="btn-remove" data-rm="${i}" title="刪除此段" aria-label="刪除此段">×</button>`
+      : '';
+    return `
     <div class="rate-row-line">
       <span class="row-seg">第 ${i + 1} 段</span>
       <span class="row-txt">第</span>
-      <input type="text" class="calc-field" value="${seg.from}" data-i="${i}" data-f="from" readonly inputmode="none" autocomplete="off">
+      <span class="rate-readonly">${seg.from}</span>
       <span class="row-txt">期～第</span>
-      <input type="text" class="calc-field" value="${seg.to || total}" data-i="${i}" data-f="to" readonly inputmode="none" autocomplete="off">
+      ${toCell}
       <span class="row-txt">期</span>
       <input type="text" class="rate-val calc-field" value="${seg.rate}" data-i="${i}" data-f="rate" readonly inputmode="none" autocomplete="off">
       <span class="row-txt">%</span>
-      ${rateSegments.length > 1 ? `<button type="button" class="btn-remove" data-rm="${i}" title="刪除此段" aria-label="刪除此段">×</button>` : ''}
-    </div>`).join('');
+      ${rmBtn}
+    </div>`;
+  }).join('');
 
   $('#rateRows').querySelectorAll('input').forEach(inp => {
     inp.addEventListener('change', () => {
       const field = inp.dataset.f;
-      rateSegments[+inp.dataset.i][field] = field === 'rate'
-        ? (inp.value === '' ? '0' : inp.value)
-        : +inp.value;
+      const idx = +inp.dataset.i;
+      if (field === 'to') {
+        setRateSegmentEnd(idx, inp.value);
+        renderRateRows();
+      } else if (field === 'rate') {
+        rateSegments[idx].rate = inp.value === '' ? '0' : inp.value;
+      }
       maybeRecalc();
     });
   });
@@ -2955,6 +3168,7 @@ function renderRateRows() {
       } else if (rateSegments[idx - 1]) {
         rateSegments[idx - 1].to = removed.to || total;
       }
+      syncRateSegmentsContiguous();
       renderRateRows();
       maybeRecalc();
     });
@@ -2963,7 +3177,13 @@ function renderRateRows() {
 
 $('#price').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
 $('#ratio').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
-$('#term').addEventListener('input', maybeRecalc);
+$('#term').addEventListener('input', () => {
+  if (rateType === 'multi') {
+    syncRateSegmentsContiguous();
+    renderRateRows();
+  }
+  maybeRecalc();
+});
 $('#rate').addEventListener('input', maybeRecalc);
 
 $('#termPills').addEventListener('click', e => {
@@ -2971,6 +3191,10 @@ $('#termPills').addEventListener('click', e => {
   $$('#termPills .qp').forEach(p => p.classList.remove('active'));
   e.target.classList.add('active');
   $('#term').value = e.target.dataset.val;
+  if (rateType === 'multi') {
+    syncRateSegmentsContiguous();
+    renderRateRows();
+  }
   maybeRecalc();
 });
 
@@ -3019,6 +3243,7 @@ $$('.choice-btn[data-rate-type]').forEach(btn => {
 });
 
 $('#addRate').addEventListener('click', () => {
+  syncRateSegmentsContiguous();
   const total = getTotalMonths();
   const last = rateSegments[rateSegments.length - 1];
   const end = last.to || total;
@@ -3027,6 +3252,7 @@ $('#addRate').addEventListener('click', () => {
   if (mid >= end) return;
   last.to = mid;
   rateSegments.push({ from: mid + 1, to: end, rate: last.rate });
+  syncRateSegmentsContiguous();
   renderRateRows();
   maybeRecalc();
 });
