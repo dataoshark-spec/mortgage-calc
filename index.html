@@ -36,8 +36,13 @@ if ("serviceWorker" in navigator) {
       --chip-r: 12px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-top: env(safe-area-inset-top, 0px);
-      --hero-pad-y: 28px;
-      --hero-pad-x: 36px;
+      --hero-pad-y: 18px;
+      --hero-pad-x: 22px;
+      --hero-pad-bottom: 16px;
+      --hero-metrics-h: 49px;
+      --sticky-stack-h: 170px;
+      --field-h: 48px;
+      --field-radius: 16px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     button, input, select, textarea, a, label, summary,
@@ -84,28 +89,28 @@ if ("serviceWorker" in navigator) {
       margin: 0 -16px 16px;
       padding-top: var(--safe-top);
       background: var(--bg);
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     /* === 模式切換（比照房地合一 成屋/預售）=== */
     .ver-switch {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 6px;
-      padding: 8px 10px 10px;
+      padding: 8px 10px;
       background: #8A6218;
     }
     .ver-btn {
       background: rgba(255, 255, 255, 0.08);
-      color: rgba(255, 255, 255, 0.62);
+      color: rgba(255, 255, 255, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 9px 6px;
+      padding: 9px 8px;
       border-radius: 8px;
-      font-size: 0.82rem;
+      font-size: 13px;
       font-weight: 500;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s;
-      letter-spacing: 0.04em;
+      letter-spacing: 1px;
       white-space: nowrap;
     }
     .ver-btn.active {
@@ -187,14 +192,14 @@ if ("serviceWorker" in navigator) {
       position: relative;
       z-index: 1;
       margin: 0;
-      padding: var(--hero-pad-y) var(--hero-pad-x) calc(var(--hero-pad-y) - 4px);
+      padding: var(--hero-pad-y) var(--hero-pad-x) calc(var(--hero-pad-bottom) + var(--hero-metrics-h));
       background:
         linear-gradient(165deg, rgba(255, 255, 255, 0.14) 0%, transparent 38%),
         linear-gradient(128deg, #E0B04A 0%, var(--teal) 36%, #A6751F 72%, #8A6218 100%);
       color: #fff;
       border-radius: 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+      border-bottom: none;
+      box-shadow: none;
       overflow: hidden;
     }
     .app-hero::before {
@@ -223,40 +228,30 @@ if ("serviceWorker" in navigator) {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
       position: relative;
       z-index: 1;
     }
     .app-hero-brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 0;
       flex: 1;
       min-width: 0;
     }
     .app-hero-accent {
-      width: 4px;
-      height: 48px;
-      border-radius: 4px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.28) 100%);
-      box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
-      flex-shrink: 0;
+      display: none;
     }
     .app-hero h1 {
-      font-size: 1.82rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0;
       line-height: 1.2;
-      margin-bottom: 0;
+      margin: 4px 0 2px;
       color: #fff;
     }
     .app-hero-en {
-      margin: 5px 0 0;
-      font-size: 0.74rem;
-      font-weight: 500;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.62);
+      display: none;
     }
     h1 {
       font-size: 1.35rem;
@@ -283,29 +278,21 @@ if ("serviceWorker" in navigator) {
       margin-top: 2px;
     }
     .app-hero .clear-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.22);
       color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      border-radius: 9px;
-      backdrop-filter: blur(6px);
-      padding: 9px 14px;
-    }
-    .app-hero .clear-btn svg {
-      width: 14px;
-      height: 14px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      opacity: 0.9;
+      border: 1px solid rgba(255, 213, 138, 0.45);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      letter-spacing: 0.5px;
     }
     .app-hero .clear-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.42);
+      background: rgba(0, 0, 0, 0.32);
+      border-color: rgba(255, 213, 138, 0.65);
+    }
+    .app-hero .clear-btn:active {
+      background: rgba(0, 0, 0, 0.42);
+      transform: scale(0.97);
     }
     .app-hero .restore-btn {
       display: inline-flex;
@@ -494,8 +481,9 @@ if ("serviceWorker" in navigator) {
       display: flex;
       align-items: center;
       background: var(--input-bg);
-      border-radius: 16px;
-      height: 48px;
+      border-radius: var(--field-radius);
+      height: var(--field-h);
+      min-height: var(--field-h);
       padding: 0 16px;
     }
     .input-box input {
@@ -514,7 +502,57 @@ if ("serviceWorker" in navigator) {
       margin-left: 8px;
       flex-shrink: 0;
     }
-    .input-box.readonly { color: var(--muted); }
+    .input-box.readonly {
+      background: var(--input-bg);
+      border: 1.5px solid #e0e0e0;
+      color: var(--muted);
+      cursor: default;
+      box-shadow: none;
+    }
+    .input-box.readonly input {
+      color: #777;
+      cursor: default;
+      pointer-events: none;
+    }
+    .input-box.readonly .unit {
+      color: #aaa;
+    }
+    .input-box:has(> .calc-field) {
+      cursor: pointer;
+      align-items: stretch;
+      padding: 0;
+      background: #fff;
+      border: 1.5px solid #ebebeb;
+      transition: border-color 0.15s ease;
+    }
+    .input-box:has(> .calc-field):hover {
+      border-color: rgba(201, 146, 42, 0.38);
+    }
+    .input-box:has(> .calc-field):has(.calc-active) {
+      border-color: var(--teal);
+    }
+    .input-box:has(> .calc-field) > .calc-field {
+      flex: 1;
+      min-width: 0;
+      height: var(--field-h);
+      min-height: var(--field-h);
+      padding: 0 16px;
+      box-sizing: border-box;
+    }
+    .input-box:has(> .calc-field) > .unit {
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      padding-right: 16px;
+    }
+    .input-box.grace-input:has(> .calc-field) {
+      padding: 0 8px;
+    }
+    .input-box.grace-input:has(> .calc-field) > .calc-field {
+      height: var(--chip-h);
+      min-height: var(--chip-h);
+      padding: 0;
+    }
     input.calc-field {
       cursor: pointer;
       caret-color: transparent;
@@ -552,18 +590,6 @@ if ("serviceWorker" in navigator) {
       box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
       animation: calcSlideUp 0.2s ease-out;
       touch-action: none;
-    }
-    .calc-expr {
-      min-height: 40px;
-      margin-bottom: 10px;
-      padding: 8px 12px;
-      border-radius: 10px;
-      background: var(--input-bg);
-      font-size: 1.25rem;
-      font-weight: 600;
-      text-align: right;
-      color: var(--text);
-      word-break: break-all;
     }
     .calc-grid {
       display: grid;
@@ -614,6 +640,8 @@ if ("serviceWorker" in navigator) {
     .calc-btn-done:active { filter: brightness(0.9); }
     .calc-btn-done.calc-btn-pressed { filter: brightness(0.9); transform: scale(0.98); }
     .calc-btn-zero { grid-column: span 2; }
+    .calc-grid.integer-mode .calc-btn-dot { display: none; }
+    .calc-grid.integer-mode .calc-btn-zero { grid-column: span 3; }
     /* 快捷鈕：固定尺寸，選中不改大小 */
     .quick-pills {
       display: inline-flex;
@@ -763,7 +791,8 @@ if ("serviceWorker" in navigator) {
     .choice-group.cols-3 { gap: 8px; }
     .choice-btn {
       flex: 1;
-      height: 48px;
+      height: var(--field-h);
+      min-height: var(--field-h);
       border: none;
       border-radius: 999px;
       background: var(--input-bg);
@@ -774,6 +803,9 @@ if ("serviceWorker" in navigator) {
       transition: background 0.15s, color 0.15s;
       white-space: nowrap;
       padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .choice-group.cols-3 .choice-btn {
       font-size: 0.82rem;
@@ -822,13 +854,15 @@ if ("serviceWorker" in navigator) {
       width: 100%;
       min-width: 0;
       height: 40px;
-      border: none;
+      border: 1.5px solid #e8e8e8;
       border-radius: 12px;
       background: #fff;
       text-align: center;
       font-size: 0.88rem;
       outline: none;
       padding: 0 6px;
+      color: var(--text);
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
     .rate-row-line input[type="number"] {
       -moz-appearance: textfield;
@@ -842,6 +876,20 @@ if ("serviceWorker" in navigator) {
     .rate-row-line input.rate-period,
     .rate-row-line input.rate-val {
       width: 100%;
+      cursor: pointer;
+      caret-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      font-weight: 500;
+    }
+    .rate-row-line input.rate-period:hover,
+    .rate-row-line input.rate-val:hover {
+      border-color: rgba(201, 146, 42, 0.42);
+    }
+    .rate-row-line input.rate-period.calc-active,
+    .rate-row-line input.rate-val.calc-active {
+      border-color: var(--teal);
+      background: #fff;
     }
     .rate-row-line .rate-readonly {
       width: 100%;
@@ -851,9 +899,12 @@ if ("serviceWorker" in navigator) {
       align-items: center;
       justify-content: center;
       font-size: 0.88rem;
-      color: var(--muted);
-      background: rgba(255, 255, 255, 0.45);
+      color: #777;
+      background: var(--input-bg);
+      border: 1.5px solid #e0e0e0;
       border-radius: 12px;
+      cursor: default;
+      font-weight: 500;
     }
     .rate-row-line .btn-remove {
       margin-left: 0;
@@ -919,42 +970,12 @@ if ("serviceWorker" in navigator) {
       transition: background 0.15s ease, box-shadow 0.15s ease;
     }
     .btn-calc:hover { background: var(--teal-dark); }
-    .btn-calc.btn-calc-pending {
-      animation: calc-pending-glow 4.8s ease-in-out infinite;
+    .btn-calc.btn-calc-stale {
+      animation: calc-stale-text 2.6s ease-in-out infinite;
     }
-    .btn-calc.btn-calc-pending::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      pointer-events: none;
-      background: linear-gradient(
-        105deg,
-        transparent 0%,
-        transparent 38%,
-        rgba(255, 255, 255, 0.1) 46%,
-        rgba(255, 255, 255, 0.22) 50%,
-        rgba(255, 255, 255, 0.1) 54%,
-        transparent 62%,
-        transparent 100%
-      );
-      transform: translateX(-130%);
-      opacity: 0.55;
-      animation: calc-pending-shimmer 5.6s ease-in-out infinite;
-    }
-    @keyframes calc-pending-glow {
-      0%, 100% {
-        box-shadow: 0 2px 8px rgba(201, 146, 42, 0.22);
-        filter: brightness(1);
-      }
-      50% {
-        box-shadow: 0 4px 18px rgba(201, 146, 42, 0.42), 0 0 28px rgba(224, 176, 74, 0.18);
-        filter: brightness(1.05);
-      }
-    }
-    @keyframes calc-pending-shimmer {
-      0%, 100% { transform: translateX(-130%); opacity: 0.35; }
-      50% { transform: translateX(130%); opacity: 0.65; }
+    @keyframes calc-stale-text {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.42; }
     }
     .results { display: none; }
     .results.show { display: block; }
@@ -962,7 +983,7 @@ if ("serviceWorker" in navigator) {
       margin: 8px 0 16px;
     }
     .conditions-box {
-      scroll-margin-top: calc(var(--safe-top) + 148px);
+      scroll-margin-top: calc(var(--safe-top) + var(--sticky-stack-h));
       border: 1px solid #ddd;
       border-radius: 12px;
       margin-bottom: 24px;
@@ -1069,6 +1090,23 @@ if ("serviceWorker" in navigator) {
       color: var(--teal);
       white-space: nowrap;
     }
+    .conditions-rates.single-rate .cond-rate-period {
+      font-size: 1.05rem;
+      color: #444;
+    }
+    .conditions-rates.single-rate .cond-rate-row {
+      padding: 14px 8px 12px;
+      gap: 10px;
+    }
+    .conditions-rates.single-rate .cond-rate-tag {
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: #444;
+    }
+    .conditions-rates.single-rate .cond-rate-value {
+      font-size: 1.22rem;
+      font-weight: 700;
+    }
     .export-capture .conditions-box.collapsed .conditions-body { display: block !important; }
     .export-capture .conditions-toggle { display: none !important; }
     .summary-grid {
@@ -1085,6 +1123,28 @@ if ("serviceWorker" in navigator) {
     }
     .summary-item .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
     .summary-item .value { font-size: 1.1rem; font-weight: 600; color: var(--teal); }
+    .summary-item .value .term-grace-note {
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+    .summary-item.summary-amount-toggle {
+      cursor: pointer;
+      transition: background 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .summary-item.summary-amount-toggle:hover {
+      background: #ececec;
+    }
+    .summary-item.summary-amount-toggle .value {
+      user-select: none;
+      font-size: clamp(1.24rem, 4.8vw, 1.38rem);
+      line-height: 1.12;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .summary-item.summary-amount-toggle .label {
+      margin-bottom: 2px;
+    }
     /* 每月還款 — 重點區塊 */
     .period-summary {
       margin-bottom: 28px;
@@ -1195,13 +1255,71 @@ if ("serviceWorker" in navigator) {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 14px;
       padding: 4px;
+    }
+    .apr-block {
+      margin-top: 14px;
+    }
+    .apr-block.hidden { display: none !important; }
+    .apr-footer-screen { display: flex; }
+    .apr-footer-export { display: none; }
+    .apr-export-prefix {
+      flex: 1;
+      min-width: 0;
+      line-height: 1.45;
+      padding-right: 10px;
+    }
+    .apr-export-title {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .apr-export-hint {
+      margin-left: 0.5em;
+      font-size: 0.68rem;
+      font-weight: 300;
+      color: #999;
+    }
+    .export-capture .apr-footer-screen { display: none !important; }
+    .export-capture .apr-footer-export {
+      display: flex !important;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .apr-footer .apr-label-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
     }
     .apr-footer .apr-label {
       font-size: 0.95rem;
       color: var(--text);
       font-weight: 500;
+    }
+    .apr-info-btn {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+    }
+    .apr-info-btn:hover {
+      color: var(--teal-dark);
+      background: rgba(201, 146, 42, 0.1);
+    }
+    .apr-info-btn:active {
+      transform: scale(0.94);
     }
     .apr-footer .apr-val {
       font-size: 1.15rem;
@@ -1446,7 +1564,8 @@ if ("serviceWorker" in navigator) {
     }
     .export-scope { margin-bottom: 14px; }
     .export-detail-group .choice-btn {
-      height: 44px;
+      height: var(--field-h);
+      min-height: var(--field-h);
       font-size: 0.8rem;
     }
     .export-actions {
@@ -1481,15 +1600,6 @@ if ("serviceWorker" in navigator) {
       opacity: 0.45;
       cursor: not-allowed;
     }
-    .export-btn.share {
-      background: var(--teal);
-      border-color: var(--teal-dark);
-      color: #fff;
-    }
-    .export-btn.share:hover:not(:disabled) {
-      background: var(--teal-dark);
-      border-color: var(--teal-dark);
-    }
     .export-btn svg {
       width: 22px;
       height: 22px;
@@ -1519,6 +1629,16 @@ if ("serviceWorker" in navigator) {
     }
     .export-capture .year-item .year-body { display: block !important; }
     .export-capture .year-item .arrow { transform: rotate(180deg); }
+    .export-offscreen-clone {
+      position: fixed !important;
+      left: -20000px !important;
+      top: 0 !important;
+      visibility: visible !important;
+      pointer-events: none !important;
+      z-index: -1 !important;
+      overflow: visible !important;
+      margin: 0 !important;
+    }
     .hidden { display: none !important; }
     .ver-line {
       text-align: center;
@@ -1531,18 +1651,21 @@ if ("serviceWorker" in navigator) {
     }
     @media (max-width: 600px) {
       :root {
-        --hero-pad-y: 22px;
+        --hero-pad-y: 18px;
         --hero-pad-x: 18px;
+        --hero-pad-bottom: 16px;
+        --hero-metrics-h: 49px;
+        --sticky-stack-h: 170px;
+        --field-h: 44px;
+        --field-radius: 14px;
       }
       .card { padding: 24px 18px; border-radius: 20px; }
       .main-panel { border-radius: 12px; }
       .main-panel .card { padding-top: 24px; }
       .sticky-top { margin-bottom: 12px; }
-      .ver-btn { font-size: 0.74rem; padding: 8px 4px; letter-spacing: 0; }
+      .ver-btn { font-size: 12px; padding: 9px 6px; letter-spacing: 0; }
       .mode-placeholder-panel { padding: 40px 18px 48px; }
-      .app-hero h1 { font-size: 1.42rem; }
-      .app-hero-accent { height: 40px; }
-      .app-hero-en { font-size: 0.66rem; letter-spacing: 0.12em; }
+      .app-hero h1 { font-size: 22px; }
       .form-grid {
         grid-template-columns: 1fr 1fr;
         gap: 16px 10px;
@@ -1552,10 +1675,14 @@ if ("serviceWorker" in navigator) {
         font-size: 0.86rem;
         margin-bottom: 8px;
       }
-      .form-grid .input-box {
-        height: 44px;
+      .form-grid .input-box:has(> .calc-field) > .calc-field {
         padding: 0 12px;
-        border-radius: 14px;
+      }
+      .form-grid .input-box:has(> .calc-field) > .unit {
+        padding-right: 12px;
+      }
+      .form-grid .input-box:not(:has(> .calc-field)) {
+        padding: 0 12px;
       }
       .form-grid .input-box input {
         font-size: 0.95rem;
@@ -1659,10 +1786,7 @@ if ("serviceWorker" in navigator) {
         </div>
         <div class="header-actions">
           <button type="button" class="restore-btn" id="restoreBtn" title="恢復清空前的數值" style="display:none;">恢復數值</button>
-          <button type="button" class="clear-btn" id="clearBtn" title="清空所有輸入欄位">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            清空數值
-          </button>
+          <button type="button" class="clear-btn" id="clearBtn" title="清空所有輸入欄位">清空數值</button>
         </div>
       </div>
     </header>
@@ -1687,21 +1811,21 @@ if ("serviceWorker" in navigator) {
       <div class="field">
         <label>貸款成數</label>
         <div class="input-box">
-          <input type="text" id="ratio" class="calc-field" value="80" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="ratio" class="calc-field" value="80" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">%</span>
         </div>
       </div>
       <div class="field">
         <label>貸款金額</label>
-        <div class="input-box readonly">
-          <input type="text" id="amount" readonly value="2,400">
+        <div class="input-box readonly" title="依購屋價格與貸款成數自動計算">
+          <input type="text" id="amount" readonly value="2,400" tabindex="-1" aria-readonly="true">
           <span class="unit">萬元</span>
         </div>
       </div>
       <div class="field">
         <label>貸款期間</label>
         <div class="input-box">
-          <input type="text" id="term" class="calc-field" value="30" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="term" class="calc-field" value="30" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">年</span>
         </div>
         <div class="quick-pills fill" id="termPills">
@@ -1715,7 +1839,7 @@ if ("serviceWorker" in navigator) {
         <div class="grace-block">
           <div class="grace-left">
             <div class="input-box grace-input">
-              <input type="text" id="grace" class="calc-field" value="2" readonly inputmode="none" autocomplete="off">
+              <input type="text" id="grace" class="calc-field" value="2" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
             </div>
             <div class="unit-switch">
               <button type="button" class="active" id="graceYear">年</button>
@@ -1763,7 +1887,7 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="actions">
-      <button type="button" class="btn-calc" id="calc">開始試算</button>
+      <button type="button" class="btn-calc btn-calc-stale" id="calc">尚未計算</button>
     </div>
   </div>
   </div>
@@ -1789,7 +1913,7 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="summary-grid">
-      <div class="summary-item">
+      <div class="summary-item summary-amount-toggle" id="resTotalItem" role="button" tabindex="0" title="點擊切換元／萬" aria-label="貸款總額，點擊切換元或萬元顯示">
         <div class="label">貸款總額</div>
         <div class="value" id="resTotal">—</div>
       </div>
@@ -1806,9 +1930,20 @@ if ("serviceWorker" in navigator) {
         <span class="title-line"></span>
       </div>
       <div class="payment-table" id="periodLines"></div>
-      <div class="apr-footer">
-        <span class="apr-label">總費用年百分率</span>
-        <span class="apr-val" id="resApr">—</span>
+      <div class="apr-block hidden" id="aprBlock">
+        <div class="apr-footer apr-footer-screen">
+          <span class="apr-label-wrap">
+            <span class="apr-label">換算年利率</span>
+            <button type="button" class="apr-info-btn" id="aprInfoBtn" aria-label="換算年利率說明">ⓘ</button>
+          </span>
+          <span class="apr-val" id="resApr">—</span>
+        </div>
+        <div class="apr-footer apr-footer-export" id="aprFooterExport" aria-hidden="true">
+          <span class="apr-export-prefix">
+            <span class="apr-export-title">換算年利率</span><span class="apr-export-hint">（換算年利率係依全期還款現金流換算）</span>
+          </span>
+          <span class="apr-val" id="resAprExport">—</span>
+        </div>
       </div>
     </div>
 
@@ -1867,7 +2002,7 @@ if ("serviceWorker" in navigator) {
           </svg>
           PDF
         </button>
-        <button type="button" class="export-btn share" id="shareBtn" title="分享試算結果">
+        <button type="button" class="export-btn" id="shareBtn" title="分享試算結果">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="18" cy="5" r="3"/>
             <circle cx="6" cy="12" r="3"/>
@@ -1919,7 +2054,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.08ZN";
+const APP_VERSION = "2026.08.09L";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2036,6 +2171,22 @@ function closeAppAlert() {
   if (cb) cb();
 }
 
+const APR_INFO_TEXT = '本數值係依貸款還款現金流換算之年化利率，主要用於試算與比較；本數值可能與輸入之年利率不同，未納入未輸入之其他費用，僅供參考。實際貸款利率、費用及條件，仍以銀行核准及貸款契約為準。';
+const APR_EXPORT_INLINE_NOTE = '（換算年利率係依全期還款現金流換算）';
+
+function formatAprExportLine() {
+  return `換算年利率  ${APR_EXPORT_INLINE_NOTE} ${$('#resApr').textContent.trim()}`;
+}
+
+function syncAprExportDisplay() {
+  const exportVal = $('#resAprExport');
+  if (exportVal) exportVal.textContent = $('#resApr').textContent;
+}
+
+function showAprInfo() {
+  showAppAlert(APR_INFO_TEXT);
+}
+
 function showAppAlert(message, onClose) {
   const backdrop = $('#appAlert');
   const textEl = $('#appAlertText');
@@ -2126,8 +2277,10 @@ function applyFormState(state) {
   updateAmount();
   if (state.resultsVisible && getTotalMonths() > 0 && getLoanYuan() > 0) {
     renderResults(false);
+    markCalcSynced();
   } else {
     $('#results').classList.remove('show');
+    maybeRecalc();
   }
 }
 
@@ -2170,9 +2323,11 @@ function enterClearedState(opts) {
 
   updateAmount();
   $('#results').classList.remove('show');
-  clearCalcPending();
+  calcSynced = false;
+  updateCalcButton();
   updateClearRestoreBtns();
   if (!opts.silent) showToast('已清空，可以開始輸入');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function restoreClearedState() {
@@ -2180,14 +2335,79 @@ function restoreClearedState() {
   const snap = clearSnapshot;
   clearSnapshot = null;
   applyFormState(snap);
-  clearCalcPending();
   updateClearRestoreBtns();
   showToast('已恢復原本數值');
 }
 
 function fmt(n) { return Math.round(n).toLocaleString('zh-TW'); }
 function fmtPeriod(n) { return String(n).padStart(3, '0'); }
-function fmtWan(yuan) { return (yuan / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 1 }); }
+
+const MAX_INPUT_DECIMALS = 3;
+
+function truncateToDecimals(n, maxDec = MAX_INPUT_DECIMALS) {
+  if (!isFinite(n)) return n;
+  const factor = Math.pow(10, maxDec);
+  const bias = n >= 0 ? 1e-9 : -1e-9;
+  return Math.trunc(n * factor + bias) / factor;
+}
+
+function formatTruncNumber(n, maxDec = MAX_INPUT_DECIMALS) {
+  const t = truncateToDecimals(n, maxDec);
+  const negative = t < 0;
+  const abs = Math.abs(t);
+  const intPart = Math.trunc(abs);
+  const frac = maxDec > 0 ? Math.trunc((abs - intPart) * Math.pow(10, maxDec) + 1e-9) : 0;
+  const intFmt = intPart.toLocaleString('zh-TW');
+  if (maxDec === 0 || frac === 0) return (negative ? '-' : '') + intFmt;
+  const dec = String(frac).padStart(maxDec, '0').replace(/0+$/, '');
+  return (negative ? '-' : '') + intFmt + (dec ? '.' + dec : '');
+}
+
+function fmtWan(yuan) { return formatTruncNumber(yuan / 10000, MAX_INPUT_DECIMALS); }
+
+const TOTAL_AMOUNT_UNIT_KEY = 'mortgage-total-unit-v1';
+let totalAmountUnit = 'yuan';
+
+function loadTotalAmountUnit() {
+  try {
+    const saved = localStorage.getItem(TOTAL_AMOUNT_UNIT_KEY);
+    if (saved === 'yuan' || saved === 'wan') totalAmountUnit = saved;
+  } catch (_) {}
+}
+
+function saveTotalAmountUnit() {
+  try { localStorage.setItem(TOTAL_AMOUNT_UNIT_KEY, totalAmountUnit); } catch (_) {}
+}
+
+function formatTotalAmountText(yuan) {
+  return totalAmountUnit === 'wan'
+    ? `${fmtWan(yuan)} 萬元`
+    : `${fmt(yuan)} 元`;
+}
+
+function renderTotalAmount(yuan) {
+  const el = $('#resTotal');
+  if (el) el.textContent = formatTotalAmountText(yuan);
+}
+
+function toggleTotalAmountUnit() {
+  totalAmountUnit = totalAmountUnit === 'yuan' ? 'wan' : 'yuan';
+  saveTotalAmountUnit();
+  renderTotalAmount(getLoanYuan());
+}
+
+function initTotalAmountToggle() {
+  loadTotalAmountUnit();
+  const item = $('#resTotalItem');
+  if (!item) return;
+  item.addEventListener('click', () => toggleTotalAmountUnit());
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleTotalAmountUnit();
+    }
+  });
+}
 
 /** 依所有利率輸入的最大小數位數，統一全站顯示（不四捨五入） */
 function collectRateInputValues() {
@@ -2210,7 +2430,25 @@ function getRateDecimalPlaces(rate) {
 function getRateDisplayPrecision() {
   const values = collectRateInputValues();
   if (!values.length) return 0;
-  return Math.max(0, ...values.map(getRateDecimalPlaces));
+  return Math.min(MAX_INPUT_DECIMALS, Math.max(0, ...values.map(getRateDecimalPlaces)));
+}
+
+/** 換算年利率：截斷至 3 位小數，至少顯示至第 3 位（第 3 位為 0 時可縮為 2 位，如 2.190→2.19） */
+function formatAprRatePct(n) {
+  const MAX = MAX_INPUT_DECIMALS;
+  if (!isFinite(n)) return '0';
+  const factor = Math.pow(10, MAX);
+  const abs = Math.abs(n);
+  const truncated = Math.trunc(abs * factor + 1e-9) / factor;
+  const sign = n < 0 ? '-' : '';
+  const intPart = Math.trunc(truncated);
+  const frac = Math.trunc((truncated - intPart) * factor + 1e-9);
+  let digits = String(frac).padStart(MAX, '0');
+  let minDec = 2;
+  if (digits[2] !== '0') minDec = 3;
+  while (digits.length > minDec && digits.endsWith('0')) digits = digits.slice(0, -1);
+  if (!digits.length) return sign + intPart;
+  return sign + intPart + '.' + digits;
 }
 
 function formatRatePct(rate, precision) {
@@ -2249,11 +2487,14 @@ const calcKeyboard = {
   expr: '',
   pristine: true,
   allowNegative: false,
+  integerOnly: false,
+  maxDecimals: MAX_INPUT_DECIMALS,
   inputEl: null,
   backdropEl: null
 };
 
-function calcEvalExpr(expr) {
+function calcEvalExpr(expr, maxDec) {
+  const dec = maxDec == null ? calcKeyboard.maxDecimals : maxDec;
   try {
     if (!/^[0-9+\-*/.]*$/.test(expr)) return null;
     if (!expr) return 0;
@@ -2261,15 +2502,19 @@ function calcEvalExpr(expr) {
     if (!clean) return 0;
     const result = Function('"use strict"; return (' + clean + ')')();
     if (!Number.isFinite(result)) return null;
-    return Math.round(result * 10000) / 10000;
+    if (dec === 0) return Math.trunc(result);
+    return truncateToDecimals(result, dec);
   } catch {
     return null;
   }
 }
 
-function calcFmtExprDisplay(expr) {
-  if (!expr) return '0';
-  return expr.replace(/\*/g, '×').replace(/\//g, '÷').replace(/-/g, '−');
+function normalizeCalcCommitValue(rawExpr) {
+  const raw = String(rawExpr ?? '').trim();
+  if (!raw) return '';
+  const result = calcEvalExpr(raw, calcKeyboard.integerOnly ? 0 : calcKeyboard.maxDecimals);
+  if (result === null) return raw;
+  return String(result);
 }
 
 function calcHaptic(key) {
@@ -2282,20 +2527,15 @@ function calcHaptic(key) {
 }
 
 function calcUpdateDisplay() {
-  const el = calcKeyboard.backdropEl && calcKeyboard.backdropEl.querySelector('.calc-expr');
-  if (el) el.textContent = calcFmtExprDisplay(calcKeyboard.expr) || '0';
+  const input = calcKeyboard.inputEl;
+  if (!input) return;
+  input.value = calcKeyboard.expr;
 }
 
 function calcCommitValue(rawExpr) {
   const input = calcKeyboard.inputEl;
   if (!input) return;
-  let next = rawExpr == null ? calcKeyboard.expr : rawExpr;
-  if (String(next).trim() !== '') {
-    const result = calcEvalExpr(String(next));
-    if (result !== null) next = String(result);
-  } else {
-    next = '';
-  }
+  const next = String(rawExpr ?? '').trim() === '' ? '' : normalizeCalcCommitValue(rawExpr);
   input.value = next;
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2431,7 +2671,7 @@ function calcPress(key) {
     const m = cur.match(/^(.*?)([+\-*/])([0-9.]+)$/);
     if (!m) {
       const n = parseFloat(cur);
-      if (!isNaN(n)) calcKeyboard.expr = String(n / 100);
+      if (!isNaN(n)) calcKeyboard.expr = String(truncateToDecimals(n / 100, calcKeyboard.maxDecimals));
     } else {
       const [, prefix, op, lastNum] = m;
       const lastN = parseFloat(lastNum);
@@ -2442,7 +2682,7 @@ function calcPress(key) {
         else if (op === '-') result = baseVal - (baseVal * lastN / 100);
         else if (op === '*') result = baseVal * lastN / 100;
         else if (op === '/') result = baseVal / lastN / 100;
-        if (Number.isFinite(result)) calcKeyboard.expr = String(Math.round(result * 10000) / 10000);
+        if (Number.isFinite(result)) calcKeyboard.expr = String(truncateToDecimals(result, calcKeyboard.maxDecimals));
       }
     }
     calcUpdateDisplay();
@@ -2464,6 +2704,7 @@ function calcPress(key) {
   calcKeyboard.pristine = false;
   const base = startFresh ? '' : cur;
   if (key === '.') {
+    if (calcKeyboard.integerOnly) return;
     const lastNum = (base.match(/[0-9.]*$/) || [''])[0];
     if (lastNum.includes('.')) return;
     calcKeyboard.expr = lastNum === '' ? base + '0.' : base + '.';
@@ -2471,6 +2712,8 @@ function calcPress(key) {
     return;
   }
   const lastNum = (base.match(/[0-9.]*$/) || [''])[0];
+  const dotIdx = lastNum.indexOf('.');
+  if (dotIdx >= 0 && lastNum.length - dotIdx - 1 >= calcKeyboard.maxDecimals) return;
   if (lastNum === '0' && key !== '.') {
     calcKeyboard.expr = base.slice(0, -1) + key;
   } else {
@@ -2479,13 +2722,82 @@ function calcPress(key) {
   calcUpdateDisplay();
 }
 
+function bindCalcKeyboardSwipeDismiss(backdrop) {
+  const SWIPE_TH = 50;
+  const MOVE_TH = 10;
+  let ptr = null;
+
+  function clearPtr() {
+    ptr = null;
+  }
+
+  function eatGhostClick(ms) {
+    const eat = (ev) => {
+      document.removeEventListener('click', eat, true);
+      if (backdrop.contains(ev.target)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+    };
+    document.addEventListener('click', eat, true);
+    setTimeout(() => document.removeEventListener('click', eat, true), ms || 450);
+  }
+
+  function finishPointer(e) {
+    if (!ptr || e.pointerId !== ptr.id) return;
+    const dx = e.clientX - ptr.x0;
+    const dy = e.clientY - ptr.y0;
+    const swiped = Math.abs(dx) > SWIPE_TH || dy > SWIPE_TH;
+    const moved = ptr.moved;
+    clearPtr();
+    if (swiped) {
+      try { e.preventDefault(); } catch (_) {}
+      backdrop._calcIgnoreClick = true;
+      setTimeout(() => { backdrop._calcIgnoreClick = false; }, 450);
+      closeCalcKeyboard(true);
+      eatGhostClick(450);
+      return;
+    }
+    if (moved) {
+      backdrop._calcIgnoreClick = true;
+      setTimeout(() => { backdrop._calcIgnoreClick = false; }, 450);
+    }
+  }
+
+  backdrop.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    clearPtr();
+    backdrop._calcIgnoreClick = false;
+    ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false };
+  });
+  backdrop.addEventListener('pointermove', (e) => {
+    if (!ptr || e.pointerId !== ptr.id) return;
+    const dx = e.clientX - ptr.x0;
+    const dy = e.clientY - ptr.y0;
+    if (!ptr.moved && (Math.abs(dx) > MOVE_TH || Math.abs(dy) > MOVE_TH)) ptr.moved = true;
+  });
+  backdrop.addEventListener('pointerup', finishPointer);
+  backdrop.addEventListener('pointercancel', finishPointer);
+  backdrop.addEventListener('click', (e) => {
+    if (!backdrop._calcIgnoreClick) return;
+    e.preventDefault();
+    e.stopPropagation();
+    backdrop._calcIgnoreClick = false;
+  }, true);
+}
+
+function syncCalcKeyboardLayout() {
+  const grid = calcKeyboard.backdropEl?.querySelector('.calc-grid');
+  if (!grid) return;
+  grid.classList.toggle('integer-mode', calcKeyboard.integerOnly);
+}
+
 function renderCalcSheet() {
   const backdrop = document.createElement('div');
   backdrop.className = 'calc-backdrop';
   backdrop.dataset.calcBackdrop = 'true';
   backdrop.innerHTML = `
     <div class="calc-sheet-panel">
-      <div class="calc-expr">${calcFmtExprDisplay(calcKeyboard.expr) || '0'}</div>
       <div class="calc-grid">
         <button type="button" class="calc-btn calc-btn-fn" data-key="C">C</button>
         <button type="button" class="calc-btn calc-btn-fn" data-key="BACK">⌫</button>
@@ -2504,21 +2816,26 @@ function renderCalcSheet() {
         <button type="button" class="calc-btn" data-key="3">3</button>
         <button type="button" class="calc-btn calc-btn-op" data-key="+">+</button>
         <button type="button" class="calc-btn calc-btn-zero" data-key="0">0</button>
-        <button type="button" class="calc-btn" data-key=".">.</button>
+        <button type="button" class="calc-btn calc-btn-dot" data-key=".">.</button>
         <button type="button" class="calc-btn calc-btn-eq" data-key="=">=</button>
       </div>
       <button type="button" class="calc-btn-done">完成</button>
     </div>`;
   backdrop.addEventListener('click', () => closeCalcKeyboard(true));
   backdrop.querySelector('.calc-sheet-panel').addEventListener('click', (e) => e.stopPropagation());
-  backdrop.querySelectorAll('[data-key]').forEach((btn) => {
-    btn.addEventListener('click', () => calcPress(btn.dataset.key));
-  });
-  backdrop.querySelector('.calc-btn-done').addEventListener('click', () => {
+  backdrop.querySelector('.calc-btn-done').addEventListener('click', (e) => {
+    if (backdrop._calcIgnoreClick) { e.preventDefault(); e.stopPropagation(); return; }
     calcHaptic('DONE');
     calcFlashButton('DONE');
     setTimeout(() => closeCalcKeyboard(true), 90);
   });
+  backdrop.querySelectorAll('[data-key]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      if (backdrop._calcIgnoreClick) { e.preventDefault(); e.stopPropagation(); return; }
+      calcPress(btn.dataset.key);
+    });
+  });
+  bindCalcKeyboardSwipeDismiss(backdrop);
   document.body.appendChild(backdrop);
   calcKeyboard.backdropEl = backdrop;
   attachCalcKeyListener();
@@ -2543,8 +2860,12 @@ function openCalcKeyboard(inputEl, options) {
   calcKeyboard.expr = String(inputEl.value || '');
   calcKeyboard.pristine = true;
   calcKeyboard.allowNegative = !!options.allowNegative;
+  calcKeyboard.integerOnly = inputEl.dataset.calcInteger === 'true';
+  calcKeyboard.maxDecimals = calcKeyboard.integerOnly ? 0 : MAX_INPUT_DECIMALS;
   inputEl.classList.add('calc-active');
   renderCalcSheet();
+  syncCalcKeyboardLayout();
+  calcUpdateDisplay();
   scrollCalcTriggerIntoView(inputEl);
 }
 
@@ -2555,14 +2876,22 @@ function bindCalcField(el) {
   el.setAttribute('inputmode', 'none');
   el.setAttribute('autocomplete', 'off');
   el.classList.add('calc-field');
+  const openField = (e) => {
+    e.preventDefault();
+    openCalcKeyboard(el, { allowNegative: el.dataset.calcNegative === 'true' });
+  };
   el.addEventListener('pointerdown', () => {
     const ae = document.activeElement;
     if (ae && ae !== el && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
   });
-  el.addEventListener('click', (e) => {
-    e.preventDefault();
-    openCalcKeyboard(el, { allowNegative: el.dataset.calcNegative === 'true' });
-  });
+  el.addEventListener('click', openField);
+  const box = el.closest('.input-box');
+  if (box) {
+    box.addEventListener('click', (e) => {
+      if (e.target === el) return;
+      openField(e);
+    });
+  }
 }
 
 function initCalcFields(root) {
@@ -2657,6 +2986,11 @@ function buildConditionsData() {
     if (rateVal !== '') {
       rates = [['年利率', `${formatRatePct(rateVal)} %`]];
     }
+  } else if (rateSegments.length === 1) {
+    const seg = rateSegments[0];
+    if (seg.rate !== '') {
+      rates = [['年利率', `${formatRatePct(seg.rate)} %`]];
+    }
   } else {
     rates = rateSegments.map((seg) => {
       const from = String(seg.from).padStart(3, '0');
@@ -2695,45 +3029,56 @@ function renderRateCondItem([label, value]) {
   </div>`;
 }
 
+function isProminentRateDisplay() {
+  return rateType === 'single' || (rateType === 'multi' && rateSegments.length === 1);
+}
+
+function shouldShowAprFooter() {
+  return !isProminentRateDisplay();
+}
+
 function renderConditions() {
   const { basic, rates } = buildConditionsData();
   $('#conditionsGrid').innerHTML = basic.map(renderCondItem).join('');
   const ratesBox = $('#conditionsRates');
   if (rates.length) {
     ratesBox.classList.remove('hidden');
+    ratesBox.classList.toggle('single-rate', isProminentRateDisplay());
     $('#conditionsRatesGrid').innerHTML = rates.map(renderRateCondItem).join('');
   } else {
     ratesBox.classList.add('hidden');
+    ratesBox.classList.remove('single-rate');
     $('#conditionsRatesGrid').innerHTML = '';
   }
 }
 
 function getShareText() {
   const condLines = buildConditionsRows().map(([label, value]) => `${label}：${value}`);
-  return [
+  const lines = [
     '房屋貸款試算結果',
     '',
     '【試算條件】',
     ...condLines,
     '',
     `貸款總額：${$('#resTotal').textContent}`,
-    `還款期間：${$('#resTerm').textContent}`,
-    `總費用年百分率：${$('#resApr').textContent}`
-  ].join('\n');
+    `還款期間：${$('#resTerm').textContent}`
+  ];
+  if (shouldShowAprFooter()) {
+    lines.push(formatAprExportLine());
+  }
+  return lines.join('\n');
 }
 
 function getResultsExportHeight(el) {
-  const elRect = el.getBoundingClientRect();
   const style = getComputedStyle(el);
   const padBottom = parseFloat(style.paddingBottom) || 0;
   let maxBottom = 0;
   Array.from(el.children).forEach((child) => {
     if (child.id === 'exportSection') return;
     if (getComputedStyle(child).display === 'none') return;
-    const rect = child.getBoundingClientRect();
-    maxBottom = Math.max(maxBottom, rect.bottom - elRect.top);
+    maxBottom = Math.max(maxBottom, child.offsetTop + child.offsetHeight);
   });
-  return Math.ceil(maxBottom + padBottom);
+  return Math.ceil(Math.max(maxBottom + padBottom, el.scrollHeight));
 }
 
 function balanceExportCanvasHorizontal(canvas) {
@@ -2769,27 +3114,56 @@ function balanceExportCanvasHorizontal(canvas) {
   return balanced;
 }
 
+async function buildExportCaptureNode() {
+  const results = $('#results');
+  const includeDetail = getExportIncludeDetail();
+  const clone = results.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.classList.add('export-capture', 'export-offscreen-clone', 'show');
+  clone.setAttribute('aria-hidden', 'true');
+  clone.style.width = results.offsetWidth + 'px';
+  clone.style.maxWidth = results.offsetWidth + 'px';
+
+  clone.querySelector('#exportSection')?.remove();
+  clone.querySelector('.detail-eye-btn')?.remove();
+
+  const conditionsBox = clone.querySelector('#conditionsBox');
+  if (conditionsBox) conditionsBox.classList.remove('collapsed');
+
+  const detailSection = clone.querySelector('#detailSection');
+  if (!includeDetail) {
+    detailSection?.remove();
+  } else {
+    clone.querySelectorAll('.year-item').forEach((el) => el.classList.add('open'));
+  }
+
+  const aprBlock = clone.querySelector('#aprBlock');
+  if (shouldShowAprFooter()) {
+    aprBlock?.classList.remove('hidden');
+    const screen = aprBlock?.querySelector('.apr-footer-screen');
+    const exp = aprBlock?.querySelector('.apr-footer-export');
+    if (screen) screen.style.display = 'none';
+    if (exp) exp.style.display = 'flex';
+    const exportVal = aprBlock?.querySelector('#resAprExport');
+    if (exportVal) exportVal.textContent = $('#resApr')?.textContent || '';
+  } else {
+    aprBlock?.remove();
+  }
+
+  document.body.appendChild(clone);
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  return clone;
+}
+
 async function captureResultsCanvas() {
   if (typeof html2canvas !== 'function') {
     throw new Error('html2canvas not loaded');
   }
-  const includeDetail = getExportIncludeDetail();
-  const results = $('#results');
-  const detailSection = $('#detailSection');
-  const prevOpen = getYearOpenState();
-  const prevDetailDisplay = detailSection.style.display;
-  if (includeDetail) {
-    expandAllYears(true);
-  } else {
-    detailSection.style.display = 'none';
-  }
-  results.classList.add('export-capture');
-  const prevScrollY = window.scrollY;
-  window.scrollTo(0, results.offsetTop);
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  let clone = null;
   try {
-    const height = getResultsExportHeight(results);
-    const canvas = await html2canvas(results, {
+    clone = await buildExportCaptureNode();
+    const height = getResultsExportHeight(clone);
+    const canvas = await html2canvas(clone, {
       scale: 2,
       backgroundColor: '#ffffff',
       useCORS: true,
@@ -2799,19 +3173,19 @@ async function captureResultsCanvas() {
     });
     return balanceExportCanvasHorizontal(canvas);
   } finally {
-    results.classList.remove('export-capture');
-    detailSection.style.display = prevDetailDisplay;
-    if (includeDetail) setYearOpenState(prevOpen);
-    window.scrollTo(0, prevScrollY);
+    clone?.remove();
   }
 }
 
 async function withExportLock(task, busyMsg) {
   if (exportBusy) return;
   if (!$('#results').classList.contains('show')) {
-    showToast('請先按「開始試算」');
+    showToast('請先完成試算');
     return;
   }
+  const savedX = window.scrollX;
+  const savedY = window.scrollY;
+  document.activeElement?.blur?.();
   exportBusy = true;
   $$('.export-btn').forEach((btn) => { btn.disabled = true; });
   $$('.export-detail-btn').forEach((btn) => { btn.disabled = true; });
@@ -2825,6 +3199,7 @@ async function withExportLock(task, busyMsg) {
     exportBusy = false;
     $$('.export-btn').forEach((btn) => { btn.disabled = false; });
     $$('.export-detail-btn').forEach((btn) => { btn.disabled = false; });
+    window.scrollTo(savedX, savedY);
   }
 }
 
@@ -2907,19 +3282,39 @@ function updateAmount() {
 }
 
 let calcPending = false;
+let calcSynced = false;
 
-function markCalcPending() {
-  const btn = $('#calc');
-  if (!btn || calcPending) return;
-  btn.classList.add('btn-calc-pending');
-  calcPending = true;
+function formIsCalcEmpty() {
+  return $('#price').value === '' && $('#ratio').value === '' &&
+    $('#term').value === '' && $('#rate').value === '';
 }
 
-function clearCalcPending() {
-  calcPending = false;
+function updateCalcButton() {
   const btn = $('#calc');
   if (!btn) return;
-  btn.classList.remove('btn-calc-pending');
+  btn.classList.remove('btn-calc-stale');
+  if (formIsCalcEmpty()) {
+    btn.textContent = '開始計算';
+    return;
+  }
+  if (calcSynced && !calcPending) {
+    btn.textContent = '計算完成';
+    return;
+  }
+  btn.textContent = '尚未計算';
+  btn.classList.add('btn-calc-stale');
+}
+
+function markCalcPending() {
+  calcPending = true;
+  calcSynced = false;
+  updateCalcButton();
+}
+
+function markCalcSynced() {
+  calcPending = false;
+  calcSynced = true;
+  updateCalcButton();
 }
 
 function maybeRecalc() {
@@ -3211,8 +3606,7 @@ function groupPeriodSummary(schedule, graceMonths, totalMonths) {
 }
 
 function calcAPR(schedule, principal) {
-  const precision = getRateDisplayPrecision();
-  if (!schedule.length || !principal) return formatComputedRatePct(0, precision);
+  if (!schedule.length || !principal) return formatAprRatePct(0);
   const payments = schedule.map(r => r.payment);
   const npv = (monthlyRate) => {
     let sum = -principal;
@@ -3221,17 +3615,16 @@ function calcAPR(schedule, principal) {
     }
     return sum;
   };
-  if (npv(0) <= 0) return formatComputedRatePct(getWeightedNominalRate(schedule.length), precision);
   let low = 0, high = 0.02, guard = 0;
-  while (npv(high) < 0 && guard++ < 25) high *= 2;
-  if (guard >= 25) return formatComputedRatePct(getWeightedNominalRate(schedule.length), precision);
+  while (npv(high) > 0 && guard++ < 25) high *= 2;
+  if (guard >= 25) return formatAprRatePct(0);
   for (let i = 0; i < 80; i++) {
     const mid = (low + high) / 2;
     if (npv(mid) > 0) low = mid;
     else high = mid;
   }
   const monthly = (low + high) / 2;
-  return formatComputedRatePct((Math.pow(1 + monthly, 12) - 1) * 100, precision);
+  return formatAprRatePct((Math.pow(1 + monthly, 12) - 1) * 100);
 }
 
 function scrollToFormField(el) {
@@ -3294,11 +3687,14 @@ function renderResults(scrollToResults) {
 
   renderConditions();
 
-  $('#resTotal').textContent = fmt(principal) + ' 元';
+  renderTotalAmount(principal);
   $('#resApr').textContent = calcAPR(schedule, principal) + ' %';
-  $('#resTerm').textContent = graceVal === 0
+  const showApr = shouldShowAprFooter();
+  $('#aprBlock')?.classList.toggle('hidden', !showApr);
+  if (showApr) syncAprExportDisplay();
+  $('#resTerm').innerHTML = graceVal === 0
     ? `${$('#term').value} 年（無寬限期）`
-    : `${$('#term').value} 年（寬限期 ${graceVal} ${graceUnit}）`;
+    : `${$('#term').value} 年<span class="term-grace-note">（寬限期 ${graceVal} ${graceUnit}）</span>`;
 
   const rowsHtml = groupPeriodSummary(schedule, graceMonths, getTotalMonths()).map(l => {
     const amountText = l.isGrace
@@ -3390,7 +3786,7 @@ function renderRateRows() {
     const isLast = i === lastIdx;
     const toCell = isLast
       ? `<span class="rate-readonly">${seg.to || total}</span>`
-      : `<input type="text" class="calc-field rate-period" value="${seg.to}" data-i="${i}" data-f="to" readonly inputmode="none" autocomplete="off">`;
+      : `<input type="text" class="calc-field rate-period" value="${seg.to}" data-i="${i}" data-f="to" data-calc-integer="true" readonly inputmode="none" autocomplete="off">`;
     const rmBtn = rateSegments.length > 1
       ? `<button type="button" class="btn-remove" data-rm="${i}" title="刪除此段" aria-label="刪除此段">×</button>`
       : '';
@@ -3542,13 +3938,14 @@ $('#calc').addEventListener('click', () => {
       return;
     }
     renderResults(true);
-    clearCalcPending();
+    markCalcSynced();
   } catch (err) {
     console.error(err);
     showAppAlert('試算時發生錯誤，請重新整理頁面後再試');
   }
 });
 $('#clearBtn').addEventListener('click', () => enterClearedState());
+$('#aprInfoBtn')?.addEventListener('click', showAprInfo);
 $('#restoreBtn').addEventListener('click', () => restoreClearedState());
 
 $('#toggleCumBtn').addEventListener('click', () => {
@@ -3587,6 +3984,8 @@ $('#conditionsToggle').addEventListener('click', () => {
 
 updateAmount();
 initCalcFields();
+initTotalAmountToggle();
+updateCalcButton();
 window.addEventListener('resize', scheduleFitPaymentTable);
 (function () {
   const v = document.getElementById('verLine');
@@ -3605,6 +4004,22 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   const clearBtn = document.getElementById('clearBtn');
   const restoreBtn = document.getElementById('restoreBtn');
   let clearBtnDisplay = clearBtn ? clearBtn.style.display : '';
+  const VER_DBL_MS = 400;
+  let verTap = { mode: null, at: 0 };
+
+  function scrollModePanelToTop(mode) {
+    const panel = panels[mode];
+    if (!panel) return;
+    const sticky = document.querySelector('.sticky-top');
+    const pad = 8;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const stickyH = sticky ? sticky.getBoundingClientRect().height : 0;
+        const top = window.scrollY + panel.getBoundingClientRect().top - stickyH - pad;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      });
+    });
+  }
 
   function applyMode(mode) {
     if (!panels.general) return;
@@ -3630,7 +4045,18 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   }
 
   btns.forEach((btn) => {
-    btn.addEventListener('click', () => applyMode(btn.dataset.mode));
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      const now = Date.now();
+      if (verTap.mode === mode && now - verTap.at <= VER_DBL_MS) {
+        verTap = { mode: null, at: 0 };
+        applyMode(mode);
+        scrollModePanelToTop(mode);
+        return;
+      }
+      verTap = { mode, at: now };
+      applyMode(mode);
+    });
   });
 
   let saved = 'general';
