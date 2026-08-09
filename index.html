@@ -2162,7 +2162,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09ZG";
+const APP_VERSION = "2026.08.09ZH";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2457,6 +2457,15 @@ function fmtPeriod(n) { return String(n).padStart(3, '0'); }
 
 const MAX_INPUT_DECIMALS = 3;
 const FIELD_CAP_MAX = 100;
+const CALC_OPEN_GUARD_MS = 400;
+
+function calcMarkOpenGuard(backdrop) {
+  if (backdrop) backdrop._calcGuardCloseUntil = Date.now() + CALC_OPEN_GUARD_MS;
+}
+
+function calcIsOpenGuarded(backdrop) {
+  return !!(backdrop && backdrop._calcGuardCloseUntil && Date.now() < backdrop._calcGuardCloseUntil);
+}
 
 function getGraceMaxValue() {
   syncGraceUnitFromDom();
@@ -2927,6 +2936,7 @@ function bindCalcKeyboardSwipeDismiss(backdrop) {
     const moved = ptr.moved;
     clearPtr();
     if (swiped) {
+      if (calcIsOpenGuarded(backdrop)) return;
       try { e.preventDefault(); } catch (_) {}
       backdrop._calcIgnoreClick = true;
       setTimeout(() => { backdrop._calcIgnoreClick = false; }, 450);
@@ -2997,7 +3007,16 @@ function renderCalcSheet() {
       </div>
       <button type="button" class="calc-btn-done">完成</button>
     </div>`;
-  backdrop.addEventListener('click', () => closeCalcKeyboard(true));
+  backdrop.addEventListener('click', (e) => {
+    if (calcIsOpenGuarded(backdrop)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (e.target !== backdrop) return;
+    closeCalcKeyboard(true);
+  });
+  calcMarkOpenGuard(backdrop);
   backdrop.querySelector('.calc-sheet-panel').addEventListener('click', (e) => e.stopPropagation());
   backdrop.querySelector('.calc-btn-done').addEventListener('click', (e) => {
     if (backdrop._calcIgnoreClick) { e.preventDefault(); e.stopPropagation(); return; }
