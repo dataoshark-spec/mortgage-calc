@@ -1016,22 +1016,20 @@ if ("serviceWorker" in navigator) {
       pointer-events: none;
     }
     .conditions-toggle {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 1.2rem;
-      line-height: 1;
-      display: grid;
-      place-items: center;
       flex-shrink: 0;
+      margin-left: 8px;
+      color: #999;
+      font-size: 0.75rem;
+      line-height: 1;
+      display: inline-block;
       pointer-events: none;
+      transition: transform 0.2s ease;
+      transform: rotate(0deg);
     }
     .conditions-body { padding: 16px 18px; }
     .conditions-box.collapsed .conditions-body { display: none; }
     .conditions-box.collapsed .conditions-head { border-bottom: none; }
-    .conditions-box.collapsed .conditions-toggle { transform: rotate(0deg); }
+    .conditions-box:not(.collapsed) .conditions-toggle { transform: rotate(180deg); }
     .conditions-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1296,6 +1294,7 @@ if ("serviceWorker" in navigator) {
       font-size: 0.95rem;
       color: var(--text);
       font-weight: 500;
+      line-height: 1.2;
     }
     .apr-info-btn {
       flex-shrink: 0;
@@ -1306,13 +1305,16 @@ if ("serviceWorker" in navigator) {
       border-radius: 50%;
       background: transparent;
       color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       transition: color 0.15s, background 0.15s;
+    }
+    .apr-info-btn .apr-info-icon {
+      width: 18px;
+      height: 18px;
+      display: block;
     }
     .apr-info-btn:hover {
       color: var(--teal-dark);
@@ -1896,7 +1898,7 @@ if ("serviceWorker" in navigator) {
     <div class="conditions-box" id="conditionsBox">
       <button type="button" class="conditions-head" id="conditionsToggle" aria-expanded="true" title="收合試算條件">
         <h3>試算條件</h3>
-        <span class="conditions-toggle" aria-hidden="true">−</span>
+        <span class="conditions-toggle arrow" aria-hidden="true">▼</span>
       </button>
       <div class="conditions-body">
         <div class="conditions-grid" id="conditionsGrid"></div>
@@ -1934,7 +1936,13 @@ if ("serviceWorker" in navigator) {
         <div class="apr-footer apr-footer-screen">
           <span class="apr-label-wrap">
             <span class="apr-label">換算年利率</span>
-            <button type="button" class="apr-info-btn" id="aprInfoBtn" aria-label="換算年利率說明">ⓘ</button>
+            <button type="button" class="apr-info-btn" id="aprInfoBtn" aria-label="換算年利率說明">
+              <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <circle cx="12" cy="8" r="1.1" fill="currentColor" stroke="none"/>
+                <path d="M12 11v5" stroke-linecap="round"/>
+              </svg>
+            </button>
           </span>
           <span class="apr-val" id="resApr">—</span>
         </div>
@@ -2054,7 +2062,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09L";
+const APP_VERSION = "2026.08.09P";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -3033,8 +3041,17 @@ function isProminentRateDisplay() {
   return rateType === 'single' || (rateType === 'multi' && rateSegments.length === 1);
 }
 
+function allMultiRatesEqual() {
+  if (rateType !== 'multi' || rateSegments.length < 2) return false;
+  const rates = rateSegments.map((seg) => Number(seg.rate));
+  if (rates.some((r) => !Number.isFinite(r))) return false;
+  return rates.every((r) => r === rates[0]);
+}
+
 function shouldShowAprFooter() {
-  return !isProminentRateDisplay();
+  if (isProminentRateDisplay()) return false;
+  if (allMultiRatesEqual()) return false;
+  return true;
 }
 
 function renderConditions() {
@@ -3976,8 +3993,6 @@ $('#conditionsToggle').addEventListener('click', () => {
   const box = $('#conditionsBox');
   const collapsed = box.classList.toggle('collapsed');
   const head = $('#conditionsToggle');
-  const icon = head.querySelector('.conditions-toggle');
-  if (icon) icon.textContent = collapsed ? '+' : '−';
   head.setAttribute('aria-expanded', !collapsed);
   head.title = collapsed ? '展開試算條件' : '收合試算條件';
 });
