@@ -602,6 +602,8 @@ if ("serviceWorker" in navigator) {
       background: #fff;
       border: 1.5px solid #ebebeb;
       transition: border-color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+      tap-highlight-color: transparent;
     }
     .input-box:has(> .calc-field):hover {
       border-color: rgba(201, 146, 42, 0.38);
@@ -636,6 +638,15 @@ if ("serviceWorker" in navigator) {
       caret-color: transparent;
       -webkit-user-select: none;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      tap-highlight-color: transparent;
+    }
+    input.calc-field:focus,
+    input.calc-field:focus-visible,
+    input.calc-field:active {
+      background: transparent;
+      outline: none;
+      box-shadow: none;
     }
     input.calc-field.calc-active {
       color: var(--teal-dark);
@@ -2151,7 +2162,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09ZB";
+const APP_VERSION = "2026.08.09ZD";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2320,6 +2331,13 @@ function getActivePillVal(containerId) {
   return active ? active.dataset.val : '';
 }
 
+function syncTermPillsFromInput() {
+  const val = String($('#term').value ?? '').trim();
+  $$('#termPills .qp').forEach(p => {
+    p.classList.toggle('active', val !== '' && p.dataset.val === val);
+  });
+}
+
 function captureFormState() {
   return {
     price: $('#price').value,
@@ -2351,9 +2369,7 @@ function applyFormState(state) {
     renderGracePills(+state.grace);
   }
 
-  $$('#termPills .qp').forEach(p => {
-    p.classList.toggle('active', state.termPillVal !== '' && p.dataset.val === state.termPillVal);
-  });
+  syncTermPillsFromInput();
 
   method = state.method;
   rateType = state.rateType;
@@ -2977,13 +2993,18 @@ function bindCalcField(el) {
     e.preventDefault();
     openCalcKeyboard(el, { allowNegative: el.dataset.calcNegative === 'true' });
   };
-  el.addEventListener('pointerdown', () => {
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     const ae = document.activeElement;
     if (ae && ae !== el && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
   });
   el.addEventListener('click', openField);
   const box = el.closest('.input-box');
   if (box) {
+    box.addEventListener('pointerdown', (e) => {
+      if (e.target === el) return;
+      e.preventDefault();
+    });
     box.addEventListener('click', (e) => {
       if (e.target === el) return;
       openField(e);
@@ -3946,6 +3967,7 @@ function renderRateRows() {
 $('#price').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
 $('#ratio').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
 $('#term').addEventListener('input', () => {
+  syncTermPillsFromInput();
   if (rateType === 'multi') {
     syncRateSegmentsContiguous();
     renderRateRows();
