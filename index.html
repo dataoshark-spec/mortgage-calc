@@ -42,7 +42,7 @@ if ("serviceWorker" in navigator) {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     button, input, select, textarea, a, label, summary,
     [role="button"], .ver-btn, .qp, .choice-btn, .calc-btn, .export-btn,
-    .clear-btn, .restore-btn, .year-header, .conditions-toggle, .detail-eye-btn,
+    .clear-btn, .restore-btn, .year-header, .conditions-head, .conditions-toggle, .detail-eye-btn,
     .btn-add, .btn-remove, .app-alert-btn, .install-bar button {
       -webkit-tap-highlight-color: transparent;
       tap-highlight-color: transparent;
@@ -56,7 +56,7 @@ if ("serviceWorker" in navigator) {
       outline: none;
     }
     button, .qp, .choice-btn, .ver-btn, .calc-btn, .export-btn,
-    .clear-btn, .restore-btn, .year-header, .conditions-toggle, .detail-eye-btn,
+    .clear-btn, .restore-btn, .year-header, .conditions-head, .conditions-toggle, .detail-eye-btn,
     .btn-add, .btn-remove, input.calc-field {
       touch-action: manipulation;
     }
@@ -959,13 +959,10 @@ if ("serviceWorker" in navigator) {
     .results { display: none; }
     .results.show { display: block; }
     .results-heading {
-      text-align: center;
-      font-size: 1.1rem;
-      font-weight: 700;
       margin: 8px 0 16px;
-      color: var(--text);
     }
     .conditions-box {
+      scroll-margin-top: calc(var(--safe-top) + 148px);
       border: 1px solid #ddd;
       border-radius: 12px;
       margin-bottom: 24px;
@@ -985,6 +982,9 @@ if ("serviceWorker" in navigator) {
       text-align: left;
       cursor: pointer;
       color: inherit;
+      -webkit-appearance: none;
+      appearance: none;
+      box-shadow: none;
     }
     .conditions-head:hover { background: #f3f3f3; }
     .conditions-head h3 {
@@ -1085,7 +1085,7 @@ if ("serviceWorker" in navigator) {
     }
     .summary-item .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
     .summary-item .value { font-size: 1.1rem; font-weight: 600; color: var(--teal); }
-    /* 每期應還款本利和 — 重點區塊 */
+    /* 每月還款 — 重點區塊 */
     .period-summary {
       margin-bottom: 28px;
       padding: 8px 0 4px;
@@ -1100,6 +1100,12 @@ if ("serviceWorker" in navigator) {
       flex: 1;
       height: 1px;
       background: #d0d0d0;
+    }
+    .period-title-dashed .title-line {
+      height: 0;
+      background: none;
+      border-top: 1px dashed #d0d0d0;
+      align-self: center;
     }
     .period-title h3 {
       font-size: 1.08rem;
@@ -1190,8 +1196,7 @@ if ("serviceWorker" in navigator) {
       justify-content: space-between;
       align-items: center;
       margin-top: 14px;
-      padding: 14px 4px 4px;
-      border-top: 1px solid #e0e0e0;
+      padding: 4px;
     }
     .apr-footer .apr-label {
       font-size: 0.95rem;
@@ -1206,19 +1211,28 @@ if ("serviceWorker" in navigator) {
     .year-accordion { margin-top: 0; }
     .detail-section { margin-top: 8px; }
     .detail-section-head {
+      margin-bottom: 16px;
+    }
+    .detail-section-head .period-title {
+      margin-bottom: 10px;
+    }
+    .detail-section-head h3 {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      margin: 0;
+    }
+    .detail-meta-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 10px;
-    }
-    .detail-title {
-      font-size: 0.9rem;
-      color: var(--muted);
-      font-weight: 500;
+      padding: 0 2px;
     }
     .detail-sub {
-      color: #aaa;
+      font-size: 0.82rem;
+      color: var(--muted);
       font-weight: 400;
     }
     .detail-eye-btn {
@@ -1433,7 +1447,7 @@ if ("serviceWorker" in navigator) {
     .export-scope { margin-bottom: 14px; }
     .export-detail-group .choice-btn {
       height: 44px;
-      font-size: 0.86rem;
+      font-size: 0.8rem;
     }
     .export-actions {
       display: grid;
@@ -1768,7 +1782,11 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
 
-    <h2 class="results-heading">試算結果</h2>
+    <div class="period-title results-heading">
+      <span class="title-line"></span>
+      <h3>試算結果</h3>
+      <span class="title-line"></span>
+    </div>
 
     <div class="summary-grid">
       <div class="summary-item">
@@ -1782,9 +1800,9 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="period-summary">
-      <div class="period-title">
+      <div class="period-title period-title-dashed">
         <span class="title-line"></span>
-        <h3>每期應還款本利和</h3>
+        <h3>每月還款</h3>
         <span class="title-line"></span>
       </div>
       <div class="payment-table" id="periodLines"></div>
@@ -1796,13 +1814,20 @@ if ("serviceWorker" in navigator) {
 
     <div class="detail-section" id="detailSection">
       <div class="detail-section-head">
-        <span class="detail-title">還款明細 <span class="detail-sub">共 <span id="detailMonths">—</span> 個月（<span id="detailMonths2">—</span>期）</span></span>
-        <button type="button" class="detail-eye-btn" id="toggleCumBtn" title="顯示累積利息" aria-pressed="false" aria-label="顯示累積利息">
+        <div class="period-title period-title-dashed">
+          <span class="title-line"></span>
+          <h3>還款明細</h3>
+          <span class="title-line"></span>
+        </div>
+        <div class="detail-meta-row">
+          <span class="detail-sub">共 <span id="detailMonths">—</span> 個月（<span id="detailMonths2">—</span>期）</span>
+          <button type="button" class="detail-eye-btn" id="toggleCumBtn" title="顯示累積利息" aria-pressed="false" aria-label="顯示累積利息">
           <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
             <circle cx="12" cy="12" r="3"/>
           </svg>
         </button>
+        </div>
       </div>
       <div class="year-accordion" id="yearAccordion"></div>
     </div>
@@ -1812,8 +1837,8 @@ if ("serviceWorker" in navigator) {
       <div class="export-title">匯出與分享</div>
       <div class="export-scope">
         <div class="choice-group export-detail-group" role="group" aria-label="匯出內容">
+          <button type="button" class="choice-btn export-detail-btn" data-export-detail="summary">僅重點摘要</button>
           <button type="button" class="choice-btn export-detail-btn active" data-export-detail="detail">含還款明細</button>
-          <button type="button" class="choice-btn export-detail-btn" data-export-detail="summary">僅摘要</button>
         </div>
       </div>
       <div class="export-actions">
@@ -1894,7 +1919,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.08ZD";
+const APP_VERSION = "2026.08.08ZN";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -1999,18 +2024,24 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 1500);
 }
 
+let appAlertOnClose = null;
+
 function closeAppAlert() {
   const backdrop = $('#appAlert');
   if (!backdrop) return;
   backdrop.classList.remove('show');
   backdrop.hidden = true;
+  const cb = appAlertOnClose;
+  appAlertOnClose = null;
+  if (cb) cb();
 }
 
-function showAppAlert(message) {
+function showAppAlert(message, onClose) {
   const backdrop = $('#appAlert');
   const textEl = $('#appAlertText');
   if (!backdrop || !textEl) return;
   textEl.textContent = message;
+  appAlertOnClose = typeof onClose === 'function' ? onClose : null;
   backdrop.hidden = false;
   backdrop.classList.add('show');
   try { if (navigator.vibrate) navigator.vibrate([30, 50, 30]); } catch {}
@@ -2565,7 +2596,7 @@ function exportFileName(ext) {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
-  const tag = getExportIncludeDetail() ? '含明細' : '摘要';
+  const tag = getExportIncludeDetail() ? '含明細' : '重點摘要';
   return `房屋貸款試算_${stamp}_${tag}.${ext}`;
 }
 
@@ -3203,6 +3234,56 @@ function calcAPR(schedule, principal) {
   return formatComputedRatePct((Math.pow(1 + monthly, 12) - 1) * 100, precision);
 }
 
+function scrollToFormField(el) {
+  if (!el) return;
+  const sticky = document.querySelector('.sticky-top');
+  const pad = 12;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const stickyH = sticky ? sticky.getBoundingClientRect().height : 0;
+      const top = window.scrollY + el.getBoundingClientRect().top - stickyH - pad;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  });
+}
+
+function getRateValidationError() {
+  const isMissingRate = (val) => {
+    const s = String(val ?? '').trim();
+    return s === '' || Number.isNaN(Number(s));
+  };
+  if (rateType === 'single') {
+    if (isMissingRate($('#rate').value)) {
+      return { el: $('#rate'), message: '請輸入年利率' };
+    }
+    return null;
+  }
+  syncRateSegmentsContiguous();
+  for (let i = 0; i < rateSegments.length; i++) {
+    if (isMissingRate(rateSegments[i].rate)) {
+      const inp = $('#rateRows')?.querySelector(`input.rate-val[data-i="${i}"]`);
+      return {
+        el: inp || $('#multiRate'),
+        message: rateSegments.length > 1 ? `請輸入第 ${i + 1} 段年利率` : '請輸入年利率'
+      };
+    }
+  }
+  return null;
+}
+
+function scrollToResultsTop() {
+  const target = $('#conditionsBox');
+  const sticky = document.querySelector('.sticky-top');
+  const pad = 8;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const stickyH = sticky ? sticky.getBoundingClientRect().height : 0;
+      const top = window.scrollY + target.getBoundingClientRect().top - stickyH - pad;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  });
+}
+
 function renderResults(scrollToResults) {
   const principal = getLoanYuan();
   const graceMonths = getGraceMonths();
@@ -3297,7 +3378,7 @@ function renderResults(scrollToResults) {
 
   $('#results').classList.add('show');
   if (scrollToResults) {
-    $('#results').scrollIntoView({ behavior: 'smooth' });
+    scrollToResultsTop();
   }
 }
 
@@ -3448,6 +3529,16 @@ $('#calc').addEventListener('click', () => {
     }
     if (getLoanYuan() <= 0) {
       showAppAlert('請輸入購屋價格與貸款成數');
+      return;
+    }
+    const rateErr = getRateValidationError();
+    if (rateErr) {
+      scrollToFormField(rateErr.el);
+      showAppAlert(rateErr.message, () => {
+        if (rateErr.el && rateErr.el.classList.contains('calc-field')) {
+          openCalcKeyboard(rateErr.el);
+        }
+      });
       return;
     }
     renderResults(true);
