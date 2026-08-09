@@ -774,7 +774,7 @@ if ("serviceWorker" in navigator) {
       color: #fff;
       font-weight: 400;
     }
-    /* 寬限期：左欄輸入+切換，右欄快捷鈕對齊上方貸款期間 */
+    /* 寬限期：左欄輸入+切換，右欄快捷鈕對齊上方貸款年限 */
     .grace-block {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1925,7 +1925,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="field">
-        <label>貸款期間</label>
+        <label>貸款年限</label>
         <div class="input-box">
           <input type="text" id="term" class="calc-field" value="30" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">年</span>
@@ -2162,7 +2162,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09ZE";
+const APP_VERSION = "2026.08.09ZG";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2456,6 +2456,66 @@ function fmt(n) { return Math.round(n).toLocaleString('zh-TW'); }
 function fmtPeriod(n) { return String(n).padStart(3, '0'); }
 
 const MAX_INPUT_DECIMALS = 3;
+const FIELD_CAP_MAX = 100;
+
+function getGraceMaxValue() {
+  syncGraceUnitFromDom();
+  const termYears = +$('#term').value || 0;
+  if (termYears <= 0) return 0;
+  return graceIsYear ? termYears : termYears * 12;
+}
+
+function clampFieldValue(inputEl, rawValue) {
+  const raw = String(rawValue ?? '').trim();
+  if (!raw || !inputEl) return raw;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return raw;
+
+  let max = null;
+  const id = inputEl.id;
+  if (id === 'ratio' || id === 'term' || id === 'rate' || inputEl.classList.contains('rate-val')) {
+    max = FIELD_CAP_MAX;
+  } else if (id === 'grace') {
+    max = getGraceMaxValue();
+  }
+  if (max === null) return raw;
+
+  let clamped = Math.min(max, Math.max(0, n));
+  if (inputEl.dataset.calcInteger === 'true') {
+    clamped = Math.trunc(clamped);
+  } else {
+    clamped = truncateToDecimals(clamped, MAX_INPUT_DECIMALS);
+  }
+  if (clamped === n) return raw;
+  return String(clamped);
+}
+
+function clampFieldToast(inputEl, before, after) {
+  if (before === after || before === '') return;
+  const id = inputEl.id;
+  if (id === 'ratio') showToast('貸款成數上限為 100%');
+  else if (id === 'term') showToast('貸款年限上限為 100 年');
+  else if (id === 'rate' || inputEl.classList.contains('rate-val')) showToast('年利率上限為 100%');
+  else if (id === 'grace') showToast('寬限期不可高於貸款年限');
+}
+
+function applyFieldClamp(inputEl, value) {
+  const next = clampFieldValue(inputEl, value);
+  clampFieldToast(inputEl, value, next);
+  return next;
+}
+
+function enforceGraceWithinTerm() {
+  const graceEl = $('#grace');
+  if (!graceEl) return;
+  const before = graceEl.value;
+  const after = applyFieldClamp(graceEl, before);
+  if (before === after) return;
+  graceEl.value = after;
+  $$('#gracePills .qp').forEach(p => {
+    p.classList.toggle('active', p.dataset.val === after);
+  });
+}
 
 function truncateToDecimals(n, maxDec = MAX_INPUT_DECIMALS) {
   if (!isFinite(n)) return n;
@@ -2648,7 +2708,8 @@ function calcUpdateDisplay() {
 function calcCommitValue(rawExpr) {
   const input = calcKeyboard.inputEl;
   if (!input) return;
-  const next = String(rawExpr ?? '').trim() === '' ? '' : normalizeCalcCommitValue(rawExpr);
+  let next = String(rawExpr ?? '').trim() === '' ? '' : normalizeCalcCommitValue(rawExpr);
+  next = applyFieldClamp(input, next);
   input.value = next;
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -3469,8 +3530,14 @@ function getGraceMonths() {
 
 function renderGracePills(selectVal) {
   const vals = graceIsYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+  const maxG = getGraceMaxValue();
   let current = selectVal != null ? selectVal : (+$('#grace').value || 0);
+  if (current > maxG) current = maxG;
   current = snapGraceToPill(current, graceIsYear);
+  if (current > maxG) {
+    const allowed = vals.filter(v => v <= maxG);
+    current = allowed.length ? allowed[allowed.length - 1] : 0;
+  }
   $('#gracePills').innerHTML = vals.map(v => {
     const isNone = v === 0;
     const cls = 'qp' + (isNone ? ' qp-text' : '') + (v === current ? ' active' : '');
@@ -3490,6 +3557,8 @@ function setGraceUnit(isYear) {
   graceIsYear = isYear;
   $('#graceYear').classList.toggle('active', isYear);
   $('#graceMonth').classList.toggle('active', !isYear);
+  const maxG = getGraceMaxValue();
+  if (newVal > maxG) newVal = maxG;
   renderGracePills(newVal);
   maybeRecalc();
 }
@@ -3938,7 +4007,7 @@ function renderRateRows() {
         setRateSegmentEnd(idx, inp.value);
         renderRateRows();
       } else if (field === 'rate') {
-        rateSegments[idx].rate = inp.value === '' ? '0' : inp.value;
+        rateSegments[idx].rate = inp.value === '' ? '0' : applyFieldClamp(inp, inp.value);
       }
       maybeRecalc();
     });
@@ -3962,16 +4031,31 @@ function renderRateRows() {
 }
 
 $('#price').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
-$('#ratio').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
+$('#ratio').addEventListener('input', () => {
+  const el = $('#ratio');
+  const clamped = applyFieldClamp(el, el.value);
+  if (el.value !== clamped) el.value = clamped;
+  updateAmount();
+  maybeRecalc();
+});
 $('#term').addEventListener('input', () => {
+  const el = $('#term');
+  const clamped = applyFieldClamp(el, el.value);
+  if (el.value !== clamped) el.value = clamped;
   syncTermPillsFromInput();
+  enforceGraceWithinTerm();
   if (rateType === 'multi') {
     syncRateSegmentsContiguous();
     renderRateRows();
   }
   maybeRecalc();
 });
-$('#rate').addEventListener('input', maybeRecalc);
+$('#rate').addEventListener('input', () => {
+  const el = $('#rate');
+  const clamped = applyFieldClamp(el, el.value);
+  if (el.value !== clamped) el.value = clamped;
+  maybeRecalc();
+});
 
 $('#termPills').addEventListener('click', e => {
   if (!e.target.classList.contains('qp')) return;
@@ -3995,7 +4079,9 @@ $('#gracePills').addEventListener('click', e => {
 
 $('#grace').addEventListener('input', () => {
   syncGraceUnitFromDom();
-  const val = $('#grace').value;
+  const el = $('#grace');
+  const val = applyFieldClamp(el, el.value);
+  if (el.value !== val) el.value = val;
   $$('#gracePills .qp').forEach(p => {
     p.classList.toggle('active', p.dataset.val === val);
   });
@@ -4047,7 +4133,7 @@ $('#addRate').addEventListener('click', () => {
 $('#calc').addEventListener('click', () => {
   try {
     if (getTotalMonths() <= 0) {
-      showAppAlert('請輸入有效的貸款期間');
+      showAppAlert('請輸入有效的貸款年限');
       return;
     }
     if (getLoanYuan() <= 0) {
