@@ -20,8 +20,71 @@ if ("serviceWorker" in navigator) {
 }
 </script>
   <title>房屋貸款試算</title>
+  <!-- 桌面略放大、整欄置中（比照房地合一稅） -->
+  <script>
+  (function(){
+    var DESIGN = 720, MIN_W = 800, SCALE = 1.2, zoomOk = null;
+    function detectZoomSupport(){
+      if (zoomOk !== null) return zoomOk;
+      try {
+        var el = document.createElement('div');
+        el.style.cssText = 'width:100px;height:1px;position:absolute;left:-9999px;top:0;';
+        document.documentElement.appendChild(el);
+        el.style.zoom = '2';
+        var measured = el.getBoundingClientRect().width;
+        el.style.zoom = '';
+        el.remove();
+        zoomOk = measured > 150;
+      } catch (e) { zoomOk = false; }
+      return zoomOk;
+    }
+    function applyDesktopScale(){
+      var z = window.innerWidth >= MIN_W ? SCALE : 1;
+      var useZoom = z > 1 && detectZoomSupport();
+      document.documentElement.style.setProperty('--app-scale', String(z));
+      var shell = document.getElementById('appShell');
+      if (document.body) {
+        document.body.classList.toggle('is-app-scaled', z > 1);
+        document.body.classList.toggle('is-app-scaled-zoom', useZoom);
+        document.body.classList.toggle('is-app-scaled-transform', z > 1 && !useZoom);
+      }
+      if (!shell) return;
+      if (z > 1) {
+        shell.style.width = DESIGN + 'px';
+        shell.style.maxWidth = DESIGN + 'px';
+        if (useZoom) {
+          shell.style.zoom = String(z);
+          shell.style.transform = '';
+          shell.style.transformOrigin = '';
+          shell.style.marginBottom = '';
+        } else {
+          shell.style.zoom = '';
+          shell.style.transform = 'scale(' + z + ')';
+          shell.style.transformOrigin = 'top center';
+          shell.style.marginBottom = '';
+          var h = shell.scrollHeight;
+          shell.style.marginBottom = ((z - 1) * h) + 'px';
+        }
+      } else {
+        shell.style.zoom = '';
+        shell.style.transform = '';
+        shell.style.transformOrigin = '';
+        shell.style.width = '';
+        shell.style.maxWidth = '';
+        shell.style.marginBottom = '';
+      }
+    }
+    window.__applyDesktopScale = applyDesktopScale;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', applyDesktopScale);
+    } else {
+      applyDesktopScale();
+    }
+  })();
+  </script>
   <style>
     :root {
+      --app-scale: 1;
       --teal: #C9922A;
       --teal-dark: #9A6B18;
       --teal-light: #FBF0D9;
@@ -39,8 +102,8 @@ if ("serviceWorker" in navigator) {
       --hero-pad-y: 18px;
       --hero-pad-x: 22px;
       --hero-pad-bottom: 16px;
-      --hero-metrics-h: 49px;
-      --sticky-stack-h: 170px;
+      --hero-metrics-h: 50px;
+      --sticky-stack-h: 167px;
       --field-h: 48px;
       --field-radius: 16px;
     }
@@ -73,15 +136,23 @@ if ("serviceWorker" in navigator) {
       padding: 0;
       overscroll-behavior: none;
     }
+    html { scrollbar-gutter: stable both-edges; }
     body {
       font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      padding: 0 16px 24px;
+      padding: 0 0 24px;
       -webkit-font-smoothing: antialiased;
     }
-    .wrap { max-width: 680px; margin: 0 auto; }
+    .wrap {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+    body.is-app-scaled { overflow-x: hidden; }
+    body.is-app-scaled-transform .sticky-top { position: relative; }
     .sticky-top {
       position: sticky;
       top: 0;
@@ -117,8 +188,8 @@ if ("serviceWorker" in navigator) {
       background: #fff;
       color: var(--teal-dark);
       border-color: #fff;
-      font-weight: 700;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     .ver-btn:active { transform: scale(0.98); }
     .mode-panel { display: block; }
@@ -192,7 +263,7 @@ if ("serviceWorker" in navigator) {
       position: relative;
       z-index: 1;
       margin: 0;
-      padding: var(--hero-pad-y) var(--hero-pad-x) calc(var(--hero-pad-bottom) + var(--hero-metrics-h));
+      padding: var(--hero-pad-y) var(--hero-pad-x) 0;
       background:
         linear-gradient(165deg, rgba(255, 255, 255, 0.14) 0%, transparent 38%),
         linear-gradient(128deg, #E0B04A 0%, var(--teal) 36%, #A6751F 72%, #8A6218 100%);
@@ -231,6 +302,14 @@ if ("serviceWorker" in navigator) {
       gap: 12px;
       position: relative;
       z-index: 1;
+      margin-bottom: var(--hero-pad-bottom);
+    }
+    /* 比照房地合一 safety-bar 高度（無內容占位） */
+    .hero-metrics {
+      position: relative;
+      z-index: 1;
+      height: var(--hero-metrics-h);
+      min-height: var(--hero-metrics-h);
     }
     .app-hero-brand {
       display: flex;
@@ -275,7 +354,6 @@ if ("serviceWorker" in navigator) {
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
-      margin-top: 2px;
     }
     .app-hero .clear-btn {
       background: rgba(0, 0, 0, 0.22);
@@ -582,7 +660,7 @@ if ("serviceWorker" in navigator) {
     }
     .calc-sheet-panel {
       width: calc(100% - 32px);
-      max-width: 680px;
+      max-width: 720px;
       background: #fff;
       border-top-left-radius: 18px;
       border-top-right-radius: 18px;
@@ -970,12 +1048,22 @@ if ("serviceWorker" in navigator) {
       transition: background 0.15s ease, box-shadow 0.15s ease;
     }
     .btn-calc:hover { background: var(--teal-dark); }
-    .btn-calc.btn-calc-stale {
-      animation: calc-stale-text 2.6s ease-in-out infinite;
+    .btn-calc.btn-calc-done {
+      background: #fff;
+      color: var(--text);
+      border: 1.5px solid #e0e0e0;
     }
-    @keyframes calc-stale-text {
+    .btn-calc.btn-calc-done:hover {
+      background: #fafafa;
+      color: var(--text);
+      border-color: #d0d0d0;
+    }
+    .btn-calc.btn-calc-stale {
+      animation: calc-stale-breathe 3.2s ease-in-out infinite;
+    }
+    @keyframes calc-stale-breathe {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.42; }
+      50% { opacity: 0.72; }
     }
     .results { display: none; }
     .results.show { display: block; }
@@ -1656,8 +1744,8 @@ if ("serviceWorker" in navigator) {
         --hero-pad-y: 18px;
         --hero-pad-x: 18px;
         --hero-pad-bottom: 16px;
-        --hero-metrics-h: 49px;
-        --sticky-stack-h: 170px;
+        --hero-metrics-h: 50px;
+        --sticky-stack-h: 167px;
         --field-h: 44px;
         --field-radius: 14px;
       }
@@ -1775,7 +1863,7 @@ if ("serviceWorker" in navigator) {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="appShell">
   <div class="sticky-top">
     <header class="app-hero">
       <div class="app-hero-row">
@@ -1791,6 +1879,7 @@ if ("serviceWorker" in navigator) {
           <button type="button" class="clear-btn" id="clearBtn" title="清空所有輸入欄位">清空數值</button>
         </div>
       </div>
+      <div class="hero-metrics" aria-hidden="true"></div>
     </header>
     <div class="ver-switch" role="tablist" aria-label="試算模式">
       <button class="ver-btn active" data-mode="general" type="button" role="tab" aria-selected="true">一般貸款</button>
@@ -2062,7 +2151,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09P";
+const APP_VERSION = "2026.08.09ZB";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -3309,13 +3398,14 @@ function formIsCalcEmpty() {
 function updateCalcButton() {
   const btn = $('#calc');
   if (!btn) return;
-  btn.classList.remove('btn-calc-stale');
+  btn.classList.remove('btn-calc-stale', 'btn-calc-done');
   if (formIsCalcEmpty()) {
     btn.textContent = '開始計算';
     return;
   }
   if (calcSynced && !calcPending) {
     btn.textContent = '計算完成';
+    btn.classList.add('btn-calc-done');
     return;
   }
   btn.textContent = '尚未計算';
@@ -3793,6 +3883,7 @@ function renderResults(scrollToResults) {
   if (scrollToResults) {
     scrollToResultsTop();
   }
+  if (typeof window.__applyDesktopScale === 'function') window.__applyDesktopScale();
 }
 
 function renderRateRows() {
@@ -4018,7 +4109,6 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   };
   const clearBtn = document.getElementById('clearBtn');
   const restoreBtn = document.getElementById('restoreBtn');
-  let clearBtnDisplay = clearBtn ? clearBtn.style.display : '';
   const VER_DBL_MS = 400;
   let verTap = { mode: null, at: 0 };
 
@@ -4049,11 +4139,11 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       panel.hidden = key !== mode;
     });
     if (clearBtn) {
-      if (mode === 'general') {
-        clearBtn.style.display = clearBtnDisplay || '';
-      } else {
-        clearBtn.style.display = 'none';
-      }
+      const showClear = mode === 'general';
+      clearBtn.style.visibility = showClear ? '' : 'hidden';
+      clearBtn.style.pointerEvents = showClear ? '' : 'none';
+      clearBtn.setAttribute('aria-hidden', showClear ? 'false' : 'true');
+      clearBtn.tabIndex = showClear ? 0 : -1;
     }
     if (restoreBtn && mode !== 'general') restoreBtn.style.display = 'none';
     try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
@@ -4126,6 +4216,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   });
   window.addEventListener('appinstalled', () => { bar.classList.remove('show'); deferred = null; });
 })();
+window.addEventListener('resize', () => {
+  if (typeof window.__applyDesktopScale === 'function') window.__applyDesktopScale();
+});
 </script>
 </body>
 </html>
