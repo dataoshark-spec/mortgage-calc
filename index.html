@@ -2162,7 +2162,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09ZD";
+const APP_VERSION = "2026.08.09ZE";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2655,6 +2655,8 @@ function calcCommitValue(rawExpr) {
 }
 
 function closeCalcKeyboard(applyValue) {
+  clearTimeout(calcKeyboard._closeTimer);
+  calcKeyboard._closeTimer = 0;
   const input = calcKeyboard.inputEl;
   if (applyValue && input) {
     const raw = calcKeyboard.expr || '';
@@ -2713,14 +2715,14 @@ function calcOnKeyDown(e) {
   if (e.key === 'Escape') {
     e.preventDefault();
     calcFlashButton('DONE');
-    setTimeout(() => closeCalcKeyboard(true), 90);
+    closeCalcKeyboard(true);
     return;
   }
   if (e.key === 'Enter' || e.code === 'NumpadEnter') {
     e.preventDefault();
     calcHaptic('DONE');
     calcFlashButton('DONE');
-    setTimeout(() => closeCalcKeyboard(true), 90);
+    closeCalcKeyboard(true);
     return;
   }
   if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -2938,9 +2940,10 @@ function renderCalcSheet() {
   backdrop.querySelector('.calc-sheet-panel').addEventListener('click', (e) => e.stopPropagation());
   backdrop.querySelector('.calc-btn-done').addEventListener('click', (e) => {
     if (backdrop._calcIgnoreClick) { e.preventDefault(); e.stopPropagation(); return; }
+    e.stopPropagation();
     calcHaptic('DONE');
     calcFlashButton('DONE');
-    setTimeout(() => closeCalcKeyboard(true), 90);
+    closeCalcKeyboard(true);
   });
   backdrop.querySelectorAll('[data-key]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
@@ -2990,23 +2993,17 @@ function bindCalcField(el) {
   el.setAttribute('autocomplete', 'off');
   el.classList.add('calc-field');
   const openField = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
+    e.stopPropagation();
+    if (calcKeyboard.inputEl === el && calcKeyboard.backdropEl) return;
     openCalcKeyboard(el, { allowNegative: el.dataset.calcNegative === 'true' });
   };
-  el.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    const ae = document.activeElement;
-    if (ae && ae !== el && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
-  });
-  el.addEventListener('click', openField);
+  el.addEventListener('pointerdown', openField);
   const box = el.closest('.input-box');
   if (box) {
     box.addEventListener('pointerdown', (e) => {
-      if (e.target === el) return;
-      e.preventDefault();
-    });
-    box.addEventListener('click', (e) => {
-      if (e.target === el) return;
+      if (e.target === el || e.target.closest('.calc-field') === el) return;
       openField(e);
     });
   }
