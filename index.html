@@ -1093,9 +1093,10 @@ if ("serviceWorker" in navigator) {
       font-weight: 500;
     }
     .payment-head span {
-      padding: 10px 12px;
+      padding: 10px 8px;
       text-align: center;
       border-right: 1px solid #e5e5e5;
+      white-space: nowrap;
     }
     .payment-head span:last-child { border-right: none; }
     .payment-row {
@@ -1105,46 +1106,53 @@ if ("serviceWorker" in navigator) {
     }
     .payment-row:last-child { border-bottom: none; }
     .payment-row > div {
-      padding: 14px 12px;
+      padding: 14px 8px;
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
       border-right: 1px solid #e5e5e5;
-      line-height: 1.45;
+      line-height: 1.2;
       min-height: 48px;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
     }
     .payment-row > div:last-child { border-right: none; }
     .payment-row .period-range {
       background: #f7f7f7;
-      font-size: 0.88rem;
+      font-size: clamp(0.68rem, 2.6vw, 0.88rem);
       color: #444;
     }
     .payment-row .period-mid {
       background: #fafafa;
-      font-size: 0.92rem;
+      font-size: clamp(0.72rem, 2.5vw, 0.92rem);
       color: #444;
       font-weight: 500;
     }
     .payment-row .period-amount {
       background: #fff;
-      letter-spacing: 0.02em;
+      letter-spacing: 0;
       flex-wrap: nowrap;
     }
     .payment-row .amount-val {
-      display: inline-block;
-      min-width: 6.8em;
-      text-align: right;
-      font-size: 1.05rem;
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 2px;
+      max-width: 100%;
+      white-space: nowrap;
+      font-size: clamp(0.78rem, 3.1vw, 1.05rem);
       font-weight: 700;
       color: var(--teal);
       font-variant-numeric: tabular-nums;
     }
     .payment-row .amount-val .grace-note {
-      font-size: 0.78rem;
+      font-size: 0.78em;
       font-weight: 500;
       color: #999;
-      margin-left: 2px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .apr-footer {
       display: flex;
@@ -1212,10 +1220,24 @@ if ("serviceWorker" in navigator) {
     }
     .detail-section:not(.show-cum) .col-cum { display: none; }
     .year-item {
+      position: relative;
       border-radius: 14px;
       margin-bottom: 8px;
       overflow: hidden;
       background: var(--input-bg);
+      border: none;
+    }
+    .year-item::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px #d0d0d0;
+      pointer-events: none;
+      z-index: 3;
+    }
+    .year-item.open {
+      background: #fff;
     }
     .year-header {
       display: flex;
@@ -1225,8 +1247,13 @@ if ("serviceWorker" in navigator) {
       padding: 10px 16px;
       cursor: pointer;
       font-size: 0.9rem;
+      background: var(--input-bg);
     }
     .year-header:hover { background: #e8e8e8; }
+    .year-item.open .year-header {
+      background: var(--input-bg);
+      border-bottom: 1px solid #d0d0d0;
+    }
     .year-item.open .year-header .arrow { transform: rotate(180deg); }
     .year-header-text {
       display: flex;
@@ -1255,12 +1282,13 @@ if ("serviceWorker" in navigator) {
     .year-body {
       display: none;
       background: #fff;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid #ddd;
-      border-radius: 12px;
     }
     .year-item.open .year-body { display: block; }
+    .year-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      line-height: 0;
+    }
     .year-body table {
       width: 100%;
       table-layout: fixed;
@@ -1268,6 +1296,7 @@ if ("serviceWorker" in navigator) {
       border-spacing: 0;
       font-size: clamp(0.62rem, 2.35vw, 0.82rem);
       text-align: center;
+      line-height: 1.25;
     }
     .year-body col.col-period { width: 9%; }
     .year-body col.col-payment { width: 20%; }
@@ -1318,7 +1347,7 @@ if ("serviceWorker" in navigator) {
     }
     .year-body td {
       padding: 0.7em 0.3em;
-      border-bottom: 1px solid #e8e8e8;
+      border-bottom: 1px solid #ececec;
       font-variant-numeric: tabular-nums;
       color: #333;
       font-size: 1em;
@@ -1363,9 +1392,9 @@ if ("serviceWorker" in navigator) {
       color: var(--teal-dark);
       font-weight: 600;
     }
-    .year-body tbody tr:nth-child(even) { background: #fafcfc; }
+    .year-body tbody tr:nth-child(even) td { background: #fafcfc; }
     .year-body tbody tr:nth-child(even) td.col-period { background: #e8f3f1; }
-    .year-body tbody tr:hover { background: #f0faf8; }
+    .year-body tbody tr:hover td { background: #f0faf8; }
     .year-body tbody tr:hover td.col-period { background: #e3f2ef; }
     .year-body tbody tr:last-child td { border-bottom: none; }
     .note { font-size: 0.7rem; color: #444; margin-top: 16px; line-height: 1.65; }
@@ -1428,7 +1457,20 @@ if ("serviceWorker" in navigator) {
     }
     .export-capture .export-section,
     .export-capture .detail-eye-btn { display: none !important; }
-    .export-capture .year-item { border-color: #d8ece9; }
+    .export-capture {
+      overflow: hidden !important;
+      background: #fff !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    .export-capture .note { margin-bottom: 0; }
+    .export-capture .year-item {
+      overflow: hidden !important;
+    }
+    .export-capture .year-item::after {
+      box-shadow: inset 0 0 0 1px #d0d0d0 !important;
+    }
     .export-capture .year-item .year-body { display: block !important; }
     .export-capture .year-item .arrow { transform: rotate(180deg); }
     .hidden { display: none !important; }
@@ -1529,7 +1571,7 @@ if ("serviceWorker" in navigator) {
       .clear-btn, .restore-btn { padding: 7px 10px; font-size: 0.78rem; }
       .export-actions { grid-template-columns: repeat(2, 1fr); }
       .conditions-grid { grid-template-columns: 1fr; }
-      .year-body {
+      .year-table-wrap {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
@@ -1814,7 +1856,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.08L";
+const APP_VERSION = "2026.08.08R";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2589,6 +2631,20 @@ function getShareText() {
   ].join('\n');
 }
 
+function getResultsExportHeight(el) {
+  const elRect = el.getBoundingClientRect();
+  const style = getComputedStyle(el);
+  const padBottom = parseFloat(style.paddingBottom) || 0;
+  let maxBottom = 0;
+  Array.from(el.children).forEach((child) => {
+    if (child.id === 'exportSection') return;
+    if (getComputedStyle(child).display === 'none') return;
+    const rect = child.getBoundingClientRect();
+    maxBottom = Math.max(maxBottom, rect.bottom - elRect.top);
+  });
+  return Math.ceil(maxBottom + padBottom);
+}
+
 async function captureResultsCanvas() {
   if (typeof html2canvas !== 'function') {
     throw new Error('html2canvas not loaded');
@@ -2597,21 +2653,30 @@ async function captureResultsCanvas() {
   const prevOpen = getYearOpenState();
   expandAllYears(true);
   results.classList.add('export-capture');
+  const prevScrollY = window.scrollY;
+  window.scrollTo(0, results.offsetTop);
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   try {
+    const width = Math.ceil(results.getBoundingClientRect().width);
+    const height = getResultsExportHeight(results);
     return await html2canvas(results, {
       scale: 2,
-      backgroundColor: '#ececec',
+      backgroundColor: '#ffffff',
       useCORS: true,
       logging: false,
-      width: results.scrollWidth,
-      height: results.scrollHeight,
-      windowWidth: results.scrollWidth,
-      windowHeight: results.scrollHeight
+      width,
+      height,
+      windowWidth: width,
+      windowHeight: height,
+      scrollX: 0,
+      scrollY: 0,
+      x: 0,
+      y: 0
     });
   } finally {
     results.classList.remove('export-capture');
     setYearOpenState(prevOpen);
+    window.scrollTo(0, prevScrollY);
   }
 }
 
@@ -2945,6 +3010,35 @@ function buildSchedule() {
   return [];
 }
 
+function fitPaymentTable() {
+  const table = $('#periodLines');
+  if (!table) return;
+  table.querySelectorAll('.payment-row').forEach(row => {
+    const cells = [...row.querySelectorAll(':scope > div')];
+    cells.forEach(c => { c.style.fontSize = ''; });
+    const baseSizes = cells.map(c => parseFloat(getComputedStyle(c).fontSize));
+    let scale = 1;
+    const minScale = 0.62;
+    for (let guard = 0; guard < 30; guard++) {
+      cells.forEach((c, i) => {
+        c.style.fontSize = (baseSizes[i] * scale) + 'px';
+      });
+      const overflow = cells.some(c => c.scrollWidth > c.clientWidth + 1);
+      if (!overflow || scale <= minScale) break;
+      scale -= 0.04;
+    }
+    cells.forEach((c, i) => {
+      c.style.fontSize = (baseSizes[i] * scale) + 'px';
+    });
+  });
+}
+
+let fitPaymentTimer;
+function scheduleFitPaymentTable() {
+  clearTimeout(fitPaymentTimer);
+  fitPaymentTimer = setTimeout(fitPaymentTable, 50);
+}
+
 function groupPeriodSummary(schedule, graceMonths, totalMonths) {
   const groups = [];
   let cur = null;
@@ -3054,6 +3148,7 @@ function renderResults(scrollToResults) {
       <span>應繳金額</span>
     </div>
     ${rowsHtml}`;
+  scheduleFitPaymentTable();
 
   const byYear = {};
   schedule.forEach(r => {
@@ -3091,7 +3186,7 @@ function renderResults(scrollToResults) {
         </div>
         <span class="arrow">▼</span>
       </div>
-      <div class="year-body"><table>
+      <div class="year-body"><div class="year-table-wrap"><table>
         <colgroup>
           <col class="col-period">
           <col class="col-payment">
@@ -3109,7 +3204,7 @@ function renderResults(scrollToResults) {
           <th class="col-cum">累積利息</th>
         </tr></thead>
         <tbody>${bodyRows}</tbody>
-      </table></div></div>`;
+      </table></div></div></div>`;
   }).join('');
 
   $('#results').classList.add('show');
@@ -3302,6 +3397,7 @@ $('#conditionsToggle').addEventListener('click', () => {
 
 updateAmount();
 initCalcFields();
+window.addEventListener('resize', scheduleFitPaymentTable);
 (function () {
   const v = document.getElementById('verLine');
   if (v) v.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
