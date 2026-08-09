@@ -145,6 +145,9 @@ if ("serviceWorker" in navigator) {
       padding: 0 0 24px;
       -webkit-font-smoothing: antialiased;
     }
+    body.calc-keyboard-open {
+      padding-bottom: var(--calc-kb-pad, 380px);
+    }
     .wrap {
       width: 100%;
       max-width: 720px;
@@ -478,9 +481,6 @@ if ("serviceWorker" in navigator) {
     .toast-hint-sub .toast-warn {
       color: #e53935;
     }
-    body:has(.calc-backdrop) .toast.show {
-      bottom: calc(300px + var(--safe-bottom));
-    }
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
@@ -606,6 +606,14 @@ if ("serviceWorker" in navigator) {
       font-weight: 500;
       color: var(--text);
       margin-bottom: 10px;
+    }
+    @keyframes fieldLabelFlash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .field > label.field-label-flash,
+    .section > label.field-label-flash {
+      animation: fieldLabelFlash 1.1s ease-in-out 2;
     }
     .input-box {
       width: 100%;
@@ -2028,7 +2036,7 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="section rate-full" id="rateField">
-      <label>單一利率年利率</label>
+      <label>單一利率（年利率）</label>
       <div class="input-box">
         <input type="text" id="rate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
         <span class="unit">%</span>
@@ -2036,7 +2044,7 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div id="multiRate" class="section rate-segments hidden">
-      <label>多段式利率設定</label>
+      <label>多段利率（年利率）</label>
       <div id="rateRows"></div>
       <button type="button" class="btn-add" id="addRate">＋ 新增利率段</button>
     </div>
@@ -2215,7 +2223,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09ZN";
+const APP_VERSION = "2026.08.09ZZI";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2316,12 +2324,17 @@ let showCumInterest = false;
 const FIELD_HINT_HTML = {
   ratio: '貸款成數上限為 <span class="toast-hint-em">100%</span>',
   term: '貸款年限上限為 <span class="toast-hint-em">100 年</span>',
-  rate: '年利率上限為 <span class="toast-hint-em">100%</span>'
+  rate: '請輸入 <span class="toast-hint-em">0.01</span> ～ <span class="toast-hint-em">16.00</span> 年利率（區間）'
 };
+const RATE_MIN = 0.01;
+const RATE_MAX = 16;
+const RATE_RANGE_MESSAGE = '請輸入 0.01 ～ 16.00 年利率（區間）';
+const NEGATIVE_INPUT_HINT_HTML = '<span class="toast-hint-em">禁止</span>輸入<span class="toast-hint-em">負數</span>';
 const GRACE_HINT_HTML = `<div class="toast-hint-body">
   <div class="toast-hint-main">寬限期上限為貸款年限</div>
   <div class="toast-hint-sub"><span class="toast-paren">（</span><span class="toast-warn">但至少須留 1 年還款</span><span class="toast-paren">）</span></div>
 </div>`;
+const GRACE_REENTER_HINT_HTML = '請重新輸入寬限期';
 
 function hideToast(toast) {
   if (!toast) return;
@@ -2479,8 +2492,7 @@ function applyFormState(state) {
   $('#graceYear').classList.toggle('active', graceIsYear);
   $('#graceMonth').classList.toggle('active', !graceIsYear);
   if (state.grace === '') {
-    renderGracePills(0);
-    $('#grace').value = '';
+    clearGraceField({ silent: true });
   } else {
     renderGracePills(+state.grace);
   }
@@ -2534,7 +2546,7 @@ function enterClearedState(opts) {
   graceIsYear = true;
   $('#graceYear').classList.add('active');
   $('#graceMonth').classList.remove('active');
-  renderGracePills(0);
+  clearGraceField({ silent: true });
   $$('#termPills .qp').forEach(p => p.classList.remove('active'));
 
   method = 'amortize';
@@ -2596,22 +2608,42 @@ function getGraceMaxValue() {
   return graceIsYear ? termYears - 1 : getMaxGraceMonths();
 }
 
+function isRateInput(inputEl) {
+  return !!(inputEl && (inputEl.id === 'rate' || inputEl.classList.contains('rate-val')));
+}
+
+function isRateOutOfRange(val) {
+  const s = String(val ?? '').trim();
+  if (s === '' || Number.isNaN(Number(s))) return false;
+  const n = Number(s);
+  return n < RATE_MIN || n > RATE_MAX;
+}
+
 function clampFieldValue(inputEl, rawValue) {
   const raw = String(rawValue ?? '').trim();
   if (!raw || !inputEl) return raw;
   const n = Number(raw);
   if (!Number.isFinite(n)) return raw;
 
+  if (isRateInput(inputEl)) {
+    if (n < RATE_MIN || n > RATE_MAX) return '';
+    const clamped = truncateToDecimals(n, MAX_INPUT_DECIMALS);
+    if (clamped === n) return raw;
+    return String(clamped);
+  }
+
   let max = null;
   const id = inputEl.id;
-  if (id === 'ratio' || id === 'term' || id === 'rate' || inputEl.classList.contains('rate-val')) {
+  if (id === 'ratio' || id === 'term') {
     max = FIELD_CAP_MAX;
   } else if (id === 'grace') {
     max = getGraceMaxValue();
   }
   if (max === null) return raw;
 
-  let clamped = Math.min(max, Math.max(0, n));
+  if (n > max) return '';
+
+  let clamped = Math.max(0, n);
   if (inputEl.dataset.calcInteger === 'true') {
     clamped = Math.trunc(clamped);
   } else {
@@ -2626,7 +2658,7 @@ function clampFieldToast(inputEl, before, after) {
   const id = inputEl.id;
   if (id === 'ratio') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.ratio });
   else if (id === 'term') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.term });
-  else if (id === 'rate' || inputEl.classList.contains('rate-val')) showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rate });
+  else if (isRateInput(inputEl)) showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rate });
   else if (id === 'grace') showToast('', { hint: true, graceHint: true });
 }
 
@@ -2636,16 +2668,35 @@ function applyFieldClamp(inputEl, value) {
   return next;
 }
 
-function enforceGraceWithinTerm() {
+function clearGraceField(opts) {
+  opts = opts || {};
+  syncGraceUnitFromDom();
+  const vals = graceIsYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+  $('#gracePills').innerHTML = vals.map(v => {
+    const isNone = v === 0;
+    const cls = 'qp' + (isNone ? ' qp-text' : '');
+    return `<button type="button" class="${cls}" data-val="${v}">${isNone ? '無' : v}</button>`;
+  }).join('');
+  $('#grace').value = '';
+  if (!opts.silent) {
+    showToast('', { hint: true, hintHtml: GRACE_REENTER_HINT_HTML });
+  }
+}
+
+function enforceGraceWithinTerm(opts) {
+  opts = opts || {};
   const graceEl = $('#grace');
   if (!graceEl) return;
-  const before = graceEl.value;
-  const after = applyFieldClamp(graceEl, before);
-  if (before === after) return;
-  graceEl.value = after;
-  $$('#gracePills .qp').forEach(p => {
-    p.classList.toggle('active', p.dataset.val === after);
-  });
+  syncGraceUnitFromDom();
+  const before = String(graceEl.value ?? '').trim();
+  if (!before) return;
+  const n = Number(before);
+  if (!Number.isFinite(n) || n <= 0) return;
+
+  const maxG = getGraceMaxValue();
+  if (n <= maxG) return;
+
+  clearGraceField(opts);
 }
 
 function truncateToDecimals(n, maxDec = MAX_INPUT_DECIMALS) {
@@ -2840,6 +2891,16 @@ function calcCommitValue(rawExpr) {
   const input = calcKeyboard.inputEl;
   if (!input) return;
   let next = String(rawExpr ?? '').trim() === '' ? '' : normalizeCalcCommitValue(rawExpr);
+  if (next !== '' && !calcKeyboard.allowNegative) {
+    const n = Number(next);
+    if (Number.isFinite(n) && n < 0) {
+      input.value = '';
+      showToast('', { hint: true, hintHtml: NEGATIVE_INPUT_HINT_HTML });
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+  }
   next = applyFieldClamp(input, next);
   input.value = next;
   input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2866,6 +2927,8 @@ function closeCalcKeyboard(applyValue) {
   calcKeyboard.inputEl = null;
   calcKeyboard.expr = '';
   calcKeyboard.pristine = true;
+  clearCalcKeyboardBodyPad();
+  unbindCalcKeyboardViewportScroll();
   detachCalcKeyListener();
 }
 
@@ -2917,9 +2980,14 @@ function calcOnKeyDown(e) {
     closeCalcKeyboard(true);
     return;
   }
-  if (e.key === 'Backspace' || e.key === 'Delete') {
+  if (e.key === 'Backspace') {
     e.preventDefault();
     calcPress('BACK');
+    return;
+  }
+  if (e.key === 'Delete') {
+    e.preventDefault();
+    calcPress('C');
     return;
   }
   if (e.key === '=') {
@@ -2967,7 +3035,16 @@ function calcPress(key) {
   }
   if (key === '=') {
     const result = calcEvalExpr(cur);
-    if (result !== null) calcKeyboard.expr = String(result);
+    if (result !== null) {
+      if (!calcKeyboard.allowNegative && result < 0) {
+        calcKeyboard.expr = '';
+        calcKeyboard.pristine = false;
+        calcUpdateDisplay();
+        showToast('', { hint: true, hintHtml: NEGATIVE_INPUT_HINT_HTML });
+        return;
+      }
+      calcKeyboard.expr = String(result);
+    }
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
     return;
@@ -3159,18 +3236,91 @@ function renderCalcSheet() {
   attachCalcKeyListener();
 }
 
+function getCalcScrollTarget(el) {
+  return el.closest('.input-box') || el.closest('.rate-row-line') || el.closest('.form-row') || el;
+}
+
+function getCalcKeyboardOverlayHeight() {
+  const panel = document.querySelector('.calc-sheet-panel');
+  return panel ? panel.getBoundingClientRect().height : 0;
+}
+
+function applyCalcKeyboardBodyPad() {
+  const keyboardH = getCalcKeyboardOverlayHeight() || 380;
+  const extra = 32;
+  document.body.classList.add('calc-keyboard-open');
+  document.body.style.setProperty('--calc-kb-pad', `${keyboardH + extra}px`);
+}
+
+function clearCalcKeyboardBodyPad() {
+  document.body.classList.remove('calc-keyboard-open');
+  document.body.style.removeProperty('--calc-kb-pad');
+}
+
 function scrollCalcTriggerIntoView(el) {
-  setTimeout(() => {
-    const panel = document.querySelector('.calc-sheet-panel');
-    const h = panel ? panel.offsetHeight : 380;
-    const rect = el.getBoundingClientRect();
-    const delta = rect.bottom - (window.innerHeight - h - 24);
-    if (delta > 0) window.scrollBy({ top: delta, behavior: 'smooth' });
-  }, 180);
+  if (!el) return;
+  const target = getCalcScrollTarget(el);
+  const sticky = document.querySelector('.sticky-top');
+  const padTop = 12;
+  const padBottom = 20;
+
+  applyCalcKeyboardBodyPad();
+
+  const adjust = () => {
+    applyCalcKeyboardBodyPad();
+    const keyboardH = getCalcKeyboardOverlayHeight() || 380;
+    const stickyH = sticky && !document.body.classList.contains('is-app-scaled-transform')
+      ? sticky.getBoundingClientRect().height
+      : 0;
+    const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const visibleTop = stickyH + padTop;
+    const visibleBottom = viewportH - keyboardH - padBottom;
+    const rect = target.getBoundingClientRect();
+    let desiredScrollY = window.scrollY;
+
+    if (rect.bottom > visibleBottom) {
+      desiredScrollY += rect.bottom - visibleBottom;
+    } else if (rect.top < visibleTop) {
+      desiredScrollY += rect.top - visibleTop;
+    }
+
+    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    desiredScrollY = Math.min(Math.max(0, desiredScrollY), maxScroll);
+
+    if (Math.abs(desiredScrollY - window.scrollY) > 1) {
+      window.scrollTo({ top: desiredScrollY, behavior: 'smooth' });
+    }
+  };
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(adjust);
+  });
+  setTimeout(adjust, 200);
+  setTimeout(adjust, 360);
+}
+
+let calcViewportScrollBound = false;
+function onCalcViewportChange() {
+  if (calcKeyboard.inputEl && calcKeyboard.backdropEl) {
+    scrollCalcTriggerIntoView(calcKeyboard.inputEl);
+  }
+}
+function bindCalcKeyboardViewportScroll() {
+  if (calcViewportScrollBound || !window.visualViewport) return;
+  calcViewportScrollBound = true;
+  window.visualViewport.addEventListener('resize', onCalcViewportChange);
+  window.visualViewport.addEventListener('scroll', onCalcViewportChange);
+}
+function unbindCalcKeyboardViewportScroll() {
+  if (!calcViewportScrollBound || !window.visualViewport) return;
+  calcViewportScrollBound = false;
+  window.visualViewport.removeEventListener('resize', onCalcViewportChange);
+  window.visualViewport.removeEventListener('scroll', onCalcViewportChange);
 }
 
 function openCalcKeyboard(inputEl, options) {
   options = options || {};
+  hideToast($('#toast'));
   if (calcKeyboard.backdropEl) closeCalcKeyboard(true);
   const ae = document.activeElement;
   if (ae && ae !== inputEl && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
@@ -3184,6 +3334,7 @@ function openCalcKeyboard(inputEl, options) {
   renderCalcSheet();
   syncCalcKeyboardLayout();
   calcUpdateDisplay();
+  bindCalcKeyboardViewportScroll();
   scrollCalcTriggerIntoView(inputEl);
 }
 
@@ -3652,6 +3803,77 @@ function getLoanYuan() {
   return (+$('#price').value || 0) * 10000 * (+$('#ratio').value || 0) / 100;
 }
 
+function isLoanFieldMissing(val) {
+  const s = String(val ?? '').trim();
+  if (s === '' || Number.isNaN(Number(s))) return true;
+  return +s <= 0;
+}
+
+function isMissingRateValue(val) {
+  const s = String(val ?? '').trim();
+  return s === '' || Number.isNaN(Number(s));
+}
+
+function getRateMissingError() {
+  if (rateType === 'single') {
+    if (isMissingRateValue($('#rate').value)) {
+      return { el: $('#rate'), message: '請輸入年利率' };
+    }
+    return null;
+  }
+  syncRateSegmentsContiguous();
+  for (let i = 0; i < rateSegments.length; i++) {
+    if (isMissingRateValue(rateSegments[i].rate)) {
+      const inp = $('#rateRows')?.querySelector(`input.rate-val[data-i="${i}"]`);
+      return {
+        el: inp || $('#multiRate'),
+        message: rateSegments.length > 1 ? `請輸入第 ${i + 1} 段年利率` : '請輸入年利率'
+      };
+    }
+  }
+  return null;
+}
+
+function getCalcValidationError() {
+  const missingPrice = isLoanFieldMissing($('#price').value);
+  const missingRatio = isLoanFieldMissing($('#ratio').value);
+  const missingTerm = isLoanFieldMissing($('#term').value);
+  const rateMissingErr = getRateMissingError();
+
+  const missing = [];
+  let firstEl = null;
+  if (missingPrice) {
+    missing.push('購屋價格');
+    if (!firstEl) firstEl = $('#price');
+  }
+  if (missingRatio) {
+    missing.push('貸款成數');
+    if (!firstEl) firstEl = $('#ratio');
+  }
+  if (missingTerm) {
+    missing.push('貸款年限');
+    if (!firstEl) firstEl = $('#term');
+  }
+  if (rateMissingErr) {
+    missing.push('年利率');
+    if (!firstEl) firstEl = rateMissingErr.el;
+  }
+
+  if (missing.length === 0) return getRateValidationError();
+
+  let message;
+  if (missing.length === 2 && missingPrice && missingRatio) {
+    message = '請輸入購屋價格與貸款成數';
+  } else if (missing.length === 1 && rateMissingErr) {
+    message = rateMissingErr.message;
+  } else if (missing.length === 1) {
+    message = `請輸入${missing[0]}`;
+  } else {
+    message = `請輸入${missing.join('、')}`;
+  }
+  return { el: firstEl, message };
+}
+
 function getSelfFundWan() {
   const price = +$('#price').value || 0;
   const ratio = +$('#ratio').value || 0;
@@ -3962,37 +4184,79 @@ function calcAPR(schedule, principal) {
   return formatAprRatePct((Math.pow(1 + monthly, 12) - 1) * 100);
 }
 
+function getFormFieldScrollTarget(el) {
+  if (!el) return null;
+  return el.closest('.field')
+    || el.closest('.section')
+    || el.closest('.rate-row-line')
+    || el.closest('.input-box')
+    || el;
+}
+
+function getFormFieldLabel(el) {
+  const block = getFormFieldScrollTarget(el);
+  if (!block) return null;
+  if (block.matches('.field, .section')) {
+    return block.querySelector(':scope > label');
+  }
+  const parent = block.closest('.field, .section');
+  return parent?.querySelector(':scope > label') || null;
+}
+
+let formFieldFlashTimer = 0;
+function flashFormFieldLabel(el) {
+  clearTimeout(formFieldFlashTimer);
+  document.querySelectorAll('.field-label-flash').forEach((node) => {
+    node.classList.remove('field-label-flash');
+  });
+  const label = getFormFieldLabel(el);
+  if (!label) return;
+  label.classList.remove('field-label-flash');
+  void label.offsetWidth;
+  label.classList.add('field-label-flash');
+  formFieldFlashTimer = setTimeout(() => label.classList.remove('field-label-flash'), 2400);
+}
+
 function scrollToFormField(el) {
   if (!el) return;
+  const target = getFormFieldScrollTarget(el);
   const sticky = document.querySelector('.sticky-top');
   const pad = 12;
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       const stickyH = sticky ? sticky.getBoundingClientRect().height : 0;
-      const top = window.scrollY + el.getBoundingClientRect().top - stickyH - pad;
+      const top = window.scrollY + target.getBoundingClientRect().top - stickyH - pad;
       window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
     });
   });
 }
 
+function revealMissingFormField(el) {
+  if (!el) return;
+  scrollToFormField(el);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => flashFormFieldLabel(el));
+  });
+}
+
 function getRateValidationError() {
-  const isMissingRate = (val) => {
-    const s = String(val ?? '').trim();
-    return s === '' || Number.isNaN(Number(s));
-  };
+  const missing = getRateMissingError();
+  if (missing) return missing;
   if (rateType === 'single') {
-    if (isMissingRate($('#rate').value)) {
-      return { el: $('#rate'), message: '請輸入年利率' };
+    if (isRateOutOfRange($('#rate').value)) {
+      return { el: $('#rate'), message: RATE_RANGE_MESSAGE };
     }
     return null;
   }
   syncRateSegmentsContiguous();
   for (let i = 0; i < rateSegments.length; i++) {
-    if (isMissingRate(rateSegments[i].rate)) {
+    if (isRateOutOfRange(rateSegments[i].rate)) {
       const inp = $('#rateRows')?.querySelector(`input.rate-val[data-i="${i}"]`);
       return {
         el: inp || $('#multiRate'),
-        message: rateSegments.length > 1 ? `請輸入第 ${i + 1} 段年利率` : '請輸入年利率'
+        message: rateSegments.length > 1
+          ? `第 ${i + 1} 段：${RATE_RANGE_MESSAGE}`
+          : RATE_RANGE_MESSAGE
       };
     }
   }
@@ -4203,6 +4467,7 @@ $('#termPills').addEventListener('click', e => {
   $$('#termPills .qp').forEach(p => p.classList.remove('active'));
   e.target.classList.add('active');
   $('#term').value = e.target.dataset.val;
+  enforceGraceWithinTerm();
   if (rateType === 'multi') {
     syncRateSegmentsContiguous();
     renderRateRows();
@@ -4273,22 +4538,10 @@ $('#addRate').addEventListener('click', () => {
 
 $('#calc').addEventListener('click', () => {
   try {
-    if (getTotalMonths() <= 0) {
-      showAppAlert('請輸入有效的貸款年限');
-      return;
-    }
-    if (getLoanYuan() <= 0) {
-      showAppAlert('請輸入購屋價格與貸款成數');
-      return;
-    }
-    const rateErr = getRateValidationError();
-    if (rateErr) {
-      scrollToFormField(rateErr.el);
-      showAppAlert(rateErr.message, () => {
-        if (rateErr.el && rateErr.el.classList.contains('calc-field')) {
-          openCalcKeyboard(rateErr.el);
-        }
-      });
+    const calcErr = getCalcValidationError();
+    if (calcErr) {
+      const missingEl = calcErr.el;
+      showAppAlert(calcErr.message, () => revealMissingFormField(missingEl));
       return;
     }
     renderResults(true);
