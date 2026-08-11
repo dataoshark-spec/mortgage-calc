@@ -2280,7 +2280,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09ZZZQ";
+const APP_VERSION = "2026.08.11A";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -3899,11 +3899,45 @@ function getResultsExportHeight(el) {
 const EXPORT_CANVAS_SCALE = 2;
 const PDF_JPEG_QUALITY = 0.94;
 const PDF_IMAGE_COMPRESS = 'MEDIUM';
-const EXPORT_SLICE_MAX_CSS_PX = 6000;
+const EXPORT_SLICE_MAX_CSS_PX = 4000;
 const BROWSER_CANVAS_MAX_PX = 16384;
 const JSPDF_PAGE_MAX_PX = 14400;
 
+function getExportCanvasScale(cssHeight) {
+  let scale = EXPORT_CANVAS_SCALE;
+  while (cssHeight * scale > BROWSER_CANVAS_MAX_PX - 64 && scale > 1) scale--;
+  return scale;
+}
+
+function flattenCanvases(items) {
+  return items.flatMap((item) => (Array.isArray(item) ? item : [item]));
+}
+
+function stitchCanvasesVertically(canvases) {
+  const list = flattenCanvases(canvases).filter(Boolean);
+  if (!list.length) throw new Error('empty canvas');
+  if (list.length === 1) return list[0];
+  const width = Math.max(...list.map((c) => c.width));
+  const height = list.reduce((sum, c) => sum + c.height, 0);
+  if (height > BROWSER_CANVAS_MAX_PX || width > BROWSER_CANVAS_MAX_PX) {
+    throw new Error('canvas too large');
+  }
+  const merged = document.createElement('canvas');
+  merged.width = width;
+  merged.height = height;
+  const ctx = merged.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  let top = 0;
+  list.forEach((canvas) => {
+    ctx.drawImage(canvas, 0, top);
+    top += canvas.height;
+  });
+  return merged;
+}
+
 function balanceExportCanvasHorizontal(canvas) {
+  if (!canvas || canvas.width * canvas.height > 12000000 || canvas.height > 9000) return canvas;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const { width, height } = canvas;
   const rowStep = Math.max(1, Math.floor(height / 240));
@@ -4018,9 +4052,10 @@ function getDetailYearGroups() {
     .sort((a, b) => a - b);
   if (!years.length) return [];
   const maxYear = years[years.length - 1];
+  const span = 10;
   const groups = [];
-  for (let start = 1; start <= maxYear; start += 10) {
-    groups.push({ from: start, to: Math.min(start + 9, maxYear) });
+  for (let start = 1; start <= maxYear; start += span) {
+    groups.push({ from: start, to: Math.min(start + span - 1, maxYear) });
   }
   return groups;
 }
@@ -4091,12 +4126,12 @@ async function buildExportDetailPart(group, isFirstDetailPage) {
   return mountExportNode(shell);
 }
 
-async function captureExportRoot(rootEl) {
+async function captureExportRootSlices(rootEl) {
   const totalWidth = rootEl.offsetWidth;
   const totalHeight = getResultsExportHeight(rootEl);
-  const scale = EXPORT_CANVAS_SCALE;
   const sliceMax = EXPORT_SLICE_MAX_CSS_PX;
-  const needsChunkedCapture = totalHeight > sliceMax || totalHeight * scale > BROWSER_CANVAS_MAX_PX - 64;
+  const scale = getExportCanvasScale(totalHeight);
+  const needsChunkedCapture = totalHeight > sliceMax;
 
   if (!needsChunkedCapture) {
     const canvas = await html2canvas(rootEl, {
@@ -4108,7 +4143,7 @@ async function captureExportRoot(rootEl) {
       windowHeight: totalHeight,
       width: totalWidth
     });
-    return balanceExportCanvasHorizontal(canvas);
+    return [balanceExportCanvasHorizontal(canvas)];
   }
 
   const viewport = document.createElement('div');
@@ -4132,14 +4167,8 @@ async function captureExportRoot(rootEl) {
   rootEl.style.top = '0';
   rootEl.style.marginTop = '0';
 
+  const slices = [];
   try {
-    const fullCanvas = document.createElement('canvas');
-    fullCanvas.width = Math.ceil(totalWidth * scale);
-    fullCanvas.height = Math.ceil(totalHeight * scale);
-    const ctx = fullCanvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
-
     for (let top = 0; top < totalHeight; top += sliceMax) {
       const sliceH = Math.min(sliceMax, totalHeight - top);
       viewport.style.height = sliceH + 'px';
@@ -4155,22 +4184,70 @@ async function captureExportRoot(rootEl) {
         windowWidth: totalWidth,
         windowHeight: sliceH
       });
-      ctx.drawImage(sliceCanvas, 0, top * scale);
+      slices.push(balanceExportCanvasHorizontal(sliceCanvas));
     }
-    return balanceExportCanvasHorizontal(fullCanvas);
+    return slices;
   } finally {
     viewport.remove();
   }
 }
 
+async function captureExportRoot(rootEl) {
+  const slices = await captureExportRootSlices(rootEl);
+  if (slices.length === 1) return slices[0];
+  return stitchCanvasesVertically(slices);
+}
+
+async function captureExportRootByYearItems(rootEl) {
+  const yearItems = rootEl.querySelectorAll('.year-item');
+  if (!yearItems.length) return [await captureExportRoot(rootEl)];
+  const width = rootEl.offsetWidth || $('#results').offsetWidth;
+  const detailSectionSrc = rootEl.querySelector('.detail-section');
+  const detailHead = rootEl.querySelector('.export-detail-head');
+  const canvases = [];
+  for (let i = 0; i < yearItems.length; i++) {
+    const shell = document.createElement('div');
+    shell.className = rootEl.className;
+    shell.style.width = width + 'px';
+    shell.style.maxWidth = width + 'px';
+    const detailSection = document.createElement('div');
+    detailSection.className = detailSectionSrc?.className || 'detail-section';
+    if (detailHead) detailSection.appendChild(detailHead.cloneNode(true));
+    const accordion = document.createElement('div');
+    accordion.className = 'year-accordion';
+    const yearClone = yearItems[i].cloneNode(true);
+    yearClone.classList.add('open');
+    accordion.appendChild(yearClone);
+    detailSection.appendChild(accordion);
+    shell.appendChild(detailSection);
+    const node = await mountExportNode(shell);
+    try {
+      canvases.push(await captureExportRoot(node));
+    } finally {
+      node.remove();
+    }
+  }
+  return canvases;
+}
+
+async function captureExportRootForPdf(rootEl) {
+  const slices = await captureExportRootSlices(rootEl);
+  if (slices.length === 1) return [slices[0]];
+  try {
+    return [stitchCanvasesVertically(slices)];
+  } catch (_) {
+    return captureExportRootByYearItems(rootEl);
+  }
+}
+
 async function captureResultsPdfCanvases() {
   if (!getExportIncludeDetail()) {
-    return [await captureResultsCanvas()];
+    return flattenCanvases([await captureResultsCanvas()]);
   }
   const canvases = [];
   const summaryNode = await buildExportSummaryPart();
   try {
-    canvases.push(await captureExportRoot(summaryNode));
+    canvases.push(...await captureExportRootForPdf(summaryNode));
   } finally {
     summaryNode.remove();
   }
@@ -4178,7 +4255,7 @@ async function captureResultsPdfCanvases() {
   for (let i = 0; i < groups.length; i++) {
     const detailNode = await buildExportDetailPart(groups[i], i === 0);
     try {
-      canvases.push(await captureExportRoot(detailNode));
+      canvases.push(...await captureExportRootForPdf(detailNode));
     } finally {
       detailNode.remove();
     }
@@ -4252,7 +4329,12 @@ async function withExportLock(task, busyMsg) {
     await task();
   } catch (err) {
     console.error(err);
-    showToast('匯出失敗，請稍後再試');
+    const msg = String(err?.message || '');
+    if (msg.includes('canvas too large')) {
+      showToast('明細過長，請改用 PDF 或分享');
+    } else {
+      showToast('匯出失敗，請稍後再試');
+    }
   } finally {
     exportBusy = false;
     $$('.export-btn').forEach((btn) => { btn.disabled = false; });
@@ -4362,6 +4444,12 @@ async function shareResults() {
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       await navigator.share(shareData);
       showToast('已開啟分享');
+      return;
+    }
+
+    if (includeDetail && navigator.share) {
+      downloadBlob(blob, exportFileName(ext));
+      showToast('PDF 檔案較大，已改為下載');
       return;
     }
 
