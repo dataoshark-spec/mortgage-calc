@@ -572,6 +572,21 @@ if ("serviceWorker" in navigator) {
       line-height: 1.55;
       letter-spacing: 0.02em;
     }
+    .app-alert-text.app-alert-text-html {
+      width: 100%;
+      text-align: left;
+    }
+    .app-alert-missing-lead {
+      text-align: left;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .app-alert-missing-item {
+      text-align: center;
+      color: #e53935;
+      font-weight: 600;
+      line-height: 1.65;
+    }
     .app-alert-btn {
       width: 100%;
       margin-top: 2px;
@@ -665,6 +680,7 @@ if ("serviceWorker" in navigator) {
       transition: border-color 0.15s ease;
       -webkit-tap-highlight-color: transparent;
       tap-highlight-color: transparent;
+      touch-action: pan-y;
     }
     .input-box:has(> .calc-field):hover {
       border-color: rgba(201, 146, 42, 0.38);
@@ -694,6 +710,7 @@ if ("serviceWorker" in navigator) {
       min-height: var(--chip-h);
       padding: 0;
     }
+
     input.calc-field {
       cursor: pointer;
       caret-color: transparent;
@@ -701,6 +718,7 @@ if ("serviceWorker" in navigator) {
       user-select: none;
       -webkit-tap-highlight-color: transparent;
       tap-highlight-color: transparent;
+      touch-action: pan-y;
     }
     input.calc-field:focus,
     input.calc-field:focus-visible,
@@ -1096,6 +1114,11 @@ if ("serviceWorker" in navigator) {
       font-size: 0.9rem;
       margin-top: 4px;
       padding: 4px 0;
+    }
+    .btn-add.btn-add-disabled {
+      color: var(--muted);
+      cursor: not-allowed;
+      opacity: 0.55;
     }
     .actions {
       display: flex;
@@ -1777,6 +1800,7 @@ if ("serviceWorker" in navigator) {
       box-sizing: border-box !important;
     }
     .export-capture .note { margin-bottom: 0; }
+    .export-capture .period-summary + .note + .detail-section { margin-top: 20px; }
     .export-capture .year-item {
       overflow: hidden !important;
       border-color: #d0d0d0 !important;
@@ -1800,6 +1824,39 @@ if ("serviceWorker" in navigator) {
       z-index: -1 !important;
       overflow: visible !important;
       margin: 0 !important;
+    }
+    .export-pdf-part {
+      padding: 24px 18px;
+      border-radius: 20px;
+      box-sizing: border-box;
+      background: #fff !important;
+    }
+    .export-detail-range-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 16px;
+      text-align: center;
+    }
+    .export-detail-head {
+      margin-bottom: 16px;
+    }
+    .export-detail-head .period-title {
+      margin-bottom: 8px;
+    }
+    .export-detail-title-plain {
+      justify-content: center;
+    }
+    .export-detail-title-plain h3 {
+      flex: none;
+    }
+    .export-detail-range-sub {
+      text-align: center;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
+      line-height: 1.4;
     }
     .hidden { display: none !important; }
     .ver-line {
@@ -1956,7 +2013,7 @@ if ("serviceWorker" in navigator) {
     <div class="ver-switch" role="tablist" aria-label="試算模式">
       <button class="ver-btn active" data-mode="general" type="button" role="tab" aria-selected="true">一般貸款</button>
       <button class="ver-btn" data-mode="youth" type="button" role="tab" aria-selected="false">新青安3.0</button>
-      <button class="ver-btn" data-mode="burden" type="button" role="tab" aria-selected="false">負擔推估</button>
+      <button class="ver-btn" data-mode="burden" type="button" role="tab" aria-selected="false">個人評估</button>
     </div>
   </div>
 
@@ -2197,7 +2254,7 @@ if ("serviceWorker" in navigator) {
 
   <div class="mode-panel mode-placeholder-panel" id="modeBurden" hidden>
     <div class="ph-icon" aria-hidden="true">¥</div>
-    <h2>負擔推估</h2>
+    <h2>個人評估</h2>
     <p>依收入與支出反推可負擔房價與貸款額度，功能建置中，敬請期待。</p>
     <span class="ph-tag">即將推出</span>
   </div>
@@ -2223,7 +2280,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.09ZZI";
+const APP_VERSION = "2026.08.09ZZZQ";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -2262,23 +2319,44 @@ function rebuildRateSegmentsFromSplits(splits, rates, total) {
   }
 }
 
+function buildEvenRateSplits(n, total) {
+  if (n < 1 || total <= 0) return [];
+  const splits = [];
+  const per = Math.floor(total / n);
+  let end = 0;
+  for (let i = 0; i < n - 1; i++) {
+    end = Math.min(end + per, total - (n - 1 - i));
+    splits.push(end);
+  }
+  for (let i = 0; i < splits.length; i++) {
+    const minTo = i + 1;
+    const maxTo = total - (n - 1 - i);
+    splits[i] = Math.max(minTo, Math.min(splits[i] || minTo, maxTo));
+  }
+  for (let i = 1; i < splits.length; i++) {
+    if (splits[i] <= splits[i - 1]) {
+      splits[i] = Math.min(splits[i - 1] + 1, total - (n - 1 - i));
+    }
+  }
+  for (let i = splits.length - 2; i >= 0; i--) {
+    if (splits[i] >= splits[i + 1]) splits[i] = splits[i + 1] - 1;
+    splits[i] = Math.max(splits[i], i + 1);
+  }
+  return splits;
+}
+
 function syncRateSegmentsContiguous() {
   if (rateType !== 'multi') return;
   const total = getTotalMonths();
   if (total <= 0) return;
-  const rates = (rateSegments.length ? rateSegments : [{ rate: $('#rate').value || '2.5' }])
-    .map(s => String(s.rate ?? $('#rate').value ?? '2.5'));
+  const rates = (rateSegments.length ? rateSegments : [{ rate: getCalcFieldRawString($('#rate')) || '2.5' }])
+    .map(s => String(s.rate ?? getCalcFieldRawString($('#rate')) ?? '2.5'));
   const n = Math.max(1, rates.length);
   let splits = [];
   if (rateSegments.length === n && rateSegments[n - 1]) {
     for (let i = 0; i < n - 1; i++) splits.push(+rateSegments[i].to || i + 1);
   } else {
-    const per = Math.floor(total / n);
-    let end = 0;
-    for (let i = 0; i < n - 1; i++) {
-      end = Math.min(end + per, total - (n - 1 - i));
-      splits.push(end);
-    }
+    splits = buildEvenRateSplits(n, total);
   }
   for (let i = 0; i < splits.length; i++) {
     const minTo = i + 1;
@@ -2322,10 +2400,14 @@ let clearSnapshot = null;
 let showCumInterest = false;
 
 const FIELD_HINT_HTML = {
+  price: '購屋價格上限為 <span class="toast-hint-em">9,999,999 萬元</span>',
   ratio: '貸款成數上限為 <span class="toast-hint-em">100%</span>',
-  term: '貸款年限上限為 <span class="toast-hint-em">100 年</span>',
-  rate: '請輸入 <span class="toast-hint-em">0.01</span> ～ <span class="toast-hint-em">16.00</span> 年利率（區間）'
+  term: '貸款年限上限為 <span class="toast-hint-em">60 年</span>',
+  rate: '請輸入 <span class="toast-hint-em">0.01</span> ～ <span class="toast-hint-em">16.00</span> 年利率（區間）',
+  rateSegmentMax: '多段利率最多 <span class="toast-hint-em">10 段</span>',
+  rateSegmentTermShort: '貸款期數不足，無法再新增利率段'
 };
+const RATE_SEGMENT_MAX = 10;
 const RATE_MIN = 0.01;
 const RATE_MAX = 16;
 const RATE_RANGE_MESSAGE = '請輸入 0.01 ～ 16.00 年利率（區間）';
@@ -2335,6 +2417,22 @@ const GRACE_HINT_HTML = `<div class="toast-hint-body">
   <div class="toast-hint-sub"><span class="toast-paren">（</span><span class="toast-warn">但至少須留 1 年還款</span><span class="toast-paren">）</span></div>
 </div>`;
 const GRACE_REENTER_HINT_HTML = '請重新輸入寬限期';
+const TERM_REQUIRED_HINT_HTML = '請優先輸入 <span class="toast-hint-em">貸款年限</span>';
+
+function escapeAlertHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function buildCalcMissingAlertHtml(labels) {
+  const items = labels.map((label) => `<div class="app-alert-missing-item">${escapeAlertHtml(label)}</div>`).join('');
+  return `<div class="app-alert-missing">
+  <div class="app-alert-missing-lead">請輸入</div>
+  ${items}
+</div>`;
+}
 
 function hideToast(toast) {
   if (!toast) return;
@@ -2424,11 +2522,14 @@ function showAprInfo() {
   showAppAlert(APR_INFO_TEXT);
 }
 
-function showAppAlert(message, onClose) {
+function showAppAlert(message, onClose, opts) {
+  opts = opts || {};
   const backdrop = $('#appAlert');
   const textEl = $('#appAlertText');
   if (!backdrop || !textEl) return;
-  textEl.textContent = message;
+  textEl.classList.toggle('app-alert-text-html', !!opts.html);
+  if (opts.html) textEl.innerHTML = message;
+  else textEl.textContent = message;
   appAlertOnClose = typeof onClose === 'function' ? onClose : null;
   backdrop.hidden = false;
   backdrop.classList.add('show');
@@ -2469,12 +2570,12 @@ function syncTermPillsFromInput() {
 
 function captureFormState() {
   return {
-    price: $('#price').value,
-    ratio: $('#ratio').value,
-    term: $('#term').value,
-    grace: $('#grace').value,
+    price: getCalcFieldRawString($('#price')),
+    ratio: getCalcFieldRawString($('#ratio')),
+    term: getCalcFieldRawString($('#term')),
+    grace: getCalcFieldRawString($('#grace')),
     graceIsYear: graceIsYear,
-    rate: $('#rate').value,
+    rate: getCalcFieldRawString($('#rate')),
     rateType: rateType,
     method: method,
     rateSegments: JSON.parse(JSON.stringify(rateSegments)),
@@ -2485,9 +2586,9 @@ function captureFormState() {
 }
 
 function applyFormState(state) {
-  $('#price').value = state.price;
-  $('#ratio').value = state.ratio;
-  $('#term').value = state.term;
+  setCalcFieldStoredValue($('#price'), state.price);
+  setCalcFieldStoredValue($('#ratio'), state.ratio);
+  setCalcFieldStoredValue($('#term'), state.term);
   graceIsYear = state.graceIsYear;
   $('#graceYear').classList.toggle('active', graceIsYear);
   $('#graceMonth').classList.toggle('active', !graceIsYear);
@@ -2512,7 +2613,7 @@ function applyFormState(state) {
   });
   $('#rateField').classList.toggle('hidden', rateType !== 'single');
   $('#multiRate').classList.toggle('hidden', rateType !== 'multi');
-  $('#rate').value = state.rate;
+  setCalcFieldStoredValue($('#rate'), state.rate);
   if (rateType === 'multi') renderRateRows();
 
   updateAmount();
@@ -2540,9 +2641,9 @@ function enterClearedState(opts) {
   const hadContent = formHasContent();
   if (hadContent) clearSnapshot = captureFormState();
 
-  $('#price').value = '';
-  $('#ratio').value = '';
-  $('#term').value = '';
+  clearCalcField($('#price'));
+  clearCalcField($('#ratio'));
+  clearCalcField($('#term'));
   graceIsYear = true;
   $('#graceYear').classList.add('active');
   $('#graceMonth').classList.remove('active');
@@ -2560,7 +2661,7 @@ function enterClearedState(opts) {
   });
   $('#rateField').classList.remove('hidden');
   $('#multiRate').classList.add('hidden');
-  $('#rate').value = '';
+  clearCalcField($('#rate'));
 
   updateAmount();
   $('#results').classList.remove('show');
@@ -2583,8 +2684,12 @@ function restoreClearedState() {
 function fmt(n) { return Math.round(n).toLocaleString('zh-TW'); }
 function fmtPeriod(n) { return String(n).padStart(3, '0'); }
 
-const MAX_INPUT_DECIMALS = 3;
-const FIELD_CAP_MAX = 100;
+const MAX_AMOUNT_DECIMALS = 4;
+const MAX_RATE_DECIMALS = 3;
+const RATIO_CAP_MAX = 100;
+const TERM_MAX_YEARS = 60;
+const PRICE_MAX_WAN = 9999999;
+const FIELD_CAP_MAX = RATIO_CAP_MAX;
 const CALC_OPEN_GUARD_MS = 400;
 
 function calcMarkOpenGuard(backdrop) {
@@ -2612,6 +2717,13 @@ function isRateInput(inputEl) {
   return !!(inputEl && (inputEl.id === 'rate' || inputEl.classList.contains('rate-val')));
 }
 
+function getFieldMaxDecimals(inputEl) {
+  if (!inputEl) return MAX_AMOUNT_DECIMALS;
+  if (inputEl.dataset.calcInteger === 'true') return 0;
+  if (isRateInput(inputEl)) return MAX_RATE_DECIMALS;
+  return MAX_AMOUNT_DECIMALS;
+}
+
 function isRateOutOfRange(val) {
   const s = String(val ?? '').trim();
   if (s === '' || Number.isNaN(Number(s))) return false;
@@ -2627,39 +2739,48 @@ function clampFieldValue(inputEl, rawValue) {
 
   if (isRateInput(inputEl)) {
     if (n < RATE_MIN || n > RATE_MAX) return '';
-    const clamped = truncateToDecimals(n, MAX_INPUT_DECIMALS);
-    if (clamped === n) return raw;
-    return String(clamped);
+    syncCalcFieldRawDataset(inputEl, String(n));
+    return formatCalcFieldDisplay(n, false, MAX_RATE_DECIMALS);
   }
 
   let max = null;
   const id = inputEl.id;
-  if (id === 'ratio' || id === 'term') {
-    max = FIELD_CAP_MAX;
+  if (id === 'price') {
+    max = PRICE_MAX_WAN;
+  } else if (id === 'ratio') {
+    max = RATIO_CAP_MAX;
+  } else if (id === 'term') {
+    max = TERM_MAX_YEARS;
   } else if (id === 'grace') {
     max = getGraceMaxValue();
   }
-  if (max === null) return raw;
+  if (max === null) {
+    syncCalcFieldRawDataset(inputEl, String(n));
+    return formatCalcFieldDisplay(n, inputEl.dataset.calcInteger === 'true', getFieldMaxDecimals(inputEl));
+  }
 
   if (n > max) return '';
 
   let clamped = Math.max(0, n);
   if (inputEl.dataset.calcInteger === 'true') {
     clamped = Math.trunc(clamped);
-  } else {
-    clamped = truncateToDecimals(clamped, MAX_INPUT_DECIMALS);
   }
-  if (clamped === n) return raw;
-  return String(clamped);
+  syncCalcFieldRawDataset(inputEl, String(clamped));
+  if (clamped === n && inputEl.dataset.calcInteger !== 'true') return raw;
+  return formatCalcFieldDisplay(clamped, inputEl.dataset.calcInteger === 'true', getFieldMaxDecimals(inputEl));
 }
 
 function clampFieldToast(inputEl, before, after) {
   if (before === after || before === '') return;
   const id = inputEl.id;
-  if (id === 'ratio') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.ratio });
+  if (id === 'price') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.price });
+  else if (id === 'ratio') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.ratio });
   else if (id === 'term') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.term });
   else if (isRateInput(inputEl)) showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rate });
-  else if (id === 'grace') showToast('', { hint: true, graceHint: true });
+  else if (id === 'grace') {
+    if (isTermMissing()) showToast('', { hint: true, hintHtml: TERM_REQUIRED_HINT_HTML });
+    else showToast('', { hint: true, graceHint: true });
+  }
 }
 
 function applyFieldClamp(inputEl, value) {
@@ -2693,20 +2814,110 @@ function enforceGraceWithinTerm(opts) {
   const n = Number(before);
   if (!Number.isFinite(n) || n <= 0) return;
 
+  const termRaw = String($('#term').value ?? '').trim();
+  const termYears = termRaw === '' ? NaN : Number(termRaw);
+  const termInvalid = termRaw === '' || !Number.isFinite(termYears) || termYears <= 0 || termYears > TERM_MAX_YEARS;
+
   const maxG = getGraceMaxValue();
   if (n <= maxG) return;
 
-  clearGraceField(opts);
+  clearGraceField(termInvalid ? { silent: true } : opts);
 }
 
-function truncateToDecimals(n, maxDec = MAX_INPUT_DECIMALS) {
+function truncateToDecimals(n, maxDec = MAX_AMOUNT_DECIMALS) {
   if (!isFinite(n)) return n;
   const factor = Math.pow(10, maxDec);
   const bias = n >= 0 ? 1e-9 : -1e-9;
   return Math.trunc(n * factor + bias) / factor;
 }
 
-function formatTruncNumber(n, maxDec = MAX_INPUT_DECIMALS) {
+function calcEvalExprRaw(expr) {
+  try {
+    if (!/^[0-9+\-*/.]*$/.test(expr)) return null;
+    if (!expr) return 0;
+    const clean = expr.replace(/[+\-*/]+$/, '');
+    if (!clean) return 0;
+    const result = Function('"use strict"; return (' + clean + ')')();
+    if (!Number.isFinite(result)) return null;
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+function formatCalcFieldDisplay(n, integerOnly, maxDec) {
+  if (!Number.isFinite(n)) return '';
+  if (integerOnly) return String(Math.trunc(n));
+  const dec = maxDec == null ? MAX_AMOUNT_DECIMALS : maxDec;
+  return String(truncateToDecimals(n, dec));
+}
+
+function syncCalcFieldRawDataset(input, rawStr) {
+  if (!input) return;
+  const s = String(rawStr ?? '').trim();
+  if (s === '') delete input.dataset.calcRaw;
+  else input.dataset.calcRaw = s;
+}
+
+function getCalcFieldRawString(input) {
+  if (!input) return '';
+  const raw = input.dataset.calcRaw;
+  if (raw !== undefined && raw !== '') return raw;
+  return String(input.value ?? '').trim().replace(/,/g, '');
+}
+
+function getCalcFieldNumeric(input) {
+  const raw = getCalcFieldRawString(input);
+  if (raw === '') return 0;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function setCalcFieldStoredValue(input, value) {
+  if (!input) return;
+  const raw = String(value ?? '').trim().replace(/,/g, '');
+  if (raw === '') {
+    delete input.dataset.calcRaw;
+    input.value = '';
+    return;
+  }
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    syncCalcFieldRawDataset(input, raw);
+    input.value = raw;
+    return;
+  }
+  const integerOnly = input.dataset.calcInteger === 'true';
+  const num = integerOnly ? Math.trunc(n) : n;
+  syncCalcFieldRawDataset(input, String(num));
+  input.value = formatCalcFieldDisplay(num, integerOnly, getFieldMaxDecimals(input));
+}
+
+function clearCalcField(input) {
+  if (!input) return;
+  delete input.dataset.calcRaw;
+  input.value = '';
+}
+
+function clampFieldNumeric(inputEl, n) {
+  if (!inputEl || !Number.isFinite(n)) return null;
+  if (isRateInput(inputEl)) {
+    if (n < RATE_MIN || n > RATE_MAX) return null;
+    return n;
+  }
+  const id = inputEl.id;
+  let max = null;
+  if (id === 'price') max = PRICE_MAX_WAN;
+  else if (id === 'ratio') max = RATIO_CAP_MAX;
+  else if (id === 'term') max = TERM_MAX_YEARS;
+  else if (id === 'grace') max = getGraceMaxValue();
+  if (max !== null && n > max) return null;
+  let clamped = Math.max(0, n);
+  if (inputEl.dataset.calcInteger === 'true') return Math.trunc(clamped);
+  return clamped;
+}
+
+function formatTruncNumber(n, maxDec = MAX_AMOUNT_DECIMALS) {
   const t = truncateToDecimals(n, maxDec);
   const negative = t < 0;
   const abs = Math.abs(t);
@@ -2718,7 +2929,7 @@ function formatTruncNumber(n, maxDec = MAX_INPUT_DECIMALS) {
   return (negative ? '-' : '') + intFmt + (dec ? '.' + dec : '');
 }
 
-function fmtWan(yuan) { return formatTruncNumber(yuan / 10000, MAX_INPUT_DECIMALS); }
+function fmtWan(yuan) { return formatTruncNumber(yuan / 10000, MAX_AMOUNT_DECIMALS); }
 
 const TOTAL_AMOUNT_UNIT_KEY = 'mortgage-total-unit-v1';
 let totalAmountUnit = 'yuan';
@@ -2767,7 +2978,7 @@ function initTotalAmountToggle() {
 /** 依所有利率輸入的最大小數位數，統一全站顯示（不四捨五入） */
 function collectRateInputValues() {
   if (rateType === 'single') {
-    const v = $('#rate').value;
+    const v = getCalcFieldRawString($('#rate'));
     return v !== '' ? [v] : [];
   }
   return rateSegments.map((seg) => String(seg.rate ?? '')).filter((v) => v !== '');
@@ -2785,12 +2996,12 @@ function getRateDecimalPlaces(rate) {
 function getRateDisplayPrecision() {
   const values = collectRateInputValues();
   if (!values.length) return 0;
-  return Math.min(MAX_INPUT_DECIMALS, Math.max(0, ...values.map(getRateDecimalPlaces)));
+  return Math.min(MAX_RATE_DECIMALS, Math.max(0, ...values.map(getRateDecimalPlaces)));
 }
 
 /** 換算年利率：截斷至 3 位小數，至少顯示至第 3 位（第 3 位為 0 時可縮為 2 位，如 2.190→2.19） */
 function formatAprRatePct(n) {
-  const MAX = MAX_INPUT_DECIMALS;
+  const MAX = MAX_RATE_DECIMALS;
   if (!isFinite(n)) return '0';
   const factor = Math.pow(10, MAX);
   const abs = Math.abs(n);
@@ -2840,10 +3051,11 @@ function formatComputedRatePct(n, precision) {
 
 const calcKeyboard = {
   expr: '',
+  exprFull: null,
   pristine: true,
   allowNegative: false,
   integerOnly: false,
-  maxDecimals: MAX_INPUT_DECIMALS,
+  maxDecimals: MAX_AMOUNT_DECIMALS,
   inputEl: null,
   backdropEl: null
 };
@@ -2881,30 +3093,80 @@ function calcHaptic(key) {
   } catch {}
 }
 
+function calcNumberToExpr(n) {
+  if (!Number.isFinite(n)) return '0';
+  if (calcKeyboard.integerOnly) return String(Math.trunc(n));
+  return String(n);
+}
+
+function calcKeyboardDisplayExpr(expr) {
+  const s = String(expr ?? '');
+  if (!s) return s;
+  const tail = s.replace(/^-/, '');
+  if (/[+\-*/]/.test(tail)) return s;
+  const n = Number(s);
+  if (!Number.isFinite(n)) return s;
+  return formatCalcFieldDisplay(n, calcKeyboard.integerOnly, calcKeyboard.maxDecimals);
+}
+
 function calcUpdateDisplay() {
   const input = calcKeyboard.inputEl;
   if (!input) return;
-  input.value = calcKeyboard.expr;
+  input.value = calcKeyboardDisplayExpr(calcKeyboard.expr);
 }
 
 function calcCommitValue(rawExpr) {
   const input = calcKeyboard.inputEl;
   if (!input) return;
-  let next = String(rawExpr ?? '').trim() === '' ? '' : normalizeCalcCommitValue(rawExpr);
-  if (next !== '' && !calcKeyboard.allowNegative) {
-    const n = Number(next);
-    if (Number.isFinite(n) && n < 0) {
-      input.value = '';
+  const raw = String(rawExpr ?? '').trim();
+  if (raw === '') {
+    setCalcFieldStoredValue(input, '');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    syncCalcFieldSideEffects(input);
+    calcKeyboard.exprFull = null;
+    return;
+  }
+
+  let fullNum = calcKeyboard.exprFull;
+  if (fullNum == null) fullNum = calcEvalExprRaw(raw);
+
+  if (fullNum !== null) {
+    if (!calcKeyboard.allowNegative && fullNum < 0) {
+      setCalcFieldStoredValue(input, '');
       showToast('', { hint: true, hintHtml: NEGATIVE_INPUT_HINT_HTML });
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
+      calcKeyboard.exprFull = null;
       return;
     }
+    const beforeStr = String(fullNum);
+    const clampedNum = clampFieldNumeric(input, fullNum);
+    if (clampedNum === null) {
+      setCalcFieldStoredValue(input, '');
+      clampFieldToast(input, beforeStr, '');
+    } else {
+      setCalcFieldStoredValue(input, String(clampedNum));
+      clampFieldToast(input, beforeStr, input.value);
+    }
+  } else {
+    setCalcFieldStoredValue(input, raw);
   }
-  next = applyFieldClamp(input, next);
-  input.value = next;
+
+  calcKeyboard.exprFull = null;
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.dispatchEvent(new Event('change', { bubbles: true }));
+  syncCalcFieldSideEffects(input);
+}
+
+function syncCalcFieldSideEffects(input) {
+  if (!input) return;
+  if (input.classList.contains('rate-val')) {
+    const idx = +input.dataset.i;
+    if (Number.isFinite(idx) && rateSegments[idx]) {
+      rateSegments[idx].rate = getCalcFieldRawString(input) || '0';
+    }
+  }
 }
 
 function closeCalcKeyboard(applyValue) {
@@ -2913,15 +3175,14 @@ function closeCalcKeyboard(applyValue) {
   const input = calcKeyboard.inputEl;
   if (applyValue && input) {
     const raw = calcKeyboard.expr || '';
-    if (raw.trim() !== '') {
-      const result = calcEvalExpr(raw);
-      if (result !== null) calcCommitValue(String(result));
-      else calcCommitValue(raw);
-    } else {
-      calcCommitValue('');
+    calcCommitValue(raw.trim() === '' ? '' : raw);
+  }
+  if (input) {
+    input.classList.remove('calc-active');
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      input.blur();
     }
   }
-  if (input) input.classList.remove('calc-active');
   if (calcKeyboard.backdropEl) calcKeyboard.backdropEl.remove();
   calcKeyboard.backdropEl = null;
   calcKeyboard.inputEl = null;
@@ -2975,6 +3236,7 @@ function calcOnKeyDown(e) {
   }
   if (e.key === 'Enter' || e.code === 'NumpadEnter') {
     e.preventDefault();
+    e.stopPropagation();
     calcHaptic('DONE');
     calcFlashButton('DONE');
     closeCalcKeyboard(true);
@@ -3020,6 +3282,9 @@ function detachCalcKeyListener() {
 function calcPress(key) {
   calcFlashButton(key);
   calcHaptic(key);
+  if (!['=', 'BACK', 'C'].includes(key) && !['+', '-', '*', '/'].includes(key)) {
+    calcKeyboard.exprFull = null;
+  }
   let cur = calcKeyboard.expr || '';
   if (key === 'C') {
     calcKeyboard.expr = '';
@@ -3034,16 +3299,18 @@ function calcPress(key) {
     return;
   }
   if (key === '=') {
-    const result = calcEvalExpr(cur);
+    const result = calcEvalExprRaw(cur);
     if (result !== null) {
       if (!calcKeyboard.allowNegative && result < 0) {
         calcKeyboard.expr = '';
+        calcKeyboard.exprFull = null;
         calcKeyboard.pristine = false;
         calcUpdateDisplay();
         showToast('', { hint: true, hintHtml: NEGATIVE_INPUT_HINT_HTML });
         return;
       }
-      calcKeyboard.expr = String(result);
+      calcKeyboard.exprFull = result;
+      calcKeyboard.expr = calcNumberToExpr(result);
     }
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
@@ -3055,18 +3322,25 @@ function calcPress(key) {
     const m = cur.match(/^(.*?)([+\-*/])([0-9.]+)$/);
     if (!m) {
       const n = parseFloat(cur);
-      if (!isNaN(n)) calcKeyboard.expr = String(truncateToDecimals(n / 100, calcKeyboard.maxDecimals));
+      if (!isNaN(n)) {
+        const pct = n / 100;
+        calcKeyboard.exprFull = pct;
+        calcKeyboard.expr = calcNumberToExpr(pct);
+      }
     } else {
       const [, prefix, op, lastNum] = m;
       const lastN = parseFloat(lastNum);
-      const baseVal = calcEvalExpr(prefix);
+      const baseVal = calcEvalExprRaw(prefix);
       if (!isNaN(lastN) && baseVal !== null) {
         let result;
         if (op === '+') result = baseVal + (baseVal * lastN / 100);
         else if (op === '-') result = baseVal - (baseVal * lastN / 100);
         else if (op === '*') result = baseVal * lastN / 100;
         else if (op === '/') result = baseVal / lastN / 100;
-        if (Number.isFinite(result)) calcKeyboard.expr = String(truncateToDecimals(result, calcKeyboard.maxDecimals));
+        if (Number.isFinite(result)) {
+          calcKeyboard.exprFull = result;
+          calcKeyboard.expr = calcNumberToExpr(result);
+        }
       }
     }
     calcUpdateDisplay();
@@ -3074,6 +3348,10 @@ function calcPress(key) {
   }
   if (['+', '-', '*', '/'].includes(key)) {
     calcKeyboard.pristine = false;
+    if (calcKeyboard.exprFull != null && !/[+\-*/]$/.test(cur)) {
+      cur = calcNumberToExpr(calcKeyboard.exprFull);
+      calcKeyboard.exprFull = null;
+    }
     if (/[+\-*/]$/.test(cur)) {
       calcKeyboard.expr = cur.slice(0, -1) + key;
     } else if (cur === '') {
@@ -3321,21 +3599,82 @@ function unbindCalcKeyboardViewportScroll() {
 function openCalcKeyboard(inputEl, options) {
   options = options || {};
   hideToast($('#toast'));
+  if (inputEl?.id === 'grace' && isTermMissing()) {
+    promptTermBeforeGrace();
+    return;
+  }
   if (calcKeyboard.backdropEl) closeCalcKeyboard(true);
   const ae = document.activeElement;
   if (ae && ae !== inputEl && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
   calcKeyboard.inputEl = inputEl;
-  calcKeyboard.expr = String(inputEl.value || '');
+  calcKeyboard.exprFull = null;
+  calcKeyboard.expr = getCalcFieldRawString(inputEl);
   calcKeyboard.pristine = true;
   calcKeyboard.allowNegative = !!options.allowNegative;
   calcKeyboard.integerOnly = inputEl.dataset.calcInteger === 'true';
-  calcKeyboard.maxDecimals = calcKeyboard.integerOnly ? 0 : MAX_INPUT_DECIMALS;
+  calcKeyboard.maxDecimals = getFieldMaxDecimals(inputEl);
   inputEl.classList.add('calc-active');
   renderCalcSheet();
   syncCalcKeyboardLayout();
   calcUpdateDisplay();
   bindCalcKeyboardViewportScroll();
   scrollCalcTriggerIntoView(inputEl);
+}
+
+const CALC_TAP_MOVE_PX = 10;
+let calcTapPending = null;
+
+function clearCalcTapPending() {
+  if (!calcTapPending) return;
+  document.removeEventListener('pointermove', onCalcTapPointerMove);
+  document.removeEventListener('pointerup', onCalcTapPointerUp);
+  document.removeEventListener('pointercancel', onCalcTapPointerCancel);
+  calcTapPending = null;
+}
+
+function onCalcTapPointerMove(e) {
+  if (!calcTapPending || e.pointerId !== calcTapPending.pointerId) return;
+  const dx = e.clientX - calcTapPending.x;
+  const dy = e.clientY - calcTapPending.y;
+  if (dx * dx + dy * dy > CALC_TAP_MOVE_PX * CALC_TAP_MOVE_PX) {
+    calcTapPending.moved = true;
+  }
+}
+
+function onCalcTapPointerUp(e) {
+  if (!calcTapPending || e.pointerId !== calcTapPending.pointerId) return;
+  const pending = calcTapPending;
+  clearCalcTapPending();
+  if (pending.moved) return;
+  const args = pending.resolve(e);
+  if (!args) return;
+  e.preventDefault();
+  e.stopPropagation();
+  openCalcKeyboard(args.el, args.options || {});
+}
+
+function onCalcTapPointerCancel(e) {
+  if (calcTapPending && e.pointerId === calcTapPending.pointerId) clearCalcTapPending();
+}
+
+function bindCalcTapOpen(target, resolveOpen, opts) {
+  opts = opts || {};
+  target.addEventListener('pointerdown', (e) => {
+    if (opts.ignore && opts.ignore(e)) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    clearCalcTapPending();
+    calcTapPending = {
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      moved: false,
+      resolve: resolveOpen
+    };
+    document.addEventListener('pointermove', onCalcTapPointerMove, { passive: true });
+    document.addEventListener('pointerup', onCalcTapPointerUp);
+    document.addEventListener('pointercancel', onCalcTapPointerCancel);
+    if (opts.stopPropagation) e.stopPropagation();
+  }, { passive: true });
 }
 
 function bindCalcField(el) {
@@ -3345,19 +3684,15 @@ function bindCalcField(el) {
   el.setAttribute('inputmode', 'none');
   el.setAttribute('autocomplete', 'off');
   el.classList.add('calc-field');
-  const openField = (e) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (calcKeyboard.inputEl === el && calcKeyboard.backdropEl) return;
-    openCalcKeyboard(el, { allowNegative: el.dataset.calcNegative === 'true' });
+  const getOpenArgs = () => {
+    if (calcKeyboard.inputEl === el && calcKeyboard.backdropEl) return null;
+    return { el, options: { allowNegative: el.dataset.calcNegative === 'true' } };
   };
-  el.addEventListener('pointerdown', openField);
+  bindCalcTapOpen(el, getOpenArgs, { stopPropagation: true });
   const box = el.closest('.input-box');
   if (box) {
-    box.addEventListener('pointerdown', (e) => {
-      if (e.target === el || e.target.closest('.calc-field') === el) return;
-      openField(e);
+    bindCalcTapOpen(box, getOpenArgs, {
+      ignore: (e) => e.target === el || e.target.closest('.calc-field') === el
     });
   }
 }
@@ -3437,7 +3772,7 @@ function buildConditionsData() {
   const graceVal = +$('#grace').value || 0;
   const graceUnit = graceIsYear ? '年' : '月';
   const graceText = graceVal === 0 ? '無' : `${graceVal} ${graceUnit}`;
-  const price = +$('#price').value || 0;
+  const price = getCalcFieldNumeric($('#price'));
   const basic = [
     ['購屋價格', `${price.toLocaleString('zh-TW')} 萬元`],
     ['貸款成數', `${$('#ratio').value || 0} %`],
@@ -3461,8 +3796,8 @@ function buildConditionsData() {
     }
   } else {
     rates = rateSegments.map((seg) => {
-      const from = String(seg.from).padStart(3, '0');
-      const to = seg.to || totalMonths;
+      const from = fmtPeriod(seg.from);
+      const to = fmtPeriod(seg.to || totalMonths);
       return [`第 ${from} ~ ${to} 個月 年利率`, `${formatRatePct(seg.rate)} %`];
     });
   }
@@ -3547,16 +3882,26 @@ function getShareText() {
 }
 
 function getResultsExportHeight(el) {
+  const rootTop = el.getBoundingClientRect().top;
+  let maxBottom = 0;
+  const markers = el.querySelectorAll('.conditions-box, .summary-grid, .period-summary, .detail-section-head, .export-detail-head, .year-item, .note, .apr-footer-export');
+  markers.forEach((node) => {
+    const r = node.getBoundingClientRect();
+    if (r.height <= 0) return;
+    maxBottom = Math.max(maxBottom, r.bottom - rootTop);
+  });
+  if (maxBottom <= 0) maxBottom = el.scrollHeight;
   const style = getComputedStyle(el);
   const padBottom = parseFloat(style.paddingBottom) || 0;
-  let maxBottom = 0;
-  Array.from(el.children).forEach((child) => {
-    if (child.id === 'exportSection') return;
-    if (getComputedStyle(child).display === 'none') return;
-    maxBottom = Math.max(maxBottom, child.offsetTop + child.offsetHeight);
-  });
-  return Math.ceil(Math.max(maxBottom + padBottom, el.scrollHeight));
+  return Math.ceil(maxBottom + padBottom + 8);
 }
+
+const EXPORT_CANVAS_SCALE = 2;
+const PDF_JPEG_QUALITY = 0.94;
+const PDF_IMAGE_COMPRESS = 'MEDIUM';
+const EXPORT_SLICE_MAX_CSS_PX = 6000;
+const BROWSER_CANVAS_MAX_PX = 16384;
+const JSPDF_PAGE_MAX_PX = 14400;
 
 function balanceExportCanvasHorizontal(canvas) {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -3591,6 +3936,256 @@ function balanceExportCanvasHorizontal(canvas) {
   return balanced;
 }
 
+function trimExportCanvasVertical(canvas) {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const { width, height } = canvas;
+  const colStep = Math.max(1, Math.floor(width / 240));
+  const isBlank = (r, g, b, a) => {
+    if (a < 8) return true;
+    if (r > 246 && g > 246 && b > 246) return true;
+    return Math.abs(r - 236) < 10 && Math.abs(g - 236) < 10 && Math.abs(b - 236) < 10;
+  };
+  let maxY = -1;
+  for (let y = height - 1; y >= 0; y--) {
+    if (y !== 0 && y !== height - 1 && y % 8 !== 0) continue;
+    const row = ctx.getImageData(0, y, width, 1).data;
+    let hasInk = false;
+    for (let x = 0; x < width; x += colStep) {
+      const i = x * 4;
+      if (!isBlank(row[i], row[i + 1], row[i + 2], row[i + 3])) {
+        hasInk = true;
+        break;
+      }
+    }
+    if (hasInk) {
+      maxY = y;
+      break;
+    }
+  }
+  if (maxY < 0) return canvas;
+  const trimmedHeight = maxY + 1 + Math.min(24, Math.floor(height * 0.02));
+  if (trimmedHeight >= height) return canvas;
+  const trimmed = document.createElement('canvas');
+  trimmed.width = width;
+  trimmed.height = trimmedHeight;
+  trimmed.getContext('2d').drawImage(canvas, 0, 0, width, trimmedHeight, 0, 0, width, trimmedHeight);
+  return trimmed;
+}
+
+async function waitExportLayout() {
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+function prepareExportAprBlock(clone) {
+  const aprBlock = clone.querySelector('#aprBlock');
+  if (shouldShowAprFooter()) {
+    aprBlock?.classList.remove('hidden');
+    const screen = aprBlock?.querySelector('.apr-footer-screen');
+    const exp = aprBlock?.querySelector('.apr-footer-export');
+    if (screen) screen.style.display = 'none';
+    if (exp) exp.style.display = 'flex';
+    const exportVal = aprBlock?.querySelector('#resAprExport');
+    if (exportVal) exportVal.textContent = $('#resApr')?.textContent || '';
+  } else {
+    aprBlock?.remove();
+  }
+}
+
+async function mountExportNode(el) {
+  el.setAttribute('aria-hidden', 'true');
+  el.classList.add('export-offscreen-clone');
+  document.body.appendChild(el);
+  await waitExportLayout();
+  return el;
+}
+
+function parseYearItemYear(el) {
+  const m = el.querySelector('.year-title')?.textContent?.match(/第\s*(\d+)\s*年/);
+  return m ? +m[1] : 0;
+}
+
+function getYearItemsInRange(fromYear, toYear) {
+  return Array.from($$('#yearAccordion .year-item')).filter((el) => {
+    const y = parseYearItemYear(el);
+    return y >= fromYear && y <= toYear;
+  });
+}
+
+function getDetailYearGroups() {
+  const years = Array.from($$('#yearAccordion .year-item'))
+    .map(parseYearItemYear)
+    .filter((y) => y > 0)
+    .sort((a, b) => a - b);
+  if (!years.length) return [];
+  const maxYear = years[years.length - 1];
+  const groups = [];
+  for (let start = 1; start <= maxYear; start += 10) {
+    groups.push({ from: start, to: Math.min(start + 9, maxYear) });
+  }
+  return groups;
+}
+
+async function buildExportSummaryPart() {
+  const results = $('#results');
+  const clone = results.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.classList.add('export-capture', 'export-pdf-part', 'show');
+  clone.style.width = results.offsetWidth + 'px';
+  clone.style.maxWidth = results.offsetWidth + 'px';
+  clone.querySelector('#exportSection')?.remove();
+  clone.querySelector('.detail-eye-btn')?.remove();
+  clone.querySelector('#detailSection')?.remove();
+  const conditionsBox = clone.querySelector('#conditionsBox');
+  if (conditionsBox) conditionsBox.classList.remove('collapsed');
+  prepareExportAprBlock(clone);
+  return mountExportNode(clone);
+}
+
+function formatExportDetailYearRange(from, to) {
+  const fromStr = String(from).padStart(2, '0');
+  const toStr = String(to).padStart(2, '0');
+  return `（第 ${fromStr} 年～${toStr} 年）`;
+}
+
+function buildExportDetailHead(group, isFirstDetailPage) {
+  const head = document.createElement('div');
+  head.className = 'export-detail-head';
+
+  const titleRow = document.createElement('div');
+  titleRow.className = 'period-title' + (isFirstDetailPage ? ' period-title-dashed' : ' export-detail-title-plain');
+  if (isFirstDetailPage) {
+    titleRow.innerHTML = '<span class="title-line"></span><h3>還款明細</h3><span class="title-line"></span>';
+  } else {
+    titleRow.innerHTML = '<h3>還款明細</h3>';
+  }
+
+  const rangeRow = document.createElement('div');
+  rangeRow.className = 'export-detail-range-sub';
+  rangeRow.textContent = formatExportDetailYearRange(group.from, group.to);
+
+  head.appendChild(titleRow);
+  head.appendChild(rangeRow);
+  return head;
+}
+
+async function buildExportDetailPart(group, isFirstDetailPage) {
+  const width = $('#results').offsetWidth;
+  const shell = document.createElement('div');
+  shell.className = 'card results export-capture export-pdf-part show';
+  shell.style.width = width + 'px';
+  shell.style.maxWidth = width + 'px';
+
+  const detailSection = document.createElement('div');
+  detailSection.className = 'detail-section' + (showCumInterest ? ' show-cum' : '');
+  detailSection.appendChild(buildExportDetailHead(group, isFirstDetailPage));
+
+  const accordion = document.createElement('div');
+  accordion.className = 'year-accordion';
+  getYearItemsInRange(group.from, group.to).forEach((el) => {
+    const item = el.cloneNode(true);
+    item.classList.add('open');
+    accordion.appendChild(item);
+  });
+  detailSection.appendChild(accordion);
+  shell.appendChild(detailSection);
+  return mountExportNode(shell);
+}
+
+async function captureExportRoot(rootEl) {
+  const totalWidth = rootEl.offsetWidth;
+  const totalHeight = getResultsExportHeight(rootEl);
+  const scale = EXPORT_CANVAS_SCALE;
+  const sliceMax = EXPORT_SLICE_MAX_CSS_PX;
+  const needsChunkedCapture = totalHeight > sliceMax || totalHeight * scale > BROWSER_CANVAS_MAX_PX - 64;
+
+  if (!needsChunkedCapture) {
+    const canvas = await html2canvas(rootEl, {
+      scale,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+      height: totalHeight,
+      windowHeight: totalHeight,
+      width: totalWidth
+    });
+    return balanceExportCanvasHorizontal(canvas);
+  }
+
+  const viewport = document.createElement('div');
+  viewport.setAttribute('aria-hidden', 'true');
+  viewport.style.cssText = [
+    'position:fixed',
+    'left:-20000px',
+    'top:0',
+    'overflow:hidden',
+    'visibility:visible',
+    'pointer-events:none',
+    'z-index:-1',
+    'width:' + totalWidth + 'px',
+    'background:#fff'
+  ].join(';');
+  document.body.appendChild(viewport);
+  rootEl.classList.remove('export-offscreen-clone');
+  viewport.appendChild(rootEl);
+  rootEl.style.position = 'relative';
+  rootEl.style.left = '0';
+  rootEl.style.top = '0';
+  rootEl.style.marginTop = '0';
+
+  try {
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = Math.ceil(totalWidth * scale);
+    fullCanvas.height = Math.ceil(totalHeight * scale);
+    const ctx = fullCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
+
+    for (let top = 0; top < totalHeight; top += sliceMax) {
+      const sliceH = Math.min(sliceMax, totalHeight - top);
+      viewport.style.height = sliceH + 'px';
+      rootEl.style.marginTop = (-top) + 'px';
+      await waitExportLayout();
+      const sliceCanvas = await html2canvas(viewport, {
+        scale,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        width: totalWidth,
+        height: sliceH,
+        windowWidth: totalWidth,
+        windowHeight: sliceH
+      });
+      ctx.drawImage(sliceCanvas, 0, top * scale);
+    }
+    return balanceExportCanvasHorizontal(fullCanvas);
+  } finally {
+    viewport.remove();
+  }
+}
+
+async function captureResultsPdfCanvases() {
+  if (!getExportIncludeDetail()) {
+    return [await captureResultsCanvas()];
+  }
+  const canvases = [];
+  const summaryNode = await buildExportSummaryPart();
+  try {
+    canvases.push(await captureExportRoot(summaryNode));
+  } finally {
+    summaryNode.remove();
+  }
+  const groups = getDetailYearGroups();
+  for (let i = 0; i < groups.length; i++) {
+    const detailNode = await buildExportDetailPart(groups[i], i === 0);
+    try {
+      canvases.push(await captureExportRoot(detailNode));
+    } finally {
+      detailNode.remove();
+    }
+  }
+  return canvases;
+}
+
 async function buildExportCaptureNode() {
   const results = $('#results');
   const includeDetail = getExportIncludeDetail();
@@ -3608,27 +4203,21 @@ async function buildExportCaptureNode() {
   if (conditionsBox) conditionsBox.classList.remove('collapsed');
 
   const detailSection = clone.querySelector('#detailSection');
+  const note = clone.querySelector('.note');
+  const periodSummary = clone.querySelector('.period-summary');
   if (!includeDetail) {
     detailSection?.remove();
   } else {
+    if (note && periodSummary) {
+      periodSummary.insertAdjacentElement('afterend', note);
+    }
     clone.querySelectorAll('.year-item').forEach((el) => el.classList.add('open'));
   }
 
-  const aprBlock = clone.querySelector('#aprBlock');
-  if (shouldShowAprFooter()) {
-    aprBlock?.classList.remove('hidden');
-    const screen = aprBlock?.querySelector('.apr-footer-screen');
-    const exp = aprBlock?.querySelector('.apr-footer-export');
-    if (screen) screen.style.display = 'none';
-    if (exp) exp.style.display = 'flex';
-    const exportVal = aprBlock?.querySelector('#resAprExport');
-    if (exportVal) exportVal.textContent = $('#resApr')?.textContent || '';
-  } else {
-    aprBlock?.remove();
-  }
+  prepareExportAprBlock(clone);
 
   document.body.appendChild(clone);
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  await waitExportLayout();
   return clone;
 }
 
@@ -3639,18 +4228,10 @@ async function captureResultsCanvas() {
   let clone = null;
   try {
     clone = await buildExportCaptureNode();
-    const height = getResultsExportHeight(clone);
-    const canvas = await html2canvas(clone, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      logging: false,
-      height,
-      windowHeight: height
-    });
-    return balanceExportCanvasHorizontal(canvas);
+    const canvas = await captureExportRoot(clone);
+    return trimExportCanvasVertical(canvas);
   } finally {
-    clone?.remove();
+    if (clone?.parentElement === document.body) clone.remove();
   }
 }
 
@@ -3680,28 +4261,60 @@ async function withExportLock(task, busyMsg) {
   }
 }
 
+function fitCanvasToPdfPage(canvas) {
+  let pageW = canvas.width;
+  let pageH = canvas.height;
+  if (pageW > JSPDF_PAGE_MAX_PX || pageH > JSPDF_PAGE_MAX_PX) {
+    const fit = Math.min(JSPDF_PAGE_MAX_PX / pageW, JSPDF_PAGE_MAX_PX / pageH);
+    pageW = Math.max(1, Math.floor(pageW * fit));
+    pageH = Math.max(1, Math.floor(pageH * fit));
+  }
+  return { pageW, pageH, imgData: canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY) };
+}
+
 function canvasToPdf(canvas) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     throw new Error('jsPDF not loaded');
   }
   const { jsPDF } = window.jspdf;
-  const imgData = canvas.toDataURL('image/jpeg', 0.92);
-  const w = canvas.width;
-  const h = canvas.height;
+  const { pageW, pageH, imgData } = fitCanvasToPdfPage(canvas);
   const pdf = new jsPDF({
     unit: 'px',
-    format: [w, h],
-    orientation: w >= h ? 'l' : 'p',
+    format: [pageW, pageH],
+    orientation: pageW >= pageH ? 'l' : 'p',
     compress: true
   });
-  pdf.addImage(imgData, 'JPEG', 0, 0, w, h, undefined, 'FAST');
+  pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, PDF_IMAGE_COMPRESS);
+  return pdf;
+}
+
+function canvasesToPdf(canvases) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('jsPDF not loaded');
+  }
+  const { jsPDF } = window.jspdf;
+  let pdf = null;
+  canvases.forEach((canvas, index) => {
+    const { pageW, pageH, imgData } = fitCanvasToPdfPage(canvas);
+    if (index === 0) {
+      pdf = new jsPDF({
+        unit: 'px',
+        format: [pageW, pageH],
+        orientation: pageW >= pageH ? 'l' : 'p',
+        compress: true
+      });
+    } else {
+      pdf.addPage([pageW, pageH], pageW >= pageH ? 'l' : 'p');
+    }
+    pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, PDF_IMAGE_COMPRESS);
+  });
   return pdf;
 }
 
 async function exportAsPdf() {
   await withExportLock(async () => {
-    const canvas = await captureResultsCanvas();
-    canvasToPdf(canvas).save(exportFileName('pdf'));
+    const canvases = await captureResultsPdfCanvases();
+    canvasesToPdf(canvases).save(exportFileName('pdf'));
     showToast('PDF 已下載');
   }, '正在產生 PDF…');
 }
@@ -3720,11 +4333,26 @@ async function exportAsImage(mime, ext) {
 
 async function shareResults() {
   await withExportLock(async () => {
-    const canvas = await captureResultsCanvas();
-    const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
-    });
-    const file = new File([blob], exportFileName('png'), { type: 'image/png' });
+    const includeDetail = getExportIncludeDetail();
+    let blob;
+    let ext;
+    let mime;
+
+    if (includeDetail) {
+      const canvases = await captureResultsPdfCanvases();
+      blob = canvasesToPdf(canvases).output('blob');
+      ext = 'pdf';
+      mime = 'application/pdf';
+    } else {
+      const canvas = await captureResultsCanvas();
+      blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', 0.92);
+      });
+      ext = 'jpg';
+      mime = 'image/jpeg';
+    }
+
+    const file = new File([blob], exportFileName(ext), { type: mime });
     const shareData = {
       title: '房屋貸款試算結果',
       text: getShareText(),
@@ -3747,14 +4375,14 @@ async function shareResults() {
       return;
     }
 
-    downloadBlob(blob, exportFileName('png'));
-    showToast('此裝置不支援分享，已改為下載 PNG');
+    downloadBlob(blob, exportFileName(ext));
+    showToast(`此裝置不支援分享，已改為下載 ${ext.toUpperCase()}`);
   }, '正在準備分享…');
 }
 
 function updateAmount() {
-  const price = +$('#price').value || 0;
-  const ratio = +$('#ratio').value || 0;
+  const price = getCalcFieldNumeric($('#price'));
+  const ratio = getCalcFieldNumeric($('#ratio'));
   $('#amount').value = fmtWan(price * 10000 * ratio / 100);
 }
 
@@ -3762,8 +4390,8 @@ let calcPending = false;
 let calcSynced = false;
 
 function formIsCalcEmpty() {
-  return $('#price').value === '' && $('#ratio').value === '' &&
-    $('#term').value === '' && $('#rate').value === '';
+  return getCalcFieldRawString($('#price')) === '' && getCalcFieldRawString($('#ratio')) === '' &&
+    getCalcFieldRawString($('#term')) === '' && getCalcFieldRawString($('#rate')) === '';
 }
 
 function updateCalcButton() {
@@ -3800,7 +4428,7 @@ function maybeRecalc() {
 }
 
 function getLoanYuan() {
-  return (+$('#price').value || 0) * 10000 * (+$('#ratio').value || 0) / 100;
+  return getCalcFieldNumeric($('#price')) * 10000 * getCalcFieldNumeric($('#ratio')) / 100;
 }
 
 function isLoanFieldMissing(val) {
@@ -3809,74 +4437,78 @@ function isLoanFieldMissing(val) {
   return +s <= 0;
 }
 
+function isTermMissing() {
+  return isLoanFieldMissing($('#term').value);
+}
+
+function promptTermBeforeGrace() {
+  showToast('', { hint: true, hintHtml: TERM_REQUIRED_HINT_HTML });
+  revealMissingFormField($('#term'));
+}
+
 function isMissingRateValue(val) {
   const s = String(val ?? '').trim();
   return s === '' || Number.isNaN(Number(s));
 }
 
-function getRateMissingError() {
+function getRateMissingItems() {
+  const labels = [];
+  let firstEl = null;
   if (rateType === 'single') {
-    if (isMissingRateValue($('#rate').value)) {
-      return { el: $('#rate'), message: '請輸入年利率' };
+    if (isMissingRateValue(getCalcFieldRawString($('#rate')))) {
+      return { labels: ['年利率'], firstEl: $('#rate') };
     }
-    return null;
+    return { labels: [], firstEl: null };
   }
   syncRateSegmentsContiguous();
   for (let i = 0; i < rateSegments.length; i++) {
     if (isMissingRateValue(rateSegments[i].rate)) {
       const inp = $('#rateRows')?.querySelector(`input.rate-val[data-i="${i}"]`);
-      return {
-        el: inp || $('#multiRate'),
-        message: rateSegments.length > 1 ? `請輸入第 ${i + 1} 段年利率` : '請輸入年利率'
-      };
+      if (!firstEl) firstEl = inp || $('#multiRate');
+      labels.push(rateSegments.length > 1 ? `第 ${i + 1} 段年利率` : '年利率');
     }
   }
-  return null;
+  return { labels, firstEl };
+}
+
+function getRateMissingError() {
+  const { labels, firstEl } = getRateMissingItems();
+  if (!labels.length) return null;
+  return {
+    el: firstEl,
+    message: labels.length > 1 ? `請輸入${labels.join('、')}` : `請輸入${labels[0]}`
+  };
 }
 
 function getCalcValidationError() {
-  const missingPrice = isLoanFieldMissing($('#price').value);
-  const missingRatio = isLoanFieldMissing($('#ratio').value);
-  const missingTerm = isLoanFieldMissing($('#term').value);
-  const rateMissingErr = getRateMissingError();
-
-  const missing = [];
+  const labels = [];
   let firstEl = null;
-  if (missingPrice) {
-    missing.push('購屋價格');
+
+  if (isLoanFieldMissing(getCalcFieldRawString($('#price')))) {
+    labels.push('購屋價格');
     if (!firstEl) firstEl = $('#price');
   }
-  if (missingRatio) {
-    missing.push('貸款成數');
+  if (isLoanFieldMissing(getCalcFieldRawString($('#ratio')))) {
+    labels.push('貸款成數');
     if (!firstEl) firstEl = $('#ratio');
   }
-  if (missingTerm) {
-    missing.push('貸款年限');
+  if (isLoanFieldMissing($('#term').value)) {
+    labels.push('貸款年限');
     if (!firstEl) firstEl = $('#term');
   }
-  if (rateMissingErr) {
-    missing.push('年利率');
-    if (!firstEl) firstEl = rateMissingErr.el;
-  }
 
-  if (missing.length === 0) return getRateValidationError();
+  const rateMissing = getRateMissingItems();
+  rateMissing.labels.forEach((label) => labels.push(label));
+  if (!firstEl && rateMissing.firstEl) firstEl = rateMissing.firstEl;
 
-  let message;
-  if (missing.length === 2 && missingPrice && missingRatio) {
-    message = '請輸入購屋價格與貸款成數';
-  } else if (missing.length === 1 && rateMissingErr) {
-    message = rateMissingErr.message;
-  } else if (missing.length === 1) {
-    message = `請輸入${missing[0]}`;
-  } else {
-    message = `請輸入${missing.join('、')}`;
-  }
-  return { el: firstEl, message };
+  if (labels.length === 0) return getRateValidationError();
+
+  return { el: firstEl, html: buildCalcMissingAlertHtml(labels) };
 }
 
 function getSelfFundWan() {
-  const price = +$('#price').value || 0;
-  const ratio = +$('#ratio').value || 0;
+  const price = getCalcFieldNumeric($('#price'));
+  const ratio = getCalcFieldNumeric($('#ratio'));
   return price * (1 - ratio / 100);
 }
 function getTotalMonths() { return (+$('#term').value || 0) * 12; }
@@ -3911,6 +4543,10 @@ function renderGracePills(selectVal) {
 
 function setGraceUnit(isYear) {
   if (isYear === graceIsYear) return;
+  if (isTermMissing() && (+$('#grace').value || 0) > 0) {
+    promptTermBeforeGrace();
+    return;
+  }
   const prevVal = +$('#grace').value || 0;
   let newVal = 0;
   if (prevVal > 0) {
@@ -3926,7 +4562,7 @@ function setGraceUnit(isYear) {
   maybeRecalc();
 }
 function getRateForMonth(m, totalMonths) {
-  if (rateType === 'single') return (+$('#rate').value || 0) / 100;
+  if (rateType === 'single') return getCalcFieldNumeric($('#rate')) / 100;
   for (const seg of rateSegments) {
     const to = seg.to === 0 ? totalMonths : seg.to;
     if (m >= seg.from && m <= to) return seg.rate / 100;
@@ -3936,7 +4572,7 @@ function getRateForMonth(m, totalMonths) {
 }
 
 function getRatePercentForMonth(m, totalMonths) {
-  if (rateType === 'single') return $('#rate').value || '0';
+  if (rateType === 'single') return getCalcFieldRawString($('#rate')) || '0';
   for (const seg of rateSegments) {
     const to = seg.to === 0 ? totalMonths : seg.to;
     if (m >= seg.from && m <= to) return String(seg.rate ?? '0');
@@ -3946,7 +4582,7 @@ function getRatePercentForMonth(m, totalMonths) {
 }
 
 function getWeightedNominalRate(totalMonths) {
-  if (rateType === 'single') return +$('#rate').value || 0;
+  if (rateType === 'single') return getCalcFieldNumeric($('#rate'));
   let weighted = 0;
   for (const seg of rateSegments) {
     const from = Math.max(1, seg.from);
@@ -4243,7 +4879,7 @@ function getRateValidationError() {
   const missing = getRateMissingError();
   if (missing) return missing;
   if (rateType === 'single') {
-    if (isRateOutOfRange($('#rate').value)) {
+    if (isRateOutOfRange(getCalcFieldRawString($('#rate')))) {
       return { el: $('#rate'), message: RATE_RANGE_MESSAGE };
     }
     return null;
@@ -4378,6 +5014,33 @@ function renderResults(scrollToResults) {
   if (typeof window.__applyDesktopScale === 'function') window.__applyDesktopScale();
 }
 
+function syncAddRateButton() {
+  const btn = $('#addRate');
+  if (!btn) return;
+  const atMax = rateSegments.length >= RATE_SEGMENT_MAX;
+  btn.classList.toggle('btn-add-disabled', atMax);
+  btn.setAttribute('aria-disabled', atMax ? 'true' : 'false');
+}
+
+function tryAddRateSegment() {
+  if (rateSegments.length >= RATE_SEGMENT_MAX) {
+    showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rateSegmentMax });
+    return;
+  }
+  syncRateSegmentsContiguous();
+  const total = getTotalMonths();
+  const nextCount = rateSegments.length + 1;
+  if (total < nextCount) {
+    showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rateSegmentTermShort });
+    return;
+  }
+  const rates = rateSegments.map((s) => String(s.rate ?? '2.5'));
+  rates.push(rates[rates.length - 1] || '2.5');
+  rebuildRateSegmentsFromSplits(buildEvenRateSplits(nextCount, total), rates, total);
+  renderRateRows();
+  maybeRecalc();
+}
+
 function renderRateRows() {
   syncRateSegmentsContiguous();
   const total = getTotalMonths();
@@ -4412,12 +5075,18 @@ function renderRateRows() {
         setRateSegmentEnd(idx, inp.value);
         renderRateRows();
       } else if (field === 'rate') {
-        rateSegments[idx].rate = inp.value === '' ? '0' : applyFieldClamp(inp, inp.value);
+        rateSegments[idx].rate = inp.value === '' ? '0' : (getCalcFieldRawString(inp) || applyFieldClamp(inp, inp.value));
       }
       maybeRecalc();
     });
   });
   initCalcFields($('#rateRows'));
+  $('#rateRows').querySelectorAll('input.rate-val').forEach((inp) => {
+    const idx = +inp.dataset.i;
+    if (Number.isFinite(idx) && rateSegments[idx]) {
+      setCalcFieldStoredValue(inp, rateSegments[idx].rate);
+    }
+  });
   $('#rateRows').querySelectorAll('.btn-remove').forEach(btn => {
     btn.addEventListener('click', () => {
       const total = getTotalMonths();
@@ -4433,6 +5102,7 @@ function renderRateRows() {
       maybeRecalc();
     });
   });
+  syncAddRateButton();
 }
 
 $('#price').addEventListener('input', () => { updateAmount(); maybeRecalc(); });
@@ -4477,6 +5147,10 @@ $('#termPills').addEventListener('click', e => {
 
 $('#gracePills').addEventListener('click', e => {
   if (!e.target.classList.contains('qp')) return;
+  if (isTermMissing() && e.target.dataset.val !== '0') {
+    promptTermBeforeGrace();
+    return;
+  }
   $$('#gracePills .qp').forEach(p => p.classList.remove('active'));
   e.target.classList.add('active');
   $('#grace').value = e.target.dataset.val;
@@ -4484,6 +5158,12 @@ $('#gracePills').addEventListener('click', e => {
 });
 
 $('#grace').addEventListener('input', () => {
+  if (isTermMissing()) {
+    $('#grace').value = '';
+    $$('#gracePills .qp').forEach(p => p.classList.remove('active'));
+    promptTermBeforeGrace();
+    return;
+  }
   syncGraceUnitFromDom();
   const el = $('#grace');
   const val = applyFieldClamp(el, el.value);
@@ -4514,7 +5194,7 @@ $$('.choice-btn[data-rate-type]').forEach(btn => {
     $('#rateField').classList.toggle('hidden', rateType !== 'single');
     $('#multiRate').classList.toggle('hidden', rateType !== 'multi');
     if (rateType === 'multi') {
-      rateSegments = [{ from: 1, to: getTotalMonths(), rate: $('#rate').value || '2.5' }];
+      rateSegments = [{ from: 1, to: getTotalMonths(), rate: getCalcFieldRawString($('#rate')) || '2.5' }];
       renderRateRows();
     }
     maybeRecalc();
@@ -4522,30 +5202,51 @@ $$('.choice-btn[data-rate-type]').forEach(btn => {
 });
 
 $('#addRate').addEventListener('click', () => {
-  syncRateSegmentsContiguous();
-  const total = getTotalMonths();
-  const last = rateSegments[rateSegments.length - 1];
-  const end = last.to || total;
-  if (last.from >= end) return;
-  const mid = Math.floor((last.from + end) / 2);
-  if (mid >= end) return;
-  last.to = mid;
-  rateSegments.push({ from: mid + 1, to: end, rate: last.rate });
-  syncRateSegmentsContiguous();
-  renderRateRows();
-  maybeRecalc();
+  tryAddRateSegment();
 });
+
+function canDesktopEnterRunCalc() {
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
+  if (calcKeyboard.backdropEl) return false;
+  if ($('#appAlert')?.classList.contains('show')) return false;
+  if (exportBusy) return false;
+  const el = document.activeElement;
+  if (!el || el === document.body || el === document.documentElement) return true;
+  const tag = el.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return false;
+  if (tag === 'BUTTON' || tag === 'A') return false;
+  if (el.isContentEditable) return false;
+  return true;
+}
+
+function runCalcAction() {
+  const calcErr = getCalcValidationError();
+  if (calcErr) {
+    const missingEl = calcErr.el;
+    const onClose = () => revealMissingFormField(missingEl);
+    if (calcErr.html) showAppAlert(calcErr.html, onClose, { html: true });
+    else showAppAlert(calcErr.message, onClose);
+    return;
+  }
+  renderResults(true);
+  markCalcSynced();
+}
 
 $('#calc').addEventListener('click', () => {
   try {
-    const calcErr = getCalcValidationError();
-    if (calcErr) {
-      const missingEl = calcErr.el;
-      showAppAlert(calcErr.message, () => revealMissingFormField(missingEl));
-      return;
-    }
-    renderResults(true);
-    markCalcSynced();
+    runCalcAction();
+  } catch (err) {
+    console.error(err);
+    showAppAlert('試算時發生錯誤，請重新整理頁面後再試');
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.code !== 'NumpadEnter') return;
+  if (!canDesktopEnterRunCalc()) return;
+  e.preventDefault();
+  try {
+    runCalcAction();
   } catch (err) {
     console.error(err);
     showAppAlert('試算時發生錯誤，請重新整理頁面後再試');
@@ -4597,7 +5298,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   if (v) v.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
 })();
 
-// ===== 模式切換（一般貸款 / 新青安3.0 / 負擔推估）=====
+// ===== 模式切換（一般貸款 / 新青安3.0 / 個人評估；比照房地合一 成屋/預售）=====
 (function () {
   const MODE_KEY = 'mortgage_calc_mode_v1';
   const btns = document.querySelectorAll('.ver-btn[data-mode]');
@@ -4608,21 +5309,38 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   };
   const clearBtn = document.getElementById('clearBtn');
   const restoreBtn = document.getElementById('restoreBtn');
-  const VER_DBL_MS = 400;
-  let verTap = { mode: null, at: 0 };
+  const VER_DBL_MS = 350;
 
-  function scrollModePanelToTop(mode) {
+  function toggleAllModeSections(mode) {
     const panel = panels[mode];
     if (!panel) return;
-    const sticky = document.querySelector('.sticky-top');
-    const pad = 8;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const stickyH = sticky ? sticky.getBoundingClientRect().height : 0;
-        const top = window.scrollY + panel.getBoundingClientRect().top - stickyH - pad;
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-      });
-    });
+    const conditions = panel.querySelector('#conditionsBox, .conditions-box');
+    const condOpen = conditions && !conditions.classList.contains('collapsed');
+    const yearItems = panel.querySelectorAll('.year-item');
+    const anyYearOpen = Array.from(yearItems).some((el) => el.classList.contains('open'));
+
+    if (condOpen || anyYearOpen) {
+      if (condOpen && conditions) {
+        conditions.classList.add('collapsed');
+        const head = conditions.querySelector('#conditionsToggle, .conditions-head');
+        if (head) {
+          head.setAttribute('aria-expanded', 'false');
+          head.title = '展開試算條件';
+        }
+      }
+      yearItems.forEach((el) => el.classList.remove('open'));
+      window.scrollTo(0, 0);
+    } else {
+      if (conditions) {
+        conditions.classList.remove('collapsed');
+        const head = conditions.querySelector('#conditionsToggle, .conditions-head');
+        if (head) {
+          head.setAttribute('aria-expanded', 'true');
+          head.title = '收合試算條件';
+        }
+      }
+      yearItems.forEach((el) => el.classList.add('open'));
+    }
   }
 
   function applyMode(mode) {
@@ -4648,18 +5366,34 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
   }
 
+  let _verLastClk = 0;
+  let _verLastBtn = null;
+  let _verWasActive = false;
+
   btns.forEach((btn) => {
     btn.addEventListener('click', () => {
-      const mode = btn.dataset.mode;
       const now = Date.now();
-      if (verTap.mode === mode && now - verTap.at <= VER_DBL_MS) {
-        verTap = { mode: null, at: 0 };
-        applyMode(mode);
-        scrollModePanelToTop(mode);
+      const wasActive = btn.classList.contains('active');
+      const dbl = (btn === _verLastBtn) && (now - _verLastClk < VER_DBL_MS);
+
+      if (dbl && _verWasActive) {
+        _verLastClk = 0;
+        _verLastBtn = null;
+        _verWasActive = false;
+        toggleAllModeSections(btn.dataset.mode);
         return;
       }
-      verTap = { mode, at: now };
-      applyMode(mode);
+
+      _verLastClk = now;
+      _verLastBtn = btn;
+      _verWasActive = wasActive;
+
+      if (wasActive) {
+        window.scrollTo(0, 0);
+        return;
+      }
+
+      applyMode(btn.dataset.mode);
     });
   });
 
