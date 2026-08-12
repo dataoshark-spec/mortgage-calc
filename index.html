@@ -2303,7 +2303,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.12C";
+const APP_VERSION = "2026.08.12D";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4686,7 +4686,9 @@ function updateCalcButton() {
   }
   btn.textContent = '尚未計算';
   btn.classList.add('btn-calc-stale');
-  if (generalTab?.classList.contains('active')) {
+  // 必填齊全、可真正計算時，才閃爍「一般貸款」提醒重算
+  const canCalc = !getCalcValidationError();
+  if (canCalc && generalTab?.classList.contains('active')) {
     generalTab.classList.add('ver-btn-stale');
   }
 }
