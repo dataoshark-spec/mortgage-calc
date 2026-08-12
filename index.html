@@ -194,6 +194,19 @@ if ("serviceWorker" in navigator) {
       font-weight: 600;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+    .ver-btn.active.ver-btn-stale {
+      animation: ver-btn-stale-flash 1.6s ease-in-out infinite;
+    }
+    @keyframes ver-btn-stale-flash {
+      0%, 100% {
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      50% {
+        background: #ffe8b8;
+        box-shadow: 0 0 0 2px rgba(201, 146, 42, 0.35);
+      }
+    }
     .ver-btn:active { transform: scale(0.98); }
     .mode-panel { display: block; }
     .mode-panel[hidden] { display: none !important; }
@@ -1740,8 +1753,11 @@ if ("serviceWorker" in navigator) {
       font-weight: 300;
       color: #aaa;
       margin: 16px 0 0;
-      padding: 0 8px;
+      padding: 0 6px;
       line-height: 1.65;
+      text-align: justify;
+      text-justify: inter-ideograph;
+      text-align-last: left;
     }
     .export-section {
       margin-top: 24px;
@@ -2287,7 +2303,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.11Y";
+const APP_VERSION = "2026.08.12C";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4388,7 +4404,8 @@ async function captureExportRootForPdf(rootEl) {
 
 async function captureResultsPdfCanvases() {
   if (!getExportIncludeDetail()) {
-    return flattenCanvases([await captureResultsRawCanvas()]);
+    // 與「含還款明細」相同：依內容墨水邊界水平置中，左右留白一致
+    return normalizePdfCanvases(flattenCanvases([await captureResultsRawCanvas()]));
   }
   const canvases = [];
   const summaryNode = await buildExportSummaryPart();
@@ -4445,8 +4462,9 @@ async function buildExportCaptureNode() {
 }
 
 function polishSummaryExportCanvas(rawCanvas) {
-  const balanced = balanceExportCanvasHorizontal(rawCanvas);
-  return finalizePdfPageCanvas(balanced);
+  // 與含明細 PDF 同一套水平置中，避免僅摘要右側空白偏多
+  const centered = centerPdfCanvas(rawCanvas, rawCanvas.width);
+  return finalizePdfPageCanvas(centered);
 }
 
 const SUMMARY_EXPORT_CAPTURE_OPTS = {
@@ -4653,6 +4671,8 @@ function formIsCalcEmpty() {
 
 function updateCalcButton() {
   const btn = $('#calc');
+  const generalTab = document.querySelector('.ver-btn[data-mode="general"]');
+  if (generalTab) generalTab.classList.remove('ver-btn-stale');
   if (!btn) return;
   btn.classList.remove('btn-calc-stale', 'btn-calc-done');
   if (formIsCalcEmpty()) {
@@ -4666,6 +4686,9 @@ function updateCalcButton() {
   }
   btn.textContent = '尚未計算';
   btn.classList.add('btn-calc-stale');
+  if (generalTab?.classList.contains('active')) {
+    generalTab.classList.add('ver-btn-stale');
+  }
 }
 
 function markCalcPending() {
@@ -5621,6 +5644,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }
     if (restoreBtn && mode !== 'general') restoreBtn.style.display = 'none';
     try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
+    if (typeof updateCalcButton === 'function') updateCalcButton();
   }
 
   let _verLastClk = 0;
