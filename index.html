@@ -2459,6 +2459,7 @@ function setRateSegmentEnd(index, rawTo) {
   rebuildRateSegmentsFromSplits(splits, rates, total);
 }
 let clearSnapshot = null;
+const FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v1';
 let showCumInterest = false;
 
 const FIELD_HINT_HTML = {
@@ -2647,6 +2648,29 @@ function captureFormState() {
   };
 }
 
+function persistFormState() {
+  try {
+    localStorage.setItem(FORM_STATE_STORAGE_KEY, JSON.stringify(captureFormState()));
+  } catch (_) {}
+}
+
+function clearPersistedFormState() {
+  try { localStorage.removeItem(FORM_STATE_STORAGE_KEY); } catch (_) {}
+}
+
+function loadPersistedFormState() {
+  try {
+    const raw = localStorage.getItem(FORM_STATE_STORAGE_KEY);
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    if (!state || typeof state !== 'object') return null;
+    if (!Array.isArray(state.rateSegments)) return null;
+    return state;
+  } catch (_) {
+    return null;
+  }
+}
+
 function applyFormState(state) {
   setCalcFieldStoredValue($('#price'), state.price);
   setCalcFieldStoredValue($('#ratio'), state.ratio);
@@ -2686,6 +2710,7 @@ function applyFormState(state) {
     $('#results').classList.remove('show');
     maybeRecalc();
   }
+  updateClearRestoreBtns();
 }
 
 function formHasContent(state) {
@@ -2730,6 +2755,7 @@ function enterClearedState(opts) {
   calcSynced = false;
   updateCalcButton();
   updateClearRestoreBtns();
+  clearPersistedFormState();
   if (!opts.silent) showToast('已清空，可以開始輸入');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2739,6 +2765,7 @@ function restoreClearedState() {
   const snap = clearSnapshot;
   clearSnapshot = null;
   applyFormState(snap);
+  persistFormState();
   updateClearRestoreBtns();
   showToast('已恢復原本數值');
 }
@@ -4772,10 +4799,12 @@ function markCalcSynced() {
   calcPending = false;
   calcSynced = true;
   updateCalcButton();
+  persistFormState();
 }
 
 function maybeRecalc() {
   markCalcPending();
+  persistFormState();
 }
 
 function getLoanYuan() {
@@ -5642,6 +5671,10 @@ $('#conditionsToggle').addEventListener('click', () => {
 updateAmount();
 initCalcFields();
 initTotalAmountToggle();
+const persistedFormState = loadPersistedFormState();
+if (persistedFormState && formHasContent(persistedFormState)) {
+  applyFormState(persistedFormState);
+}
 updateCalcButton();
 window.addEventListener('resize', scheduleFitPaymentTable);
 (function () {
