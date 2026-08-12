@@ -2303,7 +2303,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.12D";
+const APP_VERSION = "2026.08.12E";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4061,7 +4061,7 @@ function finalizePdfPageCanvas(canvas) {
   return padExportCanvasBottom(trimmed, Math.round(PDF_PAGE_BOTTOM_PAD_CSS * scale));
 }
 
-const EXPORT_CANVAS_SCALE = 2;
+const EXPORT_CANVAS_SCALE = 2.5;
 const PDF_JPEG_QUALITY = 0.94;
 const PDF_IMAGE_COMPRESS = 'MEDIUM';
 const EXPORT_SLICE_MAX_CSS_PX = 4000;
@@ -4070,7 +4070,10 @@ const JSPDF_PAGE_MAX_PX = 14400;
 
 function getExportCanvasScale(cssHeight) {
   let scale = EXPORT_CANVAS_SCALE;
-  while (cssHeight * scale > BROWSER_CANVAS_MAX_PX - 64 && scale > 1) scale--;
+  const maxH = BROWSER_CANVAS_MAX_PX - 64;
+  while (cssHeight * scale > maxH && scale > 1) {
+    scale = scale <= 1.5 ? 1 : Math.round((scale - 0.5) * 10) / 10;
+  }
   return scale;
 }
 
