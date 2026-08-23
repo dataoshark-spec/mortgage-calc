@@ -3747,7 +3747,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.23B";
+const APP_VERSION = "2026.08.23C";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -6545,7 +6545,10 @@ function calAvgWithInterests(totalAmount, totalPeriod, periodList, totalGrace) {
   for (let i = totalPeriod; i > 0; i--) {
     const period = totalPeriod - i;
 
-    if (period > 1 && periodList[period].rate != periodList[period - 1].rate) {
+    /* period 為 0-based，利率變動要從第 2 期（period=1）起就能偵測。
+       舊版寫 period > 1，剛好漏掉第 2 期那一次，之後整筆都以原始本金而非
+       剩餘本金計算年金。 */
+    if (period >= 1 && periodList[period].rate != periodList[period - 1].rate) {
       totalBalance = balance;
       if (period > totalGrace) gracePeriod = period;
     }
@@ -6554,7 +6557,8 @@ function calAvgWithInterests(totalAmount, totalPeriod, periodList, totalGrace) {
     const periodRate = periodList[period].rate;
     const rate = formatDecimal(periodRate / 12 / 100, 14);
     const x = formatDecimal(Math.pow(1 + rate, nonExtenPeriod), 14);
-    const avgRate = formatDecimal((x * rate) / (x - 1), 14);
+    /* 利率 0% 時 x = 1，(x·r)/(x−1) 會變成 0/0 = NaN，退化為本金平均攤還 */
+    const avgRate = rate === 0 ? 1 / nonExtenPeriod : formatDecimal((x * rate) / (x - 1), 14);
     let repayment = Math.ceil(avgRate * totalBalance);
     const paymentInterest = Math.round(balance * rate);
     let paymentPrincipal = 0;
@@ -6567,6 +6571,11 @@ function calAvgWithInterests(totalAmount, totalPeriod, periodList, totalGrace) {
       repayment = paymentPrincipal + paymentInterest;
     } else {
       paymentPrincipal = repayment - paymentInterest;
+      /* 中間期的本金不得超過剩餘本金，否則末期補差會算成負數 */
+      const left = totalAmount - grandTotalPrincipal;
+      if (paymentPrincipal > left) paymentPrincipal = left;
+      if (paymentPrincipal < 0) paymentPrincipal = 0;
+      repayment = paymentPrincipal + paymentInterest;
     }
 
     balance -= paymentPrincipal;
@@ -6589,21 +6598,21 @@ function calAvgWithInterests(totalAmount, totalPeriod, periodList, totalGrace) {
 function calAvgPrincipalOnly(totalAmount, totalPeriod, periodList, totalGrace) {
   const details = [];
   let balance = totalAmount;
-  let gracePeriod = totalGrace;
   let grandTotalPrincipal = 0;
+
+  const nonExtenPeriod = totalPeriod - totalGrace;
+  /* 每期本金取整。無條件進位在「金額小、期數長」時會超付（例如 10 萬／40 年，
+     ceil=209 × 479 期已超過 10 萬），末期補差就變成負數。此時改用無條件捨去，
+     餘數留給末期吸收；一般情形仍維持原本的進位結果，不影響既有數字。 */
+  let periodPrincipal = Math.ceil(totalAmount / nonExtenPeriod);
+  if (periodPrincipal * (nonExtenPeriod - 1) > totalAmount) {
+    periodPrincipal = Math.floor(totalAmount / nonExtenPeriod);
+  }
 
   for (let i = totalPeriod; i > 0; i--) {
     const period = totalPeriod - i;
-
-    if (period > 1 && periodList[period].rate != periodList[period - 1].rate) {
-      gracePeriod = period;
-    }
-
-    const nonExtenPeriod = totalPeriod - totalGrace;
     const periodRate = periodList[period].rate;
     const rate = formatDecimal(periodRate / 12 / 100, 14);
-    const periodPaymentAmt = formatDecimal(totalAmount / nonExtenPeriod, 14);
-    const repayment = Math.ceil(periodPaymentAmt);
     const paymentInterest = Math.round(balance * rate);
     let paymentPrincipal = 0;
 
@@ -6612,7 +6621,10 @@ function calAvgPrincipalOnly(totalAmount, totalPeriod, periodList, totalGrace) {
     } else if (period === totalPeriod - 1) {
       paymentPrincipal = totalAmount - grandTotalPrincipal;
     } else {
-      paymentPrincipal = repayment;
+      paymentPrincipal = periodPrincipal;
+      const left = totalAmount - grandTotalPrincipal;
+      if (paymentPrincipal > left) paymentPrincipal = left;
+      if (paymentPrincipal < 0) paymentPrincipal = 0;
     }
 
     balance -= paymentPrincipal;
@@ -7051,7 +7063,20 @@ function renderRateRows() {
         setRateSegmentEnd(idx, inp.value);
         renderRateRows();
       } else if (field === 'rate') {
-        rateSegments[idx].rate = inp.value === '' ? '0' : (getCalcFieldRawString(inp) || applyFieldClamp(inp, inp.value));
+        /* 分段利率一律走與單一利率相同的 0.01～16.00 夾限。
+           空值必須維持空值，交給「未填欄位」提示接手 —— 舊版代入 '0'，
+           0% 會讓年金公式變成 0/0，整張還款表變 NaN 而且完全沒有提示。 */
+        const typed = String(inp.value ?? '').trim();
+        let next = '';
+        if (typed !== '') {
+          const shown = applyFieldClamp(inp, typed);   // 超出範圍回傳空字串
+          if (shown !== '') next = getCalcFieldRawString(inp) || shown;
+        }
+        if (next === '') {
+          delete inp.dataset.calcRaw;
+          inp.value = '';
+        }
+        rateSegments[idx].rate = next;
       }
       maybeRecalc();
     });
@@ -8064,7 +8089,7 @@ window.addEventListener('resize', () => {
   function renderSpec() { Y('#ytSpecBlock').innerHTML = specBlockHTML(specView, true); }
 
   /* 匯出／分享固定輸出「新青安3.0貸款原則」，不受畫面上目前停在哪一個視圖影響 */
-  window.__ytSpecExportHTML = function () { return specBlockHTML('rule', false); };
+  window.__ytSpecExportHTML = function () { return specBlockHTML("rule", false); };
 
   function setSpecView(next) {
     if (!next || next === specView) return;
