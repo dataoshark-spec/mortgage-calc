@@ -1,4 +1,4 @@
-const CACHE = "mortgage-calc-v20260823C";
+const CACHE = "mortgage-calc-v20260823D";
 const SHELL = ["./", "./index.html", "./sw.js", "./icon-192.png", "./icon-180.png", "./icon-512.png"];
 const OFFLINE_HTML = "<!DOCTYPE html><html lang=\"zh-Hant\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Offline</title></head><body style=\"font-family:sans-serif;padding:2rem;text-align:center\"><h1>Offline</h1><p>Please reconnect and reopen the app.</p></body></html>";
 
