@@ -2728,10 +2728,17 @@ if ("serviceWorker" in navigator) {
     .section > label.label-cap {
       display: flex; align-items: center; gap: 8px;
     }
-    .label-cap > .yt-gear-btn { margin-left: -3px; }
+    /* 齒輪在一般貸款是與標題同列的圖示，不需要新青安那邊為徽章留的 -1px 上移 */
+    .label-cap > .yt-gear-btn { margin-left: -3px; top: 0; }
     .label-cap > .yt-cap-max { float: none; margin-left: auto; }
     .label-cap > .yt-opt-tag { margin-left: -2px; }
     .gl-region-sec[hidden] { display: none; }
+    /* 標題字級跟著正下方的「購屋價格」走，而不是沿用 .section 的 0.92rem。
+       本區塊定義在窄機 media query 之後，故縮字規則要一併寫在這裡才不會被蓋掉。 */
+    .gl-region-sec > label { font-size: 0.92rem; margin-bottom: 10px; }
+    @media (max-width: 400px) {
+      .gl-region-sec > label { font-size: 0.86rem; margin-bottom: 8px; }
+    }
     .gl-region-sec .yt-opts { min-width: 0; }
     .gl-region-sec .yt-opts:empty { display: none; }
     .gl-region-off {
@@ -2760,32 +2767,60 @@ if ("serviceWorker" in navigator) {
     .grace-block.stacked .grace-left { grid-column: 1; }
     .grace-block.stacked .quick-pills.fill { grid-column: 1; }
     /* ===== 高價住宅門檻設定視窗 ===== */
-    .gl-set-card { max-width: 380px; max-height: 86vh; overflow-y: auto; }
-    .gl-set-lead { margin: 0 0 4px; }
-    .gl-set-row { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
-    .gl-set-no {
-      font-size: 12px; font-weight: 700; color: var(--teal-dark);
-      margin-bottom: 8px; letter-spacing: .02em;
+    .gl-set { padding: 4vh 20px 16px; }
+    .gl-set-card {
+      max-width: 380px; max-height: 90vh; overflow-y: auto; outline: none;
+      padding: 18px 16px 0;
     }
+    .gl-set-card .yt-set-title { margin-bottom: 6px; }
+    .gl-set-lead { margin: 0; }
+    .gl-set-row { margin-top: 11px; padding-top: 9px; border-top: 1px dashed var(--border); }
+    .gl-set-no {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12.5px; font-weight: 700; color: var(--teal-dark);
+      margin-bottom: 7px; letter-spacing: .02em;
+    }
+    /* 圈號：用 CSS 畫正圓，比 ①②③ 的字符在各家中文字型下更可靠 */
+    .gl-set-no-n {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 17px; height: 17px; border-radius: 50%;
+      background: var(--teal-light); color: var(--teal-dark);
+      font-size: 10.5px; font-weight: 700; line-height: 1; letter-spacing: 0;
+    }
+    /* 計算鍵盤展開時把卡片壓到鍵盤上方，並收起說明與按鈕，欄位才不會被蓋住 */
+    .gl-set:has(.calc-field.calc-active) { padding-top: 10px; }
+    .gl-set:has(.calc-field.calc-active) .gl-set-card { max-height: calc(100vh - 382px); }
+    .gl-set:has(.calc-field.calc-active) .gl-set-lead,
+    .gl-set:has(.calc-field.calc-active) .gl-set-hint,
+    .gl-set:has(.calc-field.calc-active) .gl-set-actions { display: none; }
     .gl-set-2 .field label {
       display: block; font-size: 11.5px; font-weight: 500;
-      color: var(--muted); margin-bottom: 5px;
+      color: var(--muted); margin-bottom: 4px;
     }
     /* 三欄在 360px 機上每格只剩 ~50px，放不下「7,000 萬」；改 2×2 讓每格有半寬 */
-    .gl-set-card .gl-set-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 10px; }
+    .gl-set-card .gl-set-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
     .gl-set-card .gl-set-2 .field { margin-top: 0; min-width: 0; }
     /* 視窗內的欄位比表單矮一號；計算欄位那組規則帶 :has()，特異度較高，需逐條覆寫，
        否則 48px 高與左右各 16px 的內距會把「7,000 萬」擠到看不見。 */
     .gl-set-card .input-box,
-    .gl-set-card .input-box:has(> .calc-field) { height: 42px; min-height: 42px; padding: 0 12px; }
+    .gl-set-card .input-box:has(> .calc-field) { height: 39px; min-height: 39px; padding: 0 12px; }
     .gl-set-card .input-box:has(> .calc-field) { padding: 0; }
     .gl-set-card .input-box:has(> .calc-field) > .calc-field {
-      height: 42px; min-height: 42px; padding: 0 10px;
+      height: 39px; min-height: 39px; padding: 0 10px;
     }
     .gl-set-card .input-box:has(> .calc-field) > .unit { padding-right: 10px; }
     .gl-set-card .input-box input { font-size: 0.92rem; min-width: 0; width: 100%; }
     .gl-set-card .input-box .unit { font-size: 0.8rem; flex-shrink: 0; }
-    .gl-set-hint { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+    .gl-set-hint {
+      margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--border);
+      text-align: justify; text-justify: inter-ideograph; text-align-last: left;
+    }
+    /* 卡片高於畫面時內部會捲動；按鈕釘在底部，任何捲動位置都按得到 */
+    .gl-set-actions {
+      position: sticky; bottom: 0; z-index: 1;
+      margin-top: 12px; padding: 10px 0 14px; background: #fff;
+      box-shadow: 0 -10px 14px -10px rgba(0, 0, 0, 0.16);
+    }
     .gl-set-actions button { font-size: 0.86rem; }
     @media (max-width: 400px) {
       .gl-set-card .gl-set-2 { gap: 8px; }
@@ -3806,11 +3841,11 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <div class="yt-set gl-set" id="glRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="glRegionSetTitle" hidden>
-  <div class="yt-set-card gl-set-card" id="glRegionSetCard">
+  <div class="yt-set-card gl-set-card" id="glRegionSetCard" tabindex="-1">
     <div class="yt-set-title" id="glRegionSetTitle">高價住宅門檻設定</div>
     <p class="yt-note gl-set-lead">購屋價格與銀行鑑價 <em>取高</em> 達到門檻時，自動夾住下方貸款成數與寬限期的上限。</p>
   <div class="gl-set-row">
-      <div class="gl-set-no">購屋縣市 1</div>
+      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">1</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName0">縣市名稱</label>
@@ -3831,7 +3866,7 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">購屋縣市 2</div>
+      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">2</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName1">縣市名稱</label>
@@ -3852,7 +3887,7 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">購屋縣市 3</div>
+      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">3</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName2">縣市名稱</label>
@@ -3872,7 +3907,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
-    <p class="yt-note gl-set-hint">三組全部留空 <em>或只填 1 組</em> ，一般貸款不顯示購屋縣市；填 2 組就只顯示 2 顆按鈕。<br>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<br><em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。<br>本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <p class="yt-note gl-set-hint">三組全部留空 <em>或只填 1 組</em> ，一般貸款不顯示購屋縣市；填 2 組就只顯示 2 顆按鈕。一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
     <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="glRegionSetReset">回復預設</button>
       <button type="button" class="yt-set-ghost" id="glRegionSetCancel">取消</button>
@@ -3909,7 +3944,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.23D";
+const APP_VERSION = "2026.08.23E";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4571,8 +4606,13 @@ function getGraceMaxValue() {
   return max;
 }
 
+/* 新青安面板的利率欄位：基準利率、五段階梯利率、一般貸款年利率、預設基準利率。
+   列入 isRateInput 後，即與一般貸款的年利率共用同一套 0.01～16.00 夾制與提示。 */
+const YT_RATE_IDS = ['ytBase', 'ytSpread', 'ytR1', 'ytR2', 'ytR3', 'ytR4', 'ytR5', 'ytGenRate', 'ytBaseDefault'];
 function isRateInput(inputEl) {
-  return !!(inputEl && (inputEl.id === 'rate' || inputEl.classList.contains('rate-val')));
+  if (!inputEl) return false;
+  if (inputEl.id === 'rate' || inputEl.classList.contains('rate-val')) return true;
+  return YT_RATE_IDS.indexOf(inputEl.id) >= 0;
 }
 
 function getFieldMaxDecimals(inputEl) {
@@ -5525,11 +5565,33 @@ function isInFixedOverlay(el) {
   return false;
 }
 
+/* 浮層卡片自己有捲軸時（例如高價住宅門檻設定），改捲卡片而不是捲頁面 */
+function scrollOverlayFieldIntoView(el) {
+  const card = el.closest('.yt-set-card');
+  if (!card) return;
+  const run = () => {
+    if (card.scrollHeight <= card.clientHeight + 1) return;
+    const kb = getCalcKeyboardOverlayHeight() || 380;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const cr = card.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const visTop = cr.top + 8;
+    const visBottom = Math.min(cr.bottom, vh - kb - 16);
+    let d = 0;
+    if (r.bottom > visBottom) d = r.bottom - visBottom;
+    else if (r.top < visTop) d = r.top - visTop;
+    if (Math.abs(d) > 1) card.scrollTo({ top: card.scrollTop + d, behavior: 'smooth' });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(run));
+  setTimeout(run, 220);
+  setTimeout(run, 380);
+}
+
 function scrollCalcTriggerIntoView(el) {
   if (!el) return;
   // 固定浮層不隨頁面捲動：捲動底層既沒有效果，元素的 rect 也永遠不會進入
   // 計算出來的可視範圍，adjust() 會一路把頁面捲到底，畫面看起來像在亂跑
-  if (isInFixedOverlay(el)) return;
+  if (isInFixedOverlay(el)) { scrollOverlayFieldIntoView(el); return; }
   const target = getCalcScrollTarget(el);
   const sticky = document.querySelector('.sticky-top');
   const padTop = 12;
@@ -7837,12 +7899,17 @@ $('#conditionsToggle').addEventListener('click', () => {
     fill(luxRows);
     lastFocus = document.activeElement;
     dlg.hidden = false;
-    requestAnimationFrame(() => dlg.classList.add('show'));
-    $('#glRegionSetSave') && $('#glRegionSetSave').focus();
+    const card = $('#glRegionSetCard');
+    requestAnimationFrame(() => {
+      dlg.classList.add('show');
+      // 卡片高於畫面時要從標題開始看；focus 底部按鈕會把內部捲軸帶到最下面
+      if (card) { card.scrollTop = 0; card.focus({ preventScroll: true }); }
+    });
   }
   function closeDlg() {
     dlg.classList.remove('show');
-    setTimeout(() => { dlg.hidden = true; }, 160);
+    const card = $('#glRegionSetCard');
+    setTimeout(() => { dlg.hidden = true; if (card) card.scrollTop = 0; }, 160);
     if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
     lastFocus = null;
   }
@@ -9022,8 +9089,8 @@ window.addEventListener('resize', () => {
     Y('#ytBaseSetCancel')?.addEventListener('click', closeDlg);
     Y('#ytBaseSetSave')?.addEventListener('click', () => {
       const v = num(fld);
-      if (raw(fld) === '' || !Number.isFinite(v) || v <= 0 || v > 20) {
-        showAppAlert('預設基準利率請輸入 0 到 20 之間的數字。');
+      if (raw(fld) === '' || !Number.isFinite(v) || v < RATE_MIN || v > RATE_MAX) {
+        showAppAlert('預設基準利率' + RATE_RANGE_MESSAGE.replace('請輸入', '請輸入 '));
         return;
       }
       applyBase(v);
