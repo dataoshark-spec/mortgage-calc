@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
 <link rel="shortcut icon" type="image/png" href="icon-192.png?v=5">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=5">
-<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoi5oi/5bGL6LK45qy+6Kmm566XIiwic2hvcnRfbmFtZSI6IuaIv+iyuOippueulyIsInN0YXJ0X3VybCI6Ii4vIiwic2NvcGUiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmMGYwZjAiLCJ0aGVtZV9jb2xvciI6IiNDOTkyMkEiLCJpY29ucyI6W3sic3JjIjoiaWNvbi0xOTIucG5nP3Y9NSIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55In0seyJzcmMiOiJpY29uLTUxMi5wbmc/dj01Iiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJhbnkifV19">
-<meta name="theme-color" content="#C9922A">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoi5oi/5bGL6LK45qy+6Kmm566XIiwic2hvcnRfbmFtZSI6IuaIv+iyuOippueulyIsInN0YXJ0X3VybCI6Ii4vIiwic2NvcGUiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmMGYwZjAiLCJ0aGVtZV9jb2xvciI6IiMxRTI0MjIiLCJpY29ucyI6W3sic3JjIjoiaWNvbi0xOTIucG5nP3Y9NSIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55In0seyJzcmMiOiJpY29uLTUxMi5wbmc/dj01Iiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJhbnkifV19">
+<meta name="theme-color" content="#1E2422">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -161,7 +161,6 @@ if ("serviceWorker" in navigator) {
       top: 0;
       z-index: 100;
       margin: 0 -16px 16px;
-      padding-top: var(--safe-top);
       background: var(--bg);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
@@ -266,8 +265,16 @@ if ("serviceWorker" in navigator) {
       position: relative;
       z-index: 1;
       margin: 0;
-      padding: var(--hero-pad-y) var(--hero-pad-x) 0;
+      padding: calc(var(--safe-top) + var(--hero-pad-y)) var(--hero-pad-x) 0;
+      /* 共用深色頂帶：與 theme-color / manifest theme_color 同色，狀態列與 hero
+         接成一片，三個模式都一樣，切分頁時最上面完全不動。
+         用 --safe-top 位移，iPhone 的瀏海區也會被同一塊深色蓋滿。 */
       background:
+        linear-gradient(to bottom,
+          #1E2422 0px,
+          #1E2422 var(--safe-top),
+          rgba(30, 36, 34, 0.86) calc(var(--safe-top) + 22px),
+          rgba(30, 36, 34, 0) calc(var(--safe-top) + 104px)),
         linear-gradient(165deg, rgba(255, 255, 255, 0.14) 0%, transparent 38%),
         linear-gradient(128deg, #E0B04A 0%, var(--teal) 36%, #A6751F 72%, #8A6218 100%);
       color: #fff;
@@ -2635,6 +2642,11 @@ if ("serviceWorker" in navigator) {
     }
     body[data-mode="youth"] .app-hero {
       background:
+        linear-gradient(to bottom,
+          #1E2422 0px,
+          #1E2422 var(--safe-top),
+          rgba(30, 36, 34, 0.86) calc(var(--safe-top) + 22px),
+          rgba(30, 36, 34, 0) calc(var(--safe-top) + 104px)),
         linear-gradient(165deg, rgba(255,255,255,0.14) 0%, transparent 38%),
         linear-gradient(128deg, #3FB795 0%, var(--teal) 36%, #0B6350 72%, #084C3E 100%);
     }
@@ -2674,6 +2686,8 @@ if ("serviceWorker" in navigator) {
     .yt-note em { font-style: normal; color: var(--teal-dark); font-weight: 600; }
     /* 括號內的定義詞不斷行，避免「超額利率」在窄螢幕被拆成兩行 */
     .yt-note .nw { white-space: nowrap; }
+    /* 手動修改提示同樣用 .nw 綁住子句，折行只會斷在逗號後 */
+    .yt-f-note .nw { white-space: nowrap; }
     /* 新青安專屬選項元件：grid 排版，min-width:0 避免窄螢幕撐破 */
     .yt-opts { display: grid; gap: 8px; }
     .yt-opts.c3 { grid-template-columns: repeat(3, 1fr); }
@@ -2801,6 +2815,14 @@ if ("serviceWorker" in navigator) {
     /* --- 標籤徽章與 flex 標籤 --- */
     #modeYouth .field > label,
     #modeYouth .section > label { display: flex; align-items: center; gap: 8px; }
+    /* 小標後的補充語：字級、字重、顏色都降一階，讓主標仍是視覺重點 */
+    .section > label .label-sub {
+      margin-left: -4px;
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
     .yt-formula[hidden] { display: none; }
     .yt-formula {
       overflow: hidden;
@@ -2816,6 +2838,9 @@ if ("serviceWorker" in navigator) {
       font-size: 11px; font-weight: 600; color: #8A6218; background: #FFF1D6;
       margin: 0 -10px -12px; padding: 10px 12px 12px;
       border-radius: 0 0 12px 12px; text-align: center;
+      /* 窄機會折成兩行；balance 讓兩行長度接近、斷點落在逗號後，
+         不會出現第二行只剩幾個字孤零零置中的情形 */
+      text-wrap: balance;
     }
     .yt-f-note[hidden] { display: none; }
     .yt-formula b { font-weight: 800; font-size: 14px; }
@@ -3457,12 +3482,12 @@ if ("serviceWorker" in navigator) {
           </div>
           <div class="yt-formula" id="ytFormula">
             <div class="yt-f-row"><span>基準利率 <b id="ytFBase">1.72</b><span class="yt-f-pct">%</span></span><i>＋</i><span>銀行利差 <b>0.555</b><span class="yt-f-pct">%</span></span><i>＝</i><span class="yt-f-out"><span class="yt-f-lab">原始青安貸款利率</span><b id="ytFOrig">2.275</b><span class="yt-f-pct">%</span></span></div>
-            <div class="yt-f-note" id="ytFNote" hidden>部分利率已手動修改，實際以下方五格為準</div>
+            <div class="yt-f-note" id="ytFNote" hidden>部分青安利率已手動修改，實際以下方五格為準</div>
           </div>
           <p class="yt-note"><em>基準利率</em> 以中華郵政股份有限公司 2 年期定期儲金額度未達 500 萬元機動利率為準。</p>
           <p class="yt-note"><em>銀行利差</em> 依方案規定固定為 0.555%，不能修改；基準利率加上這個利差就是原始青安貸款利率。</p>
           <div class="section">
-            <label>五段階梯利率</label>
+            <label>五段階梯利率<span class="label-sub">（青安貸款利率）</span></label>
             <div class="yt-steps" id="ytSteps">
               <div class="yt-step" data-step="0">
                 <div>
@@ -3722,7 +3747,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.22E";
+const APP_VERSION = "2026.08.23B";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -7560,7 +7585,17 @@ window.addEventListener('resize', () => {
       stepsTouched = [false, false, false, false, false];
       STEP_IDS.forEach((id) => clearCalcField(Y(id)));
     }
-    if (fn) fn.hidden = !stepsTouched.some(Boolean);
+    // 全改與部分改分開講：五格全部自訂時「部分」會讓人誤以為還有幾格是自動算的
+    if (fn) {
+      const touched = stepsTouched.filter(Boolean).length;
+      fn.hidden = touched === 0;
+      if (touched) {
+        const scope = touched === STEP_IDS.length ? '全部' : '部分';
+        // 拆成兩個不可斷的子句：窄機折行時會斷在逗號後，
+        // 不會像自動換行那樣把「修改」拆成兩行
+        fn.innerHTML = `<span class="nw">${scope}青安利率已手動修改，</span><span class="nw">實際以下方五格為準</span>`;
+      }
+    }
     YA('#ytSteps .yt-step').forEach((el, i) => el.classList.toggle('edited', !!stepsTouched[i]));
   }
   function currentSteps() { return STEP_IDS.map((id) => num(Y(id))); }
