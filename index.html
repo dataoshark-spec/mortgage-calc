@@ -355,17 +355,6 @@ if ("serviceWorker" in navigator) {
       margin-bottom: 0;
       color: var(--text);
     }
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 28px;
-    }
-    .page-header h1 {
-      flex: 1;
-      min-width: 0;
-    }
     .header-actions {
       display: flex;
       align-items: center;
@@ -421,7 +410,13 @@ if ("serviceWorker" in navigator) {
       cursor: pointer;
       transition: background 0.15s ease, border-color 0.15s ease;
     }
-    body[data-mode="youth"] .spec-btn { display: inline-flex; }
+    /* 兩顆查詢按鈕在三種模式都顯示；hero-metrics 是 flex-end，DOM 最後者最靠右 */
+    .spec-btn { display: inline-flex; }
+    .hero-metrics { gap: 8px; }
+    @media (max-width: 360px) {
+      .spec-btn { padding: 7px 11px; font-size: 0.74rem; }
+      .hero-metrics { gap: 6px; }
+    }
     .spec-btn:active { transform: scale(0.96); }
     @media (hover: hover) and (pointer: fine) {
       .spec-btn:hover { background: rgba(255, 255, 255, 0.26); border-color: rgba(255, 255, 255, 0.68); }
@@ -560,6 +555,20 @@ if ("serviceWorker" in navigator) {
       touch-action: pan-y;       /* 直向留給捲動，橫向交由左右滑動返回的手勢處理 */
     }
     /* 沿用 App 內的 .card，左右內距與圓角都與「計算公式下方」那塊完全一致 */
+    /* 貸款相關：問與答分成五章，章名做出段落感；條文的獨立第二項不重複編號但要縮排 */
+    .cb-sec + .cb-sec { margin-top: 22px; }
+    .cb-sec-h {
+      font-size: 0.95rem; font-weight: 700; color: var(--teal-dark, var(--teal));
+      padding-bottom: 8px; margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.02em;
+    }
+    .cb-sec-note {
+      margin: -2px 0 10px;
+      font-size: 0.82rem; line-height: 1.7; color: var(--muted);
+    }
+    .cb-sec-note p { margin: 0 0 2px; }
+    .yt-rule-b.cb-cont { margin-left: 1.1em; }
     .spec-sheet-card { margin-bottom: 0; }
     .spec-sheet-card .spec-src { margin-top: 16px; }
     .spec-empty {
@@ -768,17 +777,6 @@ if ("serviceWorker" in navigator) {
       width: 100%;
       text-align: left;
     }
-    .app-alert-missing-lead {
-      text-align: left;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .app-alert-missing-item {
-      text-align: center;
-      color: #e53935;
-      font-weight: 600;
-      line-height: 1.65;
-    }
     /* 未填欄位提示：一句帶數量的說明＋可換行的欄位標籤群 */
     .app-alert-text .am-lead {
       text-align: center;
@@ -843,9 +841,6 @@ if ("serviceWorker" in navigator) {
     }
     .field {
       min-width: 0;
-    }
-    .field.span-2 {
-      grid-column: 1 / -1;
     }
     .field label {
       display: block;
@@ -934,14 +929,6 @@ if ("serviceWorker" in navigator) {
       align-items: center;
       align-self: stretch;
       padding-right: 16px;
-    }
-    .input-box.grace-input:has(> .calc-field) {
-      padding: 0 8px;
-    }
-    .input-box.grace-input:has(> .calc-field) > .calc-field {
-      height: var(--chip-h);
-      min-height: var(--chip-h);
-      padding: 0;
     }
 
     /* 固定值欄位：可讀不可改，視覺反灰 */
@@ -1106,98 +1093,7 @@ if ("serviceWorker" in navigator) {
       color: #fff;
       font-weight: 400;
     }
-    /* 寬限期：左欄輸入+切換，右欄快捷鈕對齊上方貸款年限 */
-    .grace-block {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      column-gap: 24px;
-      align-items: center;
-      width: 100%;
-      min-width: 0;
-    }
-    .grace-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      grid-column: 1;
-    }
-    .grace-input {
-      flex: 1;
-      width: auto;
-      min-width: 0;
-      height: var(--chip-h);
-      padding: 0 8px;
-      justify-content: center;
-    }
-    .grace-input input {
-      flex: 1;
-      width: 100%;
-      text-align: center;
-      padding: 0;
-      -moz-appearance: textfield;
-    }
-    .grace-input input::-webkit-outer-spin-button,
-    .grace-input input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    .grace-block .quick-pills.fill {
-      grid-column: 2;
-      display: flex;
-      gap: 6px;
-      margin-top: 0;
-      min-width: 0;
-      width: 100%;
-    }
-    .grace-block .quick-pills.fill .qp {
-      flex: 1;
-      width: auto;
-      min-width: 0;
-      max-width: none;
-    }
     #ytGracePills .qp-text { font-size: 0.86rem; }
-    .grace-block .quick-pills.fill .qp-text {
-      font-size: 0.86rem;
-    }
-    .unit-switch {
-      display: inline-flex;
-      align-items: center;
-      height: var(--chip-h);
-      padding: 3px;
-      gap: 0;
-      background: #e6e6e6;
-      border: 1px solid #d8d8d8;
-      border-radius: 999px;
-      flex-shrink: 0;
-    }
-    .unit-switch button {
-      width: 34px;
-      min-width: 34px;
-      height: 100%;
-      padding: 0;
-      border: none;
-      border-radius: 999px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.82rem;
-      font-weight: 400;
-      line-height: 1;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-    }
-    .unit-switch button:hover:not(.active) {
-      color: var(--text);
-    }
-    .unit-switch button.active {
-      background: #fff;
-      color: var(--teal-dark);
-      font-weight: 600;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    }
   /* 大圓角膠囊切換（參考圖風格，無灰底軌道） */
     .section { margin-bottom: 24px; }
     .section > label {
@@ -1210,7 +1106,6 @@ if ("serviceWorker" in navigator) {
       display: flex;
       gap: 10px;
     }
-    .choice-group.cols-3 { gap: 8px; }
     .choice-btn {
       flex: 1;
       height: var(--field-h);
@@ -1228,10 +1123,6 @@ if ("serviceWorker" in navigator) {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-    }
-    .choice-group.cols-3 .choice-btn {
-      font-size: 0.82rem;
-      padding: 0 8px;
     }
     .choice-btn:hover { background: #e5e5e5; }
     .choice-btn.active {
@@ -1659,6 +1550,7 @@ if ("serviceWorker" in navigator) {
       position: fixed;
       inset: 0;
       z-index: 480;
+      overscroll-behavior: contain;
       display: flex;
       align-items: flex-start;
       justify-content: center;
@@ -2479,13 +2371,6 @@ if ("serviceWorker" in navigator) {
       box-sizing: border-box;
       background: #fff !important;
     }
-    .export-detail-range-title {
-      font-size: 0.92rem;
-      font-weight: 600;
-      color: var(--text);
-      margin: 0 0 16px;
-      text-align: center;
-    }
     .export-detail-head {
       margin-bottom: 16px;
     }
@@ -2542,6 +2427,8 @@ if ("serviceWorker" in navigator) {
         font-size: 0.86rem;
         margin-bottom: 8px;
       }
+      /* 徽章折行後左右兩欄的小標高度會不一致，輸入框跟著錯開。CSS 無法「只在真的折行時」
+         補高度，故 600px 以下一律保留兩行；代價是沒有徽章的那一列小標下方會多出一行空白。 */
       .form-grid .input-box:has(> .calc-field) > .calc-field {
         padding: 0 12px;
       }
@@ -2590,23 +2477,7 @@ if ("serviceWorker" in navigator) {
         height: 26px;
         font-size: 0.95rem;
       }
-      .choice-group.cols-3 { flex-direction: column; }
-      .choice-group.cols-3 .choice-btn { font-size: 0.88rem; }
       .summary-grid { grid-template-columns: 1fr; }
-      .grace-block {
-        column-gap: 10px;
-      }
-      .grace-left {
-        gap: 6px;
-      }
-      .grace-block .quick-pills.fill .qp {
-        font-size: 0.8rem;
-      }
-      .unit-switch button {
-        width: 30px;
-        min-width: 30px;
-        font-size: 0.78rem;
-      }
       .header-actions { gap: 6px; }
       .clear-btn, .restore-btn { padding: 7px 10px; font-size: 0.78rem; }
       .export-actions { grid-template-columns: repeat(2, 1fr); }
@@ -2676,9 +2547,9 @@ if ("serviceWorker" in navigator) {
       margin: 8px 0 0; letter-spacing: .01em;
     }
     .yt-note.warn { color: #9A6B18; }
+    /* 反灰即代表不可選；再加刪除線會顯得像「錯誤」而不是「目前不適用」 */
     #modeYouth .qp.qp-off {
       background: #F4F4F4; color: #C4C4C4; cursor: not-allowed;
-      text-decoration: line-through; text-decoration-color: #DADADA;
     }
     #modeYouth .qp.qp-off:hover { background: #F4F4F4; }
     #modeYouth .yt-note + .section { margin-top: 22px; }
@@ -2718,19 +2589,33 @@ if ("serviceWorker" in navigator) {
       .yt-opt small { font-size: 10px; }
       .yt-opt { padding: 8px 3px; }
     }
+    /* 點一下即把該欄位填成上限值；沿用原本的徽章外觀，只加上可按的手感 */
     .yt-cap-max {
+      /* 半寬欄位放不下時整顆折到下一行，不從「上限 2 / 年」中間斷開 */
+      white-space: nowrap; flex: 0 0 auto;
       float: right; font-size: 11px; font-weight: 600; color: var(--teal);
       background: var(--teal-light); border-radius: 6px; padding: 1px 7px;
+      border: 0; font-family: inherit; line-height: 1.5;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: filter 0.15s ease, transform 0.1s ease;
     }
-    /* ===== 一般貸款：購屋縣市（高價住宅門檻） ===== */
+    .yt-cap-max:active { transform: scale(0.94); }
+    .yt-cap-max:disabled { cursor: default; opacity: 0.72; }
+    .yt-cap-max:disabled:active { transform: none; }
+    @media (hover: hover) and (pointer: fine) {
+      .yt-cap-max:not(:disabled):hover { filter: brightness(0.96); }
+    }
+    .export-capture .yt-cap-max { pointer-events: none; }
+    /* ===== 一般貸款：房屋座落（高價住宅門檻） ===== */
     /* 帶齒輪或上限徽章的小標改用 flex：float 在 flex 容器內失效，徽章改以 auto 邊距推到最右 */
     .field > label.label-cap,
     .section > label.label-cap {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 3px;
     }
     /* 齒輪在一般貸款是與標題同列的圖示，不需要新青安那邊為徽章留的 -1px 上移 */
     .label-cap > .yt-gear-btn { margin-left: -3px; top: 0; }
-    .label-cap > .yt-cap-max { float: none; margin-left: auto; }
+    /* 徽章緊接在標題後，不推到最右邊（與新青安面板一致） */
+    .label-cap > .yt-cap-max { float: none; margin-left: 0; }
     .label-cap > .yt-opt-tag { margin-left: -2px; }
     .gl-region-sec[hidden] { display: none; }
     /* 標題字級跟著正下方的「購屋價格」走，而不是沿用 .section 的 0.92rem。
@@ -2746,6 +2631,13 @@ if ("serviceWorker" in navigator) {
       background: var(--input-bg); border-radius: 6px; padding: 1px 7px;
     }
     .gl-region-off[hidden] { display: none; }
+    /* 未啟用：標題與齒輪縮小並轉為與「未啟用」同一階灰，弱化但保留入口 */
+    .gl-region-sec.is-off > label { font-size: 0.8rem; color: var(--muted); }
+    .gl-region-sec.is-off .yt-gear-btn { width: 18px; height: 18px; color: var(--muted); opacity: 0.75; }
+    .gl-region-sec.is-off .yt-gear-btn svg { width: 14px; height: 14px; }
+    @media (max-width: 400px) {
+      .gl-region-sec.is-off > label { font-size: 0.76rem; }
+    }
     .gl-note {
       font-size: 12px; line-height: 1.65; color: #9A6B18;
       margin: -14px 0 24px; letter-spacing: .01em;
@@ -2755,24 +2647,23 @@ if ("serviceWorker" in navigator) {
     /* 上限為 0 年時整格反灰禁止輸入：沿用既有「固定值欄位」的 .is-locked 視覺 */
     #modeGeneral .qp.qp-off {
       background: #F4F4F4; color: #C4C4C4; cursor: not-allowed;
-      text-decoration: line-through; text-decoration-color: #DADADA;
     }
     #modeGeneral .qp.qp-off:hover { background: #F4F4F4; }
-    /* 寬限期改為半寬欄位：輸入＋年月切換一列，快捷鈕另起一列 */
-    .grace-block.stacked {
-      grid-template-columns: 1fr;
-      align-items: stretch;
-      row-gap: 8px;
-    }
-    .grace-block.stacked .grace-left { grid-column: 1; }
-    .grace-block.stacked .quick-pills.fill { grid-column: 1; }
     /* ===== 高價住宅門檻設定視窗 ===== */
     .gl-set { padding: 4vh 20px 16px; }
     .gl-set-card {
       max-width: 380px; max-height: 90vh; overflow-y: auto; outline: none;
-      padding: 18px 16px 0;
+      padding: 0 16px 0;
+      overscroll-behavior: contain;      /* 卡片捲到底時不把滾輪傳給底層頁面 */
     }
-    .gl-set-card .yt-set-title { margin-bottom: 6px; }
+    /* 標題做成整條有底色的抬頭，並在捲動時固定在卡片頂端 */
+    .gl-set-card .yt-set-title {
+      position: sticky; top: 0; z-index: 2;
+      margin: 0 -16px 8px; padding: 13px 16px 11px;
+      background: var(--teal-light);
+      border-radius: 18px 18px 0 0;
+      box-shadow: 0 8px 12px -10px rgba(0, 0, 0, 0.18);
+    }
     .gl-set-lead { margin: 0; }
     .gl-set-row { margin-top: 11px; padding-top: 9px; border-top: 1px dashed var(--border); }
     .gl-set-no {
@@ -2793,6 +2684,21 @@ if ("serviceWorker" in navigator) {
     .gl-set:has(.calc-field.calc-active) .gl-set-lead,
     .gl-set:has(.calc-field.calc-active) .gl-set-hint,
     .gl-set:has(.calc-field.calc-active) .gl-set-actions { display: none; }
+    /* 縣市名稱：右側淡色清除鈕，有值才出現 */
+    .gl-set-card .gl-name-box { position: relative; padding-right: 4px; }
+    .gl-set-card .gl-name-box > input { padding-right: 2px; }
+    .gl-clear-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 auto; width: 26px; height: 26px; margin-left: 2px;
+      padding: 0; border: 0; border-radius: 50%;
+      background: transparent; color: var(--muted); opacity: 0.5;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .gl-clear-btn svg { width: 17px; height: 17px; }
+    .gl-clear-btn:hover, .gl-clear-btn:focus-visible { opacity: 0.9; background: rgba(0, 0, 0, 0.05); }
+    /* 隱藏時保留位置：用 display:none 會讓整列重排，點下去畫面會抖一下 */
+    .gl-clear-btn[hidden] { display: inline-flex; visibility: hidden; pointer-events: none; }
     .gl-set-2 .field label {
       display: block; font-size: 11.5px; font-weight: 500;
       color: var(--muted); margin-bottom: 4px;
@@ -2914,16 +2820,11 @@ if ("serviceWorker" in navigator) {
     .yt-chk.ok .yt-chk-t { color: #1B6B41; }
     .yt-chk.no .yt-chk-t { color: #B0301F; }
     .yt-chk-s { font-size: 11px; font-weight: 500; opacity: .85; display: block; margin-top: 1px; }
-    .yt-switch-general {
-      display: block; width: 100%; margin-top: 10px; padding: 12px;
-      border-radius: 12px; border: 1px solid #E5B4AC; background: #fff;
-      color: #B0301F; font-size: 13px; font-weight: 700; cursor: pointer;
-    }
 
     /* 貸款組成拆分 */
     /* --- 標籤徽章與 flex 標籤 --- */
     #modeYouth .field > label,
-    #modeYouth .section > label { display: flex; align-items: center; gap: 8px; }
+    #modeYouth .section > label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 3px; }
     /* 小標後的補充語：字級、字重、顏色都降一階，讓主標仍是視覺重點 */
     .section > label .label-sub {
       margin-left: -4px;
@@ -2970,8 +2871,6 @@ if ("serviceWorker" in navigator) {
       font-size: 10.5px; font-weight: 500; color: var(--muted);
       background: var(--input-bg); border-radius: 6px; padding: 1px 6px; line-height: 1.6;
     }
-    #modeYouth .grace-left { flex: 1; }
-    #modeYouth .grace-left .input-box { flex: 1; }
 
     /* --- 概抓總額列 --- */
 
@@ -3059,8 +2958,6 @@ if ("serviceWorker" in navigator) {
     @media (max-width: 360px) {
       .yt-qa-a { padding-left: 26px; }
       .yt-rule-b.lv3 { padding-left: 20px; }
-    }
-    @media (max-width: 380px) {
     }
 
     /* --- 貸款組成 --- */
@@ -3178,7 +3075,10 @@ if ("serviceWorker" in navigator) {
       </div>
       <div class="hero-metrics">
         <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢新青安3.0問答集與貸款原則" aria-haspopup="dialog">
-          快捷查詢
+          青安相關
+        </button>
+        <button type="button" class="spec-btn" id="cbSpecBtn" title="查詢中央銀行不動產抵押貸款業務規定問與答及修正規定" aria-haspopup="dialog">
+          貸款相關
         </button>
       </div>
     </header>
@@ -3193,7 +3093,7 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
     <div class="section gl-region-sec" id="glRegionSec">
-      <label class="label-cap">購屋縣市<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="gl-region-off" id="glRegionOff" hidden>未啟用</span></label>
+      <label class="label-cap">房屋座落<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="gl-region-off" id="glRegionOff" hidden>未啟用</span></label>
       <div class="yt-opts c3" id="glRegionOpts"></div>
     </div>
     <div class="form-grid">
@@ -3212,7 +3112,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="field">
-        <label class="label-cap">貸款成數<span class="yt-cap-max" id="glRatioMax" hidden></span></label>
+        <label class="label-cap">貸款成數<button type="button" class="yt-cap-max" id="glRatioMax" title="點一下填入該數值">默認 80 %</button></label>
         <div class="input-box">
           <input type="text" id="ratio" class="calc-field" value="80" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">%</span>
@@ -3226,7 +3126,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="field">
-        <label>貸款年限</label>
+        <label class="label-cap">貸款年限<button type="button" class="yt-cap-max" id="glTermTag" title="點一下填入該數值">默認 30 年</button></label>
         <div class="input-box">
           <input type="text" id="term" class="calc-field" value="30" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">年</span>
@@ -3238,23 +3138,16 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="field">
-        <label class="label-cap">寬限期<span class="yt-cap-max" id="glGraceMax" hidden></span></label>
-        <div class="grace-block stacked">
-          <div class="grace-left">
-            <div class="input-box grace-input">
-              <input type="text" id="grace" class="calc-field" value="2" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
-            </div>
-            <div class="unit-switch">
-              <button type="button" class="active" id="graceYear">年</button>
-              <button type="button" id="graceMonth">月</button>
-            </div>
-          </div>
-          <div class="quick-pills fill" id="gracePills">
-            <button type="button" class="qp qp-text" data-val="0">無</button>
-            <button type="button" class="qp" data-val="1">1</button>
-            <button type="button" class="qp active" data-val="2">2</button>
-            <button type="button" class="qp" data-val="3">3</button>
-          </div>
+        <label class="label-cap">寬限期<button type="button" class="yt-cap-max" id="glGraceTag" title="點一下填入該數值">選填</button></label>
+        <div class="input-box">
+          <input type="text" id="grace" class="calc-field" value="2" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
+          <span class="unit">年</span>
+        </div>
+        <div class="quick-pills fill" id="gracePills">
+          <button type="button" class="qp qp-text" data-val="0">無</button>
+          <button type="button" class="qp" data-val="1">1</button>
+          <button type="button" class="qp active" data-val="2">2</button>
+          <button type="button" class="qp" data-val="3">3</button>
         </div>
       </div>
     </div>
@@ -3523,7 +3416,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
         <div class="field">
-          <label>貸款成數</label>
+          <label>貸款成數<button type="button" class="yt-cap-max" id="ytRatioTag" title="點一下填入該數值">默認 80 %</button></label>
           <div class="input-box">
             <input type="text" id="ytRatio" class="calc-field" value="80" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
             <span class="unit">%</span>
@@ -3537,7 +3430,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
         <div class="field">
-          <label>貸款年限<span class="yt-cap-max" id="ytTermMax">上限 40 年</span></label>
+          <label>貸款年限<button type="button" class="yt-cap-max" id="ytTermMax" title="點一下填入該數值">默認 30 年</button></label>
           <div class="input-box">
             <input type="text" id="ytTerm" class="calc-field" value="30" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
             <span class="unit">年</span>
@@ -3549,7 +3442,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
         <div class="field">
-          <label>寬限期<span class="yt-cap-max" id="ytGraceMax">上限 5 年</span></label>
+          <label>寬限期<button type="button" class="yt-cap-max" id="ytGraceMax" title="點一下填入該數值">選填</button></label>
           <div class="input-box">
             <input type="text" id="ytGrace" class="calc-field" value="0" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
             <span class="unit">年</span>
@@ -3840,74 +3733,100 @@ if ("serviceWorker" in navigator) {
   </div>
 </div>
 
+<div class="spec-sheet" id="cbSpecSheet" role="dialog" aria-modal="true" aria-labelledby="cbSheetTitle" hidden>
+  <div class="spec-sheet-head">
+    <div class="spec-sheet-bar">
+      <h2 id="cbSheetTitle">貸款相關（問與答）</h2>
+      <button type="button" class="spec-sheet-close" id="cbSheetClose" aria-label="關閉">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="spec-sheet-tabs" role="tablist">
+      <button type="button" role="tab" data-cb-view="qa" class="on" aria-selected="true">問與答</button>
+      <button type="button" role="tab" data-cb-view="reg" aria-selected="false">修正規定</button>
+    </div>
+    <div class="spec-sheet-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input type="text" id="cbSheetFilter" placeholder="輸入關鍵字篩選" autocomplete="off" aria-label="關鍵字篩選">
+      <span class="spec-sheet-count" id="cbSheetCount" aria-live="polite" hidden></span>
+      <button type="button" class="spec-sheet-x" id="cbSheetFilterClear" aria-label="清除關鍵字" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="spec-sheet-scroll">
+    <div class="card spec-sheet-card" id="cbSheetBody"></div>
+  </div>
+</div>
+
 <div class="yt-set gl-set" id="glRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="glRegionSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="glRegionSetCard" tabindex="-1">
     <div class="yt-set-title" id="glRegionSetTitle">高價住宅門檻設定</div>
     <p class="yt-note gl-set-lead">購屋價格與銀行鑑價 <em>取高</em> 達到門檻時，自動夾住下方貸款成數與寬限期的上限。</p>
   <div class="gl-set-row">
-      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">1</span></div>
+      <div class="gl-set-no">房屋座落<span class="gl-set-no-n">1</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName0">縣市名稱</label>
-          <div class="input-box"><input type="text" id="glSetName0" maxlength="8" autocomplete="off" placeholder="臺北市"></div>
+          <div class="input-box gl-name-box"><input type="text" id="glSetName0" maxlength="8" autocomplete="off" placeholder="臺北市"><button type="button" class="gl-clear-btn" data-gl-clear="glSetName0" tabindex="-1" aria-label="清除第 1 組名稱"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
         </div>
         <div class="field">
           <label for="glSetAmt0">高價住宅金額</label>
-          <div class="input-box"><input type="text" id="glSetAmt0" class="calc-field" value="7000" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
+          <div class="input-box"><input type="text" id="glSetAmt0" class="calc-field" value="7000" data-calc-integer="true" data-calc-max="9999999" data-calc-hint="高價住宅金額上限為 &lt;span class=&quot;toast-hint-em&quot;&gt;9,999,999 萬&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
         </div>
         <div class="field">
           <label for="glSetRatio0">成數上限</label>
-          <div class="input-box"><input type="text" id="glSetRatio0" class="calc-field" value="30" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">%</span></div>
+          <div class="input-box"><input type="text" id="glSetRatio0" class="calc-field" value="30" data-calc-integer="true" data-calc-max="100" data-calc-hint="成數上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;100%&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">%</span></div>
         </div>
         <div class="field">
           <label for="glSetGrace0">寬限期上限</label>
-          <div class="input-box"><input type="text" id="glSetGrace0" class="calc-field" value="0" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">年</span></div>
+          <div class="input-box"><input type="text" id="glSetGrace0" class="calc-field" value="0" data-calc-integer="true" data-calc-max="60" data-calc-hint="寬限期上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;60 年&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">年</span></div>
         </div>
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">2</span></div>
+      <div class="gl-set-no">房屋座落<span class="gl-set-no-n">2</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName1">縣市名稱</label>
-          <div class="input-box"><input type="text" id="glSetName1" maxlength="8" autocomplete="off" placeholder="新北市"></div>
+          <div class="input-box gl-name-box"><input type="text" id="glSetName1" maxlength="8" autocomplete="off" placeholder="新北市"><button type="button" class="gl-clear-btn" data-gl-clear="glSetName1" tabindex="-1" aria-label="清除第 2 組名稱"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
         </div>
         <div class="field">
           <label for="glSetAmt1">高價住宅金額</label>
-          <div class="input-box"><input type="text" id="glSetAmt1" class="calc-field" value="6000" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
+          <div class="input-box"><input type="text" id="glSetAmt1" class="calc-field" value="6000" data-calc-integer="true" data-calc-max="9999999" data-calc-hint="高價住宅金額上限為 &lt;span class=&quot;toast-hint-em&quot;&gt;9,999,999 萬&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
         </div>
         <div class="field">
           <label for="glSetRatio1">成數上限</label>
-          <div class="input-box"><input type="text" id="glSetRatio1" class="calc-field" value="30" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">%</span></div>
+          <div class="input-box"><input type="text" id="glSetRatio1" class="calc-field" value="30" data-calc-integer="true" data-calc-max="100" data-calc-hint="成數上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;100%&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">%</span></div>
         </div>
         <div class="field">
           <label for="glSetGrace1">寬限期上限</label>
-          <div class="input-box"><input type="text" id="glSetGrace1" class="calc-field" value="0" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">年</span></div>
+          <div class="input-box"><input type="text" id="glSetGrace1" class="calc-field" value="0" data-calc-integer="true" data-calc-max="60" data-calc-hint="寬限期上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;60 年&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">年</span></div>
         </div>
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">3</span></div>
+      <div class="gl-set-no">房屋座落<span class="gl-set-no-n">3</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName2">縣市名稱</label>
-          <div class="input-box"><input type="text" id="glSetName2" maxlength="8" autocomplete="off" placeholder="其他縣市"></div>
+          <div class="input-box gl-name-box"><input type="text" id="glSetName2" maxlength="8" autocomplete="off" placeholder="其他縣市"><button type="button" class="gl-clear-btn" data-gl-clear="glSetName2" tabindex="-1" aria-label="清除第 3 組名稱"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
         </div>
         <div class="field">
           <label for="glSetAmt2">高價住宅金額</label>
-          <div class="input-box"><input type="text" id="glSetAmt2" class="calc-field" value="4000" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
+          <div class="input-box"><input type="text" id="glSetAmt2" class="calc-field" value="4000" data-calc-integer="true" data-calc-max="9999999" data-calc-hint="高價住宅金額上限為 &lt;span class=&quot;toast-hint-em&quot;&gt;9,999,999 萬&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
         </div>
         <div class="field">
           <label for="glSetRatio2">成數上限</label>
-          <div class="input-box"><input type="text" id="glSetRatio2" class="calc-field" value="30" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">%</span></div>
+          <div class="input-box"><input type="text" id="glSetRatio2" class="calc-field" value="30" data-calc-integer="true" data-calc-max="100" data-calc-hint="成數上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;100%&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">%</span></div>
         </div>
         <div class="field">
           <label for="glSetGrace2">寬限期上限</label>
-          <div class="input-box"><input type="text" id="glSetGrace2" class="calc-field" value="0" data-calc-integer="true" readonly inputmode="none" autocomplete="off"><span class="unit">年</span></div>
+          <div class="input-box"><input type="text" id="glSetGrace2" class="calc-field" value="0" data-calc-integer="true" data-calc-max="60" data-calc-hint="寬限期上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;60 年&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">年</span></div>
         </div>
       </div>
     </div>
-    <p class="yt-note gl-set-hint">三組全部留空 <em>或只填 1 組</em> ，一般貸款不顯示購屋縣市；填 2 組就只顯示 2 顆按鈕。一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <p class="yt-note gl-set-hint">三組全部留空 <em>或只填 1 組</em> ，一般貸款不顯示房屋座落；填 2 組就只顯示 2 顆按鈕。<em>完整</em>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
     <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="glRegionSetReset">回復預設</button>
       <button type="button" class="yt-set-ghost" id="glRegionSetCancel">取消</button>
@@ -3944,17 +3863,18 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.23E";
+const APP_VERSION = "2026.08.23M";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
-let graceIsYear = true;
+/* 寬限期實務上一律以「年」為單位，一般貸款已移除年/月切換。
+   graceIsYear 保留為恆真的常數，讓沿用它的計算與輸出不必逐處改寫。 */
+const graceIsYear = true;
 const GRACE_PILLS_YEAR = [0, 1, 2, 3];
-const GRACE_PILLS_MONTH = [0, 18, 30, 42];
 
-function snapGraceToPill(val, isYear) {
-  const vals = isYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+function snapGraceToPill(val) {
+  const vals = GRACE_PILLS_YEAR;
   if (!val) return 0;
   if (vals.includes(val)) return val;
   let nearest = vals[0];
@@ -4355,13 +4275,12 @@ function applyFormState(state) {
   setCalcFieldStoredValue($('#appraisal'), state.appraisal || '');
   setCalcFieldStoredValue($('#ratio'), state.ratio);
   setCalcFieldStoredValue($('#term'), state.term);
-  graceIsYear = state.graceIsYear;
-  $('#graceYear').classList.toggle('active', graceIsYear);
-  $('#graceMonth').classList.toggle('active', !graceIsYear);
   if (state.grace === '') {
     clearGraceField({ silent: true });
   } else {
-    renderGracePills(+state.grace);
+    // 舊版存檔可能是「月」制，換算回年後再套用
+    const raw = +state.grace || 0;
+    renderGracePills(state.graceIsYear === false ? Math.max(0, Math.round(raw / 12)) : raw);
   }
 
   syncTermPillsFromInput();
@@ -4413,9 +4332,6 @@ function enterClearedState(opts) {
   clearCalcField($('#appraisal'));
   clearCalcField($('#ratio'));
   clearCalcField($('#term'));
-  graceIsYear = true;
-  $('#graceYear').classList.add('active');
-  $('#graceMonth').classList.remove('active');
   clearGraceField({ silent: true });
   $$('#termPills .qp').forEach(p => p.classList.remove('active'));
 
@@ -4458,14 +4374,16 @@ function fmtPeriod(n) { return String(n).padStart(3, '0'); }
 
 const MAX_AMOUNT_DECIMALS = 4;
 const MAX_RATE_DECIMALS = 3;
+/* 欄位默認值：標籤上的「默認 xx」與點擊帶入都取自這裡，改一處即可 */
+const GL_DEFAULT_RATIO = 80;
+const GL_DEFAULT_TERM = 30;
 const RATIO_CAP_MAX = 100;
 const TERM_MAX_YEARS = 60;
 const PRICE_MAX_WAN = 9999999;
-const FIELD_CAP_MAX = RATIO_CAP_MAX;
 
 /* ===================== 一般貸款：央行購置高價住宅門檻 =====================
    央行對「購置高價住宅貸款」訂有成數與寬限期限制，門檻金額與上限會隨政策調整。
-   這裡刻意不寫死法規數字，改由使用者在購屋縣市旁的齒輪內自行維護 —— 法規異動時
+   這裡刻意不寫死法規數字，改由使用者在房屋座落旁的齒輪內自行維護 —— 法規異動時
    不需要改版就能跟上。此設定與試算數值分開保存，「清空數值」不會清掉它。 */
 const LUX_ROWS_KEY = 'mortgage_lux_rows_v1';
 const LUX_SEL_KEY = 'mortgage_lux_sel_v1';
@@ -4529,7 +4447,6 @@ function luxValidIndexes() {
   luxRows.forEach((r, i) => { if (isLuxRowValid(r)) out.push(i); });
   return out.length >= 2 ? out : [];
 }
-function luxEnabled() { return luxValidIndexes().length >= 2; }
 function syncLuxSelection() {
   const idx = luxValidIndexes();
   if (!idx.length) return;
@@ -4600,9 +4517,9 @@ function getMaxGraceMonths() {
 function getGraceMaxValue() {
   syncGraceUnitFromDom();
   const termYears = +$('#term').value || 0;
-  let max = termYears <= 1 ? 0 : (graceIsYear ? termYears - 1 : getMaxGraceMonths());
+  let max = termYears <= 1 ? 0 : termYears - 1;
   const lux = getLuxGraceMaxYears();
-  if (lux !== null) max = Math.min(max, graceIsYear ? lux : lux * 12);
+  if (lux !== null) max = Math.min(max, lux);
   return max;
 }
 
@@ -4629,6 +4546,24 @@ function isRateOutOfRange(val) {
   return n < RATE_MIN || n > RATE_MAX;
 }
 
+/* 欄位上限：主表單依 id 決定，浮層／設定視窗等沒有固定語意的欄位改用 data-calc-max 宣告 */
+function getDeclaredFieldMax(inputEl) {
+  if (!inputEl) return null;
+  const raw = inputEl.dataset ? inputEl.dataset.calcMax : '';
+  if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function resolveFieldMax(inputEl) {
+  const id = inputEl.id;
+  if (id === 'price' || id === 'appraisal') return PRICE_MAX_WAN;
+  if (id === 'ratio') return getRatioMaxValue();
+  if (id === 'term') return TERM_MAX_YEARS;
+  if (id === 'grace') return getGraceMaxValue();
+  return getDeclaredFieldMax(inputEl);
+}
+
 function clampFieldValue(inputEl, rawValue) {
   const raw = String(rawValue ?? '').trim();
   if (!raw || !inputEl) return raw;
@@ -4641,17 +4576,7 @@ function clampFieldValue(inputEl, rawValue) {
     return formatCalcFieldDisplay(n, false, MAX_RATE_DECIMALS);
   }
 
-  let max = null;
-  const id = inputEl.id;
-  if (id === 'price' || id === 'appraisal') {
-    max = PRICE_MAX_WAN;
-  } else if (id === 'ratio') {
-    max = getRatioMaxValue();
-  } else if (id === 'term') {
-    max = TERM_MAX_YEARS;
-  } else if (id === 'grace') {
-    max = getGraceMaxValue();
-  }
+  const max = resolveFieldMax(inputEl);
   if (max === null) {
     syncCalcFieldRawDataset(inputEl, String(n));
     return formatCalcFieldDisplay(n, inputEl.dataset.calcInteger === 'true', getFieldMaxDecimals(inputEl));
@@ -4682,6 +4607,9 @@ function clampFieldToast(inputEl, before, after) {
     if (isTermMissing()) showToast('', { hint: true, hintHtml: TERM_REQUIRED_HINT_HTML });
     else showToast('', { hint: true, graceHint: true });
   }
+  else if (inputEl.dataset && inputEl.dataset.calcHint) {
+    showToast('', { hint: true, hintHtml: inputEl.dataset.calcHint });
+  }
 }
 
 function applyFieldClamp(inputEl, value) {
@@ -4690,7 +4618,7 @@ function applyFieldClamp(inputEl, value) {
   return next;
 }
 
-/* ---------- 一般貸款：購屋縣市與高價住宅上限 ---------- */
+/* ---------- 一般貸款：房屋座落與高價住宅上限 ---------- */
 function renderLuxRegionOpts() {
   const box = $('#glRegionOpts');
   const off = $('#glRegionOff');
@@ -4698,6 +4626,9 @@ function renderLuxRegionOpts() {
   const idx = luxValidIndexes();
   const on = idx.length >= 2;
   if (off) off.hidden = on;
+  // 未啟用時整條標題（含齒輪）縮小並轉為與「未啟用」同一階灰，弱化存在感但保留入口
+  const sec = $('#glRegionSec');
+  if (sec) sec.classList.toggle('is-off', !on);
   box.classList.toggle('c3', idx.length >= 3);
   box.classList.toggle('c2', idx.length === 2);
   if (!on) { box.innerHTML = ''; return; }
@@ -4710,43 +4641,85 @@ function renderLuxRegionOpts() {
   }).join('');
 }
 
-/* 寬限期上限為 0 年時，輸入框、年／月切換與快捷鈕一併反灰禁止操作 */
+/* 寬限期可選上限＝「貸款年限減 1 年」與「高價住宅門檻」取嚴者；
+   getGraceMaxValue() 已把兩者合併，快捷鈕與標籤一律以它為準。
+   （舊版只看高價住宅門檻，導致年限 3 年時快捷鈕 3 仍可按，寫入未經夾制的值。） */
 function syncGraceLock() {
-  const gMax = getLuxGraceMaxYears();
-  const lock = gMax === 0;
+  syncGraceUnitFromDom();
+  const capUnit = getGraceMaxValue();
+  const lock = getLuxGraceMaxYears() === 0;
   const gEl = $('#grace');
   if (gEl) {
     gEl.disabled = lock;
     const box = gEl.closest('.input-box');
     if (box) box.classList.toggle('is-locked', lock);
   }
-  const yBtn = $('#graceYear'), mBtn = $('#graceMonth');
-  if (yBtn) yBtn.disabled = lock;
-  if (mBtn) mBtn.disabled = lock;
-  syncGraceUnitFromDom();
-  const capUnit = gMax === null ? null : (graceIsYear ? gMax : gMax * 12);
   $$('#gracePills .qp').forEach((b) => {
     const v = +b.dataset.val;
-    const over = capUnit !== null && v > capUnit;
+    const over = v > capUnit;
     b.disabled = over;
     b.classList.toggle('qp-off', over);
     b.title = over ? '超過可選上限 ' + capUnit : '';
   });
+  const tag = $('#glGraceTag');
+  if (tag) {
+    const unit = ' 年';
+    // 上限高過最大的快捷鈕時，它並沒有擋掉任何可選項（例如年限 30 年 → 上限 29 年），
+    // 這種數字只是雜訊，標籤就只留「選填」。
+    const maxPill = graceMaxPillValue();
+    if (isTermMissing()) { tag.textContent = '選填'; tag.disabled = true; }
+    else if (capUnit <= 0) { tag.textContent = '選填 · 無寬限期'; tag.disabled = true; }
+    else if (capUnit > maxPill) { tag.textContent = '選填'; tag.disabled = true; }
+    else { tag.textContent = '選填 · 上限 ' + capUnit + unit; tag.disabled = false; }
+  }
+  alignCapLabels($('#glTermTag'), tag);
 }
 
+/* 同一列的兩個標題若高度不同（窄機上長徽章會折成兩行），把矮的補到一樣高，
+   下方輸入框與快捷鈕才會齊平。沒折行時不動它，否則每個標題都會多出一行空白。 */
+function alignCapLabels(a, b) {
+  const labs = [a, b].filter(Boolean).map((el) => el.closest('label')).filter(Boolean);
+  if (labs.length < 2) return;
+  labs.forEach((l) => { l.style.minHeight = ''; l.style.alignItems = ''; });
+  const hs = labs.map((l) => l.getBoundingClientRect().height);
+  const max = Math.max.apply(null, hs), min = Math.min.apply(null, hs);
+  if (max - min < 1) return;
+  labs.forEach((l) => { l.style.minHeight = max + 'px'; l.style.alignItems = 'flex-start'; });
+}
+
+// 目前單位下最大的快捷鈕值
+function graceMaxPillValue() {
+  const vals = GRACE_PILLS_YEAR;
+  return vals[vals.length - 1];
+}
+
+/* 成數徽章平時顯示默認值，觸發高價住宅門檻時改顯示上限；
+   寬限期一律只標「選填」，門檻造成的限制由下方 glLuxNote 說明。 */
+function glRatioBadgeValue() {
+  const m = getLuxRatioMax();
+  return m === null ? GL_DEFAULT_RATIO : m;
+}
 function updateLuxCapBadges() {
   const rMax = getLuxRatioMax();
-  const gMax = getLuxGraceMaxYears();
-  const rb = $('#glRatioMax'), gb = $('#glGraceMax');
-  if (rb) {
-    rb.hidden = rMax === null;
-    if (rMax !== null) rb.textContent = '上限 ' + rMax + ' %';
-  }
-  if (gb) {
-    gb.hidden = gMax === null;
-    if (gMax !== null) gb.textContent = gMax === 0 ? '無寬限期' : '上限 ' + gMax + ' 年';
-  }
+  const rb = $('#glRatioMax');
+  if (rb) rb.textContent = rMax === null
+    ? '默認 ' + GL_DEFAULT_RATIO + ' %'
+    : '上限 ' + rMax + ' %';
   syncGraceLock();
+}
+
+/* 點徽章＝把該欄位填成徽章上顯示的數值 */
+function bindCapBadgeFill() {
+  const rb = $('#glRatioMax');
+  if (rb) rb.addEventListener('click', () => {
+    setCalcFieldStoredValue($('#ratio'), glRatioBadgeValue());
+    $('#ratio').dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  const tb = $('#glTermTag');
+  if (tb) tb.addEventListener('click', () => {
+    $('#term').value = String(GL_DEFAULT_TERM);
+    $('#term').dispatchEvent(new Event('input', { bubbles: true }));
+  });
 }
 
 function updateLuxNote() {
@@ -4782,7 +4755,7 @@ function enforceLuxCaps(opts) {
   const gEl = $('#grace');
   if (gMax !== null && gEl) {
     syncGraceUnitFromDom();
-    const capUnit = graceIsYear ? gMax : gMax * 12;
+    const capUnit = gMax;
     const curRaw = String(gEl.value ?? '').trim();
     const cur = curRaw === '' ? 0 : Number(curRaw);
     if (Number.isFinite(cur) && cur > capUnit) {
@@ -4806,7 +4779,7 @@ function applyLuxCaps(opts) {
 function clearGraceField(opts) {
   opts = opts || {};
   syncGraceUnitFromDom();
-  const vals = graceIsYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+  const vals = GRACE_PILLS_YEAR;
   $('#gracePills').innerHTML = vals.map(v => {
     const isNone = v === 0;
     const cls = 'qp' + (isNone ? ' qp-text' : '');
@@ -4920,12 +4893,7 @@ function clampFieldNumeric(inputEl, n) {
     if (n < RATE_MIN || n > RATE_MAX) return null;
     return n;
   }
-  const id = inputEl.id;
-  let max = null;
-  if (id === 'price' || id === 'appraisal') max = PRICE_MAX_WAN;
-  else if (id === 'ratio') max = getRatioMaxValue();
-  else if (id === 'term') max = TERM_MAX_YEARS;
-  else if (id === 'grace') max = getGraceMaxValue();
+  const max = resolveFieldMax(inputEl);
   if (max !== null && n > max) return null;
   let clamped = Math.max(0, n);
   if (inputEl.dataset.calcInteger === 'true') return Math.trunc(clamped);
@@ -5050,20 +5018,6 @@ function formatRateDisplay(rate, precision) {
   return formatRatePct(rate, precision) + '%';
 }
 
-function formatComputedRatePct(n, precision) {
-  const p = precision ?? getRateDisplayPrecision();
-  if (!isFinite(n)) return formatRatePct('0', p);
-  const factor = Math.pow(10, p);
-  const truncated = Math.trunc(Math.abs(n) * factor) / factor;
-  const negative = n < 0;
-  const val = negative ? -truncated : truncated;
-  if (p === 0) return String(Math.trunc(val));
-  const intPart = Math.trunc(Math.abs(val));
-  const frac = Math.trunc((Math.abs(val) - intPart) * factor + 1e-9);
-  const dec = String(frac).padStart(p, '0');
-  return (val < 0 ? '-' : '') + intPart + '.' + dec;
-}
-
 const calcKeyboard = {
   expr: '',
   exprFull: null,
@@ -5074,30 +5028,6 @@ const calcKeyboard = {
   inputEl: null,
   backdropEl: null
 };
-
-function calcEvalExpr(expr, maxDec) {
-  const dec = maxDec == null ? calcKeyboard.maxDecimals : maxDec;
-  try {
-    if (!/^[0-9+\-*/.]*$/.test(expr)) return null;
-    if (!expr) return 0;
-    const clean = expr.replace(/[+\-*/]+$/, '');
-    if (!clean) return 0;
-    const result = Function('"use strict"; return (' + clean + ')')();
-    if (!Number.isFinite(result)) return null;
-    if (dec === 0) return Math.trunc(result);
-    return truncateToDecimals(result, dec);
-  } catch {
-    return null;
-  }
-}
-
-function normalizeCalcCommitValue(rawExpr) {
-  const raw = String(rawExpr ?? '').trim();
-  if (!raw) return '';
-  const result = calcEvalExpr(raw, calcKeyboard.integerOnly ? 0 : calcKeyboard.maxDecimals);
-  if (result === null) return raw;
-  return String(result);
-}
 
 function calcHaptic(key) {
   try {
@@ -5862,22 +5792,6 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-function getYearOpenState() {
-  return Array.from($$('.year-item')).map((el) => el.classList.contains('open'));
-}
-
-function setYearOpenState(states) {
-  $$('.year-item').forEach((el, i) => {
-    el.classList.toggle('open', !!states[i]);
-  });
-}
-
-function expandAllYears(expand) {
-  $$('.year-item').forEach((el) => {
-    el.classList.toggle('open', expand);
-  });
-}
-
 function getMethodLabel() {
   return {
     amortize: '本息平均攤還',
@@ -5889,14 +5803,13 @@ function buildConditionsData() {
   const totalMonths = getTotalMonths();
   syncGraceUnitFromDom();
   const graceVal = +$('#grace').value || 0;
-  const graceUnit = graceIsYear ? '年' : '月';
-  const graceText = graceVal === 0 ? '無' : `${graceVal} ${graceUnit}`;
+  const graceText = graceVal === 0 ? '無' : `${graceVal} 年`;
   const price = getCalcFieldNumeric($('#price'));
   const luxRow = luxCurrentRow();
   const hasAppr = $('#appraisal') && getCalcFieldRawString($('#appraisal')) !== '';
   const apprWan = getAppraisalWan();
   const basic = [
-    luxRow && ['購屋縣市', luxRow.name],
+    luxRow && ['房屋座落', luxRow.name],
     ['購屋價格', `${price.toLocaleString('zh-TW')} 萬元`],
     hasAppr && ['銀行鑑價', `${apprWan.toLocaleString('zh-TW')} 萬元`],
     hasAppr && apprWan > 0 && ['成數計算基礎', `${getLoanBasisWan().toLocaleString('zh-TW')} 萬元（取低）`],
@@ -6655,22 +6568,6 @@ function fitCanvasToPdfPage(canvas) {
   return { pageW, pageH, imgData: canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY) };
 }
 
-function canvasToPdf(canvas) {
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    throw new Error('jsPDF not loaded');
-  }
-  const { jsPDF } = window.jspdf;
-  const { pageW, pageH, imgData } = fitCanvasToPdfPage(finalizePdfPageCanvas(canvas));
-  const pdf = new jsPDF({
-    unit: 'px',
-    format: [pageW, pageH],
-    orientation: pageW >= pageH ? 'l' : 'p',
-    compress: true
-  });
-  pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, PDF_IMAGE_COMPRESS);
-  return pdf;
-}
-
 function canvasesToPdf(canvases) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     throw new Error('jsPDF not loaded');
@@ -6929,22 +6826,18 @@ function roundWan(n) {
 }
 function getTotalMonths() { return (+$('#term').value || 0) * 12; }
 
-function syncGraceUnitFromDom() {
-  graceIsYear = $('#graceYear').classList.contains('active');
-}
+function syncGraceUnitFromDom() { /* 單位固定為年，保留空函式讓既有呼叫點不必逐一移除 */ }
 
 function getGraceMonths() {
-  syncGraceUnitFromDom();
-  const g = +$('#grace').value || 0;
-  return graceIsYear ? g * 12 : g;
+  return (+$('#grace').value || 0) * 12;
 }
 
 function renderGracePills(selectVal) {
-  const vals = graceIsYear ? GRACE_PILLS_YEAR : GRACE_PILLS_MONTH;
+  const vals = GRACE_PILLS_YEAR;
   const maxG = getGraceMaxValue();
   let current = selectVal != null ? selectVal : (+$('#grace').value || 0);
   if (current > maxG) current = maxG;
-  current = snapGraceToPill(current, graceIsYear);
+  current = snapGraceToPill(current);
   if (current > maxG) {
     const allowed = vals.filter(v => v <= maxG);
     current = allowed.length ? allowed[allowed.length - 1] : 0;
@@ -6958,26 +6851,6 @@ function renderGracePills(selectVal) {
   if (typeof syncGraceLock === 'function') syncGraceLock();
 }
 
-function setGraceUnit(isYear) {
-  if (isYear === graceIsYear) return;
-  if (isTermMissing() && (+$('#grace').value || 0) > 0) {
-    promptTermBeforeGrace();
-    return;
-  }
-  const prevVal = +$('#grace').value || 0;
-  let newVal = 0;
-  if (prevVal > 0) {
-    newVal = isYear ? Math.max(1, Math.round(prevVal / 12)) : prevVal * 12;
-    newVal = snapGraceToPill(newVal, isYear);
-  }
-  graceIsYear = isYear;
-  $('#graceYear').classList.toggle('active', isYear);
-  $('#graceMonth').classList.toggle('active', !isYear);
-  const maxG = getGraceMaxValue();
-  if (newVal > maxG) newVal = maxG;
-  renderGracePills(newVal);
-  maybeRecalc();
-}
 function getRateForMonth(m, totalMonths) {
   if (rateType === 'single') return getCalcFieldNumeric($('#rate')) / 100;
   for (const seg of rateSegments) {
@@ -6996,17 +6869,6 @@ function getRatePercentForMonth(m, totalMonths) {
   }
   const last = rateSegments[rateSegments.length - 1];
   return last ? String(last.rate ?? '0') : '0';
-}
-
-function getWeightedNominalRate(totalMonths) {
-  if (rateType === 'single') return getCalcFieldNumeric($('#rate'));
-  let weighted = 0;
-  for (const seg of rateSegments) {
-    const from = Math.max(1, seg.from);
-    const to = Math.min(seg.to || totalMonths, totalMonths);
-    if (to >= from) weighted += (to - from + 1) * (+seg.rate || 0);
-  }
-  return weighted / totalMonths;
 }
 
 function formatDecimal(n, precision) {
@@ -7411,7 +7273,7 @@ function renderResults(scrollToResults) {
   const schedule = buildSchedule();
   syncGraceUnitFromDom();
   const graceVal = +$('#grace').value || 0;
-  const graceUnit = graceIsYear ? '年' : '月';
+  const graceUnit = '年';
 
   renderConditions();
 
@@ -7656,6 +7518,12 @@ $('#termPills').addEventListener('click', e => {
   maybeRecalc();
 });
 
+// 轉向／視窗改變寬度會改變折行狀況，重新對齊一次
+window.addEventListener('resize', () => {
+  if (typeof syncGraceLock === 'function') syncGraceLock();
+  document.dispatchEvent(new CustomEvent('app:relayout'));
+});
+
 $('#gracePills').addEventListener('click', e => {
   if (!e.target.classList.contains('qp')) return;
   if (e.target.disabled || e.target.classList.contains('qp-off')) return;
@@ -7663,9 +7531,23 @@ $('#gracePills').addEventListener('click', e => {
     promptTermBeforeGrace();
     return;
   }
+  // 反灰只是視覺把關，這裡再夾一次，避免任何路徑寫進超過上限的值
+  const v = +e.target.dataset.val;
+  if (v > getGraceMaxValue()) { showToast('', { hint: true, graceHint: true }); return; }
   $$('#gracePills .qp').forEach(p => p.classList.remove('active'));
   e.target.classList.add('active');
   $('#grace').value = e.target.dataset.val;
+  maybeRecalc();
+});
+
+/* 點寬限期標籤＝填入目前可選上限 */
+$('#glGraceTag').addEventListener('click', () => {
+  if ($('#glGraceTag').disabled) return;
+  if (isTermMissing()) { promptTermBeforeGrace(); return; }
+  const m = getGraceMaxValue();
+  if (!Number.isFinite(m) || m <= 0) return;
+  $('#grace').value = String(m);
+  $$('#gracePills .qp').forEach(p => p.classList.toggle('active', p.dataset.val === String(m)));
   maybeRecalc();
 });
 
@@ -7686,8 +7568,6 @@ $('#grace').addEventListener('input', () => {
   maybeRecalc();
 });
 
-$('#graceYear').addEventListener('click', () => setGraceUnit(true));
-$('#graceMonth').addEventListener('click', () => setGraceUnit(false));
 
 $$('.choice-btn[data-method]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -7836,7 +7716,187 @@ $('#conditionsToggle').addEventListener('click', () => {
 });
 
 
-/* ---------- 高價住宅門檻設定視窗（購屋縣市旁的齒輪） ---------- */
+/* ================= 貸款相關（中央銀行不動產抵押貸款業務規定） =================
+   資料逐字取自專案內兩份中央銀行文件，並以「串回原文比對」方式驗證過無漏字改字：
+   ・問與答：115.3.20 增修版，五章共 56 問
+   ・修正規定：115.3.19 發布、115.3.20 生效，一～十一點
+   與新青安的「青安相關」視窗各自獨立，共用同一套外觀與篩選行為。 */
+(function () {
+  const sheet = document.getElementById('cbSpecSheet');
+  if (!sheet) return;
+  const scroller = sheet.querySelector('.spec-sheet-scroll');
+  const body = document.getElementById('cbSheetBody');
+  const input = document.getElementById('cbSheetFilter');
+  const countEl = document.getElementById('cbSheetCount');
+  const clearBtn = document.getElementById('cbSheetFilterClear');
+  if (!scroller || !body || !input) return;
+
+  const CB_QA = [{"sec":"一、購置住宅貸款","note":["包括下列受本規定限制之貸款項目：","1.公司法人購置住宅貸款。","2.自然人購置高價住宅貸款。","3.自然人第1戶、第2戶、第3戶以上購屋貸款。"],"qs":[{"n":1,"q":"借款人申辦購置住宅貸款，其建物所有權狀之用途登記含「住」、「住商」、「住辦」、「住工」等，是否應適用本規定之規範？","a":["是。","1.惟如建物所在地之地方政府法令規定該建物可供營業使用，且借款人主張該建物主要用途實際供借款人本人營業用(出租除外)並有設立登記(或切結於購置建物半年內辦妥設立登記)，經金融機構實地查核屬實並落實借款人切結事項者，得排除本規定之適用。","2.借款人如屬自然人者，上開「借款人本人」僅限獨資、合夥事業之負責人。"]},{"n":2,"q":"借款人申辦購置住宅貸款，如其所購住宅不含基地(例如土地為向國有財產局承租者)，是否應受本規定限制？","a":["是。"]},{"n":3,"q":"借款人申辦購置住宅貸款，其建物所有權狀之用途登記為空白，但其他之用途登記文件(例如：謄本、測量成果圖、使用執照等)有「住」字樣者，是否應適用本規定之規範？","a":["下列情形應適用本規定相關規範：","1.該建物如經金融機構認定為無價值或鮮少價值，且其座落土地為都市計畫劃定之住宅區或商業區土地者，貸款條件應依本規定問與答「二、購地貸款」Q9辦理。","2.該建物如經金融機構認定為非屬無價值或鮮少價值者，貸款條件應適用本規定購置住宅貸款規範。"]},{"n":4,"q":"自然人申辦全國公教員工房屋貸款(築巢優利貸)、財政部「青年安心成家購屋優惠貸款」，是否應受本規定限制？","a":["財政部「青年安心成家購屋優惠貸款」不受本規定自然人第1戶、第2戶購屋貸款限制，其餘均應受本規定限制。"]},{"n":5,"q":"借款人辦理購置住宅貸款，金融機構可否以周轉金名義(資金用途代號為「4」)承作？","a":["否。金融機構辦理購置住宅貸款，不得以修繕、周轉金或其他貸款名目承作。"]},{"n":6,"q":"借款人申辦購置住宅貸款，另以其他擔保品申辦貸款且資金實質流向購置該住宅者，是否應受本規定限制？","a":["是。","1.金融機構以增提擔保品方式額外增加貸款金額，即屬本規定「另以其他名目，額外增加貸款金額」之情形。","2.借款人新貸或增貸資金加計購置住宅貸款金額，不得超過本規定規範之貸款成數上限。另自然人申辦受本規定限制之第1戶購屋貸款，如以其他擔保品申辦貸款並流向購置該第1戶住宅者，該筆其他擔保品貸款亦不得有寬限期。","3.為確實掌握借款人資金流向，金融機構應於同意申貸時，請借款人切結並按申貸用途使用貸款資金，以及切結不實之不利違約效果。金融機構應事後查核，落實借款人切結事項。"]},{"n":7,"q":"借款人申辦受本規定限制貸款成數之購置住宅貸款，可否以名下定存單向金融機構質借，資金用於購置該住宅？","a":["借款人以名下定存單向金融機構質借(或為十足擔保)，資金用於購置該住宅者，係屬本規定所稱「另以其他名目，額外增加貸款金額」，定存單質借與購置住宅貸款兩項貸款金額合計不得超過本規定貸款成數上限。"]},{"n":8,"q":"以下情況是否應適用本規定之規範？(1)借款人以買賣方式新取得住宅(含基地)所有權，過戶一段期間後，憑該住宅(含基地)向金融機構申辦貸款？(2)借款人以已清償購置住宅貸款之擔保品再次申貸？","a":["借款人應切結貸款資金非流向購買受本規定限制貸款條件之各項不動產，以及切結不實之不利違約效果，承貸金融機構並應核實認定借款人資金用途及落實借款人切結事項。承貸金融機構如經查證貸款資金實質流向購買受本規定限制貸款條件之各項不動產，貸款條件應按本規定辦理，並執行切結事項。"]},{"n":9,"q":"借款人申辦購置住宅貸款，下列情形是否違反本規定所稱「不得有寬限期」之規定？(1)依約定分期攤還部分金額後，要求就已償還額度辦理增貸。(2)每期攤還本利，採前期僅償還少數本利，後期償還大額本利之方式。(3)申辦短期性房貸，貸款期間僅繳付利息。","a":["是。","1.上開3種情況均屬違反本規定所稱「不得有寬限期」情形。","2.金融機構辦理本項貸款，應就貸款本金及利息合併計算後，平均分攤於貸款年限內按期攤還，分期償還方式得按週或按月方式辦理。"]},{"n":10,"q":"借款人申辦購置住宅貸款，可否於貸款後以增貸或轉貸方式，提高貸款額度？","a":["1.自然人申辦受本規定限制之第1戶購屋貸款後，於貸款存續期間，可以辦理增貸。","2.其餘借款人申辦受本規定限制貸款成數之購置住宅貸款：","(1)自撥款日起算之3年內辦理增貸或轉貸者，僅得就還款金額超過本金平均攤還部分，以及原貸金額未達本規定貸款成數上限之差額部分辦理增貸。","(2)自撥款日起算滿3年後，可以增貸，惟增貸金額合計原貸款餘額不得超過本規定貸款成數上限。","3.上開增貸均不得有寬限期，且借款人應切結增貸資金用途非流向購買受本規定限制貸款條件之各項不動產，以及切結不實之不利違約效果，承貸金融機構並應核實認定借款人資金用途及落實借款人切結事項。承貸金融機構如經查證貸款資金實質流向購買受本規定限制貸款條件之各項不動產，貸款條件應改按本規定辦理，並執行切結事項。","4.上開所稱「本規定貸款成數上限」之計算基準，原則上應以原貸金融機構之鑑價或買賣金額較低者為準；惟承貸金融機構確無法取得原貸金融機構之鑑價者，得以轉貸金融機構之鑑價或買賣金額較低者為準。"]},{"n":11,"q":"自然人名下有無房屋之認定方式？","a":["金融機構應確認「全國財產稅總歸戶財產查詢清單」借款人名下有無建物(包括建物權狀未含「住」字樣者)。惟該建物係繼承取得者，不計入借款人名下之房屋數。"]},{"n":12,"q":"自然人名下無房貸，但有持分房屋者，本次申辦購屋貸款，是否應受本規定自然人第1戶購屋貸款限制？","a":["是。惟該持分房屋係繼承取得者，得不受限。"]},{"n":13,"q":"自然人依本規定申辦第1戶購屋貸款，如名下房屋均已出售，可否排除本規定之適用？","a":["如經承貸金融機構查證屬實者，可排除本規定之適用。"]},{"n":14,"q":"自然人名下房貸戶數之認定方式？","a":["1.金融機構應向財團法人金融聯合徵信中心(下稱聯徵中心)辦理歸戶查詢，自然人名下以房屋(包括建物權狀未含「住」字樣者)為抵押之擔保放款，且資金用途代號為「1」者(購置不動產)(簡稱「房貸」)，或經金融機構確認其貸款資金之實際用途屬購置不動產者。","2.「房貸」戶數應依擔保品數量認定，1筆擔保品應認定為1戶「房貸」。惟自然人因繼承而承受之房貸，不計入借款人名下之房貸戶數。","3.金融機構於個案撥款前，應再次查詢確認自然人名下之房貸戶數。"]},{"n":15,"q":"自然人名下經查詢無「房貸」，如本次同時申辦2戶以上購屋貸款，應如何適用本規定？","a":["借款人同時申辦2戶以上(含具複數產權之連戶打通或透天厝等情形在內)之購屋貸款者，應依借款人名下有無房屋、本次所購擔保品之戶數，由承貸金融機構核實認定，分別適用本規定。"]},{"n":16,"q":"自然人主張名下「房貸」已清償，聯徵中心尚未揭露清償資訊，該戶「房貸」可否排除本規定房貸戶數之計算？","a":["借款人名下原有房貸確已取得清償證明或已塗銷該筆房貸之抵押權，且經承貸金融機構查證屬實者，可排除本規定房貸戶數之計算。"]},{"n":17,"q":"自然人名下有房屋，主張其因有實質換屋自住需求，擬申辦第1戶購屋貸款，有何協處措施？","a":["針對先買後賣之實質換屋自住族提供下列協處措施：","1.協處措施適用對象：自然人名下無房貸但有房屋，主張其因有實質換屋自住需求，擬申辦第1戶購屋貸款者。","2.協處措施之內容：上述協處措施適用對象經與承貸金融機構切結約定下列事項者，得不受本規定不得有寬限期之限制。","(1)借款人應於第1戶購屋貸款撥款後18個月內，將名下原有房屋出售並完成產權移轉登記，以及不得以轉貸等方式規避上開事項。","(2)借款人違反切結事項之不利違約效果，包括：取消寬限期、立即收回18個月原應分期償還之貸款本金(依貸款合約核實認定)，以及追溯自撥款日起，按貸款餘額計收罰息；加收以轉貸等方式規避切結事項之違約金。","3.113年9月20日(含)以後錄案之貸款案件均得適用上開協處措施。"]},{"n":18,"q":"自然人名下已有1戶「房貸」，主張其因有實質換屋自住需求，擬申辦第2戶購屋貸款，有何協處措施？","a":["針對先買後賣之實質換屋自住族提供下列協處措施：","1.協處措施適用對象：自然人名下已有1戶房貸，主張其因有實質換屋自住需求，擬申辦第2戶購屋貸款者。","2.協處措施之內容：上述協處措施適用對象經與承貸金融機構切結約定下列事項者，得不受本規定貸款成數上限及不得有寬限期之限制。","(1)借款人應於第2戶購屋貸款撥款後18個月內，將第1戶房貸擔保品出售及完成產權移轉登記，且清償債務並塗銷第1戶房貸之抵押權，以及不得以轉貸等方式規避上開事項。","(2)借款人違反切結事項之不利違約效果，包括：取消寬限期、立即收回18個月原應分期償還之貸款本金(依貸款合約核實認定)及貸款成數差額；以及追溯自撥款日起，按貸款餘額計收罰息；加收以轉貸等方式規避切結事項之違約金。","3.113年9月20日(含)以後錄案之貸款案件均得適用上開協處措施。"]},{"n":19,"q":"借款人於本規定實施前已辦理本規定所稱之(短、中期)購置住宅貸款，於本規定實施後，擬辦理屆期續貸或屆期轉貸，貸款條件是否應按本規定辦理？","a":["是。如原貸餘額超過本規定貸款成數，其差額部分得給予最長1年之調整期，請逕洽承貸金融機構協商償還方式。"]},{"n":20,"q":"借款人於本規定實施前已辦理本規定所稱之(短、中期)購置住宅貸款，於本規定實施後，擬辦理轉貸，且原貸契約尚未屆期，貸款條件是否應按本規定辦理？","a":["原貸契約尚未屆期之轉貸案件，在原貸契約未屆期前，貸款條件依轉貸金融機構授信規定辦理，惟原貸契約屆期後，貸款條件應按本規定辦理。"]}]},{"sec":"二、購地貸款","note":[],"qs":[{"n":1,"q":"借款人申辦購地貸款案件，其所檢附之具體興建計畫，金融機構應查核哪些項目？","a":["1.金融機構對於借款人檢附之具體興建計畫，應詳細查核該筆土地之建築計畫、財務計畫、還款計畫及其他授信所需考量之內容。","2.金融機構應確實查核借款人檢附之興建計畫是否具體周延並留存相關文件。"]},{"n":2,"q":"借款人應切結購買土地於一定期間內動工興建，為督促借款人落實切結事項，金融機構應採行之相關配套措施？","a":["1.上開「一定期間」應由金融機構依其授信內規及建案規模等情形，個案覈實評估借款人預計動工實際所需時間，除有不可歸責借款人因素外，最長以18個月為原則。","2.上述「不可歸責借款人因素」情形，例如：受疫情等大環境因素影響而發生缺工缺料等情形，致影響動工時程，或因建案特性不同(如建案規模、建築法規規範要件差異等因素)，致影響公務機關審照時程較長者。","3.金融機構應於貸款契約明定，未於一定期間動工興建者，除經金融機構查證有具體明確事證屬不可歸責於借款人因素者外，應逐步按合理比例收回貸款，並採階梯式逐年加碼計息等約定。","4.金融機構並應落實貸後追蹤管理，包括定期實地勘察、拍照追蹤建檔等，追蹤案件是否按計畫動工，俾憑後續執行未依切結事項辦理之不利違約效果。"]},{"n":3,"q":"本規定第5點第2款所定之「1成」，金額應如何計算？","a":["1.該「1成」係以借款人申辦購地貸款，其抵押土地取得成本與鑑價較低者之金額為計算依據。","2.例如：借款人申辦購地貸款，其抵押土地之取得成本與鑑價較低者之金額為1,000萬元，金融機構同意核貸最高貸款額度為500萬元，則該借款人尚未動工興建前，金融機構僅可撥貸400萬元，另外100萬元俟借款人動工興建後始得撥貸，以此類推(詳下表)。金融機構核貸借款人尚未動工金融機構保留1成俟借款人核貸額度前之撥貸金額動工興建後之撥貸金額500萬元400萬元100萬元400萬元300萬元100萬元300萬元200萬元100萬元"]},{"n":4,"q":"金融機構辦理購地貸款，有關購地取得成本，可否包括購買容積移轉費用、建物拆遷補償費用等其他費用？","a":["本規定所稱「購買土地取得成本」，不含購買容積移轉費用、拆遷補償費等費用。"]},{"n":5,"q":"金融機構承作購地貸款案件時，可否以增加抵押土地最高限額抵押權方式，額外增加貸款金額？","a":["否。惟金融機構如以增加該購買土地最高限額抵押權之方式，提供借款人該筆土地之興建工程貸款之加強擔保，得納入該抵押土地之最高限額抵押權範圍內。"]},{"n":6,"q":"金融機構承作之購地貸款，借款人如另以其他擔保品(例如：新建餘屋(待售)住宅、其他土地等)為擔保，資金流向購買都市計畫劃定之住宅區或商業區土地(下稱受限土地)，是否應按本規定辦理？","a":["是。"]},{"n":7,"q":"借款人於本規定實施前已辦理之購地貸款案件，如該購買土地尚未辦理動工興建，金融機構辦理舊貸案屆期續貸或屆期轉貸是否應按本規定辦理？","a":["是。","1.原貸餘額超過本規定貸款成數者，其展延之貸款成數得給予最長1年之調整期，請逕洽承貸金融機構協商償還方式；惟如購買土地於調整期內辦理動工興建，則得按原貸餘額續貸。","2.成數差額調整期屆期時，購買土地仍未動工興建者，如經承貸金融機構查證借款人確實係因「不可歸責借款人因素」致影響動工興建時程，可由承貸金融機構核實評估借款人預計動工實際所需時間；至於貸款成數差額之償還方式，由借款人逕與承貸金融機構協商辦理。"]},{"n":8,"q":"借款人於本規定實施前已辦理之購地貸款案件，如該購買土地尚未辦理動工興建，於本規定實施後，擬辦理轉貸，且原貸契約尚未屆期，貸款條件是否應按本規定辦理？","a":["原貸契約尚未屆期之轉貸案件，在原貸契約未屆期前，貸款條件依轉貸金融機構授信規定辦理，惟原貸契約屆期後，貸款條件應按本規定辦理。"]},{"n":9,"q":"借款人擬購買受限土地及其地上建物，如該建物屬未保存登記，或經金融機構認定為無價值、鮮少價值者，金融機構以該筆土地及其地上建物辦理貸款是否受本規定之限制？","a":["是。惟借款人切結該建物確係供營業或住宅(自用或出租)使用，並經承貸金融機構查證屬實者，得不受本規定「應檢附具體興建計畫，並切結於一定期間內動工興建」及「其中1成應俟借款人動工興建後始得撥貸」之限制；惟若該建物將拆除重建，則借款人應重新申辦購地貸款，並受本規定貸款條件之限制。"]},{"n":10,"q":"借款人擬購買土地，該土地係屬配合政府政策，以「區段徵收、市地重劃」等方式開發，並經主管機關核定者，以該筆土地辦理貸款是否受本規定之限制？","a":["否。惟如購買土地已以「區段徵收、市地重劃」等方式開發完成者且為都市計畫劃定之住宅區或商業區土地，則貸款條件應按本規定辦理。"]},{"n":11,"q":"金融機構承作購地貸款，如借款人主張購地係爲建造廠辦、商辦、自地自建等，是否受本規定之限制？","a":["是。"]},{"n":12,"q":"借款人申辦受本規定限制之購地貸款，惟借款人於貸款存續期間提前部分清償，現有資金需求，可否於貸款成數上限內辦理增貸？","a":["可。","1.借款人應切結增貸資金用途非流向購買受本規定限制貸款條件之各項不動產，以及切結不實之不利違約效果，承貸金融機構並應核實認定借款人資金用途及落實借款人切結事項。","2.承貸金融機構如經查證貸款資金實質流向購買受本規定限制貸款條件之各項不動產，貸款條件應改按本規定辦理，並執行切結事項。"]},{"n":13,"q":"借款人申辦受本規定限制之購地貸款，可否以本人定存單向金融機構質借，資金用於購買該受限土地？","a":["借款人以本人定存單向金融機構質借(或為十足擔保)，資金用於購買該受限土地者，係屬本規定所稱「另以其他名目，額外增加貸款金額」，定存單質借與購地貸款兩項貸款金額合計不得超過本規定貸款成數上限。"]}]},{"sec":"三、餘屋貸款","note":[],"qs":[{"n":1,"q":"借款人於本規定實施前已辦理之餘屋貸款案件，金融機構辦理舊貸案屆期續貸或屆期轉貸，是否適用本規定之規範？","a":["貸款案件經金融機構確定係符合本規定所稱之「建築業者」以及「餘屋貸款」之定義者，應適用本規定；如原貸餘額超過本規定貸款成數，其差額部分得給予最長1年之調整期，請逕洽承貸金融機構協商償還方式。"]},{"n":2,"q":"借款人於本規定實施前已辦理之餘屋貸款案件，於本規定實施後，擬辦理轉貸，且原貸契約尚未屆期，貸款條件是否應按本規定辦理？","a":["原貸契約尚未屆期之轉貸案件，在原貸契約未屆期前，貸款條件依轉貸金融機構授信規定辦理，惟原貸契約屆期後，貸款條件應按本規定辦理。"]},{"n":3,"q":"建築業者如參與興建住宅但非辦理銷售，現以其名下住宅申辦抵押貸款，是否受本規定之限制?","a":["是。"]},{"n":4,"q":"建築業者以名下非住宅之建物申辦抵押貸款，是否受本規定之限制?","a":["否。"]},{"n":5,"q":"借款人於本規定實施後辦理之餘屋貸款案件，貸款資金如流向購買受限土地或住宅，並申辦購地貸款或購置住宅貸款，除受本規定餘屋貸款規定之規範外，是否受本規定購地貸款、購置住宅貸款規定之限制？","a":["是。"]},{"n":6,"q":"借款人於本規定實施後，以持有屋齡超過5年以上之住宅申辦貸款，是否受本規定之限制？","a":["否。"]},{"n":7,"q":"借款人以自地自建之多戶住宅申辦抵押貸款，是否應適用本規定？","a":["經金融機構查證該借款人確屬本規定所稱之建築業，且該住宅符合本規定之要件者，貸款條件應按本規定辦理。"]},{"n":8,"q":"借款人申辦購地貸款(或土建融)屆期續貸，如所興建之建物已完成保存登記，並符合本規定餘屋貸款之規範要件者，是否應適用本規定？","a":["是。"]}]},{"sec":"四、工業區閒置土地抵押貸款","note":[],"qs":[{"n":1,"q":"工業區閒置土地之定義","a":["金融機構辦理工業區土地抵押貸款，應先向聯徵中心查詢，如該抵押土地屬經濟部轄管工業區閒置土地公告清冊名單者，貸款條件應按本規定辦理。"]},{"n":2,"q":"借款人申辦工業區閒置土地抵押貸款案件，其所檢附之興建開發計畫，金融機構應查核哪些項目？","a":["1.借款人應切結抵押土地應於1年內興建開發，且金融機構對於借款人檢附之興建開發計畫，應詳細查核該抵押土地之計畫內容、財務計畫、還款計畫及授信所需考量之其他內容。","2.金融機構應確實查核借款人檢附之興建開發計畫是否具體周延並留存相關文件。"]},{"n":3,"q":"借款人新申辦工業區閒置土地抵押貸款案件，如未按切結之興建開發計畫時程興建開發，是否應按本規定辦理？","a":["借款人如未按切結時程興建開發之案件，應受本規定最高貸款成數限制；如原貸餘額超過本規定貸款成數，其差額部分得給予最長1年之調整期，請逕洽承貸金融機構協商償還方式。"]},{"n":4,"q":"借款人於本規定實施前已辦理之工業區閒置土地抵押貸款案件，如抵押土地尚未興建開發，現有屆期續貸或屆期轉貸之需求，貸款條件是否應按本規定辦理？","a":["是。如原貸餘額超過本規定貸款成數，其差額部分得給予最長1年之調整期，請逕洽承貸金融機構協商償還方式。"]},{"n":5,"q":"借款人於本規定實施前已辦理之工業區閒置土地抵押貸款案件，如抵押土地尚未興建開發，於本規定實施後，擬辦理轉貸，且原貸契約尚未屆期，貸款條件是否應按本規定辦理？","a":["原貸契約尚未屆期之轉貸案件，在原貸契約未屆期前，貸款條件依轉貸金融機構授信規定辦理，惟原貸契約屆期後，貸款條件應按本規定辦理。"]},{"n":6,"q":"借款人於110年3月19日(含)後以工業區閒置土地為擔保，申辦營運周轉金貸款，是否應按本規定辦理？","a":["是。"]},{"n":7,"q":"借款人申辦工業區閒置土地抵押貸款案件，如向聯徵中心查詢已非屬閒置土地，是否應受本規定之限制？","a":["否。"]}]},{"sec":"五、其他","note":[],"qs":[{"n":1,"q":"金融機構於115年3月19日(含)前「已錄案尚未撥款」之購置住宅貸款、購地貸款、餘屋貸款及工業區閒置土地抵押貸款案件，「已錄案」之認定條件為何？(本次增修)","a":["承貸金融機構經查證借款人確實於115年3月19日(含)前已提出正式之申請書，並經其錄案辦理之案件，貸款條件得按錄案時之規定辦理，但屬自然人第2戶購屋貸款之貸款案件，得依115年3月20日修正後之規定辦理。承貸金融機構如有從嚴規定者，從其規定。"]},{"n":2,"q":"本規定所稱依都市更新條例之重建案件可不適用本規定，應符合之條件為何？","a":["借款人應提出該土地(含建物)確實依「都市更新條例」等規定，申請「都市更新事業概要」或「都市更新事業計畫」相關證明文件(或切結於半年內取得相關證明文件)，經承貸金融機構查證屬實，且借款人切結於一定期限內(由承貸金融機構核實評定)拆除原建物，以及未依切結事項辦理之不利違約效果。"]},{"n":3,"q":"本規定所稱依都市危險及老舊建築物加速重建條例之重建案件，可不適用本規定，應符合之條件為何？","a":["借款人應提出該土地(含建物)確實依「都市危險及老舊建築物加速重建條例」等規定，申請拆除重建之相關證明文件(或切結於半年內取得相關證明文件)，經承貸金融機構查證屬實，且借款人切結於一定期限內(由承貸金融機構核實評定)拆除原建物，以及未依切結事項辦理之不利違約效果。"]},{"n":4,"q":"有關借款人為興建長照機構或身心障礙福利機構，是否屬本規定所稱依其他配合政府相關政策之重建案件，可排除適用本規定？","a":["是。借款人應提出該土地(含建物)確實依「長期照顧服務法」等規定，申請設立或重(興)建長期照顧服務等機構之相關證明文件(或切結於半年內取得相關證明文件)，經承貸金融機構查證屬實；如採切結方式者，應約定未依切結事項辦理之不利違約效果。"]},{"n":5,"q":"金融機構辦理本規定之相關事項，如有違規，將有何處罰？","a":["1.中央銀行及金融監督管理委員會將持續加強金融檢查。","2.金融機構辦理本規定之相關事項如有違規情事，相關主管機關將依據銀行法第130條及第134條、信用合作社法第43條及第45條、農業金融法第49條、第51條及第53條等，以及其他相關法律規定處分。"]},{"n":6,"q":"外國人申辦購置住宅貸款、購地貸款、餘屋貸款及工業區閒置土地抵押貸款，是否應受本規定之規範?","a":["是。外國公司法人或自然人申辦上開貸款，貸款條件均應受本規定之規範。"]},{"n":7,"q":"金融機構於115年3月19日(含)前已撥款之自然人第2戶購屋貸款案件，如錄案當時適用本規定之貸款條件較115年3月20日修正規定嚴格者，是否得比照本修正規定之貸款條件辦理增貸？(本次新增)","a":["借款人如切結增貸資金用途非流向購買受本規定限制貸款條件之各項不動產，得比照本修正規定之貸款條件洽原貸金融機構辦理增貸，惟承貸金融機構如有從嚴規定者，從其規定。"]},{"n":8,"q":"民眾如有相關問題，本行聯絡窗口為何？","a":["1.對於本規定有不明瞭或有個案協助需求者，請洽中央銀行聯絡電話：(02)2357-1999轉下列16線分機：1356、1360、1363、1369、1364、1358、1357、1331、1366、1359、1368、1361、1367、1362、1365、1370。","2.服務時間：週一至週五9時至17時。"]}]}];
+  const CB_REG = [{"lv":1,"t":"一、本規定依中央銀行法第二十八條、第二十九條、第三十一條及銀行法第三十七條第二項、第四十條規定訂定之。"},{"lv":1,"t":"二、本規定所用名詞定義如下："},{"lv":2,"t":"(一)金融機構：指本國銀行、外國銀行在臺分行、信用合作社、全國農業金庫股份有限公司、農會信用部、漁會信用部、中華郵政股份有限公司及保險公司。"},{"lv":2,"t":"(二)不動產抵押貸款：指購置住宅貸款、購地貸款、餘屋貸款及工業區閒置土地抵押貸款。"},{"lv":2,"t":"(三)購置住宅貸款：指購置高價住宅貸款及購屋貸款。"},{"lv":2,"t":"(四)購置高價住宅貸款：指金融機構承作借款人為購買建物權狀含有「住」字樣之下列住宅（含基地），所辦理之抵押貸款："},{"lv":3,"t":"1.座落於臺北市者：鑑價或買賣金額為新臺幣七千萬元以上。"},{"lv":3,"t":"2.座落於新北市者：鑑價或買賣金額為新臺幣六千萬元以上。"},{"lv":3,"t":"3.座落於臺北市及新北市以外之國內地區者：鑑價或買賣金額為新臺幣四千萬元以上。"},{"lv":2,"t":"(五)購屋貸款：指金融機構承作借款人為購買建物權狀含有「住」字樣之非高價住宅（含基地），所辦理之抵押貸款。"},{"lv":2,"t":"(六)購地貸款：指金融機構承作借款人為購買都市計畫劃定之住宅區或商業區土地，所辦理之抵押貸款。"},{"lv":2,"t":"(七)餘屋貸款：指金融機構承作建築業者以新建餘屋住宅(含基地)為擔保，所辦理之抵押貸款。"},{"lv":2,"t":"(八)工業區閒置土地抵押貸款：指金融機構承作借款人以工業區閒置土地為擔保，所辦理之抵押貸款。"},{"lv":2,"t":"(九)建築業者：指以銷售為目的，從事土地、建物及其他建設等不動產投資興建之行業；或從事住宅建物興建之建築工程行業。"},{"lv":2,"t":"(十)新建餘屋住宅(含基地)：指屋齡五年內且仍維持建物第一次所有權登記之住宅(含基地)。"},{"lv":2,"t":"(十一)工業區閒置土地：指金融機構經向財團法人金融聯合徵信中心查詢，為經濟部轄管工業區閒置土地公告清冊所列之土地。"},{"lv":2,"t":"(十二)借款人：指自然人及公司法人。"},{"lv":1,"t":"三、金融機構承作公司法人之購置住宅貸款，其貸款條件限制如下："},{"lv":2,"t":"(一)不得有寬限期。"},{"lv":2,"t":"(二)貸款額度最高不得超過住宅(含基地)鑑價或買賣金額較低者之三成。"},{"lv":2,"t":"(三)除前款貸款額度外，不得另以修繕、周轉金或其他名目，額外增加貸款金額。"},{"lv":1,"t":"四、金融機構承作自然人之購置住宅貸款，應依下列規定辦理："},{"lv":2,"t":"(一)購置高價住宅貸款：其貸款條件之限制，適用前點各款之規定。"},{"lv":2,"t":"(二)購屋貸款：應向財團法人金融聯合徵信中心辦理歸戶查詢借款人有無以房屋(含基地)為抵押之擔保放款，且用途代號為「1」(購置不動產)者(以下稱房貸)，並應確認「全國財產稅總歸戶財產查詢清單」借款人名下有無房屋；其貸款條件限制如下："},{"lv":3,"t":"1.無房貸但已有房屋者：適用前點第一款規定。"},{"lv":3,"t":"2.已有一戶房貸者：除適用前點第一款及第三款規定外，貸款額度最高不得超過住宅(含基地)鑑價或買賣金額較低者之六成。"},{"lv":3,"t":"3.已有二戶以上房貸者：適用前點各款之規定。"},{"lv":1,"t":"五、金融機構承作購地貸款，其貸款條件限制如下："},{"lv":2,"t":"(一)借款人應檢附購買土地具體興建計畫，並切結於一定期間內動工興建。"},{"lv":2,"t":"(二)貸款額度最高不得超過購買土地取得成本與金融機構鑑價金額較低者之五成，其中一成應俟借款人動工興建後始得撥貸。"},{"lv":2,"t":"(三)除前款貸款額度外，不得另以周轉金或其他名目，額外增加貸款金額。"},{"lv":1,"t":"六、金融機構承作餘屋貸款，其貸款額度最高不得超過金融機構鑑價金額之三成。"},{"lv":1,"t":"除前項貸款額度外，不得另以周轉金或其他名目，額外增加貸款金額。","cont":true},{"lv":1,"t":"七、金融機構承作工業區閒置土地抵押貸款，其貸款額度最高不得超過金融機構鑑價金額之四成。"},{"lv":1,"t":"除前項貸款額度外，不得另以周轉金或其他名目，額外增加貸款金額。","cont":true},{"lv":1,"t":"工業區閒置土地抵押貸款有下列情形之一者，不適用前兩項規定：","cont":true},{"lv":2,"t":"(一)抵押土地已動工興建開發。"},{"lv":2,"t":"(二)借款人檢附抵押土地具體興建開發計畫，並切結於一年內動工興建開發。"},{"lv":1,"t":"八、金融機構承作不動產抵押貸款，其屬依都市更新條例、都市危險及老舊建築物加速重建條例或其他配合政府相關政策之重建案件，不適用本規定。"},{"lv":1,"t":"九、金融機構承作不動產抵押貸款而為鑑價時，應確實依其內部授信規範及主管機關之規定辦理。"},{"lv":1,"t":"金融機構辦理前項貸款之轉貸或展期，不得藉由重新鑑價提高貸款金額。","cont":true},{"lv":1,"t":"十、金融機構應依中央銀行規定之格式，定期確實填報不動產抵押貸款情形。"},{"lv":1,"t":"金融機構辦理不動產抵押貸款業務，應訂定內部風險控管、作業程序及其他必要之內部規範；其內部規範之貸款條件較本規定嚴格者，應依其內部規範辦理。","cont":true},{"lv":1,"t":"十一、本規定中華民國一百十五年三月二十日修正生效前，金融機構已錄案辦理尚未撥款之不動產抵押貸款案件，適用錄案時之規定。但一百十五年三月二十日修正生效規定有利於借款人者，適用修正後之規定。"}];
+  const CB_TITLE = { qa: '貸款相關（問與答）', reg: '貸款相關（修正規定）' };
+  const CB_SRC = {
+    qa: '資料來源：中央銀行「中央銀行對金融機構辦理不動產抵押貸款業務規定」問與答，五章共 56 問，內容未經刪改。115.3.20 增修版',
+    reg: '資料來源：中央銀行「對金融機構辦理不動產抵押貸款業務規定」修正規定，條文文字未經刪改。115 年 3 月 19 日發布、115 年 3 月 20 日生效'
+  };
+  const VIEW_KEY = 'cb_spec_sheet_view_v1';
+
+  let view = 'qa';
+  let open = {};
+  let lastFocus = null;
+  try { const v = localStorage.getItem(VIEW_KEY); if (v === 'qa' || v === 'reg') view = v; } catch (_) {}
+
+  function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  function mark(text, q) {
+    if (!q) return esc(text);
+    let out = '', rest = String(text), at = rest.toLowerCase().indexOf(q);
+    while (at >= 0) {
+      out += esc(rest.slice(0, at)) + '<span class="spec-hit">' + esc(rest.slice(at, at + q.length)) + '</span>';
+      rest = rest.slice(at + q.length);
+      at = rest.toLowerCase().indexOf(q);
+    }
+    return out + esc(rest);
+  }
+
+  function qaHTML(q) {
+    let total = 0;
+    const secs = CB_QA.map((sec) => {
+      const hit = (x) => (String(x.n) + x.q + x.a.join('')).toLowerCase().indexOf(q) >= 0;
+      const list = q ? sec.qs.filter(hit) : sec.qs;
+      if (!list.length) return '';
+      total += list.length;
+      const note = (!q && sec.note && sec.note.length)
+        ? '<div class="cb-sec-note">' + sec.note.map((p) => '<p>' + esc(p) + '</p>').join('') + '</div>' : '';
+      return '<div class="cb-sec"><div class="cb-sec-h">' + esc(sec.sec) + '</div>' + note +
+        '<div class="yt-qa">' + list.map((x) => {
+          const key = sec.sec + '#' + x.n;
+          return '<div class="yt-qa-item' + (open[key] ? ' open' : '') + '">' +
+            '<button type="button" class="yt-qa-q" data-cb-qa="' + esc(key) + '" aria-expanded="' + !!open[key] + '">' +
+            '<span class="yt-qa-n">' + x.n + '</span><span class="yt-qa-t">' + mark(x.q, q) + '</span>' +
+            '<span class="yt-qa-arrow">&#9660;</span></button>' +
+            '<div class="yt-qa-a">' + x.a.map((p) => '<p>' + mark(p, q) + '</p>').join('') + '</div></div>';
+        }).join('') + '</div></div>';
+    }).join('');
+    if (!total) return { html: '<p class="spec-empty">找不到符合「' + esc(input.value.trim()) + '」的問答<br>換個關鍵字試試</p>', n: 0 };
+    return { html: secs, n: total };
+  }
+
+  function regHTML(q) {
+    let rows = CB_REG, n = 0;
+    if (q) {
+      // 命中的子款一定連同所屬主條一併帶出，否則單看子款會失去脈絡
+      const keep = new Set();
+      let lv1 = -1;
+      CB_REG.forEach((b, i) => {
+        if (b.lv === 1 && !b.cont) lv1 = i;
+        if (b.t.toLowerCase().indexOf(q) >= 0) { keep.add(i); n++; if (lv1 >= 0) keep.add(lv1); }
+      });
+      rows = CB_REG.filter((_, i) => keep.has(i));
+      if (!rows.length) return { html: '<p class="spec-empty">找不到符合「' + esc(input.value.trim()) + '」的條文<br>換個關鍵字試試</p>', n: 0 };
+    }
+    const html = '<div class="yt-rule">' + rows.map((b) => {
+      if (b.lv === 1 && !b.cont) {
+        const i = b.t.indexOf('：');
+        const head = i < 0 ? b.t : b.t.slice(0, i + 1);
+        const rest = i < 0 ? '' : b.t.slice(i + 1);
+        return '<div class="yt-rule-b lv1"><b>' + mark(head, q) + '</b>' + mark(rest, q) + '</div>';
+      }
+      return '<div class="yt-rule-b lv' + (b.cont ? '1 cb-cont' : b.lv) + '">' + mark(b.t, q) + '</div>';
+    }).join('') + '</div>';
+    return { html: html, n: n };
+  }
+
+  let sig = null;
+  function render(force) {
+    const q = input.value;
+    const key = view + '\u0000' + q + '\u0000' + Object.keys(open).join(',');
+    if (!force && key === sig) return;
+    sig = key;
+    document.getElementById('cbSheetTitle').textContent = CB_TITLE[view];
+    sheet.querySelectorAll('[data-cb-view]').forEach((b) => {
+      const on = b.dataset.cbView === view;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', on);
+    });
+    if (clearBtn) clearBtn.hidden = q === '';
+    const lq = q.trim().toLowerCase();
+    const r = view === 'qa' ? qaHTML(lq) : regHTML(lq);
+    body.innerHTML = '<div class="spec-body' + (view === 'qa' ? '' : ' tappable') + '">' + r.html +
+      '<p class="spec-src">' + CB_SRC[view] + '</p></div>';
+    if (!countEl) return;
+    if (!lq) { countEl.textContent = ''; countEl.hidden = true; return; }
+    countEl.hidden = false;
+    countEl.textContent = r.n + ' ' + (view === 'qa' ? '題' : '條');
+  }
+
+  function openSheet() {
+    lastFocus = document.activeElement;
+    input.value = '';
+    open = {};
+    render(true);
+    scroller.scrollTop = 0;
+    sheet.hidden = false;
+    requestAnimationFrame(() => sheet.classList.add('show'));
+    document.getElementById('cbSheetClose').focus();
+  }
+  function closeSheet() {
+    sheet.classList.remove('show');
+    setTimeout(() => { sheet.hidden = true; }, 200);
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    lastFocus = null;
+  }
+
+  document.getElementById('cbSpecBtn').addEventListener('click', openSheet);
+  document.getElementById('cbSheetClose').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+
+  sheet.querySelectorAll('[data-cb-view]').forEach((b) => b.addEventListener('click', () => {
+    if (view === b.dataset.cbView) return;
+    view = b.dataset.cbView;
+    open = {};
+    try { localStorage.setItem(VIEW_KEY, view); } catch (_) {}
+    render(true);
+    scroller.scrollTop = 0;
+  }));
+
+  body.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-cb-qa]');
+    if (!btn) return;
+    const k = btn.dataset.cbQa;
+    const wasOpen = !!open[k];
+    const beforeTop = btn.getBoundingClientRect().top;
+    open = {};                      // 與青安問答集一致：一次只展開一題
+    if (!wasOpen) open[k] = 1;
+    render(true);
+    // 上方題目收合會讓本題往上跑，補回位移，視線才不會跳掉
+    const el = body.querySelector('[data-cb-qa="' + (window.CSS && CSS.escape ? CSS.escape(k) : k) + '"]');
+    if (el) {
+      const delta = el.getBoundingClientRect().top - beforeTop;
+      if (Math.abs(delta) > 1) scroller.scrollTop += delta;
+    }
+  });
+
+  input.addEventListener('input', () => { open = {}; render(); scroller.scrollTop = 0; });
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    input.value = ''; open = {}; render(true); input.focus();
+  });
+
+  /* 左右滑動即返回，與青安相關視窗同一套手勢 */
+  let sx = null, sy = null;
+  sheet.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || e.target.closest('input, textarea')) { sx = null; return; }
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, { passive: true });
+  sheet.addEventListener('touchend', (e) => {
+    if (sx === null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    sx = null;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    closeSheet();
+  }, { passive: true });
+})();
+
+/* ---------- 高價住宅門檻設定視窗（房屋座落旁的齒輪） ---------- */
 (function () {
   const dlg = $('#glRegionSetDlg');
   if (!dlg) return;
@@ -7852,6 +7912,14 @@ $('#conditionsToggle').addEventListener('click', () => {
     if (!el) return;
     if (v === '') clearCalcField(el); else setCalcFieldStoredValue(el, v);
   }
+  function syncClearBtns() {
+    for (let i = 0; i < LUX_ROW_N; i++) {
+      const el = nameEl(i);
+      const btn = dlg.querySelector('[data-gl-clear="glSetName' + i + '"]');
+      if (el && btn) btn.hidden = String(el.value || '') === '';
+    }
+  }
+
   function fill(rows) {
     for (let i = 0; i < LUX_ROW_N; i++) {
       const r = rows[i];
@@ -7860,6 +7928,7 @@ $('#conditionsToggle').addEventListener('click', () => {
       setNum(ratioEl(i), r.ratio);
       setNum(graceEl(i), r.grace);
     }
+    syncClearBtns();
   }
   function readRows() {
     const out = [];
@@ -7878,7 +7947,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   function validate(rows) {
     for (let i = 0; i < LUX_ROW_N; i++) {
       const r = rows[i];
-      const no = '購屋縣市 ' + (i + 1);
+      const no = '房屋座落 ' + (i + 1);
       if (r.name === '') continue;
       const a = luxNum(r.amount);
       if (!Number.isFinite(a) || a <= 0) return { msg: no + ' 的高價住宅金額請填寫大於 0 的數字。', el: amtEl(i) };
@@ -7936,11 +8005,52 @@ $('#conditionsToggle').addEventListener('click', () => {
     updateAmount();
     maybeRecalc();
     closeDlg();
-    showToast(n >= 2 ? '已套用，購屋縣市顯示 ' + n + ' 個' : '已套用，購屋縣市未啟用');
+    showToast(n >= 2 ? '已套用，房屋座落顯示 ' + n + ' 個' : '已套用，房屋座落未啟用');
   });
 
-  dlg.addEventListener('click', (e) => { if (e.target === dlg) closeDlg(); });
-  $('#glRegionSetCard') && $('#glRegionSetCard').addEventListener('click', (e) => e.stopPropagation());
+  dlg.addEventListener('input', (e) => {
+    if (e.target && /^glSetName\d$/.test(e.target.id)) syncClearBtns();
+  });
+  dlg.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-gl-clear]');
+    if (!btn) return;
+    e.preventDefault();
+    const el = $('#' + btn.dataset.glClear);
+    if (!el) return;
+    el.value = '';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    if (document.activeElement !== el) el.focus({ preventScroll: true });
+  });
+
+  /* 遮罩點擊關閉：只認「按下」與「放開」都落在遮罩上的情形。
+     否則在輸入框內按下滑鼠、選取文字後拖到空白處放開，click 會冒泡到共同祖先
+     （也就是遮罩本身），視窗就被誤判為點擊外部而關閉。 */
+  let pressOnBackdrop = false;
+  dlg.addEventListener('pointerdown', (e) => { pressOnBackdrop = e.target === dlg; });
+  /* 按下清除鈕時不讓焦點離開輸入框：否則手機軟鍵盤會先收起、再被 focus() 叫回來，
+     視窗高度連續變動兩次，看起來就像畫面閃了好幾下。 */
+  dlg.addEventListener('mousedown', (e) => {
+    if (e.target.closest('[data-gl-clear]')) e.preventDefault();
+  });
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg && pressOnBackdrop) closeDlg();
+    pressOnBackdrop = false;
+  });
+
+  /* 左右滑動即返回，與快捷查詢視窗同一套手勢；需有明確橫向意圖才觸發 */
+  let sx = null, sy = null;
+  dlg.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || e.target.closest('input, textarea, button')) { sx = null; return; }
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, { passive: true });
+  dlg.addEventListener('touchend', (e) => {
+    if (sx === null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    sx = null;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    closeDlg();
+  }, { passive: true });
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || dlg.hidden) return;
     if (document.querySelector('[data-calc-backdrop]')) return;   // 鍵盤疊在上方時先交給鍵盤
@@ -7949,6 +8059,7 @@ $('#conditionsToggle').addEventListener('click', () => {
 })();
 
 applyLuxCaps({ silent: true });
+bindCapBadgeFill();
 updateAmount();
 initCalcFields();
 initTotalAmountToggle();
@@ -8255,10 +8366,22 @@ window.addEventListener('resize', () => {
   function maxTerm() { return 40; }
   function clampInputs() {
     const mt = maxTerm();
+    // 年限與成數的標籤固定顯示默認值；寬限期只標「選填」，
+    // 可選上限仍由下方快捷鈕的反灰狀態與夾制邏輯把關
     const lab = Y('#ytTermMax');
-    if (lab) lab.textContent = '上限 40 年';
-    const gl = Y('#ytGraceMax');
-    if (gl) gl.textContent = '上限 ' + Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1)) + ' 年';
+    if (lab) lab.textContent = '默認 ' + GL_DEFAULT_TERM + ' 年';
+    const gt = Y('#ytGraceMax');
+    if (gt) {
+      const mg0 = Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1));
+      // 與一般貸款同一條準則：上限沒擋到任何快捷鈕就不標數字
+      const pills = YA('#ytGracePills .qp').map((b) => +b.dataset.val);
+      const maxPill = pills.length ? pills[pills.length - 1] : 5;
+      if (raw(Y('#ytTerm')) === '') { gt.textContent = '選填'; gt.disabled = true; }
+      else if (mg0 <= 0) { gt.textContent = '選填 · 無寬限期'; gt.disabled = true; }
+      else if (mg0 > maxPill) { gt.textContent = '選填'; gt.disabled = true; }
+      else { gt.textContent = '選填 · 上限 ' + mg0 + ' 年'; gt.disabled = false; }
+      alignCapLabels(lab, gt);
+    }
     const hasTerm = raw(Y('#ytTerm')) !== '';
     if (hasTerm && num(Y('#ytTerm')) > mt) setCalcFieldStoredValue(Y('#ytTerm'), mt);
     if (hasTerm && num(Y('#ytTerm')) < 1) setCalcFieldStoredValue(Y('#ytTerm'), 1);
@@ -8268,6 +8391,24 @@ window.addEventListener('resize', () => {
     syncPills('#ytTermPills', num(Y('#ytTerm')), mt);
     syncPills('#ytGracePills', num(Y('#ytGrace')), mg);
   }
+  document.addEventListener('app:relayout', () => clampInputs());
+
+  /* 點徽章＝把該欄位填成默認值（與一般貸款同一套操作） */
+  Y('#ytTermMax')?.addEventListener('click', () => {
+    setCalcFieldStoredValue(Y('#ytTerm'), GL_DEFAULT_TERM);
+    onChange();
+  });
+  Y('#ytRatioTag')?.addEventListener('click', () => {
+    setCalcFieldStoredValue(Y('#ytRatio'), GL_DEFAULT_RATIO);
+    onChange();
+  });
+  Y('#ytGraceMax')?.addEventListener('click', () => {
+    const mg = Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1));
+    if (mg <= 0) return;
+    setCalcFieldStoredValue(Y('#ytGrace'), mg);
+    onChange();
+  });
+
   function syncPills(sel, val, max) {
     YA(sel + ' .qp').forEach((b) => {
       const v = +b.dataset.val;
@@ -8632,8 +8773,8 @@ window.addEventListener('resize', () => {
   const SHEET_TITLE = { faq: '新青安3.0（問答集）', rule: '新青安3.0（貸款原則）' };
   const SPEC_SRC = {
     quick: '',
-    faq: '資料來源：財政部國庫署「公股銀行辦理青年安心成家購屋優惠貸款問與答」全 32 問，內容未經刪改。',
-    rule: '資料來源：「公股銀行辦理青年安心成家購屋優惠貸款原則」115.7.27 修正版第一點至第六點（附表未收錄）。條文文字未經刪改，僅第六點為配合排版於「申辦」後加註冒號。'
+    faq: '資料來源：財政部國庫署「公股銀行辦理青年安心成家購屋優惠貸款問與答」全 32 問，內容未經刪改。發布日期：115-07-28',
+    rule: '資料來源：「公股銀行辦理青年安心成家購屋優惠貸款原則」（附表未收錄），條文文字未經刪改。僅第六點為配合排版加註冒號。115.7.27 修正版'
   };
   let specView = SPEC_DEFAULT_VIEW;
   const faqOpen = {};
@@ -9097,7 +9238,13 @@ window.addEventListener('resize', () => {
       closeDlg();
       showToast('已設定預設基準利率 ' + v + '%');
     });
-    dlg.addEventListener('click', (e) => { if (e.target === dlg) closeDlg(); });
+    /* 與高價住宅設定視窗相同：按下與放開都必須落在遮罩，才算點擊外部關閉 */
+    let pressOnBackdrop = false;
+    dlg.addEventListener('pointerdown', (e) => { pressOnBackdrop = e.target === dlg; });
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg && pressOnBackdrop) closeDlg();
+      pressOnBackdrop = false;
+    });
     Y('#ytBaseSetCard')?.addEventListener('click', (e) => e.stopPropagation());
     document.addEventListener('keydown', (e) => {
       // 計算鍵盤疊在視窗上方時，Esc 先交給鍵盤處理
