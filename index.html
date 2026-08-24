@@ -392,36 +392,56 @@ if ("serviceWorker" in navigator) {
       border-color: rgba(255, 255, 255, 0.6);
     }
     /* 快捷查詢：放在 hero 下緣原本留白的那條帶狀區，位於「清空數值」正下方。
-       不與清空數值同列，出現「恢復數值」時位置才不會被推著跑；也不佔額外高度。 */
+       不與清空數值同列，出現「恢復數值」時位置才不會被推著跑；也不佔額外高度。
+       樣式為純文字連結（無按鈕框），兩者之間以一條 hairline 分隔。 */
+    .hero-links {
+      display: inline-flex;
+      align-items: center;
+    }
+    /* 最右側那顆不留右內距，讓 ＞ 的右緣與「清空數值」對齊在同一條線上 */
+    .hero-links > .spec-btn:last-child { padding-right: 0; }
     .spec-btn {
-      display: none;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 7px 14px;
-      border: 1px solid rgba(255, 255, 255, 0.42);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.14);
+      gap: 7px;                       /* 文字與 ＞ 之間留一點距離 */
+      min-height: 44px;               /* 看不見框，但點擊熱區仍維持 44px */
+      padding: 0 14px;
+      border: 0;
+      border-radius: 0;
+      background: none;
       color: #fff;
       font-family: inherit;
-      font-size: 0.78rem;
+      font-size: 0.86rem;
       font-weight: 500;
       letter-spacing: 0.5px;
       white-space: nowrap;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition: opacity 0.15s ease;
     }
-    /* 兩顆查詢按鈕在三種模式都顯示；hero-metrics 是 flex-end，DOM 最後者最靠右 */
-    .spec-btn { display: inline-flex; }
-    .hero-metrics { gap: 8px; }
+    .spec-btn .spec-btn-arw {
+      font-size: 0.82em;
+      font-weight: 400;
+      opacity: 0.9;
+      line-height: 1;
+    }
+    /* 最細的一條線：1px 再橫向縮到一半，在 2x 以上螢幕就是 0.5 實體像素 */
+    .hero-links-sep {
+      flex: 0 0 auto;
+      width: 1px;
+      height: 15px;
+      background: rgba(255, 255, 255, 0.5);
+      transform: scaleX(0.5);
+    }
     @media (max-width: 360px) {
-      .spec-btn { padding: 7px 11px; font-size: 0.74rem; }
-      .hero-metrics { gap: 6px; }
+      .spec-btn { padding: 0 11px; font-size: 0.8rem; gap: 6px; }
+      .hero-links > .spec-btn:last-child { padding-right: 0; }
     }
-    .spec-btn:active { transform: scale(0.96); }
+    .spec-btn:active { opacity: 0.62; }
     @media (hover: hover) and (pointer: fine) {
-      .spec-btn:hover { background: rgba(255, 255, 255, 0.26); border-color: rgba(255, 255, 255, 0.68); }
+      .spec-btn:hover { opacity: 0.78; }
     }
-    .export-capture .spec-btn { display: none !important; }
+    .export-capture .hero-links { display: none !important; }
 
     /* ---------- 全螢幕查詢視窗 ---------- */
     .spec-sheet {
@@ -2560,6 +2580,8 @@ if ("serviceWorker" in navigator) {
     .yt-note .nw { white-space: nowrap; }
     /* 手動修改提示同樣用 .nw 綁住子句，折行只會斷在逗號後 */
     .yt-f-note .nw { white-space: nowrap; }
+    /* 資格檢查項的標題同理：窄機折行只斷在「／」之後 */
+    .yt-chk-t .nw { white-space: nowrap; }
     /* 新青安專屬選項元件：grid 排版，min-width:0 避免窄螢幕撐破 */
     .yt-opts { display: grid; gap: 8px; }
     .yt-opts.c3 { grid-template-columns: repeat(3, 1fr); }
@@ -2752,8 +2774,10 @@ if ("serviceWorker" in navigator) {
     .yt-fold-body { display: none; padding: 18px 16px 20px; }
     .yt-fold.open .yt-fold-body { display: block; }
 
-    /* 五段利率階梯 */
+    /* 階梯利率 */
     .yt-steps { display: block; }
+    /* 年限不足時，尾端階梯整列隱藏（欄位仍保留數值供原始利率比較用） */
+    .yt-step[hidden] { display: none !important; }
     .yt-step { display: grid; grid-template-columns: 1fr 118px; gap: 12px; align-items: center; padding: 9px 0; }
     .yt-step + .yt-step { border-top: 1px solid var(--border); }
     .yt-step-lab { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 2px; }
@@ -3074,12 +3098,11 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="hero-metrics">
-        <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢新青安3.0問答集與貸款原則" aria-haspopup="dialog">
-          青安相關
-        </button>
-        <button type="button" class="spec-btn" id="cbSpecBtn" title="查詢中央銀行不動產抵押貸款業務規定問與答及修正規定" aria-haspopup="dialog">
-          貸款相關
-        </button>
+        <div class="hero-links">
+          <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢新青安3.0問答集與貸款原則" aria-haspopup="dialog">青安相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
+          <span class="hero-links-sep" aria-hidden="true"></span>
+          <button type="button" class="spec-btn" id="cbSpecBtn" title="查詢中央銀行不動產抵押貸款業務規定問與答及修正規定" aria-haspopup="dialog">貸款相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
+        </div>
       </div>
     </header>
     <div class="ver-switch" role="tablist" aria-label="試算模式">
@@ -3501,7 +3524,7 @@ if ("serviceWorker" in navigator) {
           <p class="yt-note"><em>基準利率</em> 以中華郵政股份有限公司 2 年期定期儲金額度未達 500 萬元機動利率為準。</p>
           <p class="yt-note"><em>銀行利差</em> 依方案規定固定為 0.555%，不能修改；基準利率加上這個利差就是原始青安貸款利率。</p>
           <div class="section">
-            <label>五段階梯利率<span class="label-sub">（青安貸款利率）</span></label>
+            <label id="ytStepsLabel">五段階梯利率<span class="label-sub">（青安貸款利率）</span></label>
             <div class="yt-steps" id="ytSteps">
               <div class="yt-step" data-step="0">
                 <div>
@@ -3539,7 +3562,7 @@ if ("serviceWorker" in navigator) {
                 <div class="input-box"><input type="text" id="ytR5" class="calc-field" value="2.275" readonly inputmode="none" autocomplete="off"><span class="unit">%</span></div>
               </div>
             </div>
-            <p class="yt-note">這五格由上方基準利率自動算出，平常不用動。若銀行報給你的數字不同，可直接改任何一格；<em>只要變更上方基準利率，五格就會全部重新自動計算</em>，按下面的按鈕也可隨時全部還原。</p>
+            <p class="yt-note" id="ytStepsNote">這五格由上方基準利率自動算出，平常不用動。若銀行報給你的數字不同，可直接改任何一格；<em>只要變更上方基準利率，五格就會全部重新自動計算</em>，按下面的按鈕也可隨時全部還原。</p>
             <button type="button" class="btn-add yt-reset-steps" id="ytResetSteps">點擊 ↻ 全部還原成自動計算</button>
           </div>
         </div>
@@ -3844,7 +3867,7 @@ if ("serviceWorker" in navigator) {
         <span class="unit">%</span>
       </div>
     </div>
-    <p class="yt-note">按上方 <em>清空數值</em> 之後，基準利率會自動帶回這裡設定的數值，不必每次重打；五段階梯利率也會一併重新自動計算。</p>
+    <p class="yt-note" id="ytBaseSetNote">按上方 <em>清空數值</em> 之後，基準利率會自動帶回這裡設定的數值，不必每次重打；五段階梯利率也會一併重新自動計算。</p>
     <div class="yt-set-actions">
       <button type="button" class="yt-set-ghost" id="ytBaseSetCancel">取消</button>
       <button type="button" class="yt-set-main" id="ytBaseSetSave">儲存並套用</button>
@@ -3863,7 +3886,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.23M";
+const APP_VERSION = "2026.08.24A";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4004,6 +4027,8 @@ function setRateSegmentEnd(index, rawTo) {
 }
 let clearSnapshot = null;
 const FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v1';
+/* 「清空數值」前的原本數值：與試算數值分開存，關閉重開後「恢復數值」仍然有效 */
+const CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v1';
 let showCumInterest = false;
 
 const FIELD_HINT_HTML = {
@@ -4256,6 +4281,26 @@ function clearPersistedFormState() {
   try { localStorage.removeItem(FORM_STATE_STORAGE_KEY); } catch (_) {}
 }
 
+function persistClearSnapshot() {
+  try {
+    if (clearSnapshot) localStorage.setItem(CLEAR_SNAPSHOT_KEY, JSON.stringify(clearSnapshot));
+    else localStorage.removeItem(CLEAR_SNAPSHOT_KEY);
+  } catch (_) {}
+}
+
+function loadClearSnapshot() {
+  try {
+    const raw = localStorage.getItem(CLEAR_SNAPSHOT_KEY);
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    if (!state || typeof state !== 'object') return null;
+    if (!Array.isArray(state.rateSegments)) return null;
+    return formHasContent(state) ? state : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function loadPersistedFormState() {
   try {
     const raw = localStorage.getItem(FORM_STATE_STORAGE_KEY);
@@ -4320,13 +4365,17 @@ function formHasContent(state) {
 }
 
 function updateClearRestoreBtns() {
+  // 兩個面板共用同一顆按鈕，交給模式切換那邊依當前模式決定顯示
+  if (typeof window.__syncRestoreBtn === 'function') { window.__syncRestoreBtn(); return; }
   $('#restoreBtn').style.display = clearSnapshot ? '' : 'none';
 }
+window.__glHasCleared = function () { return !!clearSnapshot; };
 
 function enterClearedState(opts) {
   opts = opts || {};
   const hadContent = formHasContent();
   if (hadContent) clearSnapshot = captureFormState();
+  persistClearSnapshot();
 
   clearCalcField($('#price'));
   clearCalcField($('#appraisal'));
@@ -4363,6 +4412,7 @@ function restoreClearedState() {
   if (!clearSnapshot) return;
   const snap = clearSnapshot;
   clearSnapshot = null;
+  persistClearSnapshot();
   applyFormState(snap);
   persistFormState();
   updateClearRestoreBtns();
@@ -7661,7 +7711,7 @@ document.addEventListener('keydown', (e) => {
 $('#clearBtn').addEventListener('click', () => {
   if (document.body.dataset.mode === 'youth') {
     if (typeof window.__ytClear === 'function') window.__ytClear();
-    const rb = $('#restoreBtn'); if (rb) rb.style.display = '';
+    if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
     showToast('已清空，可以開始輸入');
     return;
   }
@@ -7671,7 +7721,7 @@ $('#aprInfoBtn')?.addEventListener('click', showAprInfo);
 $('#restoreBtn').addEventListener('click', () => {
   if (document.body.dataset.mode === 'youth') {
     if (typeof window.__ytRestore === 'function') window.__ytRestore();
-    const rb = $('#restoreBtn'); if (rb) rb.style.display = 'none';
+    if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
     showToast('已恢復數值');
     return;
   }
@@ -8063,10 +8113,12 @@ bindCapBadgeFill();
 updateAmount();
 initCalcFields();
 initTotalAmountToggle();
+clearSnapshot = loadClearSnapshot();
 const persistedFormState = loadPersistedFormState();
 if (persistedFormState && formHasContent(persistedFormState)) {
   applyFormState(persistedFormState);
 }
+updateClearRestoreBtns();
 updateCalcButton();
 window.addEventListener('resize', scheduleFitPaymentTable);
 (function () {
@@ -8120,6 +8172,17 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }
   }
 
+  /* 「恢復數值」是兩個面板共用的一顆按鈕，各自有各自的清空前快照 */
+  function syncRestoreBtn(mode) {
+    if (!restoreBtn) return;
+    const m = mode || document.body.dataset.mode || 'general';
+    let has = false;
+    if (m === 'youth') has = typeof window.__ytHasCleared === 'function' && window.__ytHasCleared();
+    else if (m === 'general') has = typeof window.__glHasCleared === 'function' && window.__glHasCleared();
+    restoreBtn.style.display = has ? '' : 'none';
+  }
+  window.__syncRestoreBtn = function (mode) { syncRestoreBtn(mode); };
+
   const modeScroll = Object.create(null);
   function currentScrollY() {
     return window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
@@ -8160,13 +8223,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       clearBtn.setAttribute('aria-hidden', showClear ? 'false' : 'true');
       clearBtn.tabIndex = showClear ? 0 : -1;
     }
-    if (restoreBtn) {
-      if (mode === 'youth') {
-        restoreBtn.style.display = (typeof window.__ytHasCleared === 'function' && window.__ytHasCleared()) ? '' : 'none';
-      } else if (mode !== 'general') {
-        restoreBtn.style.display = 'none';
-      }
-    }
+    syncRestoreBtn(mode);
     try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
     if (typeof updateCalcButton === 'function') updateCalcButton();
     if (typeof window.__ytUpdateBtn === 'function') window.__ytUpdateBtn();
@@ -8289,6 +8346,8 @@ window.addEventListener('resize', () => {
      只會在「不符資格」時多疊一則不相干的警告。該判斷已移至一般貸款面板，可自行設定門檻。 */
   const APPLY_FROM = '2026-08-01', APPLY_TO = '2029-07-31', DRAW_TO = '2029-10-31';
   const STORE = 'youth_form_state_v1';
+  /* 「清空數值」前的原本數值，與試算數值分開存 */
+  const CLEAR_STORE = 'youth_clear_snapshot_v1';
   /* 預設基準利率：清空數值後自動帶回的值。1.72% 為財政部公告之基準利率
      （中華郵政 2 年期定期儲金額度未達 500 萬元機動利率，113.3.27 起）。 */
   const BASE_DEFAULT_KEY = 'youth_base_default_v1';
@@ -8321,9 +8380,61 @@ window.addEventListener('resize', () => {
   const ICON_OK_BIG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   const ICON_NO_BIG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
-  /* ---------- 五段階梯 ---------- */
+  /* ---------- 階梯利率（段數隨貸款年限收斂） ----------
+     補貼級距是固定的：前 3 年一段，之後每年各一段，第 7 年起回到原始利率。
+     年限不足時後段根本走不到，畫面只顯示走得到的段數；被隱藏的欄位仍保留
+     自動算出的數值，因為第 5 段（原始青安貸款利率）是「沒補貼」比較基準。 */
+  const STEP_TITLES = ['一段式利率', '兩段階梯利率', '三段階梯利率', '四段階梯利率', '五段階梯利率'];
+  const STEP_CELL_CN = ['一', '兩', '三', '四', '五'];
+  function stepCountOf(term) {
+    const t = Math.floor(Number(term) || 0);
+    if (t <= 0) return STEP_IDS.length;      // 年限未填：不預先限縮
+    if (t <= 3) return 1;                    // 1～3 年全在「前 3 年」那一段內
+    if (t >= 7) return STEP_IDS.length;
+    return t - 2;                            // 4→2、5→3、6→4
+  }
+  function visibleStepCount() { return stepCountOf(raw(Y('#ytTerm')) === '' ? 0 : num(Y('#ytTerm'))); }
+  /* 各段的顯示名稱：第 1 段會被短年限截短，第 2～4 段各一年，第 5 段是「第 7 年起」 */
+  function stepLabelAt(i, term) {
+    const t = Math.floor(Number(term) || 0);
+    if (i === 0) return '前 ' + (stepCountOf(term) === 1 && t >= 1 && t <= 3 ? t : 3) + ' 年';
+    if (i >= STEP_IDS.length - 1) return '第 7 年起';
+    return '第 ' + (i + 3) + ' 年';
+  }
+  function stepsTitleOf(cnt) { return STEP_TITLES[Math.max(1, Math.min(STEP_TITLES.length, cnt)) - 1]; }
+  function pad3(n) { return String(Math.round(n)).padStart(3, '0'); }
+  function syncStepScope() {
+    const cnt = visibleStepCount();
+    const t = Math.floor(num(Y('#ytTerm')) || 0);
+    YA('#ytSteps .yt-step').forEach((el, i) => { el.hidden = i >= cnt; });
+    // 只有第 1 段的期間會被年限截短（第 2～4 段各自剛好一年）
+    const firstY = cnt === 1 && t >= 1 && t <= 3 ? t : 3;
+    const lab = Y('#ytSteps .yt-step[data-step="0"] .yt-step-lab');
+    if (lab) {
+      const b = lab.querySelector('b');
+      if (b) b.textContent = stepLabelAt(0, t);
+      const r = lab.querySelector('.yt-step-range');
+      if (r) r.textContent = '（第 001～' + pad3(firstY * 12) + ' 期）';
+    }
+    const lb = Y('#ytStepsLabel');
+    if (lb && lb.firstChild && lb.firstChild.nodeType === 3) lb.firstChild.nodeValue = stepsTitleOf(cnt);
+    const note = Y('#ytStepsNote');
+    if (note) {
+      note.innerHTML = cnt === 1
+        ? '這一格由上方基準利率自動算出，平常不用動。若銀行報給你的數字不同，可直接修改；<em>只要變更上方基準利率，這格就會重新自動計算</em>，按下面的按鈕也可隨時還原。'
+        : '這' + STEP_CELL_CN[cnt - 1] + '格由上方基準利率自動算出，平常不用動。若銀行報給你的數字不同，可直接改任何一格；<em>只要變更上方基準利率，'
+          + STEP_CELL_CN[cnt - 1] + '格就會全部重新自動計算</em>，按下面的按鈕也可隨時全部還原。';
+    }
+    const rb = Y('#ytResetSteps');
+    if (rb) rb.textContent = cnt === 1 ? '點擊 ↻ 還原成自動計算' : '點擊 ↻ 全部還原成自動計算';
+    const bn = Y('#ytBaseSetNote');
+    if (bn) bn.innerHTML = '按上方 <em>清空數值</em> 之後，基準利率會自動帶回這裡設定的數值，不必每次重打；' + stepsTitleOf(cnt) + '也會一併重新自動計算。';
+    return cnt;
+  }
+
   function derivedSteps(base) { return SUBSIDY.map((s) => Math.round((base + SPREAD - s) * 1000) / 1000); }
   function syncSteps(force) {
+    const shown = syncStepScope();
     const hasBase = raw(Y('#ytBase')) !== '';
     const b0 = num(Y('#ytBase'));
     const sub = Y('#ytRateFoldSub');
@@ -8341,25 +8452,33 @@ window.addEventListener('resize', () => {
       if (fo) fo.textContent = Math.round((b0 + SPREAD) * 1000) / 1000;
       if (fm) fm.hidden = false;
     } else {
-      // 沒有基準利率就無從推算：整塊公式隱藏，五段一併清空
+      // 沒有基準利率就無從推算：整塊公式隱藏，各段一併清空
       if (fm) fm.hidden = true;
       stepsTouched = [false, false, false, false, false];
       STEP_IDS.forEach((id) => clearCalcField(Y(id)));
     }
-    // 全改與部分改分開講：五格全部自訂時「部分」會讓人誤以為還有幾格是自動算的
+    // 全改與部分改分開講：全部自訂時「部分」會讓人誤以為還有幾格是自動算的。
+    // 只計入畫面上看得到的格子，被年限收掉的段落不該影響提示。
     if (fn) {
-      const touched = stepsTouched.filter(Boolean).length;
+      const touched = stepsTouched.slice(0, shown).filter(Boolean).length;
       fn.hidden = touched === 0;
       if (touched) {
-        const scope = touched === STEP_IDS.length ? '全部' : '部分';
         // 拆成兩個不可斷的子句：窄機折行時會斷在逗號後，
         // 不會像自動換行那樣把「修改」拆成兩行
-        fn.innerHTML = `<span class="nw">${scope}青安利率已手動修改，</span><span class="nw">實際以下方五格為準</span>`;
+        fn.innerHTML = shown === 1
+          ? '<span class="nw">青安利率已手動修改，</span><span class="nw">實際以下方數值為準</span>'
+          : `<span class="nw">${touched === shown ? '全部' : '部分'}青安利率已手動修改，</span><span class="nw">實際以下方${STEP_CELL_CN[shown - 1]}格為準</span>`;
       }
     }
     YA('#ytSteps .yt-step').forEach((el, i) => el.classList.toggle('edited', !!stepsTouched[i]));
   }
   function currentSteps() { return STEP_IDS.map((id) => num(Y(id))); }
+  /* 貸款組成裡的利率摘要：只講實際走得到的頭尾兩段，年限 1～3 年只有一段 */
+  function ytRateSummary(d) {
+    const lastIdx = stepCountOf(d.term) - 1;
+    const head = `${stepLabelAt(0, d.term)} ${d.st[0]}%`;
+    return lastIdx <= 0 ? head : `${head}，${stepLabelAt(lastIdx, d.term)} ${d.st[lastIdx]}%`;
+  }
 
   /* ---------- 上限夾制 ---------- */
   // 年限只夾法定上限 40 年；「申貸年齡加計核貸年限不得逾 80」屬資格條件，交由資格審查判定
@@ -8390,6 +8509,7 @@ window.addEventListener('resize', () => {
     if (raw(Y('#ytGrace')) !== '' && num(Y('#ytGrace')) > mg) setCalcFieldStoredValue(Y('#ytGrace'), mg);
     syncPills('#ytTermPills', num(Y('#ytTerm')), mt);
     syncPills('#ytGracePills', num(Y('#ytGrace')), mg);
+    syncStepScope();
   }
   document.addEventListener('app:relayout', () => clampInputs());
 
@@ -8448,7 +8568,8 @@ window.addEventListener('resize', () => {
           ? '借款人與其配偶及未成年子女均無自有住宅'
           : '借款人與其配偶及未成年子女有自有住宅' },
       { ok: neverUsed,
-        t: '112/8/1 後未曾核貸 青安／農安貸款',
+        // 窄機折行時斷在「／」之後，不要把「未曾核貸過農安貸款」從中間切開
+        t: '<span class="nw">112/8/1 後未曾核貸 青安／</span><span class="nw">未曾核貸過農安貸款</span>',
         s: neverUsed ? '112/7/31 前核貸之青安貸款，不受限貸一次規範影響' : '112/8/1 後經核貸青安或農安貸款者，不得再次申貸' },
       { ok: selfUse,
         t: '購屋供自住使用',
@@ -8592,8 +8713,7 @@ window.addEventListener('resize', () => {
     const shareTxt = d.share < 100 ? ` × 持買比率 ${d.share}%` : '';
     const segs = [
       { c: 'a', n: '新青安 3.0', v: d.youthWan, show: true, lines: d.pass
-          ? [`${CAP_NAME[kind]}申請貸款上限為 ${capTxt}${shareTxt}`,
-             `前 3 年 ${d.st[0]}%，第 7 年起 ${d.st[4]}%`]
+          ? [`${CAP_NAME[kind]}申請貸款上限為 ${capTxt}${shareTxt}`, ytRateSummary(d)]
           : ['不符申請青安貸款資格'] },
       { c: 'b', n: '一般貸款', v: d.genWan, show: d.genWan > 0, lines: d.pass
           ? [`總貸款 ${wanTxt(d.total)} 萬 − 新青安 ${wanTxt(d.youthWan)} 萬`,
@@ -8648,7 +8768,7 @@ window.addEventListener('resize', () => {
       <div class="yt-save-how">
         <div class="yt-save-cap">前 ${d.savedWin} 期利息比較</div>
         <div class="yt-save-r"><i></i><span>沒補貼<em>全期 ${d.st[4]}％</em></span><b>${yuan(d.savedNoSub)} 元</b></div>
-        <div class="yt-save-r"><i>−</i><span>有補貼<em>五段階梯利率</em></span><b>${yuan(d.savedWithSub)} 元</b></div>
+        <div class="yt-save-r"><i>−</i><span>有補貼<em>${stepsTitleOf(stepCountOf(d.term))}</em></span><b>${yuan(d.savedWithSub)} 元</b></div>
         <div class="yt-save-r sum"><i>=</i><span>省下利息</span><b>${yuan(d.saved)} 元</b></div>
       </div>
       <div class="yt-save-cmp">
@@ -8918,7 +9038,8 @@ window.addEventListener('resize', () => {
   /* ---------- 狀態保存 ---------- */
   const FIELDS = ['#ytAge', '#ytIncome', '#ytPrice', '#ytAppraisal', '#ytRatio', '#ytTerm', '#ytGrace', '#ytBase', '#ytShare', '#ytGenRate'].concat(STEP_IDS);
   function capture() {
-    const o = { kind, region, method, noHome, neverUsed, selfUse, stepsTouched: stepsTouched.slice(), f: {} };
+    const o = { kind, region, method, noHome, neverUsed, selfUse, stepsTouched: stepsTouched.slice(),
+                resultsVisible: !!Y('#ytResults') && Y('#ytResults').classList.contains('show'), f: {} };
     FIELDS.forEach((id) => { o.f[id] = raw(Y(id)); });
     return o;
   }
@@ -8933,8 +9054,21 @@ window.addEventListener('resize', () => {
       if (v === '' || v == null) clearCalcField(Y(id)); else setCalcFieldStoredValue(Y(id), parseFloat(v));
     });
     syncChoices(); clampInputs(); syncSteps(false);
+    // 結果原本就在畫面上就一併還原，與一般貸款一致，不必再按一次計算
+    if (o.resultsVisible && !ytMissingFields()) {
+      try { resetViewsToDefault(); render(); markDone(); }
+      catch (e) { console.error(e); Y('#ytResults').classList.remove('show'); }
+    } else {
+      Y('#ytResults').classList.remove('show');
+    }
   }
   function persist() { try { localStorage.setItem(STORE, JSON.stringify(capture())); } catch (e) {} }
+  function persistCleared() {
+    try {
+      if (ytCleared) localStorage.setItem(CLEAR_STORE, JSON.stringify(ytCleared));
+      else localStorage.removeItem(CLEAR_STORE);
+    } catch (e) {}
+  }
   function syncChoices() {
     YA('[data-yt-kind]').forEach((b) => b.classList.toggle('active', b.dataset.ytKind === kind));
     YA('[data-yt-region]').forEach((b) => b.classList.toggle('active', b.dataset.ytRegion === region));
@@ -8982,7 +9116,9 @@ window.addEventListener('resize', () => {
       return true;
     } catch (e) { console.error(e); return false; }
   }
-  function markDone() { ytStale = false; updateYtButton(); }
+  // 與一般貸款的 markCalcSynced 一致：算完就把狀態（含結果已顯示）寫進保存，
+  // 否則關閉重開後只還原欄位、結果卻不見了
+  function markDone() { ytStale = false; updateYtButton(); persist(); }
   function onChange(e) {
     const t = e && e.target;
     if (t && t === Y('#ytBase')) {
@@ -9270,11 +9406,12 @@ window.addEventListener('resize', () => {
     REQUIRED.forEach(([sel, lab]) => {
       if (raw(Y(sel)) === '') { labels.push(lab); if (!firstEl) firstEl = Y(sel); }
     });
-    // 基準利率有填時，五格才可能單獨被清掉
+    // 基準利率有填時，階梯格才可能單獨被清掉；被年限收掉的段落不列入必填
     if (raw(Y('#ytBase')) !== '') {
-      const blank = STEP_IDS.filter((id) => raw(Y(id)) === '');
+      const shown = visibleStepCount();
+      const blank = STEP_IDS.slice(0, shown).filter((id) => raw(Y(id)) === '');
       if (blank.length) {
-        labels.push('五段階梯利率');
+        labels.push(stepsTitleOf(shown));
         if (!firstEl) firstEl = Y(blank[0]);
       }
     }
@@ -9319,6 +9456,7 @@ window.addEventListener('resize', () => {
   /* ---------- 清空／恢復 ---------- */
   window.__ytClear = function () {
     ytCleared = capture();
+    persistCleared();
     stepsTouched = [false, false, false, false, false];
     FIELDS.forEach((id) => clearCalcField(Y(id)));
     // 基準利率屬政策常數而非個人資料，清空後直接帶回預設值，
@@ -9328,14 +9466,19 @@ window.addEventListener('resize', () => {
     Y('#ytResults').classList.remove('show');
     markStale(); persist();
   };
-  window.__ytRestore = function () { if (ytCleared) { apply(ytCleared); ytCleared = null; persist(); markStale(); } };
+  window.__ytRestore = function () {
+    if (!ytCleared) return;
+    apply(ytCleared); ytCleared = null; persistCleared(); persist(); markStale();
+  };
   window.__ytHasCleared = function () { return !!ytCleared; };
   // 期數單位為兩個面板共用，另一邊切換時同步重繪本面板
   window.__ytRenderPeriod = renderPeriod;
 
   /* ---------- 啟動 ---------- */
+  try { const c = localStorage.getItem(CLEAR_STORE); if (c) ytCleared = JSON.parse(c) || null; } catch (e) {}
   try { const s = localStorage.getItem(STORE); if (s) apply(JSON.parse(s)); } catch (e) {}
   syncChoices(); clampInputs(); syncSteps(false); markStale();
+  if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
   const spEl = Y('#ytSpread'); if (spEl) spEl.value = SPREAD;   // 與計算共用同一常數
   const vl = Y('#ytVerLine');
   if (vl) vl.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
