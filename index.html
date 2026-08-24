@@ -1590,7 +1590,12 @@ if ("serviceWorker" in navigator) {
       background: #fff;
       border-radius: 18px;
       padding: 20px 18px 16px;
-      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+      /* 一條細邊界讓卡片與遮罩分得開，陰影分兩層：貼邊的一層收住輪廓，
+         外擴的一層很淡，只做出「浮起一點點」而不是整塊突出來。 */
+      border: 1px solid rgba(31, 41, 38, 0.10);
+      box-shadow:
+        0 1px 2px rgba(18, 24, 28, 0.06),
+        0 10px 26px -12px rgba(18, 24, 28, 0.20);
       animation: appAlertPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .yt-set-title {
@@ -2648,9 +2653,23 @@ if ("serviceWorker" in navigator) {
     }
     .gl-region-sec .yt-opts { min-width: 0; }
     .gl-region-sec .yt-opts:empty { display: none; }
+    /* 右側徽章同時是門檻總開關：兩種狀態外觀一致，只有文字不同 */
     .gl-region-off {
+      position: relative;
       margin-left: auto; font-size: 11px; font-weight: 500; color: var(--muted);
-      background: var(--input-bg); border-radius: 6px; padding: 1px 7px;
+      background: var(--input-bg); border: 0; border-radius: 6px; padding: 2px 7px;
+      font-family: inherit; line-height: 1.35; letter-spacing: .02em;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    /* 外觀維持小徽章，點擊範圍另外用透明區塊撐開，手指才好按。
+       右側不外擴：徽章本身已貼齊標題列右緣，往右撐會讓容器產生水平溢出。 */
+    .gl-region-off::after {
+      content: ''; position: absolute; top: -11px; bottom: -11px; left: -14px; right: 0;
+    }
+    .gl-region-off:active { background: #E4E4E4; }
+    @media (hover: hover) and (pointer: fine) {
+      .gl-region-off:hover { background: #E9E9E9; color: var(--text); }
     }
     .gl-region-off[hidden] { display: none; }
     /* 未啟用：標題與齒輪縮小並轉為與「未啟用」同一階灰，弱化但保留入口 */
@@ -3116,7 +3135,7 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
     <div class="section gl-region-sec" id="glRegionSec">
-      <label class="label-cap">房屋座落<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="gl-region-off" id="glRegionOff" hidden>未啟用</span></label>
+      <label class="label-cap">房屋座落<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></label>
       <div class="yt-opts c3" id="glRegionOpts"></div>
     </div>
     <div class="form-grid">
@@ -3886,7 +3905,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24A";
+const APP_VERSION = "2026.08.24B";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4056,6 +4075,16 @@ function luxGraceHintHtml(max) {
   return max === 0
     ? '已達高價住宅門檻，<span class="toast-hint-em">無寬限期</span>'
     : '已達高價住宅門檻，寬限期上限為 <span class="toast-hint-em">' + max + ' 年</span>';
+}
+/* 剛達到門檻時的整合提示：成數與寬限期兩項上限併成一則，不分兩次跳 */
+function luxReachedHintHtml() {
+  const rMax = getLuxRatioMax(), gMax = getLuxGraceMaxYears();
+  const parts = [];
+  if (rMax !== null) parts.push('貸款成數上限 <span class="toast-hint-em">' + rMax + '%</span>');
+  if (gMax !== null) parts.push(gMax === 0
+    ? '<span class="toast-hint-em">無寬限期</span>'
+    : '寬限期上限 <span class="toast-hint-em">' + gMax + ' 年</span>');
+  return '已達高價住宅門檻' + (parts.length ? '，' + parts.join('、') : '');
 }
 const TERM_REQUIRED_HINT_HTML = '請優先輸入 <span class="toast-hint-em">貸款年限</span>';
 
@@ -4437,6 +4466,9 @@ const PRICE_MAX_WAN = 9999999;
    不需要改版就能跟上。此設定與試算數值分開保存，「清空數值」不會清掉它。 */
 const LUX_ROWS_KEY = 'mortgage_lux_rows_v1';
 const LUX_SEL_KEY = 'mortgage_lux_sel_v1';
+/* 門檻總開關：買的不是權狀含「住」字樣的標的時可暫時關掉，設定內容照樣保留。
+   與門檻設定同屬「設定」而非試算數值，清空數值不會動到它。 */
+const LUX_ON_KEY = 'mortgage_lux_on_v1';
 const LUX_ROW_N = 3;
 const LUX_DEFAULT_ROWS = [
   { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -4483,9 +4515,16 @@ function loadLuxSel() {
 function saveLuxSel(v) {
   try { localStorage.setItem(LUX_SEL_KEY, String(v)); } catch (_) {}
 }
+function loadLuxOn() {
+  try { return localStorage.getItem(LUX_ON_KEY) !== '0'; } catch (_) { return true; }
+}
+function saveLuxOn(v) {
+  try { localStorage.setItem(LUX_ON_KEY, v ? '1' : '0'); } catch (_) {}
+}
 
 let luxRows = loadLuxRows();
 let luxSel = loadLuxSel();
+let luxOn = loadLuxOn();
 
 function isLuxRowValid(r) {
   const a = luxNum(r.amount);
@@ -4503,6 +4542,7 @@ function syncLuxSelection() {
   if (idx.indexOf(luxSel) < 0) luxSel = idx[idx.length - 1];   // 預設選最後一組（其他縣市）
 }
 function luxCurrentRow() {
+  if (!luxOn) return null;
   const idx = luxValidIndexes();
   if (!idx.length) return null;
   syncLuxSelection();
@@ -4674,8 +4714,16 @@ function renderLuxRegionOpts() {
   const off = $('#glRegionOff');
   if (!box) return;
   const idx = luxValidIndexes();
-  const on = idx.length >= 2;
-  if (off) off.hidden = on;
+  const ready = idx.length >= 2;
+  const on = ready && luxOn;
+  if (off) {
+    off.hidden = false;
+    off.textContent = on ? '啟用中' : '未啟用';
+    off.setAttribute('aria-pressed', on ? 'true' : 'false');
+    off.title = ready
+      ? (on ? '點擊暫時關閉高價住宅門檻' : '點擊重新套用高價住宅門檻')
+      : '請先於齒輪內設定至少 2 組房屋座落';
+  }
   // 未啟用時整條標題（含齒輪）縮小並轉為與「未啟用」同一階灰，弱化存在感但保留入口
   const sec = $('#glRegionSec');
   if (sec) sec.classList.toggle('is-off', !on);
@@ -4718,7 +4766,8 @@ function syncGraceLock() {
     // 這種數字只是雜訊，標籤就只留「選填」。
     const maxPill = graceMaxPillValue();
     if (isTermMissing()) { tag.textContent = '選填'; tag.disabled = true; }
-    else if (capUnit <= 0) { tag.textContent = '選填 · 無寬限期'; tag.disabled = true; }
+    // 上限 0 年時只剩「無」一種選擇，講「選填」反而像還有得選
+    else if (capUnit <= 0) { tag.textContent = '無寬限期'; tag.disabled = true; }
     else if (capUnit > maxPill) { tag.textContent = '選填'; tag.disabled = true; }
     else { tag.textContent = '選填 · 上限 ' + capUnit + unit; tag.disabled = false; }
   }
@@ -4817,9 +4866,26 @@ function enforceLuxCaps(opts) {
   return changed;
 }
 
+/* 門檻提示的觸發條件：只要「這次的判定結果」與上次提示過的不同就再提示一次。
+   鍵值含門檻組別、上限設定與這次的認定金額，所以使用者每輸入一個達門檻的價格
+   都會再被提醒；價格退回門檻以下則清空鍵值，下次達到時重新提示。
+   （舊版只在數值真的被夾住時才提示，成數已經是 30% 之後就再也不會跳。） */
+let luxHintKey = null;
+function luxHitStateKey() {
+  const row = luxHitRow();
+  if (!row) return '';
+  return [luxSel, row.name, row.amount, row.ratio, row.grace, getLuxBasisWan()].join('|');
+}
+
 function applyLuxCaps(opts) {
+  opts = opts || {};
   renderLuxRegionOpts();
-  const changed = enforceLuxCaps(opts);
+  const key = luxHitStateKey();
+  const reached = key !== '' && key !== luxHintKey;
+  // 剛達門檻時只出一則整合提示，個別欄位被夾住的提示就不重複跳
+  const changed = enforceLuxCaps(reached ? { silent: true } : opts);
+  luxHintKey = key === '' ? null : key;
+  if (reached && !opts.silent) showToast('', { hint: true, hintHtml: luxReachedHintHtml() });
   updateLuxCapBadges();
   updateLuxNote();
   if (changed) updateAmount();
@@ -7515,6 +7581,21 @@ $('#appraisal').addEventListener('input', () => {
   updateAmount();
   maybeRecalc();
 });
+/* 徽章＝門檻總開關。設定不足 2 組時沒有東西可啟用，只提示不切換。 */
+$('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
+  if (luxValidIndexes().length < 2) {
+    showToast('', { hint: true, hintHtml: '請先於齒輪內設定至少 <span class="toast-hint-em">2 組</span>房屋座落' });
+    return;
+  }
+  luxOn = !luxOn;
+  saveLuxOn(luxOn);
+  applyLuxCaps();
+  updateAmount();
+  maybeRecalc();
+  // 開啟時若當下就達門檻，applyLuxCaps 已經跳過整合提示，這裡不再重複
+  if (!luxOn) showToast('已關閉高價住宅門檻');
+  else if (!luxHitRow()) showToast('已啟用高價住宅門檻');
+});
 $('#glRegionOpts').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-gl-region]');
   if (!btn) return;
@@ -8055,7 +8136,9 @@ $('#conditionsToggle').addEventListener('click', () => {
     updateAmount();
     maybeRecalc();
     closeDlg();
-    showToast(n >= 2 ? '已套用，房屋座落顯示 ' + n + ' 個' : '已套用，房屋座落未啟用');
+    showToast(n < 2 ? '已套用，房屋座落未啟用'
+      : luxOn ? '已套用，房屋座落顯示 ' + n + ' 個'
+      : '已套用，房屋座落目前為未啟用');
   });
 
   dlg.addEventListener('input', (e) => {
@@ -8568,8 +8651,8 @@ window.addEventListener('resize', () => {
           ? '借款人與其配偶及未成年子女均無自有住宅'
           : '借款人與其配偶及未成年子女有自有住宅' },
       { ok: neverUsed,
-        // 窄機折行時斷在「／」之後，不要把「未曾核貸過農安貸款」從中間切開
-        t: '<span class="nw">112/8/1 後未曾核貸 青安／</span><span class="nw">未曾核貸過農安貸款</span>',
+        // 窄機折行時只斷在「後」或「／」之後，兩個詞組都不從中間切開
+        t: '112/8/1 後<span class="nw">未曾核貸青安貸款／</span><span class="nw">未曾核貸過農安貸款</span>',
         s: neverUsed ? '112/7/31 前核貸之青安貸款，不受限貸一次規範影響' : '112/8/1 後經核貸青安或農安貸款者，不得再次申貸' },
       { ok: selfUse,
         t: '購屋供自住使用',
