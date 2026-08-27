@@ -38,8 +38,24 @@ if ("serviceWorker" in navigator) {
       } catch (e) { zoomOk = false; }
       return zoomOk;
     }
+    /* 版面寬度以 clientWidth 為準：轉向瞬間 innerWidth 可能還是舊值 */
+    function viewportW(){
+      var d = document.documentElement;
+      var w = d && d.clientWidth ? d.clientWidth : 0;
+      return w || window.innerWidth || 0;
+    }
+    /* 只有真正用滑鼠的機器才放大。手機橫放寬度同樣會超過 800，
+       一旦放大，轉回直向時就可能卡在放大狀態回不來。
+       觸控筆電的主要輸入仍是滑鼠，會被判定為桌機，行為不變。 */
+    function isDesktopPointer(){
+      try {
+        if (!window.matchMedia) return true;
+        var mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+        return typeof mq.matches === 'boolean' ? mq.matches : true;
+      } catch (e) { return true; }
+    }
     function applyDesktopScale(){
-      var z = window.innerWidth >= MIN_W ? SCALE : 1;
+      var z = (isDesktopPointer() && viewportW() >= MIN_W) ? SCALE : 1;
       var useZoom = z > 1 && detectZoomSupport();
       document.documentElement.style.setProperty('--app-scale', String(z));
       var shell = document.getElementById('appShell');
@@ -75,6 +91,16 @@ if ("serviceWorker" in navigator) {
       }
     }
     window.__applyDesktopScale = applyDesktopScale;
+    /* 轉向後瀏覽器回報的尺寸不見得馬上正確，補兩次延遲重算 */
+    function rescaleSoon(){
+      applyDesktopScale();
+      setTimeout(applyDesktopScale, 150);
+      setTimeout(applyDesktopScale, 450);
+    }
+    window.addEventListener('orientationchange', rescaleSoon);
+    if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
+      try { window.screen.orientation.addEventListener('change', rescaleSoon); } catch (e) {}
+    }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', applyDesktopScale);
     } else {
@@ -599,7 +625,12 @@ if ("serviceWorker" in navigator) {
       color: var(--muted);
     }
     .spec-hit { background: #FFE9A8; border-radius: 3px; padding: 0 1px; }
-    body[data-mode="youth"] .spec-hit { background: #BEEBDA; }
+    /* 兩個查詢視窗的配色固定，不隨當前模式改變：
+       青安相關永遠是新青安的青綠，貸款相關永遠是一般貸款的金褐。 */
+    #ytSpecSheet { --teal: #12836B; --teal-dark: #0B5D4C; --teal-light: #E4F4EF; }
+    #cbSpecSheet { --teal: #C9922A; --teal-dark: #9A6B18; --teal-light: #FBF0D9; }
+    #ytSpecSheet .spec-hit { background: #BEEBDA; }
+    #cbSpecSheet .spec-hit { background: #FFE9A8; }
 
     .clear-btn {
       background: var(--teal);
@@ -645,6 +676,9 @@ if ("serviceWorker" in navigator) {
       font-size: 0.95rem;
       font-weight: 500;
       line-height: 1.45;
+      /* left:50% 會把可用寬度砍成螢幕的一半，短句也被迫從中間折行。
+         改以內容寬度為準，再用 max-width 收住，才不會出現「已套用，房屋座落顯／示 3 個」。 */
+      width: max-content;
       max-width: min(92vw, 360px);
       text-align: center;
       z-index: 550;
@@ -682,6 +716,9 @@ if ("serviceWorker" in navigator) {
     .toast-hint-em {
       color: #e53935;
     }
+    /* 兩行式提示的第二行改用 block：inline-flex 會把文字與 <span> 之間的空白吃掉，
+       「貸款成數上限 30 %」會黏成「貸款成數上限30 %」 */
+    .toast-hint-line { display: block !important; font-weight: 700; }
     .toast-hint-sub {
       display: inline-flex;
       align-items: center;
@@ -694,6 +731,11 @@ if ("serviceWorker" in navigator) {
     .toast-hint-sub .toast-warn {
       color: #e53935;
     }
+    /* 一般提示需要自行控制斷行時用：每個子句各佔一行，不會斷在詞中間 */
+    .toast-lines { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .toast-lines > span { white-space: nowrap; }
+    .toast .nw { white-space: nowrap; }
+    .toast-ok { color: #4FC79E; font-weight: 700; }
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
@@ -2635,9 +2677,13 @@ if ("serviceWorker" in navigator) {
     .export-capture .yt-cap-max { pointer-events: none; }
     /* ===== 一般貸款：房屋座落（高價住宅門檻） ===== */
     /* 帶齒輪或上限徽章的小標改用 flex：float 在 flex 容器內失效，徽章改以 auto 邊距推到最右 */
+    /* 房屋座落標題改用 div：<label> 會把 hover／click 轉給裡面第一個表單控制項，
+       滑到右側徽章時齒輪也會跟著亮底色。改成 div 就不再有這個連動。 */
     .field > label.label-cap,
-    .section > label.label-cap {
+    .section > label.label-cap,
+    .section > div.label-cap {
       display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 3px;
+      font-size: 0.92rem; font-weight: 500; margin-bottom: 10px;
     }
     /* 齒輪在一般貸款是與標題同列的圖示，不需要新青安那邊為徽章留的 -1px 上移 */
     .label-cap > .yt-gear-btn { margin-left: -3px; top: 0; }
@@ -2647,9 +2693,9 @@ if ("serviceWorker" in navigator) {
     .gl-region-sec[hidden] { display: none; }
     /* 標題字級跟著正下方的「購屋價格」走，而不是沿用 .section 的 0.92rem。
        本區塊定義在窄機 media query 之後，故縮字規則要一併寫在這裡才不會被蓋掉。 */
-    .gl-region-sec > label { font-size: 0.92rem; margin-bottom: 10px; }
+    .gl-region-sec > .label-cap { font-size: 0.92rem; margin-bottom: 10px; }
     @media (max-width: 400px) {
-      .gl-region-sec > label { font-size: 0.86rem; margin-bottom: 8px; }
+      .gl-region-sec > .label-cap { font-size: 0.86rem; margin-bottom: 8px; }
     }
     .gl-region-sec .yt-opts { min-width: 0; }
     .gl-region-sec .yt-opts:empty { display: none; }
@@ -2673,11 +2719,11 @@ if ("serviceWorker" in navigator) {
     }
     .gl-region-off[hidden] { display: none; }
     /* 未啟用：標題與齒輪縮小並轉為與「未啟用」同一階灰，弱化但保留入口 */
-    .gl-region-sec.is-off > label { font-size: 0.8rem; color: var(--muted); }
+    .gl-region-sec.is-off > .label-cap { font-size: 0.8rem; color: var(--muted); }
     .gl-region-sec.is-off .yt-gear-btn { width: 18px; height: 18px; color: var(--muted); opacity: 0.75; }
     .gl-region-sec.is-off .yt-gear-btn svg { width: 14px; height: 14px; }
     @media (max-width: 400px) {
-      .gl-region-sec.is-off > label { font-size: 0.76rem; }
+      .gl-region-sec.is-off > .label-cap { font-size: 0.76rem; }
     }
     .gl-note {
       font-size: 12px; line-height: 1.65; color: #9A6B18;
@@ -2693,7 +2739,7 @@ if ("serviceWorker" in navigator) {
     /* ===== 高價住宅門檻設定視窗 ===== */
     .gl-set { padding: 4vh 20px 16px; }
     .gl-set-card {
-      max-width: 380px; max-height: 90vh; overflow-y: auto; outline: none;
+      max-width: 380px; max-height: 90vh; max-height: 90dvh; overflow-y: auto; outline: none;
       padding: 0 16px 0;
       overscroll-behavior: contain;      /* 卡片捲到底時不把滾輪傳給底層頁面 */
     }
@@ -2721,7 +2767,10 @@ if ("serviceWorker" in navigator) {
     }
     /* 計算鍵盤展開時把卡片壓到鍵盤上方，並收起說明與按鈕，欄位才不會被蓋住 */
     .gl-set:has(.calc-field.calc-active) { padding-top: 10px; }
-    .gl-set:has(.calc-field.calc-active) .gl-set-card { max-height: calc(100vh - 382px); }
+    .gl-set:has(.calc-field.calc-active) .gl-set-card {
+      max-height: calc(100vh - 382px);
+      max-height: calc(100dvh - 382px);   /* 手機鍵盤彈出時 dvh 才是實際可視高度 */
+    }
     .gl-set:has(.calc-field.calc-active) .gl-set-lead,
     .gl-set:has(.calc-field.calc-active) .gl-set-hint,
     .gl-set:has(.calc-field.calc-active) .gl-set-actions { display: none; }
@@ -3135,7 +3184,7 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
     <div class="section gl-region-sec" id="glRegionSec">
-      <label class="label-cap">房屋座落<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></label>
+      <div class="label-cap">房屋座落<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></div>
       <div class="yt-opts c3" id="glRegionOpts"></div>
     </div>
     <div class="form-grid">
@@ -3905,7 +3954,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24B";
+const APP_VERSION = "2026.08.24D";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4068,23 +4117,35 @@ const GRACE_HINT_HTML = `<div class="toast-hint-body">
   <div class="toast-hint-sub"><span class="toast-paren">（</span><span class="toast-warn">但至少須留 1 年還款</span><span class="toast-paren">）</span></div>
 </div>`;
 const GRACE_REENTER_HINT_HTML = '請重新輸入寬限期';
+/* 提示框是 white-space: nowrap + width: max-content，單行寫太長會撐破外框。
+   一律拆成「標題行＋內容行」的兩行結構，並開啟 multiline 允許換行。 */
+function luxHintBody(main, sub) {
+  return '<div class="toast-hint-body"><div class="toast-hint-main">' + main +
+    '</div><div class="toast-hint-sub toast-hint-line">' + sub + '</div></div>';
+}
 function luxRatioHintHtml(max) {
-  return '已達高價住宅門檻，貸款成數上限為 <span class="toast-hint-em">' + max + '%</span>';
+  return luxHintBody('已達高價住宅門檻', '貸款成數上限 <span class="toast-hint-em">' + max + ' %</span>');
 }
 function luxGraceHintHtml(max) {
-  return max === 0
-    ? '已達高價住宅門檻，<span class="toast-hint-em">無寬限期</span>'
-    : '已達高價住宅門檻，寬限期上限為 <span class="toast-hint-em">' + max + ' 年</span>';
+  return luxHintBody('已達高價住宅門檻', max === 0
+    ? '<span class="toast-hint-em">無寬限期</span>'
+    : '寬限期上限 <span class="toast-hint-em">' + max + ' 年</span>');
+}
+/* 開關提示：動作用綠字，與後面的名詞空一格分開 */
+function luxSwitchToastHtml(action) {
+  return '<span class="toast-ok">' + action + '</span> <span class="nw">高價住宅門檻</span>';
 }
 /* 剛達到門檻時的整合提示：成數與寬限期兩項上限併成一則，不分兩次跳 */
 function luxReachedHintHtml() {
   const rMax = getLuxRatioMax(), gMax = getLuxGraceMaxYears();
-  const parts = [];
-  if (rMax !== null) parts.push('貸款成數上限 <span class="toast-hint-em">' + rMax + '%</span>');
-  if (gMax !== null) parts.push(gMax === 0
+  const lines = [];
+  if (rMax !== null) lines.push('貸款成數上限 <span class="toast-hint-em">' + rMax + ' %</span>');
+  if (gMax !== null) lines.push(gMax === 0
     ? '<span class="toast-hint-em">無寬限期</span>'
     : '寬限期上限 <span class="toast-hint-em">' + gMax + ' 年</span>');
-  return '已達高價住宅門檻' + (parts.length ? '，' + parts.join('、') : '');
+  // 兩項上限各佔一行，寬度才不會超出提示框
+  return '<div class="toast-hint-body"><div class="toast-hint-main">已達高價住宅門檻</div>' +
+    lines.map((t) => '<div class="toast-hint-sub toast-hint-line">' + t + '</div>').join('') + '</div>';
 }
 const TERM_REQUIRED_HINT_HTML = '請優先輸入 <span class="toast-hint-em">貸款年限</span>';
 
@@ -4150,11 +4211,13 @@ function showToast(msg, opts) {
   const toast = $('#toast');
   bindToastHold(toast);
   toast.classList.toggle('toast-hint', !!opts.hint);
-  toast.classList.toggle('toast-hint-multiline', !!opts.graceHint);
+  toast.classList.toggle('toast-hint-multiline', !!opts.graceHint || !!opts.multiline);
   if (opts.graceHint) {
     toast.innerHTML = GRACE_HINT_HTML;
   } else if (opts.hintHtml) {
     toast.innerHTML = opts.hintHtml;
+  } else if (opts.html) {
+    toast.innerHTML = opts.html;          // 一般提示要自行控制斷行時用
   } else {
     toast.textContent = msg;
   }
@@ -4244,7 +4307,7 @@ function showAppAlert(message, onClose, opts) {
   backdrop.hidden = false;
   backdrop.classList.add('show');
   try { if (navigator.vibrate) navigator.vibrate([30, 50, 30]); } catch {}
-  $('#appAlertBtn')?.focus();
+  $('#appAlertBtn')?.focus({ preventScroll: true });
 }
 
 // 兩個面板各有一顆，用委派一次接起來
@@ -4432,7 +4495,9 @@ function enterClearedState(opts) {
   calcSynced = false;
   updateCalcButton();
   updateClearRestoreBtns();
-  clearPersistedFormState();
+  // 存下「清空後」的空狀態而不是刪除保存內容：刪掉的話重開會退回 HTML 內建預設值
+  // （購屋價格 3000、年限 30…），看起來像沒清空。新青安本來就是存空狀態，兩邊一致。
+  persistFormState();
   if (!opts.silent) showToast('已清空，可以開始輸入');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -4847,7 +4912,7 @@ function enforceLuxCaps(opts) {
     if (Number.isFinite(cur) && cur > rMax) {
       setCalcFieldStoredValue(rEl, rMax);
       changed = true;
-      if (!opts.silent) showToast('', { hint: true, hintHtml: luxRatioHintHtml(rMax) });
+      if (!opts.silent) showToast('', { hint: true, multiline: true, hintHtml: luxRatioHintHtml(rMax) });
     }
   }
   const gMax = getLuxGraceMaxYears();
@@ -4860,7 +4925,7 @@ function enforceLuxCaps(opts) {
     if (Number.isFinite(cur) && cur > capUnit) {
       renderGracePills(capUnit);
       changed = true;
-      if (!opts.silent) showToast('', { hint: true, hintHtml: luxGraceHintHtml(gMax) });
+      if (!opts.silent) showToast('', { hint: true, multiline: true, hintHtml: luxGraceHintHtml(gMax) });
     }
   }
   return changed;
@@ -4885,7 +4950,7 @@ function applyLuxCaps(opts) {
   // 剛達門檻時只出一則整合提示，個別欄位被夾住的提示就不重複跳
   const changed = enforceLuxCaps(reached ? { silent: true } : opts);
   luxHintKey = key === '' ? null : key;
-  if (reached && !opts.silent) showToast('', { hint: true, hintHtml: luxReachedHintHtml() });
+  if (reached && !opts.silent) showToast('', { hint: true, multiline: true, hintHtml: luxReachedHintHtml() });
   updateLuxCapBadges();
   updateLuxNote();
   if (changed) updateAmount();
@@ -7593,8 +7658,8 @@ $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   updateAmount();
   maybeRecalc();
   // 開啟時若當下就達門檻，applyLuxCaps 已經跳過整合提示，這裡不再重複
-  if (!luxOn) showToast('已關閉高價住宅門檻');
-  else if (!luxHitRow()) showToast('已啟用高價住宅門檻');
+  if (!luxOn) showToast('', { html: luxSwitchToastHtml('已關閉') });
+  else if (!luxHitRow()) showToast('', { html: luxSwitchToastHtml('已啟用') });
 });
 $('#glRegionOpts').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-gl-region]');
@@ -7967,12 +8032,12 @@ $('#conditionsToggle').addEventListener('click', () => {
     scroller.scrollTop = 0;
     sheet.hidden = false;
     requestAnimationFrame(() => sheet.classList.add('show'));
-    document.getElementById('cbSheetClose').focus();
+    document.getElementById('cbSheetClose').focus({ preventScroll: true });
   }
   function closeSheet() {
     sheet.classList.remove('show');
     setTimeout(() => { sheet.hidden = true; }, 200);
-    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
     lastFocus = null;
   }
 
@@ -8106,11 +8171,12 @@ $('#conditionsToggle').addEventListener('click', () => {
       if (card) { card.scrollTop = 0; card.focus({ preventScroll: true }); }
     });
   }
+  /* 關閉時把焦點還給開啟它的按鈕，但不能讓瀏覽器為了「捲到焦點」而把底層頁面拉走 */
   function closeDlg() {
     dlg.classList.remove('show');
     const card = $('#glRegionSetCard');
     setTimeout(() => { dlg.hidden = true; if (card) card.scrollTop = 0; }, 160);
-    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
     lastFocus = null;
   }
 
@@ -8124,7 +8190,7 @@ $('#conditionsToggle').addEventListener('click', () => {
     const rows = readRows();
     const bad = validate(rows);
     if (bad) {
-      showAppAlert(bad.msg, () => { if (bad.el && typeof bad.el.focus === 'function') bad.el.focus(); });
+      showAppAlert(bad.msg, () => { if (bad.el && typeof bad.el.focus === 'function') bad.el.focus({ preventScroll: true }); });
       return;
     }
     luxRows = rows;
@@ -8136,11 +8202,21 @@ $('#conditionsToggle').addEventListener('click', () => {
     updateAmount();
     maybeRecalc();
     closeDlg();
-    showToast(n < 2 ? '已套用，房屋座落未啟用'
-      : luxOn ? '已套用，房屋座落顯示 ' + n + ' 個'
-      : '已套用，房屋座落目前為未啟用');
+    showToast('', { html: '<div class="toast-lines"><span class="toast-ok">已套用</span><span>' +
+      (n < 2 ? '房屋座落未啟用'
+        : luxOn ? '房屋座落顯示 ' + n + ' 個'
+        : '房屋座落目前為未啟用') + '</span></div>' });
   });
 
+  /* 桌機按 Enter 原本會讓下層頁面捲動一次；這裡攔下來，直接當成「儲存並套用」 */
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || dlg.hidden) return;
+    if (document.querySelector('[data-calc-backdrop]')) return;   // 計算鍵盤開著時交給鍵盤
+    if (e.target && e.target.tagName === 'BUTTON') return;        // 對焦在按鈕上時，Enter 就是按它
+    e.preventDefault();
+    const save = $('#glRegionSetSave');
+    if (save) save.click();
+  });
   dlg.addEventListener('input', (e) => {
     if (e.target && /^glSetName\d$/.test(e.target.id)) syncClearBtns();
   });
@@ -8198,7 +8274,8 @@ initCalcFields();
 initTotalAmountToggle();
 clearSnapshot = loadClearSnapshot();
 const persistedFormState = loadPersistedFormState();
-if (persistedFormState && formHasContent(persistedFormState)) {
+// 空狀態也要套用：那是使用者按過「清空數值」的結果，不是「沒有保存內容」
+if (persistedFormState) {
   applyFormState(persistedFormState);
 }
 updateClearRestoreBtns();
@@ -8381,7 +8458,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       if (ibInstall) ibInstall.style.display = '';
     }
     bar.classList.add('show');
-    setTimeout(() => { try { if (ibClose) ibClose.focus(); } catch (e) {} }, 80);
+    setTimeout(() => { try { if (ibClose) ibClose.focus({ preventScroll: true }); } catch (e) {} }, 80);
   }
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -9337,12 +9414,12 @@ window.addEventListener('resize', () => {
       scroller.scrollTop = 0;
       sheet.hidden = false;
       requestAnimationFrame(() => sheet.classList.add('show'));
-      Y('#ytSheetClose').focus();
+      Y('#ytSheetClose').focus({ preventScroll: true });
     }
     function closeSheet() {
       sheet.classList.remove('show');
       setTimeout(() => { sheet.hidden = true; }, 200);
-      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
       lastFocus = null;
     }
 
@@ -9429,12 +9506,12 @@ window.addEventListener('resize', () => {
       lastFocus = document.activeElement;
       dlg.hidden = false;
       requestAnimationFrame(() => dlg.classList.add('show'));
-      Y('#ytBaseSetSave')?.focus();
+      Y('#ytBaseSetSave')?.focus({ preventScroll: true });
     }
     function closeDlg() {
       dlg.classList.remove('show');
       setTimeout(() => { dlg.hidden = true; }, 160);
-      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
       lastFocus = null;
     }
     function applyBase(v) {
@@ -9456,6 +9533,14 @@ window.addEventListener('resize', () => {
       applyBase(v);
       closeDlg();
       showToast('已設定預設基準利率 ' + v + '%');
+    });
+    /* 與高價住宅設定視窗相同：Enter 直接儲存並套用，不讓下層頁面捲動 */
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || dlg.hidden) return;
+      if (document.querySelector('[data-calc-backdrop]')) return;
+      if (e.target && e.target.tagName === 'BUTTON') return;
+      e.preventDefault();
+      Y('#ytBaseSetSave')?.click();
     });
     /* 與高價住宅設定視窗相同：按下與放開都必須落在遮罩，才算點擊外部關閉 */
     let pressOnBackdrop = false;
