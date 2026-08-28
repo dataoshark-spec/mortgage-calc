@@ -766,6 +766,13 @@ if ("serviceWorker" in navigator) {
     }
     /* 一般提示需要自行控制斷行時用：每個子句各佔一行，不會斷在詞中間 */
     .toast-lines { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    /* 全形括號的字面只佔半個字身，行首或行尾留下的空白會讓整行看起來偏移。
+       text-spacing-trim 為了匯出一致性刻意設成 space-all（不壓縮），
+       所以改用負邊界抵銷那半個字身，讓文字的「視覺中心」對齊外框中心。 */
+    .toast-lines > span.tl-head { margin-left: -0.6em; }
+    .toast-lines > span.tl-tail { margin-right: -0.6em; }
+    .toast-hint-body .tl-head { margin-left: -0.6em; }
+    .toast-hint-body .tl-tail { margin-right: -0.6em; }
     .toast-lines > span { white-space: nowrap; }
     .toast .nw { white-space: nowrap; }
     .toast-ok { color: #4FC79E; font-weight: 700; }
@@ -3983,7 +3990,7 @@ if ("serviceWorker" in navigator) {
     </div>
     <p class="yt-note gl-set-hint">三組全部留空 <em>或只填 1 組</em> ，一般貸款不顯示房屋座落；填 2 組就只顯示 2 顆按鈕。<em>完整</em>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
     <div class="yt-set-actions gl-set-actions">
-      <button type="button" class="yt-set-ghost" id="glRegionSetReset">回復預設</button>
+      <button type="button" class="yt-set-ghost" id="glRegionSetReset">恢復預設</button>
       <button type="button" class="yt-set-ghost" id="glRegionSetCancel">取消</button>
       <button type="button" class="yt-set-main" id="glRegionSetSave">儲存並套用</button>
     </div>
@@ -4018,7 +4025,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24H";
+const APP_VERSION = "2026.08.24I";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4181,21 +4188,49 @@ const GRACE_HINT_HTML = `<div class="toast-hint-body">
   <div class="toast-hint-sub"><span class="toast-paren">（</span><span class="toast-warn">但至少須留 1 年還款</span><span class="toast-paren">）</span></div>
 </div>`;
 const GRACE_REENTER_HINT_HTML = hintLines('請重新輸入', tEm('寬限期'));
+const YT_HINT_HTML = {
+  age: hintLines('可輸入年齡上限為', tEm('100歲')),
+  ratio: hintLines('貸款成數上限為', tEm('80%')),
+  term: hintLines('貸款年限上限為', tEm('40年')),
+  share: hintLines('持分比例上限為', tEm('100%'))
+};
+function ytGraceHintHtml() {
+  const mg = getYtGraceMaxValue();
+  if (mg <= 0) return hintLines('無法設定寬限期', '（至少須留 1 年還款）');
+  // 年限夠長時卡在方案的 5 年上限；年限不足時卡在「至少留 1 年還款」，理由要講清楚
+  return mg >= YT_GRACE_MAX
+    ? hintLines('寬限期上限為', tEm('5年'))
+    : hintLines('寬限期上限為', tEm(mg + '年'), '（但至少須留 1 年還款）');
+}
 /* 提示框是 white-space: nowrap + width: max-content，單行寫太長會撐破外框。
    一律拆成「標題行＋內容行」的結構，每一行都短到不需要折行。 */
 function tEm(t) { return '<span class="toast-hint-em">' + t + '</span>'; }
 function tOk(t) { return '<span class="toast-ok">' + t + '</span>'; }
 function tNo(t) { return '<span class="toast-no">' + t + '</span>'; }
+/* 行首／行尾若是全形括號，補一個抵銷用的 class 做光學置中。
+   字元表寫在函式內：FIELD_HINT_HTML 在本檔更前面就會呼叫這裡，
+   放成模組層級的 const 會落在暫時死區。 */
+function opticalCls(html) {
+  const OPEN = '「『（【《〈〔［｛';
+  const CLOSE = '」』）】》〉〕］｝，。、；：！？';
+  const t = String(html).replace(/<[^>]*>/g, '');
+  if (!t) return '';
+  let c = '';
+  if (OPEN.indexOf(t.charAt(0)) >= 0) c += ' tl-head';
+  if (CLOSE.indexOf(t.charAt(t.length - 1)) >= 0) c += ' tl-tail';
+  return c;
+}
 /* 有外框的提示：第一行講事實，後面每行各講一項 */
 function hintLines(main) {
   const subs = Array.prototype.slice.call(arguments, 1).filter(Boolean);
-  return '<div class="toast-hint-body"><div class="toast-hint-main">' + main + '</div>' +
-    subs.map((t) => '<div class="toast-hint-sub toast-hint-line">' + t + '</div>').join('') + '</div>';
+  return '<div class="toast-hint-body"><div class="toast-hint-main' + opticalCls(main) + '">' + main + '</div>' +
+    subs.map((t) => '<div class="toast-hint-sub toast-hint-line' + opticalCls(t) + '">' + t + '</div>').join('') + '</div>';
 }
 /* 一般深色提示：每個子句各佔一行，不會斷在詞中間 */
 function toastLines() {
   const parts = Array.prototype.slice.call(arguments).filter(Boolean);
-  return '<div class="toast-lines">' + parts.map((t) => '<span>' + t + '</span>').join('') + '</div>';
+  return '<div class="toast-lines">' +
+    parts.map((t) => '<span class="' + opticalCls(t).trim() + '">' + t + '</span>').join('') + '</div>';
 }
 function luxHintBody(main, sub) { return hintLines(main, sub); }
 function luxRatioLine(max) { return '貸款成數上限 ' + tEm(max + '%'); }
@@ -4277,6 +4312,48 @@ function bindToastHold(toast) {
   toast.addEventListener('lostpointercapture', onHoldEnd);
 }
 
+/* 光學置中：全形括號、句號這類字元的墨水只佔半個字身，排版置中後看起來會偏一邊。
+   固定用 -0.6em 補償會受字型影響（Noto 與 PingFang 的邊距不同），改成用 canvas
+   量測「這一行在這個字型下的實際墨水範圍」，再以 margin 補回中心差。
+   量不到（舊瀏覽器沒有 actualBoundingBox）就退回 CSS 的 tl-head／tl-tail。 */
+let inkCtx = null;
+function inkOffset(el) {
+  try {
+    if (!inkCtx) {
+      const c = document.createElement('canvas');
+      inkCtx = c.getContext && c.getContext('2d');
+    }
+    if (!inkCtx) return null;
+    const t = (el.textContent || '').trim();
+    if (!t) return 0;
+    const cs = getComputedStyle(el);
+    inkCtx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    const m = inkCtx.measureText(t);
+    if (typeof m.actualBoundingBoxLeft !== 'number' || typeof m.actualBoundingBoxRight !== 'number') return null;
+    const inkCenter = (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2;
+    const boxCenter = m.width / 2;
+    const px = parseFloat(cs.fontSize) || 16;
+    // 夾在 ±0.4em：正常文字量到的偏移都很小，過大多半是量測失真
+    return Math.max(-px * 0.4, Math.min(px * 0.4, inkCenter - boxCenter));
+  } catch (e) { return null; }
+}
+function applyOpticalCenter(toast) {
+  const els = toast.querySelectorAll('.toast-lines > span, .toast-hint-body > div');
+  let measured = false;
+  els.forEach((el) => {
+    el.style.marginLeft = '';
+    el.style.marginRight = '';
+    const d = inkOffset(el);
+    if (d === null) return;
+    measured = true;
+    el.classList.remove('tl-head', 'tl-tail');
+    // 置中的容器裡，margin 只讓方塊位移一半，所以要補兩倍
+    if (d < -0.15) el.style.marginLeft = (-d * 2).toFixed(2) + 'px';
+    else if (d > 0.15) el.style.marginRight = (d * 2).toFixed(2) + 'px';
+  });
+  return measured;
+}
+
 function showToast(msg, opts) {
   opts = opts || {};
   const toast = $('#toast');
@@ -4292,6 +4369,7 @@ function showToast(msg, opts) {
   } else {
     toast.textContent = msg;
   }
+  applyOpticalCenter(toast);
   toast.classList.add('show');
   const duration = opts.hint ? 2400 : 1500;
   toast._toastHideAt = Date.now() + duration;
@@ -4594,6 +4672,19 @@ const GL_DEFAULT_RATIO = 80;
 const GL_DEFAULT_TERM = 30;
 const RATIO_CAP_MAX = 100;
 const TERM_MAX_YEARS = 60;
+/* 新青安的欄位上限：年齡與持分是輸入合理範圍，成數與年限、寬限期則是方案規定。
+   貸款成數 8 成、年限 40 年、寬限期 5 年都出自「公股銀行辦理青年安心成家購屋優惠貸款原則」。 */
+const YT_AGE_MAX = 100;
+const YT_RATIO_MAX = 80;
+const YT_TERM_MAX = 40;
+const YT_GRACE_MAX = 5;
+function ytTermRaw() { return getCalcFieldRawString($('#ytTerm')); }
+/* 寬限期不能吃掉整個年限，至少留 1 年還款；再與方案的 5 年上限取小 */
+function getYtGraceMaxValue() {
+  const t = Math.floor(getCalcFieldNumeric($('#ytTerm')) || 0);
+  if (t <= 0) return 0;
+  return Math.max(0, Math.min(YT_GRACE_MAX, t - 1));
+}
 const PRICE_MAX_WAN = 9999999;
 
 /* ===================== 一般貸款：央行購置高價住宅門檻 =====================
@@ -4787,6 +4878,13 @@ function resolveFieldMax(inputEl) {
   if (id === 'ratio') return getRatioMaxValue();
   if (id === 'term') return TERM_MAX_YEARS;
   if (id === 'grace') return getGraceMaxValue();
+  // 新青安沿用同一套「超出上限就清空並提示」的處理
+  if (id === 'ytPrice' || id === 'ytAppraisal') return PRICE_MAX_WAN;
+  if (id === 'ytAge') return YT_AGE_MAX;
+  if (id === 'ytRatio') return YT_RATIO_MAX;
+  if (id === 'ytShare') return 100;
+  if (id === 'ytTerm') return YT_TERM_MAX;
+  if (id === 'ytGrace') return getYtGraceMaxValue();
   return getDeclaredFieldMax(inputEl);
 }
 
@@ -4822,7 +4920,15 @@ function clampFieldValue(inputEl, rawValue) {
 function clampFieldToast(inputEl, before, after) {
   if (before === after || before === '') return;
   const id = inputEl.id;
-  if (id === 'price' || id === 'appraisal') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.price });
+  if (id === 'price' || id === 'appraisal' || id === 'ytPrice' || id === 'ytAppraisal') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.price });
+  else if (id === 'ytAge') showToast('', { hint: true, hintHtml: YT_HINT_HTML.age });
+  else if (id === 'ytRatio') showToast('', { hint: true, hintHtml: YT_HINT_HTML.ratio });
+  else if (id === 'ytShare') showToast('', { hint: true, hintHtml: YT_HINT_HTML.share });
+  else if (id === 'ytTerm') showToast('', { hint: true, hintHtml: YT_HINT_HTML.term });
+  else if (id === 'ytGrace') {
+    if (ytTermRaw() === '') showToast('', { hint: true, hintHtml: TERM_REQUIRED_HINT_HTML });
+    else showToast('', { hint: true, hintHtml: ytGraceHintHtml() });
+  }
   else if (id === 'ratio') {
     const luxMax = getLuxRatioMax();
     showToast('', { hint: true, hintHtml: luxMax === null ? FIELD_HINT_HTML.ratio : luxRatioHintHtml(luxMax) });
