@@ -92,7 +92,25 @@ if ("serviceWorker" in navigator) {
     }
     window.__applyDesktopScale = applyDesktopScale;
     /* 轉向後瀏覽器回報的尺寸不見得馬上正確，補兩次延遲重算 */
+    /* 擋板的 CSS 用長寬比判斷方向，Android 若由鍵盤縮小版面視窗會誤判成橫向。
+       這裡以 Screen Orientation API（或舊版 window.orientation）補一個明確的方向標記，
+       CSS 只在「沒有標記」或「標記為橫向」時才擋，API 不支援時退回原本的純 CSS 行為。 */
+    function syncOrient(){
+      var t = '';
+      try { if (window.screen && screen.orientation && screen.orientation.type) t = String(screen.orientation.type); } catch (e) {}
+      if (!t && typeof window.orientation === 'number') {
+        t = (window.orientation === 0 || window.orientation === 180) ? 'portrait' : 'landscape';
+      }
+      var d = document.documentElement;
+      if (!d) return;
+      if (!t) { d.removeAttribute('data-orient'); return; }
+      d.setAttribute('data-orient', t.indexOf('portrait') === 0 ? 'portrait' : 'landscape');
+    }
+    syncOrient();
+    window.addEventListener('resize', syncOrient);
+
     function rescaleSoon(){
+      syncOrient();
       applyDesktopScale();
       setTimeout(applyDesktopScale, 150);
       setTimeout(applyDesktopScale, 450);
@@ -102,7 +120,7 @@ if ("serviceWorker" in navigator) {
        只鎖手機，桌機與平板不受影響。 */
     function lockPortrait() {
       try {
-        if (!isDesktopInput() && screen && screen.orientation && screen.orientation.lock) {
+        if (!isDesktopPointer() && screen && screen.orientation && screen.orientation.lock) {
           var r = screen.orientation.lock('portrait');
           if (r && r.catch) r.catch(function () {});
         }
@@ -755,7 +773,7 @@ if ("serviceWorker" in navigator) {
        桌機（含直向外接螢幕）與平板都不會被擋。 */
     .rotate-guard { display: none; }
     @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
-      .rotate-guard {
+      html:not([data-orient="portrait"]) .rotate-guard {
         display: flex; position: fixed; inset: 0; z-index: 900;
         align-items: center; justify-content: center;
         background: #1E2422; color: #fff;
@@ -766,7 +784,7 @@ if ("serviceWorker" in navigator) {
       .rotate-guard-t { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.04em; }
       .rotate-guard-s { font-size: 0.86rem; opacity: 0.7; }
       /* 擋板出現時底層不需要再捲動 */
-      body { overflow: hidden; }
+      html:not([data-orient="portrait"]) body { overflow: hidden; }
     }
     /* 深色底上的紅字要比提示框內的 #e53935 再亮一階才看得清楚 */
     .toast-no { color: #FF7B72; font-weight: 700; }
@@ -4000,7 +4018,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24G";
+const APP_VERSION = "2026.08.24H";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
