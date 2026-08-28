@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=5">
 <link rel="shortcut icon" type="image/png" href="icon-192.png?v=5">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png?v=5">
-<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoi5oi/5bGL6LK45qy+6Kmm566XIiwic2hvcnRfbmFtZSI6IuaIv+iyuOippueulyIsInN0YXJ0X3VybCI6Ii4vIiwic2NvcGUiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmMGYwZjAiLCJ0aGVtZV9jb2xvciI6IiMxRTI0MjIiLCJpY29ucyI6W3sic3JjIjoiaWNvbi0xOTIucG5nP3Y9NSIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55In0seyJzcmMiOiJpY29uLTUxMi5wbmc/dj01Iiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJhbnkifV19">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoi5oi/5bGL6LK45qy+6Kmm566XIiwic2hvcnRfbmFtZSI6IuaIv+iyuOippueulyIsInN0YXJ0X3VybCI6Ii4vIiwic2NvcGUiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwib3JpZW50YXRpb24iOiJwb3J0cmFpdCIsImJhY2tncm91bmRfY29sb3IiOiIjZjBmMGYwIiwidGhlbWVfY29sb3IiOiIjMUUyNDIyIiwiaWNvbnMiOlt7InNyYyI6Imljb24tMTkyLnBuZz92PTUiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6ImFueSJ9LHsic3JjIjoiaWNvbi01MTIucG5nP3Y9NSIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55In1dfQ==">
 <meta name="theme-color" content="#1E2422">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -97,6 +97,21 @@ if ("serviceWorker" in navigator) {
       setTimeout(applyDesktopScale, 150);
       setTimeout(applyDesktopScale, 450);
     }
+    /* 直向鎖定：Android／桌面 PWA 安裝後可由 Screen Orientation API 真正鎖住；
+       iOS 不支援（呼叫會被拒絕），改由下方的橫向提示層擋住，兩者互不衝突。
+       只鎖手機，桌機與平板不受影響。 */
+    function lockPortrait() {
+      try {
+        if (!isDesktopInput() && screen && screen.orientation && screen.orientation.lock) {
+          var r = screen.orientation.lock('portrait');
+          if (r && r.catch) r.catch(function () {});
+        }
+      } catch (e) {}
+    }
+    lockPortrait();
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) lockPortrait();
+    });
     window.addEventListener('orientationchange', rescaleSoon);
     if (window.screen && window.screen.orientation && window.screen.orientation.addEventListener) {
       try { window.screen.orientation.addEventListener('change', rescaleSoon); } catch (e) {}
@@ -736,6 +751,23 @@ if ("serviceWorker" in navigator) {
     .toast-lines > span { white-space: nowrap; }
     .toast .nw { white-space: nowrap; }
     .toast-ok { color: #4FC79E; font-weight: 700; }
+    /* 橫向擋板：pointer:coarse 限定觸控裝置，max-height 限定手機，
+       桌機（含直向外接螢幕）與平板都不會被擋。 */
+    .rotate-guard { display: none; }
+    @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+      .rotate-guard {
+        display: flex; position: fixed; inset: 0; z-index: 900;
+        align-items: center; justify-content: center;
+        background: #1E2422; color: #fff;
+        padding: 24px;
+      }
+      .rotate-guard-box { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+      .rotate-guard svg { width: 34px; height: 34px; opacity: 0.85; }
+      .rotate-guard-t { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.04em; }
+      .rotate-guard-s { font-size: 0.86rem; opacity: 0.7; }
+      /* 擋板出現時底層不需要再捲動 */
+      body { overflow: hidden; }
+    }
     /* 深色底上的紅字要比提示框內的 #e53935 再亮一階才看得清楚 */
     .toast-no { color: #FF7B72; font-weight: 700; }
     .toast.show {
@@ -3799,6 +3831,18 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <div class="toast" id="toast">已清空，可以開始輸入</div>
+  <!-- 手機橫放時的擋板：iOS 無法用 API 鎖定方向，改以提示層請使用者轉回直向。
+       只在「觸控裝置 + 橫向 + 高度很矮」時出現，桌機與平板不受影響。 -->
+  <div class="rotate-guard" id="rotateGuard" aria-hidden="true">
+    <div class="rotate-guard-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="7" y="2" width="10" height="20" rx="2.5"/>
+        <path d="M11 18.5h2"/>
+      </svg>
+      <div class="rotate-guard-t">請以直向使用</div>
+      <div class="rotate-guard-s">本試算表為直向版面</div>
+    </div>
+  </div>
 
 <div class="spec-sheet" id="ytSpecSheet" role="dialog" aria-modal="true" aria-labelledby="ytSheetTitle" hidden>
   <div class="spec-sheet-head">
@@ -3956,7 +4000,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24E";
+const APP_VERSION = "2026.08.24F";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4507,7 +4551,7 @@ function enterClearedState(opts) {
   // 存下「清空後」的空狀態而不是刪除保存內容：刪掉的話重開會退回 HTML 內建預設值
   // （購屋價格 3000、年限 30…），看起來像沒清空。新青安本來就是存空狀態，兩邊一致。
   persistFormState();
-  if (!opts.silent) showToast('', { html: toastLines(tOk('已清空') + ' 可以開始輸入') });
+  if (!opts.silent) showToast('已清空數值');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -6715,9 +6759,9 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
     console.error(err);
     const msg = String(err?.message || '');
     if (msg.includes('canvas too large')) {
-      showToast('', { html: toastLines(tNo('明細過長'), '請改用 PDF 或分享') });
+      showToast('', { html: toastLines('明細過長', '請改用 PDF或分享') });
     } else {
-      showToast('', { html: toastLines(tNo('匯出失敗'), '請稍後再試') });
+      showToast('', { html: toastLines('匯出失敗', '請稍後再試') });
     }
   } finally {
     if (activeBtn) clearExportBtnBusy(activeBtn);
@@ -6786,13 +6830,13 @@ async function exportAsPdf() {
   await withExportLock(async () => {
     const canvases = await captureResultsPdfCanvases();
     canvasesToPdf(canvases).save(exportFileName('pdf'));
-    showToast('', { html: toastLines(tOk('已下載') + ' PDF') });
+    showToast('已下載PDF');
   }, '正在產生 PDF…', exportBtnOf('pdf'), 'PDF  生成中');
 }
 
 async function exportAsImage(mime, ext) {
   if (getExportIncludeDetail()) {
-    showToast('', { html: toastLines('含還款明細', '僅支援 ' + tEm('PDF')) });
+    showToast('', { html: toastLines('含還款明細', '僅支援PDF') });
     return;
   }
   const btn = exportBtnOf(ext === 'png' ? 'png' : 'jpg');
@@ -6804,13 +6848,13 @@ async function exportAsImage(mime, ext) {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), mime, quality);
     });
     downloadBlob(blob, exportFileName(ext));
-    showToast('', { html: toastLines(tOk('已下載') + ' ' + tag) });
+    showToast('已下載' + tag);
   }, `正在產生 ${tag}…`, btn, `${tag}  生成中`);
 }
 
 async function shareResults() {
   if (getExportIncludeDetail()) {
-    showToast('', { html: toastLines('含還款明細', '僅支援 ' + tEm('PDF')) });
+    showToast('', { html: toastLines('含還款明細', '僅支援PDF') });
     return;
   }
   await withExportLock(async () => {
@@ -6842,13 +6886,13 @@ async function shareResults() {
 
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       await navigator.share(shareData);
-      showToast('', { html: toastLines(tOk('已開啟') + ' 分享') });
+      showToast('已開啟分享');
       return;
     }
 
     if (includeDetail && navigator.share) {
       downloadBlob(blob, exportFileName(ext));
-      showToast('', { html: toastLines('PDF 檔案較大', tOk('已改為下載')) });
+      showToast('', { html: toastLines('PDF 檔案較大', '已改為下載') });
       return;
     }
 
@@ -6858,12 +6902,12 @@ async function shareResults() {
         text: shareData.text,
         url: location.href
       });
-      showToast('', { html: toastLines(tOk('已開啟') + ' 分享') });
+      showToast('已開啟分享');
       return;
     }
 
     downloadBlob(blob, exportFileName(ext));
-    showToast('', { html: toastLines('此裝置不支援分享', tOk('已改為下載') + ' ' + ext.toUpperCase()) });
+    showToast('', { html: toastLines('此裝置不支援分享', '已改為下載' + ext.toUpperCase()) });
   }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
 }
 
@@ -7658,7 +7702,7 @@ $('#appraisal').addEventListener('input', () => {
 /* 徽章＝門檻總開關。設定不足 2 組時沒有東西可啟用，只提示不切換。 */
 $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   if (luxValidIndexes().length < 2) {
-    showToast('', { hint: true, hintHtml: hintLines('請先於齒輪內設定', '至少 ' + tEm('2 組') + ' 房屋座落') });
+    showToast('', { hint: true, hintHtml: hintLines('請先於「房屋座落」旁', '齒輪內設定 至少2 組', '（高價住宅門檻設定）') });
     return;
   }
   luxOn = !luxOn;
@@ -7867,7 +7911,7 @@ $('#clearBtn').addEventListener('click', () => {
   if (document.body.dataset.mode === 'youth') {
     if (typeof window.__ytClear === 'function') window.__ytClear();
     if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
-    showToast('', { html: toastLines(tOk('已清空') + ' 可以開始輸入') });
+    showToast('已清空數值');
     return;
   }
   enterClearedState();
@@ -8193,7 +8237,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   $('#glRegionSetCancel') && $('#glRegionSetCancel').addEventListener('click', closeDlg);
   $('#glRegionSetReset') && $('#glRegionSetReset').addEventListener('click', () => {
     fill(cloneLuxRows(LUX_DEFAULT_ROWS));
-    showToast('', { html: toastLines(tOk('已帶回預設值'), '按「儲存並套用」才會生效') });
+    showToast('', { html: toastLines('已恢復至 預設值', '請按「儲存並套用」') });
   });
   $('#glRegionSetSave') && $('#glRegionSetSave').addEventListener('click', () => {
     const rows = readRows();
@@ -9543,7 +9587,7 @@ window.addEventListener('resize', () => {
       }
       applyBase(v);
       closeDlg();
-      showToast('', { html: toastLines(tOk('已設定') + ' 預設基準利率', tOk(v + '%')) });
+      showToast('', { html: toastLines('已設定預設為', '基準利率 ' + tOk(v + '%')) });
     });
     /* 與高價住宅設定視窗相同：Enter 直接儲存並套用，不讓下層頁面捲動 */
     dlg.addEventListener('keydown', (e) => {
