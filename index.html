@@ -3899,7 +3899,7 @@ if ("serviceWorker" in navigator) {
 <div class="yt-set gl-set" id="glRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="glRegionSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="glRegionSetCard" tabindex="-1">
     <div class="yt-set-title" id="glRegionSetTitle">高價住宅門檻設定</div>
-    <p class="yt-note gl-set-lead">購屋價格與銀行鑑價 <em>取高</em> 達到門檻時，自動夾住下方貸款成數與寬限期的上限。</p>
+    <p class="yt-note gl-set-lead">購屋價格與銀行鑑價 <em>取高</em> 達到門檻時，會自動套用下方設定的貸款成數與寬限期上限。</p>
   <div class="gl-set-row">
       <div class="gl-set-no">房屋座落<span class="gl-set-no-n">1</span></div>
       <div class="gl-set-2">
@@ -4000,7 +4000,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24F";
+const APP_VERSION = "2026.08.24G";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -7702,7 +7702,7 @@ $('#appraisal').addEventListener('input', () => {
 /* 徽章＝門檻總開關。設定不足 2 組時沒有東西可啟用，只提示不切換。 */
 $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   if (luxValidIndexes().length < 2) {
-    showToast('', { hint: true, hintHtml: hintLines('請先於「房屋座落」旁', '齒輪內設定 至少2 組', '（高價住宅門檻設定）') });
+    showToast('', { hint: true, hintHtml: hintLines('請先於「房屋座落」', '齒輪內設定 ' + tEm('至少2組'), '（高價住宅門檻設定）') });
     return;
   }
   luxOn = !luxOn;
@@ -8237,7 +8237,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   $('#glRegionSetCancel') && $('#glRegionSetCancel').addEventListener('click', closeDlg);
   $('#glRegionSetReset') && $('#glRegionSetReset').addEventListener('click', () => {
     fill(cloneLuxRows(LUX_DEFAULT_ROWS));
-    showToast('', { html: toastLines('已恢復至 預設值', '請按「儲存並套用」') });
+    showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
   });
   $('#glRegionSetSave') && $('#glRegionSetSave').addEventListener('click', () => {
     const rows = readRows();
@@ -8256,8 +8256,9 @@ $('#conditionsToggle').addEventListener('click', () => {
     maybeRecalc();
     closeDlg();
     const regionOn = luxOn && n >= 2;
+    // 未滿 2 組時沒有門檻可判斷，講「已套用 1 個」會讓人以為生效了
     showToast('', { html: toastLines(
-      tOk('已套用') + ' ' + tOk(n + '個'),
+      n < 2 ? tNo('低於2組') + ' 無法套用' : tOk('已套用') + ' ' + n + '個',
       '高價住宅門檻 設定',
       '房屋座落 ' + (regionOn ? tOk('已開啟') : tNo('未啟用'))
     ) });
@@ -8283,7 +8284,9 @@ $('#conditionsToggle').addEventListener('click', () => {
     if (!el) return;
     el.value = '';
     el.dispatchEvent(new Event('input', { bubbles: true }));
-    if (document.activeElement !== el) el.focus({ preventScroll: true });
+    /* 刻意不呼叫 focus()：清空只是清空，使用者要輸入時自己點欄位，
+       手機才不會每按一次 ✕ 就彈出鍵盤。原本就在輸入中的情形，
+       下面的 mousedown preventDefault 會讓焦點留在原處，鍵盤也不會被收起。 */
   });
 
   /* 遮罩點擊關閉：只認「按下」與「放開」都落在遮罩上的情形。
