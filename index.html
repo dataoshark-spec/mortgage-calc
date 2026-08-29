@@ -2694,6 +2694,9 @@ if ("serviceWorker" in navigator) {
       font-size: 12px; line-height: 1.65; color: var(--muted);
       margin: 8px 0 0; letter-spacing: .01em;
     }
+    /* 兩欄式 form-grid 自帶的欄距（22～28px）比一般貸款單欄位緊接說明文字的間距（8px）
+       寬很多；説明文字若緊接在 form-grid 後面，視覺上會離對應的輸入欄位太遠。 */
+    .form-grid:has(+ .yt-note) { margin-bottom: 8px; }
     .yt-note.warn { color: #9A6B18; }
     /* 反灰即代表不可選；再加刪除線會顯得像「錯誤」而不是「目前不適用」 */
     #modeYouth .qp.qp-off {
@@ -3628,7 +3631,6 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <p class="yt-note">貸款成數最高 8 成、年限最長 40 年、寬限期最長 5 年且含於年限內。 <em>實際核貸金額依銀行鑑價為準</em> ，鑑價通常低於成交價；鑑價留白時以買賣總價計算。</p>
-      <p class="yt-note"><em>持買比率</em> 指本次購屋自己買下、登記在名下的所有權比率。與他人共同購屋且僅一人符合資格時，優惠額度按此比率核貸。</p>
       <div class="section">
         <label class="label-with-info">還款方式<button type="button" class="apr-info-btn" data-method-info aria-label="兩種還款方式差異說明">
           <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
@@ -4019,8 +4021,8 @@ if ("serviceWorker" in navigator) {
   </div>
 </div>
 
-<div class="yt-set" id="ytShareSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytShareSetTitle" hidden>
-  <div class="yt-set-card" id="ytShareSetCard">
+<div class="yt-set gl-set" id="ytShareSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytShareSetTitle" hidden>
+  <div class="yt-set-card gl-set-card" id="ytShareSetCard">
     <div class="yt-set-title" id="ytShareSetTitle">持買比率設定</div>
     <div class="field">
       <div class="input-box">
@@ -4030,7 +4032,7 @@ if ("serviceWorker" in navigator) {
     </div>
     <p class="yt-note"><em>持買比率</em> 指本次購屋自己買下、登記在名下的所有權比率。與他人共同購屋且僅一人符合資格時，優惠額度按此比率核貸。</p>
     <p class="yt-note">本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
-    <div class="yt-set-actions">
+    <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="ytShareSetReset">恢復預設</button>
       <button type="button" class="yt-set-ghost" id="ytShareSetCancel">取消</button>
       <button type="button" class="yt-set-main" id="ytShareSetSave">儲存並套用</button>
@@ -4066,7 +4068,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24L";
+const APP_VERSION = "2026.08.24M";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
