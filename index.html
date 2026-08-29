@@ -710,7 +710,7 @@ if ("serviceWorker" in navigator) {
       font-weight: 500;
       line-height: 1.45;
       /* left:50% 會把可用寬度砍成螢幕的一半，短句也被迫從中間折行。
-         改以內容寬度為準，再用 max-width 收住，才不會出現「已套用，房屋座落顯／示 3 個」。 */
+         改以內容寬度為準，再用 max-width 收住，才不會出現「已套用，高價住宅顯／示 3 個」。 */
       width: max-content;
       max-width: min(92vw, 360px);
       text-align: center;
@@ -2668,7 +2668,7 @@ if ("serviceWorker" in navigator) {
       font-size: 12px; font-weight: 700;
     }
     /* 持買比率徽章：純顯示目前設定值，點擊開設定視窗修改。
-       外觀與「房屋座落」右側的狀態徽章一致。 */
+       外觀與「高價住宅」右側的狀態徽章一致。 */
     .yt-share-tag {
       position: relative;
       margin-left: auto; display: inline-flex; align-items: baseline; gap: 4px;
@@ -2828,6 +2828,11 @@ if ("serviceWorker" in navigator) {
     }
     .gl-note[hidden] { display: none; }
     .gl-note em { font-style: normal; font-weight: 600; }
+    /* 說明列預設是琥珀色；被另一道規則蓋過的那句轉為一般內文色，
+       視線才會落在真正咬住的那一道上。 */
+    .gl-note .gl-note-loose { color: var(--muted); }
+    .gl-note .gl-note-loose em { font-weight: 600; }
+    .gl-note b { font-weight: 700; }
     /* 上限為 0 年時整格反灰禁止輸入：沿用既有「固定值欄位」的 .is-locked 視覺 */
     #modeGeneral .qp.qp-off {
       background: #F4F4F4; color: #C4C4C4; cursor: not-allowed;
@@ -3287,7 +3292,7 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
     <div class="section gl-region-sec" id="glRegionSec">
-      <div class="label-cap">房屋座落<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></div>
+      <div class="label-cap">高價住宅<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></div>
       <div class="yt-opts c3" id="glRegionOpts"></div>
     </div>
     <div class="section gl-hh-sec" id="glHhSec">
@@ -4086,7 +4091,7 @@ if ("serviceWorker" in navigator) {
     <div class="yt-set-title" id="glRegionSetTitle">高價住宅門檻設定</div>
     <p class="yt-note gl-set-lead">購屋總價與銀行鑑價 <em>取高</em> 達到門檻時，會自動套用下方設定的貸款成數與寬限期上限。</p>
   <div class="gl-set-row">
-      <div class="gl-set-no">房屋座落<span class="gl-set-no-n">1</span></div>
+      <div class="gl-set-no">高價住宅<span class="gl-set-no-n">1</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName0">縣市名稱</label>
@@ -4107,7 +4112,7 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">房屋座落<span class="gl-set-no-n">2</span></div>
+      <div class="gl-set-no">高價住宅<span class="gl-set-no-n">2</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName1">縣市名稱</label>
@@ -4128,7 +4133,7 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">房屋座落<span class="gl-set-no-n">3</span></div>
+      <div class="gl-set-no">高價住宅<span class="gl-set-no-n">3</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName2">縣市名稱</label>
@@ -4148,7 +4153,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
-    <p class="yt-note gl-set-hint"><em>恢復預設</em> 預設值依《中央銀行對金融機構辦理不動產抵押貸款業務規定》<em>115.3.20</em> 生效版第二點第四款。法規異動時可自行更新。三組全部留空 一般貸款不顯示房屋座落；<em>填幾組就顯示幾顆按鈕</em>。<em>完整</em>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <p class="yt-note gl-set-hint"><em>恢復預設</em> 預設值依《中央銀行對金融機構辦理不動產抵押貸款業務規定》<em>115.3.20</em> 生效版第二點第四款。法規異動時可自行更新。三組全部留空 一般貸款不顯示高價住宅；<em>填幾組就顯示幾顆按鈕</em>。<em>完整</em>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
     <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="glRegionSetReset">恢復預設</button>
       <button type="button" class="yt-set-ghost" id="glRegionSetCancel">取消</button>
@@ -4204,7 +4209,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29D";
+const APP_VERSION = "2026.08.29E";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4874,7 +4879,7 @@ const PRICE_MAX_WAN = 9999999;
 
 /* ===================== 一般貸款：央行購置高價住宅門檻 =====================
    央行對「購置高價住宅貸款」訂有成數與寬限期限制，門檻金額與上限會隨政策調整。
-   這裡刻意不寫死法規數字，改由使用者在房屋座落旁的齒輪內自行維護 —— 法規異動時
+   這裡刻意不寫死法規數字，改由使用者在高價住宅旁的齒輪內自行維護 —— 法規異動時
    不需要改版就能跟上。此設定與試算數值分開保存，「清空數值」不會清掉它。 */
 const LUX_ROWS_KEY = 'mortgage_lux_rows_v1';
 const LUX_SEL_KEY = 'mortgage_lux_sel_v1';
@@ -5226,7 +5231,7 @@ function renderLuxRegionOpts() {
     off.setAttribute('aria-pressed', on ? 'true' : 'false');
     off.title = ready
       ? (on ? '點擊暫時關閉高價住宅門檻' : '點擊重新套用高價住宅門檻')
-      : '請先於齒輪內設定至少 1 組房屋座落';
+      : '請先於齒輪內設定至少 1 組高價住宅';
   }
   // 未啟用時整條標題（含齒輪）縮小並轉為與「未啟用」同一階灰，弱化存在感但保留入口
   const sec = $('#glRegionSec');
@@ -5332,20 +5337,49 @@ function updateLuxNote() {
   if (!note) return;
   const row = luxHitRow();
   const hhRow = hhCurrentRow() && (getHhRatioMax() !== null || getHhGraceMaxYears() !== null);
-  const rMax = getCapRatioMax(), gMax = getCapGraceMaxYears();
   if (!row && !hhRow) { note.hidden = true; note.innerHTML = ''; return; }
-  // 生效中的規則各講一句，最後給合併後的上限，使用者才算得出眼前的數字
-  const reasons = [];
+
+  /* 每道規則各自講自己的上限。舊寫法是兩個原因並列、最後只給合併後的上限，
+     會讓人以為後面那道規則的上限就是那個數字（例如 1 戶房貸被寫成 30%）。 */
+  const items = [];
   if (row) {
-    reasons.push('購屋總價與銀行鑑價取高，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
-      luxNum(row.amount).toLocaleString('zh-TW') + ' 萬</em> 的高價住宅門檻');
+    items.push({
+      why: '購屋總價與銀行鑑價取高，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
+        luxNum(row.amount).toLocaleString('zh-TW') + ' 萬</em> 高價住宅門檻',
+      ratio: getLuxRatioMax(), grace: getLuxGraceMaxYears()
+    });
   }
-  if (hhRow) reasons.push('<em>' + escapeAlertHtml(hhLabel()) + '</em>');
-  const parts = [];
-  if (rMax !== null) parts.push('貸款成數上限 <em>' + rMax + ' %</em>');
-  if (gMax !== null) parts.push(gMax === 0 ? '<em>無寬限期</em>' : '寬限期上限 <em>' + gMax + ' 年</em>');
+  if (hhRow) {
+    items.push({
+      why: '<em>' + escapeAlertHtml(hhLabel()) + '</em>',
+      ratio: getHhRatioMax(), grace: getHhGraceMaxYears()
+    });
+  }
+  const capText = (it) => {
+    const parts = [];
+    if (it.ratio !== null) parts.push('貸款成數上限 <em>' + it.ratio + '%</em>');
+    if (it.grace !== null) parts.push(it.grace === 0 ? '<em>無寬限期</em>' : '寬限期上限 <em>' + it.grace + ' 年</em>');
+    return parts.join('、');
+  };
+  /* 「被蓋過」＝另一道在每個面向都不比它鬆、且至少有一個面向更嚴。
+     兩道一樣嚴（或各嚴一半）時誰都沒被蓋過，就都標成琥珀色。 */
+  const lv = (v) => (v === null ? Infinity : v);
+  const dominated = (a, b) =>
+    lv(b.ratio) <= lv(a.ratio) && lv(b.grace) <= lv(a.grace) &&
+    (lv(b.ratio) < lv(a.ratio) || lv(b.grace) < lv(a.grace));
+  items.forEach((it, i) => {
+    it.loose = items.some((o, j) => j !== i && dominated(it, o));
+  });
+  // 真正咬住的排前面
+  items.sort((a, b) => (a.loose === b.loose ? 0 : a.loose ? 1 : -1));
+
+  const sentences = items.map((it) => {
+    const body = it.why + (capText(it) ? '，' + capText(it) : '');
+    return it.loose ? '<span class="gl-note-loose">' + body + '</span>' : body;
+  });
+  const tail = items.length > 1 ? '兩項限制同時適用時，<b>從嚴認定</b>。' : '';
   note.hidden = false;
-  note.innerHTML = '※ ' + reasons.join('；') + (parts.length ? '，' + parts.join('、') + '。' : '。');
+  note.innerHTML = '※ ' + sentences.join('；') + '。' + tail;
 }
 
 /* 門檻成立時把超過上限的既有數值往下夾，避免畫面停在一個銀行不會核的組合 */
@@ -6445,7 +6479,7 @@ function buildConditionsData() {
   const hasAppr = $('#appraisal') && getCalcFieldRawString($('#appraisal')) !== '';
   const apprWan = getAppraisalWan();
   const basic = [
-    luxRow && ['房屋座落', luxRow.name],
+    luxRow && ['高價住宅', luxRow.name],
     hhCurrentRow() && ['貸款戶數', hhLabel()],
     ['購屋總價', `${price.toLocaleString('zh-TW')} 萬元`],
     hasAppr && ['銀行鑑價', `${apprWan.toLocaleString('zh-TW')} 萬元`],
@@ -8130,7 +8164,7 @@ function renderHhOpts() {
 /* 徽章＝門檻總開關。設定不足 2 組時沒有東西可啟用，只提示不切換。 */
 $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   if (!luxValidIndexes().length) {
-    showToast('', { hint: true, hintHtml: hintLines('請先於「房屋座落」', '齒輪內設定 ' + tEm('至少1組'), '（高價住宅門檻設定）') });
+    showToast('', { hint: true, hintHtml: hintLines('請先於「高價住宅」', '齒輪內設定 ' + tEm('至少1組'), '（高價住宅門檻設定）') });
     return;
   }
   luxOn = !luxOn;
@@ -8239,7 +8273,8 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     showToast('', { html: toastLines(
       tOk('已套用') + ' ' + tOk(HH_LABELS.length + '組'),
       '貸款戶數 限制設定',
-      '貸款戶數限制 ' + (hhOn ? tOk('啟用中') : tNo('未啟用'))
+      // 同上：第二行已有「貸款戶數 限制設定」，第三行講開關管的事情
+      '戶數限制審查 ' + (hhOn ? tOk('啟用中') : tNo('未啟用'))
     ) });
   });
   dlg.addEventListener('keydown', (e) => {
@@ -8758,7 +8793,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   function validate(rows) {
     for (let i = 0; i < LUX_ROW_N; i++) {
       const r = rows[i];
-      const no = '房屋座落 ' + (i + 1);
+      const no = '高價住宅 ' + (i + 1);
       if (r.name === '') continue;
       const a = luxNum(r.amount);
       if (!Number.isFinite(a) || a <= 0) return { msg: no + ' 的高價住宅金額請填寫大於 0 的數字。', el: amtEl(i) };
@@ -8822,7 +8857,8 @@ $('#conditionsToggle').addEventListener('click', () => {
     showToast('', { html: toastLines(
       n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
       '高價住宅門檻 設定',
-      '房屋座落 ' + (regionOn ? tOk('啟用中') : tNo('未啟用'))
+      // 第二行已經是「高價住宅門檻 設定」，第三行講開關管的事情，避免同一個詞連出現兩次
+      '門檻審查 ' + (regionOn ? tOk('啟用中') : tNo('未啟用'))
     ) });
   });
 
