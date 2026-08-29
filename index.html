@@ -2784,6 +2784,14 @@ if ("serviceWorker" in navigator) {
     /* 購屋縣市標題列：與房屋座落同一套版型，字級沿用 .section > label 的 0.92rem */
     .yt-region-cap { font-size: 0.92rem; margin-bottom: 10px; }
     .yt-region-sec .yt-opts:empty { display: none; }
+    .gl-hh-sec .yt-opts:empty { display: none; }
+    .gl-hh-sec.is-off > .label-cap { font-size: 0.8rem; color: var(--muted); }
+    .gl-hh-sec.is-off .yt-gear-btn { width: 18px; height: 18px; color: var(--muted); opacity: 0.75; }
+    .gl-hh-sec.is-off .yt-gear-btn svg { width: 14px; height: 14px; }
+    /* 未啟用時標題與齒輪淡化縮小，與房屋座落同一組數值 */
+    .yt-region-sec.is-off > .label-cap { font-size: 0.8rem; color: var(--muted); }
+    .yt-region-sec.is-off .yt-gear-btn { width: 18px; height: 18px; color: var(--muted); opacity: 0.75; }
+    .yt-region-sec.is-off .yt-gear-btn svg { width: 14px; height: 14px; }
     /* 審查功能關閉時的說明用琥珀色，與通過（綠）、未通過（紅）都區隔得開 */
     .yt-chk .yt-chk-s.yt-chk-off { color: #9A6B18; font-weight: 600; }
     .gl-region-sec .yt-opts { min-width: 0; }
@@ -3147,9 +3155,15 @@ if ("serviceWorker" in navigator) {
       align-items: stretch; padding: 14px 0; border-bottom: 1px solid var(--border);
     }
     .yt-split-row:last-child { border-bottom: 0; }
-    /* 黃底省息區塊之前不再壓一條分隔線，避免上下留白被切得不均 */
-    .yt-split.has-save .yt-split-row:nth-last-child(2) { border-bottom: 0; }
     .yt-split-main { min-width: 0; }
+    /* 三列包在同一個 grid 裡並用 1fr 均分，任何一列說明較短（例如不符資格時
+       新青安只剩一行）也不會塌下去，高度一律看最高的那一列。
+       均分後多出來的空白要平均分配在文字上下，否則短的那一列文字會貼著上緣、
+       下方空一大塊，看起來反而更不齊。 */
+    .yt-split-rows { display: grid; grid-auto-rows: 1fr; }
+    .yt-split-rows > .yt-split-row { align-items: center; }
+    /* 首列的小內距在等高排列下會讓文字上移，與其他兩列對不齊 */
+    .yt-split .yt-split-rows > .yt-split-row:first-child { padding-top: 14px; }
     .yt-split-n { font-size: 14.5px; font-weight: 700; letter-spacing: .01em; }
     .yt-split-row.a .yt-split-n { color: var(--teal-dark); }
     .yt-split-row.b .yt-split-n { color: #9A6B18; }
@@ -3275,6 +3289,10 @@ if ("serviceWorker" in navigator) {
     <div class="section gl-region-sec" id="glRegionSec">
       <div class="label-cap">房屋座落<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></div>
       <div class="yt-opts c3" id="glRegionOpts"></div>
+    </div>
+    <div class="section gl-hh-sec" id="glHhSec">
+      <div class="label-cap">貸款戶數<button type="button" class="yt-gear-btn" id="glHhSetBtn" title="設定貸款戶數限制" aria-label="設定貸款戶數限制" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glHhOff" aria-pressed="true">啟用中</button></div>
+      <div class="yt-opts c2" id="glHhOpts"></div>
     </div>
     <div class="form-grid">
       <div class="field">
@@ -3946,6 +3964,71 @@ if ("serviceWorker" in navigator) {
   </div>
 </div>
 
+<div class="yt-set gl-set" id="glHhSetDlg" role="dialog" aria-modal="true" aria-labelledby="glHhSetTitle" hidden>
+  <div class="yt-set-card gl-set-card" id="glHhSetCard" tabindex="-1">
+    <div class="yt-set-title" id="glHhSetTitle">貸款戶數限制設定</div>
+    <p class="yt-note gl-set-lead">依借款人名下的 <em>房屋</em> 與 <em>房貸</em> 戶數，套用成數與寬限期上限。與高價住宅門檻兩邊 <em>取嚴</em>。</p>
+    <div class="gl-set-row">
+      <div class="gl-set-no">無房屋／無房貸</div>
+      <div class="gl-set-2">
+        <div class="field">
+          <label for="glHhRatio0">成數上限</label>
+          <div class="input-box"><input type="text" id="glHhRatio0" class="calc-field" value="" data-calc-integer="true" data-calc-max="100" data-calc-hint="成數上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;100%&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">%</span></div>
+        </div>
+        <div class="field">
+          <label for="glHhGrace0">寬限期上限</label>
+          <div class="input-box"><input type="text" id="glHhGrace0" class="calc-field" value="" data-calc-integer="true" data-calc-max="40" data-calc-hint="寬限期上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;40 年&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">年</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="gl-set-row">
+      <div class="gl-set-no">有房屋／無房貸</div>
+      <div class="gl-set-2">
+        <div class="field">
+          <label for="glHhRatio1">成數上限</label>
+          <div class="input-box"><input type="text" id="glHhRatio1" class="calc-field" value="" data-calc-integer="true" data-calc-max="100" data-calc-hint="成數上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;100%&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">%</span></div>
+        </div>
+        <div class="field">
+          <label for="glHhGrace1">寬限期上限</label>
+          <div class="input-box"><input type="text" id="glHhGrace1" class="calc-field" value="0" data-calc-integer="true" data-calc-max="40" data-calc-hint="寬限期上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;40 年&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">年</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="gl-set-row">
+      <div class="gl-set-no">已有1戶房貸</div>
+      <div class="gl-set-2">
+        <div class="field">
+          <label for="glHhRatio2">成數上限</label>
+          <div class="input-box"><input type="text" id="glHhRatio2" class="calc-field" value="60" data-calc-integer="true" data-calc-max="100" data-calc-hint="成數上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;100%&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">%</span></div>
+        </div>
+        <div class="field">
+          <label for="glHhGrace2">寬限期上限</label>
+          <div class="input-box"><input type="text" id="glHhGrace2" class="calc-field" value="0" data-calc-integer="true" data-calc-max="40" data-calc-hint="寬限期上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;40 年&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">年</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="gl-set-row">
+      <div class="gl-set-no">已有2戶以上房貸</div>
+      <div class="gl-set-2">
+        <div class="field">
+          <label for="glHhRatio3">成數上限</label>
+          <div class="input-box"><input type="text" id="glHhRatio3" class="calc-field" value="30" data-calc-integer="true" data-calc-max="100" data-calc-hint="成數上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;100%&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">%</span></div>
+        </div>
+        <div class="field">
+          <label for="glHhGrace3">寬限期上限</label>
+          <div class="input-box"><input type="text" id="glHhGrace3" class="calc-field" value="0" data-calc-integer="true" data-calc-max="40" data-calc-hint="寬限期上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;40 年&lt;/span&gt;" readonly inputmode="none" autocomplete="off" placeholder="不限"><span class="unit">年</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="yt-note"><em>恢復預設</em> 預設值依《中央銀行對金融機構辦理不動產抵押貸款業務規定》<em>115.3.20</em> 生效版第四點。法規異動時可自行更新。兩格皆留空＝該級距不設限；寬限期填 0 年＝不得有寬限期。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <div class="yt-set-actions gl-set-actions">
+      <button type="button" class="yt-set-ghost" id="glHhSetReset">恢復預設</button>
+      <button type="button" class="yt-set-ghost" id="glHhSetCancel">取消</button>
+      <button type="button" class="yt-set-main" id="glHhSetSave">儲存並套用</button>
+    </div>
+  </div>
+</div>
+
 <div class="yt-set gl-set" id="ytRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytRegionSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="ytRegionSetCard" tabindex="-1">
     <div class="yt-set-title" id="ytRegionSetTitle">購屋縣市設定</div>
@@ -3989,8 +4072,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
-    <p class="yt-note">預設值依《公股銀行辦理青年安心成家購屋優惠貸款原則》<em>115.7.27</em> 修正版，適用 <em>115.8.1</em> 起申貸案件。法規異動時可自行更新。</p>
-    <p class="yt-note">縣市名稱留白＝該組停用。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <p class="yt-note"><em>恢復預設</em> 預設值依《公股銀行辦理青年安心成家購屋優惠貸款原則》<em>115.7.27</em> 修正版，適用 <em>115.8.1</em> 起申貸案件。法規異動時可自行更新。縣市名稱留白＝該組停用。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
     <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="ytRegionSetReset">恢復預設</button>
       <button type="button" class="yt-set-ghost" id="ytRegionSetCancel">取消</button>
@@ -4066,7 +4148,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
-    <p class="yt-note gl-set-hint">三組全部留空 <em>或只填 1 組</em> ，一般貸款不顯示房屋座落；填 2 組就只顯示 2 顆按鈕。<em>完整</em>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <p class="yt-note gl-set-hint"><em>恢復預設</em> 預設值依《中央銀行對金融機構辦理不動產抵押貸款業務規定》<em>115.3.20</em> 生效版第二點第四款。法規異動時可自行更新。三組全部留空 一般貸款不顯示房屋座落；<em>填幾組就顯示幾顆按鈕</em>。<em>完整</em>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
     <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="glRegionSetReset">恢復預設</button>
       <button type="button" class="yt-set-ghost" id="glRegionSetCancel">取消</button>
@@ -4122,7 +4204,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29A";
+const APP_VERSION = "2026.08.29D";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4343,12 +4425,13 @@ function luxSwitchToastHtml(action) {
 }
 /* 剛達到門檻時的整合提示：成數與寬限期兩項上限併成一則，不分兩次跳 */
 function luxReachedHintHtml() {
-  const rMax = getLuxRatioMax(), gMax = getLuxGraceMaxYears();
+  const rc = capRatio(), gc = capGrace();
   const lines = [];
-  if (rMax !== null) lines.push(luxRatioLine(rMax));
-  if (gMax !== null) lines.push(luxGraceLine(gMax));
-  // 兩項上限各佔一行，寬度才不會超出提示框
-  return hintLines.apply(null, ['已達高價住宅門檻'].concat(lines));
+  if (rc) lines.push(luxRatioLine(rc.max));
+  if (gc) lines.push(luxGraceLine(gc.max));
+  // 標題取實際咬住的那一道；兩項上限各佔一行，寬度才不會超出提示框
+  const why = capWhyText(rc ? rc.why : (gc ? gc.why : 'lux'));
+  return hintLines.apply(null, [why].concat(lines));
 }
 const TERM_REQUIRED_HINT_HTML = hintLines('請優先輸入', tEm('貸款年限'));
 
@@ -4893,6 +4976,79 @@ function getLoanBasisWan() {
 function getLuxBasisWan() {
   return Math.max(getCalcFieldNumeric($('#price')), getAppraisalWan());
 }
+/* ---------- 貸款戶數限制（央行 115.3.20 修正規定第四點）----------
+   四個級距是規定的分類，標籤固定；只有成數與寬限期上限可由使用者維護。 */
+const HH_ROWS_KEY = 'mortgage_hh_rows_v1';
+const HH_SEL_KEY = 'mortgage_hh_sel_v1';
+const HH_ON_KEY = 'mortgage_hh_on_v1';
+const HH_LABELS = ['無房屋／無房貸', '有房屋／無房貸', '已有1戶房貸', '已有2戶以上房貸'];
+const HH_DEFAULT_ROWS = [
+  { ratio: '', grace: '' },     // 首購且名下無房：規定未設限
+  { ratio: '', grace: '0' },    // 無房貸但已有房屋：不得有寬限期
+  { ratio: '60', grace: '0' },  // 已有 1 戶房貸：六成、不得有寬限期
+  { ratio: '30', grace: '0' }   // 已有 2 戶以上：三成、不得有寬限期
+];
+function normalizeHhRow(r) {
+  const o = r && typeof r === 'object' ? r : {};
+  const str = (v) => (v === null || v === undefined ? '' : String(v).trim());
+  return { ratio: str(o.ratio), grace: str(o.grace) };
+}
+function cloneHhRows(rows) {
+  const out = [];
+  for (let i = 0; i < HH_LABELS.length; i++) out.push(normalizeHhRow(rows && rows[i]));
+  return out;
+}
+function loadHhRows() {
+  try {
+    const raw = localStorage.getItem(HH_ROWS_KEY);
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return cloneHhRows(a); }
+  } catch (_) {}
+  return cloneHhRows(HH_DEFAULT_ROWS);
+}
+function saveHhRows(rows) { try { localStorage.setItem(HH_ROWS_KEY, JSON.stringify(rows)); } catch (_) {} }
+function loadHhSel() {
+  try {
+    const n = parseInt(localStorage.getItem(HH_SEL_KEY), 10);
+    if (Number.isFinite(n) && n >= 0 && n < HH_LABELS.length) return n;
+  } catch (_) {}
+  return 0;                      // 預設：名下無房屋、無房貸
+}
+function saveHhSel(v) { try { localStorage.setItem(HH_SEL_KEY, String(v)); } catch (_) {} }
+function loadHhOn() { try { return localStorage.getItem(HH_ON_KEY) !== '0'; } catch (_) { return true; } }
+function saveHhOn(v) { try { localStorage.setItem(HH_ON_KEY, v ? '1' : '0'); } catch (_) {} }
+let hhRows = loadHhRows();
+let hhSel = loadHhSel();
+let hhOn = loadHhOn();
+function hhCurrentRow() { return hhOn ? (hhRows[hhSel] || null) : null; }
+function getHhRatioMax() {
+  const row = hhCurrentRow();
+  if (!row || row.ratio === '') return null;
+  const n = luxNum(row.ratio);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(RATIO_CAP_MAX, Math.trunc(n)));
+}
+function getHhGraceMaxYears() {
+  const row = hhCurrentRow();
+  if (!row || row.grace === '') return null;
+  const n = luxNum(row.grace);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(TERM_MAX_YEARS, Math.trunc(n)));
+}
+function hhLabel() { return HH_LABELS[hhSel] || ''; }
+
+/* 兩道限制取嚴：回傳 {max, why}，why 用來說明是哪一道咬住的 */
+function pickCap(luxMax, hhMax) {
+  if (luxMax === null && hhMax === null) return null;
+  if (luxMax === null) return { max: hhMax, why: 'hh' };
+  if (hhMax === null) return { max: luxMax, why: 'lux' };
+  return hhMax < luxMax ? { max: hhMax, why: 'hh' } : { max: luxMax, why: 'lux' };
+}
+function capRatio() { return pickCap(getLuxRatioMax(), getHhRatioMax()); }
+function capGrace() { return pickCap(getLuxGraceMaxYears(), getHhGraceMaxYears()); }
+function getCapRatioMax() { const c = capRatio(); return c ? c.max : null; }
+function getCapGraceMaxYears() { const c = capGrace(); return c ? c.max : null; }
+function capWhyText(why) { return why === 'hh' ? hhLabel() : '已達高價住宅門檻'; }
+
 function luxHitRow() {
   const row = luxCurrentRow();
   if (!row) return null;
@@ -4915,7 +5071,7 @@ function getLuxGraceMaxYears() {
   return Math.max(0, Math.min(TERM_MAX_YEARS, Math.trunc(n)));
 }
 function getRatioMaxValue() {
-  const m = getLuxRatioMax();
+  const m = getCapRatioMax();
   return m === null ? RATIO_CAP_MAX : m;
 }
 const CALC_OPEN_GUARD_MS = 400;
@@ -4938,8 +5094,8 @@ function getGraceMaxValue() {
   syncGraceUnitFromDom();
   const termYears = +$('#term').value || 0;
   let max = termYears <= 1 ? 0 : termYears - 1;
-  const lux = getLuxGraceMaxYears();
-  if (lux !== null) max = Math.min(max, lux);
+  const cap = getCapGraceMaxYears();
+  if (cap !== null) max = Math.min(max, cap);
   return max;
 }
 
@@ -5033,8 +5189,11 @@ function clampFieldToast(inputEl, before, after) {
     else showToast('', { hint: true, hintHtml: ytGraceHintHtml() });
   }
   else if (id === 'ratio') {
-    const luxMax = getLuxRatioMax();
-    showToast('', { hint: true, hintHtml: luxMax === null ? FIELD_HINT_HTML.ratio : luxRatioHintHtml(luxMax) });
+    // 被門檻或戶數夾住時要講真正生效的那道規則，講「上限 100%」會與剛被清空的欄位對不起來
+    const rc = capRatio();
+    showToast('', { hint: true, hintHtml: rc === null
+      ? FIELD_HINT_HTML.ratio
+      : hintLines(capWhyText(rc.why), luxRatioLine(rc.max)) });
   }
   else if (id === 'term') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.term });
   else if (isRateInput(inputEl)) showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rate });
@@ -5090,7 +5249,7 @@ function renderLuxRegionOpts() {
 function syncGraceLock() {
   syncGraceUnitFromDom();
   const capUnit = getGraceMaxValue();
-  const lock = getLuxGraceMaxYears() === 0;
+  const lock = getCapGraceMaxYears() === 0;
   const gEl = $('#grace');
   if (gEl) {
     gEl.disabled = lock;
@@ -5140,11 +5299,13 @@ function graceMaxPillValue() {
 /* 成數徽章平時顯示默認值，觸發高價住宅門檻時改顯示上限；
    寬限期一律只標「選填」，門檻造成的限制由下方 glLuxNote 說明。 */
 function glRatioBadgeValue() {
-  const m = getLuxRatioMax();
+  // 必須用合併後的上限：只看高價住宅時，戶數限制生效的情況會填進超過上限的數字，
+  // 隨即被「超出上限就清空」的機制清掉，欄位空白但貸款金額已按舊值算過一輪。
+  const m = getCapRatioMax();
   return m === null ? GL_DEFAULT_RATIO : m;
 }
 function updateLuxCapBadges() {
-  const rMax = getLuxRatioMax();
+  const rMax = getCapRatioMax();
   const rb = $('#glRatioMax');
   if (rb) rb.textContent = rMax === null
     ? '默認 ' + GL_DEFAULT_RATIO + ' %'
@@ -5170,61 +5331,75 @@ function updateLuxNote() {
   const note = $('#glLuxNote');
   if (!note) return;
   const row = luxHitRow();
-  if (!row) { note.hidden = true; note.innerHTML = ''; return; }
-  const rMax = getLuxRatioMax(), gMax = getLuxGraceMaxYears();
+  const hhRow = hhCurrentRow() && (getHhRatioMax() !== null || getHhGraceMaxYears() !== null);
+  const rMax = getCapRatioMax(), gMax = getCapGraceMaxYears();
+  if (!row && !hhRow) { note.hidden = true; note.innerHTML = ''; return; }
+  // 生效中的規則各講一句，最後給合併後的上限，使用者才算得出眼前的數字
+  const reasons = [];
+  if (row) {
+    reasons.push('購屋總價與銀行鑑價取高，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
+      luxNum(row.amount).toLocaleString('zh-TW') + ' 萬</em> 的高價住宅門檻');
+  }
+  if (hhRow) reasons.push('<em>' + escapeAlertHtml(hhLabel()) + '</em>');
   const parts = [];
   if (rMax !== null) parts.push('貸款成數上限 <em>' + rMax + ' %</em>');
   if (gMax !== null) parts.push(gMax === 0 ? '<em>無寬限期</em>' : '寬限期上限 <em>' + gMax + ' 年</em>');
   note.hidden = false;
-  note.innerHTML = '※ 購屋總價與銀行鑑價取高，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
-    luxNum(row.amount).toLocaleString('zh-TW') + ' 萬</em> 的高價住宅門檻' +
-    (parts.length ? '，' + parts.join('、') + '。' : '。');
+  note.innerHTML = '※ ' + reasons.join('；') + (parts.length ? '，' + parts.join('、') + '。' : '。');
 }
 
 /* 門檻成立時把超過上限的既有數值往下夾，避免畫面停在一個銀行不會核的組合 */
 function enforceLuxCaps(opts) {
   opts = opts || {};
   let changed = false;
-  const rMax = getLuxRatioMax();
+  const rc = capRatio();
   const rEl = $('#ratio');
-  if (rMax !== null && rEl && getCalcFieldRawString(rEl) !== '') {
+  if (rc && rEl && getCalcFieldRawString(rEl) !== '') {
     const cur = getCalcFieldNumeric(rEl);
-    if (Number.isFinite(cur) && cur > rMax) {
-      setCalcFieldStoredValue(rEl, rMax);
+    if (Number.isFinite(cur) && cur > rc.max) {
+      setCalcFieldStoredValue(rEl, rc.max);
       changed = true;
-      if (!opts.silent) showToast('', { hint: true, multiline: true, hintHtml: luxRatioHintHtml(rMax) });
+      if (!opts.silent) showToast('', { hint: true, multiline: true,
+        hintHtml: hintLines(capWhyText(rc.why), luxRatioLine(rc.max)) });
     }
   }
-  const gMax = getLuxGraceMaxYears();
+  const gc = capGrace();
   const gEl = $('#grace');
-  if (gMax !== null && gEl) {
+  if (gc && gEl) {
     syncGraceUnitFromDom();
-    const capUnit = gMax;
     const curRaw = String(gEl.value ?? '').trim();
     const cur = curRaw === '' ? 0 : Number(curRaw);
-    if (Number.isFinite(cur) && cur > capUnit) {
-      renderGracePills(capUnit);
+    if (Number.isFinite(cur) && cur > gc.max) {
+      renderGracePills(gc.max);
       changed = true;
-      if (!opts.silent) showToast('', { hint: true, multiline: true, hintHtml: luxGraceHintHtml(gMax) });
+      if (!opts.silent) showToast('', { hint: true, multiline: true,
+        hintHtml: hintLines(capWhyText(gc.why), luxGraceLine(gc.max)) });
     }
   }
   return changed;
 }
 
 /* 門檻提示的觸發條件：只要「這次的判定結果」與上次提示過的不同就再提示一次。
-   鍵值含門檻組別、上限設定與這次的認定金額，所以使用者每輸入一個達門檻的價格
-   都會再被提醒；價格退回門檻以下則清空鍵值，下次達到時重新提示。
-   （舊版只在數值真的被夾住時才提示，成數已經是 30% 之後就再也不會跳。） */
+   （舊版只在數值真的被夾住時才提示，成數已經是 30% 之後就再也不會跳。）
+   認定金額只在「高價住宅那道有咬住」時才納入鍵值——戶數限制與房價無關，
+   若把金額也算進去，選完戶數跳一次、接著輸入購屋總價又會跳一次同樣的提示。 */
 let luxHintKey = null;
 function luxHitStateKey() {
+  const rc = capRatio(), gc = capGrace();
+  if (!rc && !gc) return '';
+  // 還沒輸入購屋總價就先講上限太早，而且使用者接著輸入總價時會再跳一次同樣的提示。
+  // 回傳空字串＝這次不提示也不記錄，等總價填了再一次講完。
+  if (getCalcFieldRawString($('#price')) === '') return '';
   const row = luxHitRow();
-  if (!row) return '';
-  return [luxSel, row.name, row.amount, row.ratio, row.grace, getLuxBasisWan()].join('|');
+  return [rc ? rc.max + rc.why : '-', gc ? gc.max + gc.why : '-',
+          hhOn ? hhSel : '-', luxSel, row ? row.name : '-',
+          row ? getLuxBasisWan() : '-'].join('|');
 }
 
 function applyLuxCaps(opts) {
   opts = opts || {};
   renderLuxRegionOpts();
+  renderHhOpts();
   const key = luxHitStateKey();
   const reached = key !== '' && key !== luxHintKey;
   // 剛達門檻時只出一則整合提示，個別欄位被夾住的提示就不重複跳
@@ -6271,6 +6446,7 @@ function buildConditionsData() {
   const apprWan = getAppraisalWan();
   const basic = [
     luxRow && ['房屋座落', luxRow.name],
+    hhCurrentRow() && ['貸款戶數', hhLabel()],
     ['購屋總價', `${price.toLocaleString('zh-TW')} 萬元`],
     hasAppr && ['銀行鑑價', `${apprWan.toLocaleString('zh-TW')} 萬元`],
     hasAppr && apprWan > 0 && ['成數計算基礎', `${getLoanBasisWan().toLocaleString('zh-TW')} 萬元（取低）`],
@@ -7926,6 +8102,31 @@ $('#appraisal').addEventListener('input', () => {
   updateAmount();
   maybeRecalc();
 });
+/* 貸款戶數選項與徽章 */
+function renderHhOpts() {
+  const box = $('#glHhOpts');
+  const off = $('#glHhOff');
+  const sec = $('#glHhSec');
+  if (off) {
+    off.textContent = hhOn ? '啟用中' : '未啟用';
+    off.setAttribute('aria-pressed', hhOn ? 'true' : 'false');
+    off.title = hhOn ? '點擊暫時關閉貸款戶數限制' : '點擊重新套用貸款戶數限制';
+  }
+  if (sec) sec.classList.toggle('is-off', !hhOn);
+  if (!box) return;
+  if (!hhOn) { box.innerHTML = ''; return; }
+  box.innerHTML = HH_LABELS.map((label, i) => {
+    const r = hhRows[i] || { ratio: '', grace: '' };
+    const bits = [];
+    bits.push(r.ratio === '' ? '成數不限' : '成數 ' + r.ratio + '%');
+    if (r.grace === '0') bits.push('無寬限期');
+    else if (r.grace !== '') bits.push('寬限 ' + r.grace + ' 年');
+    return '<button type="button" class="yt-opt' + (i === hhSel ? ' active' : '')
+      + '" data-gl-hh="' + i + '"><b>' + escapeAlertHtml(label) + '</b><small>'
+      + bits.join('・') + '</small></button>';
+  }).join('');
+}
+
 /* 徽章＝門檻總開關。設定不足 2 組時沒有東西可啟用，只提示不切換。 */
 $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   if (!luxValidIndexes().length) {
@@ -7941,6 +8142,140 @@ $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   if (!luxOn) showToast('', { html: luxSwitchToastHtml('已關閉') });
   else if (!luxHitRow()) showToast('', { html: luxSwitchToastHtml('已啟用') });
 });
+$('#glHhOpts') && $('#glHhOpts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-gl-hh]');
+  if (!b) return;
+  hhSel = parseInt(b.dataset.glHh, 10);
+  saveHhSel(hhSel);
+  applyLuxCaps();
+  updateAmount();
+  maybeRecalc();
+});
+
+$('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
+  hhOn = !hhOn;
+  saveHhOn(hhOn);
+  applyLuxCaps();
+  updateAmount();
+  maybeRecalc();
+  // 開啟時若當下就有上限，applyLuxCaps 已跳整合提示，這裡不重複
+  if (!hhOn) showToast('', { html: toastLines(tOk('已關閉') + ' 貸款戶數限制') });
+  else if (!capRatio() && !capGrace()) showToast('', { html: toastLines(tOk('已啟用') + ' 貸款戶數限制') });
+});
+
+(function () {
+  const dlg = $('#glHhSetDlg');
+  if (!dlg) return;
+  initCalcFields(dlg);
+  let lastFocus = null;
+  const rEl = (i) => $('#glHhRatio' + i);
+  const gEl = (i) => $('#glHhGrace' + i);
+
+  function fill(rows) {
+    for (let i = 0; i < HH_LABELS.length; i++) {
+      const r = rows[i] || { ratio: '', grace: '' };
+      if (r.ratio === '') clearCalcField(rEl(i)); else setCalcFieldStoredValue(rEl(i), Number(r.ratio));
+      if (r.grace === '') clearCalcField(gEl(i)); else setCalcFieldStoredValue(gEl(i), Number(r.grace));
+    }
+  }
+  function readRows() {
+    const out = [];
+    for (let i = 0; i < HH_LABELS.length; i++) {
+      out.push(normalizeHhRow({ ratio: getCalcFieldRawString(rEl(i)), grace: getCalcFieldRawString(gEl(i)) }));
+    }
+    return out;
+  }
+  function validate(rows) {
+    for (let i = 0; i < HH_LABELS.length; i++) {
+      const r = rows[i];
+      if (r.ratio !== '') {
+        const n = luxNum(r.ratio);
+        if (!Number.isFinite(n) || n < 0 || n > RATIO_CAP_MAX) return { msg: HH_LABELS[i] + ' 的成數上限請填 0～100 的數字。', el: rEl(i) };
+      }
+      if (r.grace !== '') {
+        const n = luxNum(r.grace);
+        if (!Number.isFinite(n) || n < 0 || n > TERM_MAX_YEARS) return { msg: HH_LABELS[i] + ' 的寬限期上限請填 0～' + TERM_MAX_YEARS + ' 的數字。', el: gEl(i) };
+      }
+    }
+    return null;
+  }
+  function openDlg() {
+    fill(hhRows);
+    lastFocus = document.activeElement;
+    dlg.hidden = false;
+    const card = $('#glHhSetCard');
+    requestAnimationFrame(() => {
+      dlg.classList.add('show');
+      if (card) { card.scrollTop = 0; card.focus({ preventScroll: true }); }
+    });
+  }
+  function closeDlg() {
+    dlg.classList.remove('show');
+    const card = $('#glHhSetCard');
+    setTimeout(() => { dlg.hidden = true; if (card) card.scrollTop = 0; }, 160);
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+    lastFocus = null;
+  }
+
+  $('#glHhSetBtn') && $('#glHhSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
+  $('#glHhSetCancel') && $('#glHhSetCancel').addEventListener('click', closeDlg);
+  $('#glHhSetReset') && $('#glHhSetReset').addEventListener('click', () => {
+    fill(cloneHhRows(HH_DEFAULT_ROWS));
+    showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
+  });
+  $('#glHhSetSave') && $('#glHhSetSave').addEventListener('click', () => {
+    const rows = readRows();
+    const bad = validate(rows);
+    if (bad) {
+      showAppAlert(bad.msg, () => { if (bad.el && bad.el.focus) bad.el.focus({ preventScroll: true }); });
+      return;
+    }
+    hhRows = rows;
+    saveHhRows(hhRows);
+    applyLuxCaps();
+    updateAmount();
+    maybeRecalc();
+    closeDlg();
+    showToast('', { html: toastLines(
+      tOk('已套用') + ' ' + tOk(HH_LABELS.length + '組'),
+      '貸款戶數 限制設定',
+      '貸款戶數限制 ' + (hhOn ? tOk('啟用中') : tNo('未啟用'))
+    ) });
+  });
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || dlg.hidden) return;
+    if (document.querySelector('[data-calc-backdrop]')) return;
+    if (e.target && e.target.tagName === 'BUTTON') return;
+    e.preventDefault();
+    $('#glHhSetSave').click();
+  });
+  let pressOnBackdrop = false;
+  dlg.addEventListener('pointerdown', (e) => { pressOnBackdrop = e.target === dlg; });
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg && pressOnBackdrop) closeDlg();
+    pressOnBackdrop = false;
+  });
+      /* 左右滑動即返回，與其他視窗同一套手勢；需有明確橫向意圖才觸發 */
+    let hhSx = null, hhSy = null;
+    dlg.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1 || e.target.closest('input, textarea, button')) { hhSx = null; return; }
+      hhSx = e.touches[0].clientX; hhSy = e.touches[0].clientY;
+    }, { passive: true });
+    dlg.addEventListener('touchend', (e) => {
+      if (hhSx === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - hhSx, dy = t.clientY - hhSy;
+      hhSx = null;
+      if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+      closeDlg();
+    }, { passive: true });
+    document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || dlg.hidden) return;
+    if (document.querySelector('[data-calc-backdrop]')) return;
+    closeDlg();
+  });
+})();
+
 $('#glRegionOpts').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-gl-region]');
   if (!btn) return;
@@ -8487,7 +8822,7 @@ $('#conditionsToggle').addEventListener('click', () => {
     showToast('', { html: toastLines(
       n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
       '高價住宅門檻 設定',
-      '房屋座落 ' + (regionOn ? tOk('已開啟') : tNo('未啟用'))
+      '房屋座落 ' + (regionOn ? tOk('啟用中') : tNo('未啟用'))
     ) });
   });
 
@@ -8891,6 +9226,8 @@ window.addEventListener('resize', () => {
         ? (on ? '點擊暫時關閉購屋總價上限審查' : '點擊重新套用購屋總價上限審查')
         : '請先於齒輪內設定至少 1 組購屋縣市';
     }
+    const sec = Y('#ytRegionSec');
+    if (sec) sec.classList.toggle('is-off', !on);
     if (!box) return;
     box.classList.toggle('c3', idx.length >= 3);
     box.classList.toggle('c2', idx.length === 2);
@@ -9119,7 +9456,7 @@ window.addEventListener('resize', () => {
         // 審查關閉時該項視為通過，但要標示出來，避免「全數通過」看起來像完整審查過
         : { ok: true, off: true,
             t: `購屋總價 ${wanTxt(high)} 萬`,
-            s: '總價上限審查功能已關閉' },
+            s: '總價上限審查功能未啟用（關閉狀態）' },
       { ok: noHome,
         t: '均無自有住宅',
         s: noHome
@@ -9285,7 +9622,8 @@ window.addEventListener('resize', () => {
       { c: 'b', n: '一般貸款', v: d.genWan, show: d.genWan > 0, lines: d.pass
           ? [`總貸款 ${wanTxt(d.total)} 萬 − 新青安 ${wanTxt(d.youthWan)} 萬`,
              `年利率 ${genRate}%（${d.youthBind === 'ltv' ? '超出青安成數部分' : '超出優惠額度部分'}）`]
-          : [`不符申請青安貸款資格，總貸款 ${wanTxt(d.total)} 萬元全額按一般貸款計算`,
+          // 上一列已經講過不符資格，這裡不重複，否則長句折行會把這一列撐高
+          : [`總貸款 ${wanTxt(d.total)} 萬元全額按一般貸款計算`,
              `年利率 ${genRate}%`] },
       { c: 'c', n: '自備款', v: d.downWan, show: true, lines: [
           `購屋總價 ${wanTxt(d.price)} 萬 − 總貸款 ${wanTxt(d.total)} 萬`,
@@ -9344,7 +9682,8 @@ window.addEventListener('resize', () => {
         <p>實際節省利息仍會依實際 <b>貸款金額</b>、<b>貸款年限</b>、<b>寬限期</b>、<b>還款方式</b> 及 <b>每期剩餘本金</b> 而有所不同。</p>
       </div>
     </div>` : '';
-    Y('#ytSplitBlock').innerHTML = `${rows}${save}`;
+    Y('#ytSplitBlock').innerHTML = `<div class="yt-split-rows">${rows}</div>${save}`;
+    // has-save 目前僅作為狀態標記（分隔線改由 .yt-split-rows 的 last-child 處理）
     Y('#ytSplitBlock').classList.toggle('has-save', !!save);
 
     // 期間表（可切換 合計／新青安／一般貸款）
@@ -9969,6 +10308,22 @@ window.addEventListener('resize', () => {
       pressOnBackdrop = false;
     });
     Y('#ytShareSetCard')?.addEventListener('click', (e) => e.stopPropagation());
+
+    /* 左右滑動即返回，與其他視窗同一套手勢；需有明確橫向意圖才觸發 */
+    let sx = null, sy = null;
+    dlg.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1 || e.target.closest('input, textarea, button')) { sx = null; return; }
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    dlg.addEventListener('touchend', (e) => {
+      if (sx === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      sx = null;
+      if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+      closeDlg();
+    }, { passive: true });
+
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || dlg.hidden) return;
       if (document.querySelector('[data-calc-backdrop]')) return;
@@ -10067,7 +10422,7 @@ window.addEventListener('resize', () => {
       showToast('', { html: toastLines(
         n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
         '購屋縣市 設定',
-        '總價上限審查 ' + (yrActive() ? tOk('已開啟') : tNo('已關閉'))
+        '總價上限審查 ' + (yrActive() ? tOk('啟用中') : tNo('未啟用'))
       ) });
     });
 
@@ -10099,6 +10454,21 @@ window.addEventListener('resize', () => {
       if (e.target === dlg && pressOnBackdrop) closeDlg();
       pressOnBackdrop = false;
     });
+
+    /* 左右滑動即返回，與其他視窗同一套手勢；需有明確橫向意圖才觸發 */
+    let sx = null, sy = null;
+    dlg.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1 || e.target.closest('input, textarea, button')) { sx = null; return; }
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    dlg.addEventListener('touchend', (e) => {
+      if (sx === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      sx = null;
+      if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+      closeDlg();
+    }, { passive: true });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || dlg.hidden) return;
       if (document.querySelector('[data-calc-backdrop]')) return;
@@ -10114,7 +10484,7 @@ window.addEventListener('resize', () => {
       yrOn = !yrOn;
       saveYrOn(yrOn);
       syncChoices(); persist(); markStale();
-      showToast('', { html: toastLines(tOk(yrOn ? '已開啟' : '已關閉') + ' 總價上限審查') });
+      showToast('', { html: toastLines(tOk(yrOn ? '已啟用' : '已關閉') + ' 總價上限審查') });
     });
   })();
 
