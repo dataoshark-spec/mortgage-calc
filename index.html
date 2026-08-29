@@ -2781,6 +2781,11 @@ if ("serviceWorker" in navigator) {
     @media (max-width: 400px) {
       .gl-region-sec > .label-cap { font-size: 0.86rem; margin-bottom: 8px; }
     }
+    /* 購屋縣市標題列：與房屋座落同一套版型，字級沿用 .section > label 的 0.92rem */
+    .yt-region-cap { font-size: 0.92rem; margin-bottom: 10px; }
+    .yt-region-sec .yt-opts:empty { display: none; }
+    /* 審查功能關閉時的說明用琥珀色，與通過（綠）、未通過（紅）都區隔得開 */
+    .yt-chk .yt-chk-s.yt-chk-off { color: #9A6B18; font-weight: 600; }
     .gl-region-sec .yt-opts { min-width: 0; }
     .gl-region-sec .yt-opts:empty { display: none; }
     /* 右側徽章同時是門檻總開關：兩種狀態外觀一致，只有文字不同 */
@@ -3567,13 +3572,9 @@ if ("serviceWorker" in navigator) {
       <hr class="yt-div">
 
       <div class="yt-cap"><span class="yt-cap-no">②</span>預計買房條件</div>
-      <div class="section">
-        <label>購屋縣市</label>
-        <div class="yt-opts c3">
-          <button type="button" class="yt-opt" data-yt-region="taipei"><b>臺北市</b><small>3,500 萬</small></button>
-          <button type="button" class="yt-opt" data-yt-region="newtaipei"><b>新北・新竹</b><small>2,500 萬</small></button>
-          <button type="button" class="yt-opt active" data-yt-region="other"><b>其他縣市</b><small>2,000 萬</small></button>
-        </div>
+      <div class="section yt-region-sec" id="ytRegionSec">
+        <div class="label-cap yt-region-cap">購屋縣市<button type="button" class="yt-gear-btn" id="ytRegionSetBtn" title="設定購屋總價上限" aria-label="設定購屋總價上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="ytRegionOff" aria-pressed="true">啟用中</button></div>
+        <div class="yt-opts c3" id="ytRegionOpts"></div>
       </div>
       <div class="form-grid">
         <div class="field">
@@ -3945,6 +3946,59 @@ if ("serviceWorker" in navigator) {
   </div>
 </div>
 
+<div class="yt-set gl-set" id="ytRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytRegionSetTitle" hidden>
+  <div class="yt-set-card gl-set-card" id="ytRegionSetCard" tabindex="-1">
+    <div class="yt-set-title" id="ytRegionSetTitle">購屋縣市設定</div>
+    <p class="yt-note gl-set-lead">購屋總價與銀行鑑價 <em>取高</em> 超過所選縣市的上限時，即 <em>不符</em> 青安申請資格。</p>
+  <div class="gl-set-row">
+      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">1</span></div>
+      <div class="gl-set-2">
+        <div class="field">
+          <label for="ytRegSetName0">縣市名稱</label>
+          <div class="input-box gl-name-box"><input type="text" id="ytRegSetName0" maxlength="8" autocomplete="off" placeholder="臺北市"><button type="button" class="gl-clear-btn" data-gl-clear="ytRegSetName0" tabindex="-1" aria-label="清除第 1 組名稱"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+        </div>
+        <div class="field">
+          <label for="ytRegSetAmt0">購屋總價上限</label>
+          <div class="input-box"><input type="text" id="ytRegSetAmt0" class="calc-field" value="3500" data-calc-integer="true" data-calc-max="9999999" data-calc-hint="購屋總價上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;9,999,999 萬&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
+        </div>
+      </div>
+    </div>
+  <div class="gl-set-row">
+      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">2</span></div>
+      <div class="gl-set-2">
+        <div class="field">
+          <label for="ytRegSetName1">縣市名稱</label>
+          <div class="input-box gl-name-box"><input type="text" id="ytRegSetName1" maxlength="8" autocomplete="off" placeholder="新北・新竹"><button type="button" class="gl-clear-btn" data-gl-clear="ytRegSetName1" tabindex="-1" aria-label="清除第 2 組名稱"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+        </div>
+        <div class="field">
+          <label for="ytRegSetAmt1">購屋總價上限</label>
+          <div class="input-box"><input type="text" id="ytRegSetAmt1" class="calc-field" value="2500" data-calc-integer="true" data-calc-max="9999999" data-calc-hint="購屋總價上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;9,999,999 萬&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
+        </div>
+      </div>
+    </div>
+  <div class="gl-set-row">
+      <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">3</span></div>
+      <div class="gl-set-2">
+        <div class="field">
+          <label for="ytRegSetName2">縣市名稱</label>
+          <div class="input-box gl-name-box"><input type="text" id="ytRegSetName2" maxlength="8" autocomplete="off" placeholder="其他縣市"><button type="button" class="gl-clear-btn" data-gl-clear="ytRegSetName2" tabindex="-1" aria-label="清除第 3 組名稱"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7.2 7.2 12.8 12.8M12.8 7.2 7.2 12.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+        </div>
+        <div class="field">
+          <label for="ytRegSetAmt2">購屋總價上限</label>
+          <div class="input-box"><input type="text" id="ytRegSetAmt2" class="calc-field" value="2000" data-calc-integer="true" data-calc-max="9999999" data-calc-hint="購屋總價上限最高為 &lt;span class=&quot;toast-hint-em&quot;&gt;9,999,999 萬&lt;/span&gt;" readonly inputmode="none" autocomplete="off"><span class="unit">萬</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="yt-note">預設值依《公股銀行辦理青年安心成家購屋優惠貸款原則》<em>115.7.27</em> 修正版，適用 <em>115.8.1</em> 起申貸案件。法規異動時可自行更新。</p>
+    <p class="yt-note">縣市名稱留白＝該組停用。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <div class="yt-set-actions gl-set-actions">
+      <button type="button" class="yt-set-ghost" id="ytRegionSetReset">恢復預設</button>
+      <button type="button" class="yt-set-ghost" id="ytRegionSetCancel">取消</button>
+      <button type="button" class="yt-set-main" id="ytRegionSetSave">儲存並套用</button>
+    </div>
+  </div>
+</div>
+
 <div class="yt-set gl-set" id="glRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="glRegionSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="glRegionSetCard" tabindex="-1">
     <div class="yt-set-title" id="glRegionSetTitle">高價住宅門檻設定</div>
@@ -4068,7 +4122,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24M";
+const APP_VERSION = "2026.08.29A";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4809,7 +4863,8 @@ function isLuxRowValid(r) {
 function luxValidIndexes() {
   const out = [];
   luxRows.forEach((r, i) => { if (isLuxRowValid(r)) out.push(i); });
-  return out.length >= 2 ? out : [];
+  // 一組即成立：法規若改成全國單一門檻，只留一組才是正確設定
+  return out;
 }
 function syncLuxSelection() {
   const idx = luxValidIndexes();
@@ -5004,7 +5059,7 @@ function renderLuxRegionOpts() {
   const off = $('#glRegionOff');
   if (!box) return;
   const idx = luxValidIndexes();
-  const ready = idx.length >= 2;
+  const ready = idx.length >= 1;
   const on = ready && luxOn;
   if (off) {
     off.hidden = false;
@@ -5012,7 +5067,7 @@ function renderLuxRegionOpts() {
     off.setAttribute('aria-pressed', on ? 'true' : 'false');
     off.title = ready
       ? (on ? '點擊暫時關閉高價住宅門檻' : '點擊重新套用高價住宅門檻')
-      : '請先於齒輪內設定至少 2 組房屋座落';
+      : '請先於齒輪內設定至少 1 組房屋座落';
   }
   // 未啟用時整條標題（含齒輪）縮小並轉為與「未啟用」同一階灰，弱化存在感但保留入口
   const sec = $('#glRegionSec');
@@ -7873,8 +7928,8 @@ $('#appraisal').addEventListener('input', () => {
 });
 /* 徽章＝門檻總開關。設定不足 2 組時沒有東西可啟用，只提示不切換。 */
 $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
-  if (luxValidIndexes().length < 2) {
-    showToast('', { hint: true, hintHtml: hintLines('請先於「房屋座落」', '齒輪內設定 ' + tEm('至少2組'), '（高價住宅門檻設定）') });
+  if (!luxValidIndexes().length) {
+    showToast('', { hint: true, hintHtml: hintLines('請先於「房屋座落」', '齒輪內設定 ' + tEm('至少1組'), '（高價住宅門檻設定）') });
     return;
   }
   luxOn = !luxOn;
@@ -8427,10 +8482,10 @@ $('#conditionsToggle').addEventListener('click', () => {
     updateAmount();
     maybeRecalc();
     closeDlg();
-    const regionOn = luxOn && n >= 2;
-    // 未滿 2 組時沒有門檻可判斷，講「已套用 1 個」會讓人以為生效了
+    const regionOn = luxOn && n >= 1;
+    // 一組都沒填時設定確實存了，但沒有門檻可比對，故第三行顯示未啟用
     showToast('', { html: toastLines(
-      n < 2 ? tNo('低於2組') + ' 無法套用' : tOk('已套用') + ' ' + n + '個',
+      n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
       '高價住宅門檻 設定',
       '房屋座落 ' + (regionOn ? tOk('已開啟') : tNo('未啟用'))
     ) });
@@ -8754,7 +8809,101 @@ window.addEventListener('resize', () => {
   }
   const STEP_IDS = ['#ytR1', '#ytR2', '#ytR3', '#ytR4', '#ytR5'];
 
-  let kind = 'general', region = 'other', method = 'amortize';
+  let kind = 'general', region = 2, method = 'amortize';
+
+  /* ---------- 購屋縣市（購屋總價上限）----------
+     數字不寫死：法規異動時使用者可自行維護。與試算數值分開保存，「清空數值」不會清掉。
+     最少一組即成立——若法規改成全國單一上限，只留一組才是正確設定。 */
+  const YR_ROWS_KEY = 'youth_region_rows_v1';
+  const YR_ON_KEY = 'youth_region_on_v1';
+  const YR_ROW_N = 3;
+  const YR_DEFAULT_ROWS = [
+    { name: '臺北市', amount: '3500' },
+    { name: '新北・新竹', amount: '2500' },
+    { name: '其他縣市', amount: '2000' }
+  ];
+  /* 舊版把選擇存成固定代碼，改成槽位索引後要能接上，否則既有使用者的選擇會跳掉 */
+  const YR_LEGACY_SEL = { taipei: 0, newtaipei: 1, other: 2 };
+  function yrNum(v) {
+    const t = String(v === null || v === undefined ? '' : v).trim();
+    if (t === '') return NaN;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : NaN;
+  }
+  function normalizeYrRow(r) {
+    const o = r && typeof r === 'object' ? r : {};
+    const str = (v) => (v === null || v === undefined ? '' : String(v).trim());
+    return { name: str(o.name).slice(0, 8), amount: str(o.amount) };
+  }
+  function cloneYrRows(rows) {
+    const out = [];
+    for (let i = 0; i < YR_ROW_N; i++) out.push(normalizeYrRow(rows && rows[i]));
+    return out;
+  }
+  function loadYrRows() {
+    try {
+      const raw = localStorage.getItem(YR_ROWS_KEY);
+      if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return cloneYrRows(a); }
+    } catch (e) {}
+    return cloneYrRows(YR_DEFAULT_ROWS);
+  }
+  function saveYrRows(rows) { try { localStorage.setItem(YR_ROWS_KEY, JSON.stringify(rows)); } catch (e) {} }
+  function loadYrOn() { try { return localStorage.getItem(YR_ON_KEY) !== '0'; } catch (e) { return true; } }
+  function saveYrOn(v) { try { localStorage.setItem(YR_ON_KEY, v ? '1' : '0'); } catch (e) {} }
+  let yrRows = loadYrRows();
+  let yrOn = loadYrOn();
+  function isYrRowValid(r) {
+    const a = yrNum(r.amount);
+    return String(r.name || '').trim() !== '' && Number.isFinite(a) && a > 0;
+  }
+  function yrValidIndexes() {
+    const out = [];
+    yrRows.forEach((r, i) => { if (isYrRowValid(r)) out.push(i); });
+    return out;
+  }
+  function yrActive() { return yrOn && yrValidIndexes().length >= 1; }
+  function normYrSel(v) {
+    if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(YR_LEGACY_SEL, v)) return YR_LEGACY_SEL[v];
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n >= 0 && n < YR_ROW_N ? n : YR_ROW_N - 1;
+  }
+  /* 選中的那組被清空時落到第一組，否則會指向一個不存在的上限 */
+  function syncYrSelection() {
+    const idx = yrValidIndexes();
+    if (idx.length && idx.indexOf(region) < 0) region = idx[0];
+  }
+  function yrCurrentRow() {
+    if (!yrActive()) return null;
+    syncYrSelection();
+    return yrRows[region] || null;
+  }
+  function yrCap() { const r = yrCurrentRow(); return r ? yrNum(r.amount) : NaN; }
+  function yrName() { const r = yrCurrentRow(); return r ? r.name : ''; }
+  function renderYrOpts() {
+    const box = Y('#ytRegionOpts');
+    const off = Y('#ytRegionOff');
+    const idx = yrValidIndexes();
+    const on = yrActive();
+    if (off) {
+      off.textContent = on ? '啟用中' : '未啟用';
+      off.setAttribute('aria-pressed', on ? 'true' : 'false');
+      off.title = idx.length
+        ? (on ? '點擊暫時關閉購屋總價上限審查' : '點擊重新套用購屋總價上限審查')
+        : '請先於齒輪內設定至少 1 組購屋縣市';
+    }
+    if (!box) return;
+    box.classList.toggle('c3', idx.length >= 3);
+    box.classList.toggle('c2', idx.length === 2);
+    box.classList.toggle('c1', idx.length === 1);
+    if (!on) { box.innerHTML = ''; return; }
+    syncYrSelection();
+    box.innerHTML = idx.map((i) => {
+      const r = yrRows[i];
+      return '<button type="button" class="yt-opt' + (i === region ? ' active' : '')
+        + '" data-yt-region="' + i + '"><b>' + esc(r.name) + '</b><small>'
+        + wan(yrNum(r.amount)) + ' 萬</small></button>';
+    }).join('');
+  }
   let noHome = true, neverUsed = true, selfUse = true;
   let stepsTouched = [false, false, false, false, false];
   let detailSrc = 'all', ytCum = false, ytStale = true;
@@ -8951,7 +9100,8 @@ window.addEventListener('resize', () => {
     const price = num(Y('#ytPrice'));
     const appr = raw(Y('#ytAppraisal')) ? num(Y('#ytAppraisal')) : 0;
     const high = Math.max(price, appr);
-    const cap = PRICE_CAP[region];
+    const cap = yrCap();
+    const capOn = yrActive();
     return [
       { ok: age >= 18 && age < 50,
         t: `申貸年齡 ${age} 歲`,
@@ -8962,9 +9112,14 @@ window.addEventListener('resize', () => {
       { ok: income <= 200,
         t: `本人年所得總額 ${wanTxt(income)} 萬`,
         s: income <= 200 ? '所得總額未逾 200 萬元' : '所得總額不得逾 200 萬元' },
-      { ok: high <= cap,
-        t: `購屋總價 ${wanTxt(high)} 萬`,
-        s: `${REGION_NAME[region]}，鑑價或買賣總價取高，${high <= cap ? '未逾' : '已逾'} ${wan(cap)} 萬元` },
+      capOn
+        ? { ok: high <= cap,
+            t: `購屋總價 ${wanTxt(high)} 萬`,
+            s: `${yrName()}，鑑價或買賣總價取高，${high <= cap ? '未逾' : '已逾'} ${wan(cap)} 萬元` }
+        // 審查關閉時該項視為通過，但要標示出來，避免「全數通過」看起來像完整審查過
+        : { ok: true, off: true,
+            t: `購屋總價 ${wanTxt(high)} 萬`,
+            s: '總價上限審查功能已關閉' },
       { ok: noHome,
         t: '均無自有住宅',
         s: noHome
@@ -9083,7 +9238,7 @@ window.addEventListener('resize', () => {
     const hasShare = raw(Y('#ytShare')) !== '';
     Y('#ytConditionsGrid').innerHTML = [
       ['貸款身分', CAP_NAME[kind] + '（' + wan(CAP[kind]) + ' 萬）'],
-      ['購屋縣市', REGION_NAME[region]],
+      yrActive() && ['購屋縣市', yrName()],
       ['購屋總價', wanTxt(d.price) + ' 萬元'],
       hasAppr && ['銀行鑑價', wanTxt(d.appr) + ' 萬元'],
       hasAppr && ['成數計算基礎', wanTxt(d.basis) + ' 萬元（取低）'],
@@ -9100,13 +9255,14 @@ window.addEventListener('resize', () => {
     ].filter(Boolean).map(([k, v]) => `<div class="cond-item"><span class="cond-dot" aria-hidden="true"></span><span class="cond-label">${k}</span><span class="cond-value">${v}</span></div>`).join('');
 
     // 資格審查
-    const chk = d.elig.map((e) => `<div class="yt-chk ${e.ok ? 'ok' : 'no'}">${e.ok ? ICON_OK : ICON_NO}<div class="yt-chk-t">${e.t}<span class="yt-chk-s">${e.s}</span></div></div>`).join('');
+    const chk = d.elig.map((e) => `<div class="yt-chk ${e.ok ? 'ok' : 'no'}">${e.ok ? ICON_OK : ICON_NO}<div class="yt-chk-t">${e.t}<span class="yt-chk-s${e.off ? ' yt-chk-off' : ''}">${e.s}</span></div></div>`).join('');
     const nOk = d.elig.filter((e) => e.ok).length;
     const nNo = d.elig.length - nOk;
+    const nOff = d.elig.filter((e) => e.off).length;
     const banner = `<div class="yt-banner ${d.pass ? 'pass' : 'fail'}">
       <span class="yt-b-icon">${d.pass ? ICON_OK_BIG : ICON_NO_BIG}</span>
       <span class="yt-b-title">${d.pass ? '符合新青安 3.0 申請資格' : '不符新青安 3.0 申請資格'}</span>
-      <span class="yt-b-mid">${d.pass ? `${d.elig.length} 項條件全數通過` : `${d.elig.length} 項中有 ${nNo} 項未通過`}</span>
+      <span class="yt-b-mid">${d.pass ? `${d.elig.length} 項條件全數通過${nOff ? `（含 ${nOff} 項審查功能關閉）` : ''}` : `${d.elig.length} 項中有 ${nNo} 項未通過`}</span>
       <span class="yt-b-sub">${d.pass ? '最終仍以承貸銀行審核為準' : '以下結果一律以一般貸款利率試算'}</span>
     </div>
     <div class="yt-chk-head"><span class="yt-chk-head-line"></span><span class="yt-chk-head-t">逐項檢查　${nOk} / ${d.elig.length}</span><span class="yt-chk-head-line"></span></div>`;
@@ -9456,7 +9612,7 @@ window.addEventListener('resize', () => {
   }
   function apply(o) {
     if (!o) return;
-    kind = o.kind || 'general'; region = o.region || 'other'; method = o.method || 'amortize';
+    kind = o.kind || 'general'; region = normYrSel(o.region); method = o.method || 'amortize';
     noHome = o.noHome !== false; neverUsed = o.neverUsed !== false;
     selfUse = o.selfUse !== false;
     stepsTouched = o.stepsTouched || [false, false, false, false, false];
@@ -9482,7 +9638,7 @@ window.addEventListener('resize', () => {
   }
   function syncChoices() {
     YA('[data-yt-kind]').forEach((b) => b.classList.toggle('active', b.dataset.ytKind === kind));
-    YA('[data-yt-region]').forEach((b) => b.classList.toggle('active', b.dataset.ytRegion === region));
+    renderYrOpts();
     YA('[data-yt-method]').forEach((b) => b.classList.toggle('active', b.dataset.ytMethod === method));
     YA('[data-yt-home]').forEach((b) => b.classList.toggle('active', (b.dataset.ytHome === '1') === noHome));
     YA('[data-yt-used]').forEach((b) => b.classList.toggle('active', (b.dataset.ytUsed === '1') !== neverUsed));
@@ -9562,7 +9718,13 @@ window.addEventListener('resize', () => {
   Y('#ytResetSteps').addEventListener('click', () => { stepsTouched = [false, false, false, false, false]; syncSteps(true); persist(); markStale(); });
 
   YA('[data-yt-kind]').forEach((b) => b.addEventListener('click', () => { kind = b.dataset.ytKind; syncChoices(); persist(); markStale(); }));
-  YA('[data-yt-region]').forEach((b) => b.addEventListener('click', () => { region = b.dataset.ytRegion; syncChoices(); persist(); markStale(); }));
+  /* 按鈕改為依設定動態產生，故採事件委派 */
+  Y('#ytRegionOpts')?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-yt-region]');
+    if (!b) return;
+    region = parseInt(b.dataset.ytRegion, 10);
+    syncChoices(); persist(); markStale();
+  });
   YA('[data-yt-method]').forEach((b) => b.addEventListener('click', () => { method = b.dataset.ytMethod; syncChoices(); persist(); markStale(); }));
   YA('[data-yt-home]').forEach((b) => b.addEventListener('click', () => { noHome = b.dataset.ytHome === '1'; syncChoices(); persist(); markStale(); }));
   YA('[data-yt-used]').forEach((b) => b.addEventListener('click', () => { neverUsed = b.dataset.ytUsed === '0'; syncChoices(); persist(); markStale(); }));
@@ -9811,6 +9973,148 @@ window.addEventListener('resize', () => {
       if (e.key !== 'Escape' || dlg.hidden) return;
       if (document.querySelector('[data-calc-backdrop]')) return;
       closeDlg();
+    });
+  })();
+
+/* ---------- 購屋縣市設定視窗 ---------- */
+  (function () {
+    const dlg = Y('#ytRegionSetDlg');
+    if (!dlg) return;
+    initCalcFields(dlg);
+    let lastFocus = null;
+    const nameEl = (i) => Y('#ytRegSetName' + i);
+    const amtEl = (i) => Y('#ytRegSetAmt' + i);
+
+    function syncClearBtns() {
+      for (let i = 0; i < YR_ROW_N; i++) {
+        const el = nameEl(i);
+        const btn = dlg.querySelector('[data-gl-clear="ytRegSetName' + i + '"]');
+        if (el && btn) btn.hidden = String(el.value || '') === '';
+      }
+    }
+    function fill(rows) {
+      for (let i = 0; i < YR_ROW_N; i++) {
+        if (nameEl(i)) nameEl(i).value = rows[i].name;
+        const a = amtEl(i);
+        if (a) {
+          if (rows[i].amount === '') clearCalcField(a);
+          else setCalcFieldStoredValue(a, Number(rows[i].amount));
+        }
+      }
+      syncClearBtns();
+    }
+    function readRows() {
+      const out = [];
+      for (let i = 0; i < YR_ROW_N; i++) {
+        out.push(normalizeYrRow({
+          name: nameEl(i) ? nameEl(i).value : '',
+          amount: getCalcFieldRawString(amtEl(i))
+        }));
+      }
+      return out;
+    }
+    /* 名稱留白＝該組停用，金額原樣留著，之後填回名稱即可復用；
+       填了名稱就代表要用這一組，此時上限金額必須補齊。 */
+    function validate(rows) {
+      for (let i = 0; i < YR_ROW_N; i++) {
+        if (rows[i].name === '') continue;
+        const a = yrNum(rows[i].amount);
+        const no = '購屋縣市 ' + (i + 1);
+        if (!Number.isFinite(a) || a <= 0) return { msg: no + ' 的購屋總價上限請填寫大於 0 的數字。', el: amtEl(i) };
+        if (a > 9999999) return { msg: no + ' 的購屋總價上限過大。', el: amtEl(i) };
+      }
+      return null;
+    }
+
+    function openDlg() {
+      fill(yrRows);
+      lastFocus = document.activeElement;
+      dlg.hidden = false;
+      const card = Y('#ytRegionSetCard');
+      requestAnimationFrame(() => {
+        dlg.classList.add('show');
+        if (card) { card.scrollTop = 0; card.focus({ preventScroll: true }); }
+      });
+    }
+    function closeDlg() {
+      dlg.classList.remove('show');
+      const card = Y('#ytRegionSetCard');
+      setTimeout(() => { dlg.hidden = true; if (card) card.scrollTop = 0; }, 160);
+      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+      lastFocus = null;
+    }
+
+    Y('#ytRegionSetBtn')?.addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
+    Y('#ytRegionSetCancel')?.addEventListener('click', closeDlg);
+    Y('#ytRegionSetReset')?.addEventListener('click', () => {
+      fill(cloneYrRows(YR_DEFAULT_ROWS));
+      showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
+    });
+    Y('#ytRegionSetSave')?.addEventListener('click', () => {
+      const rows = readRows();
+      const bad = validate(rows);
+      if (bad) {
+        showAppAlert(bad.msg, () => { if (bad.el && typeof bad.el.focus === 'function') bad.el.focus({ preventScroll: true }); });
+        return;
+      }
+      yrRows = rows;
+      saveYrRows(yrRows);
+      const n = yrValidIndexes().length;
+      syncYrSelection();
+      syncChoices(); persist(); markStale();
+      closeDlg();
+      // 儲存不改動開關狀態，避免使用者搞不清楚何時會自己開啟
+      showToast('', { html: toastLines(
+        n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
+        '購屋縣市 設定',
+        '總價上限審查 ' + (yrActive() ? tOk('已開啟') : tNo('已關閉'))
+      ) });
+    });
+
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || dlg.hidden) return;
+      if (document.querySelector('[data-calc-backdrop]')) return;
+      if (e.target && e.target.tagName === 'BUTTON') return;
+      e.preventDefault();
+      Y('#ytRegionSetSave')?.click();
+    });
+    dlg.addEventListener('input', (e) => {
+      if (e.target && /^ytRegSetName\d$/.test(e.target.id)) syncClearBtns();
+    });
+    dlg.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-gl-clear]');
+      if (!btn) return;
+      e.preventDefault();
+      const el = Y('#' + btn.dataset.glClear);
+      if (!el) return;
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    dlg.addEventListener('mousedown', (e) => {
+      if (e.target.closest('[data-gl-clear]')) e.preventDefault();
+    });
+    let pressOnBackdrop = false;
+    dlg.addEventListener('pointerdown', (e) => { pressOnBackdrop = e.target === dlg; });
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg && pressOnBackdrop) closeDlg();
+      pressOnBackdrop = false;
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || dlg.hidden) return;
+      if (document.querySelector('[data-calc-backdrop]')) return;
+      closeDlg();
+    });
+
+    /* 徽章＝總價上限審查的開關 */
+    Y('#ytRegionOff')?.addEventListener('click', () => {
+      if (!yrValidIndexes().length) {
+        showToast('', { hint: true, hintHtml: hintLines('請先於「購屋縣市」', '齒輪內設定 ' + tEm('至少1組'), '（購屋縣市設定）') });
+        return;
+      }
+      yrOn = !yrOn;
+      saveYrOn(yrOn);
+      syncChoices(); persist(); markStale();
+      showToast('', { html: toastLines(tOk(yrOn ? '已開啟' : '已關閉') + ' 總價上限審查') });
     });
   })();
 
