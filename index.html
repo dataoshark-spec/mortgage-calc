@@ -2667,6 +2667,28 @@ if ("serviceWorker" in navigator) {
       background: var(--teal-light); color: var(--teal-dark);
       font-size: 12px; font-weight: 700;
     }
+    /* 持買比率徽章：純顯示目前設定值，點擊開設定視窗修改。
+       外觀與「房屋座落」右側的狀態徽章一致。 */
+    .yt-share-tag {
+      position: relative;
+      margin-left: auto; display: inline-flex; align-items: baseline; gap: 4px;
+      flex: 0 0 auto; padding: 2px 7px;
+      border: 0; border-radius: 6px; background: var(--input-bg);
+      color: var(--muted); font-family: inherit; font-size: 11px; font-weight: 500;
+      line-height: 1.35; letter-spacing: .02em; white-space: nowrap;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .yt-share-tag > b { font-weight: 700; }
+    /* 點擊熱區往上下左撐開；右側貼齊標題列右緣，往右撐會產生水平溢出 */
+    .yt-share-tag::after {
+      content: ''; position: absolute; top: -11px; bottom: -11px; left: -14px; right: 0;
+    }
+    .yt-share-tag:active { background: #E4E4E4; }
+    @media (hover: hover) and (pointer: fine) {
+      .yt-share-tag:hover { background: #E9E9E9; color: var(--text); }
+    }
+    .export-capture .yt-share-tag::after { display: none; }
     .yt-div { height: 1px; background: var(--border); margin: 24px 0 22px; border: 0; }
     .yt-note {
       font-size: 12px; line-height: 1.65; color: var(--muted);
@@ -2750,7 +2772,7 @@ if ("serviceWorker" in navigator) {
     .label-cap > .yt-cap-max { float: none; margin-left: 0; }
     .label-cap > .yt-opt-tag { margin-left: -2px; }
     .gl-region-sec[hidden] { display: none; }
-    /* 標題字級跟著正下方的「購屋價格」走，而不是沿用 .section 的 0.92rem。
+    /* 標題字級跟著正下方的「購屋總價」走，而不是沿用 .section 的 0.92rem。
        本區塊定義在窄機 media query 之後，故縮字規則要一併寫在這裡才不會被蓋掉。 */
     .gl-region-sec > .label-cap { font-size: 0.92rem; margin-bottom: 10px; }
     @media (max-width: 400px) {
@@ -3248,7 +3270,7 @@ if ("serviceWorker" in navigator) {
     </div>
     <div class="form-grid">
       <div class="field">
-        <label>購屋價格</label>
+        <label>購屋總價</label>
         <div class="input-box">
           <input type="text" id="price" class="calc-field" value="3000" readonly inputmode="none" autocomplete="off">
           <span class="unit">萬元</span>
@@ -3256,7 +3278,7 @@ if ("serviceWorker" in navigator) {
       </div>
       <div class="field">
         <label>貸款金額</label>
-        <div class="input-box readonly" title="依購屋價格與貸款成數自動計算">
+        <div class="input-box readonly" title="依購屋總價與貸款成數自動計算">
           <input type="text" id="amount" readonly value="2,400" tabindex="-1" aria-readonly="true">
           <span class="unit">萬元</span>
         </div>
@@ -3483,7 +3505,7 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
 
-      <div class="yt-cap"><span class="yt-cap-no">①</span>基本個人條件</div>
+      <div class="yt-cap"><span class="yt-cap-no">①</span>基本個人條件<button type="button" class="yt-share-tag" id="ytShareTag" title="設定持買比率" aria-haspopup="dialog">持買比率 <b id="ytShareTagVal">100%</b></button><input type="text" id="ytShare" class="calc-field" value="100" data-calc-integer="true" readonly inputmode="none" autocomplete="off" hidden></div>
       <div class="form-grid">
         <div class="field">
           <label>年齡</label>
@@ -3559,10 +3581,10 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
         <div class="field">
-          <label>持買比率<span class="yt-opt-tag">選填</span></label>
-          <div class="input-box">
-            <input type="text" id="ytShare" class="calc-field" value="100" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
-            <span class="unit">%</span>
+          <label>貸款金額</label>
+          <div class="input-box readonly" title="依購屋總價與貸款成數自動計算">
+            <input type="text" id="ytAmount" readonly value="1,600" tabindex="-1" aria-readonly="true">
+            <span class="unit">萬元</span>
           </div>
         </div>
         <div class="field">
@@ -3924,7 +3946,7 @@ if ("serviceWorker" in navigator) {
 <div class="yt-set gl-set" id="glRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="glRegionSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="glRegionSetCard" tabindex="-1">
     <div class="yt-set-title" id="glRegionSetTitle">高價住宅門檻設定</div>
-    <p class="yt-note gl-set-lead">購屋價格與銀行鑑價 <em>取高</em> 達到門檻時，會自動套用下方設定的貸款成數與寬限期上限。</p>
+    <p class="yt-note gl-set-lead">購屋總價與銀行鑑價 <em>取高</em> 達到門檻時，會自動套用下方設定的貸款成數與寬限期上限。</p>
   <div class="gl-set-row">
       <div class="gl-set-no">房屋座落<span class="gl-set-no-n">1</span></div>
       <div class="gl-set-2">
@@ -3997,6 +4019,25 @@ if ("serviceWorker" in navigator) {
   </div>
 </div>
 
+<div class="yt-set" id="ytShareSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytShareSetTitle" hidden>
+  <div class="yt-set-card" id="ytShareSetCard">
+    <div class="yt-set-title" id="ytShareSetTitle">持買比率設定</div>
+    <div class="field">
+      <div class="input-box">
+        <input type="text" id="ytShareSetVal" class="calc-field" value="100" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <p class="yt-note"><em>持買比率</em> 指本次購屋自己買下、登記在名下的所有權比率。與他人共同購屋且僅一人符合資格時，優惠額度按此比率核貸。</p>
+    <p class="yt-note">本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <div class="yt-set-actions">
+      <button type="button" class="yt-set-ghost" id="ytShareSetReset">恢復預設</button>
+      <button type="button" class="yt-set-ghost" id="ytShareSetCancel">取消</button>
+      <button type="button" class="yt-set-main" id="ytShareSetSave">儲存並套用</button>
+    </div>
+  </div>
+</div>
+
 <div class="yt-set" id="ytBaseSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytBaseSetTitle" hidden>
   <div class="yt-set-card" id="ytBaseSetCard">
     <div class="yt-set-title" id="ytBaseSetTitle">預設基準利率</div>
@@ -4025,7 +4066,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.24I";
+const APP_VERSION = "2026.08.24L";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4171,7 +4212,7 @@ const CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v1';
 let showCumInterest = false;
 
 const FIELD_HINT_HTML = {
-  price: hintLines('購屋價格上限為', tEm('9,999,999 萬元')),
+  price: hintLines('購屋總價上限為', tEm('9,999,999 萬元')),
   ratio: hintLines('貸款成數上限為', tEm('100%')),
   term: hintLines('貸款年限上限為', tEm('60 年')),
   rate: hintLines('請輸入年利率（區間）', tEm('0.01') + ' ～ ' + tEm('16.00')),
@@ -4190,9 +4231,9 @@ const GRACE_HINT_HTML = `<div class="toast-hint-body">
 const GRACE_REENTER_HINT_HTML = hintLines('請重新輸入', tEm('寬限期'));
 const YT_HINT_HTML = {
   age: hintLines('可輸入年齡上限為', tEm('100歲')),
-  ratio: hintLines('貸款成數上限為', tEm('80%')),
+  ratio: hintLines('貸款成數上限為', tEm('100%')),
   term: hintLines('貸款年限上限為', tEm('40年')),
-  share: hintLines('持分比例上限為', tEm('100%'))
+  share: hintLines('持買比率上限為', tEm('100%'))
 };
 function ytGraceHintHtml() {
   const mg = getYtGraceMaxValue();
@@ -4645,7 +4686,7 @@ function enterClearedState(opts) {
   updateCalcButton();
   updateClearRestoreBtns();
   // 存下「清空後」的空狀態而不是刪除保存內容：刪掉的話重開會退回 HTML 內建預設值
-  // （購屋價格 3000、年限 30…），看起來像沒清空。新青安本來就是存空狀態，兩邊一致。
+  // （購屋總價 3000、年限 30…），看起來像沒清空。新青安本來就是存空狀態，兩邊一致。
   persistFormState();
   if (!opts.silent) showToast('已清空數值');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4672,10 +4713,15 @@ const GL_DEFAULT_RATIO = 80;
 const GL_DEFAULT_TERM = 30;
 const RATIO_CAP_MAX = 100;
 const TERM_MAX_YEARS = 60;
-/* 新青安的欄位上限：年齡與持分是輸入合理範圍，成數與年限、寬限期則是方案規定。
-   貸款成數 8 成、年限 40 年、寬限期 5 年都出自「公股銀行辦理青年安心成家購屋優惠貸款原則」。 */
+/* 新青安的欄位上限：年齡與持分是輸入合理範圍，年限 40 年與寬限期 5 年則是方案規定，
+   出自「公股銀行辦理青年安心成家購屋優惠貸款原則」。
+   貸款成數欄位是「整筆房貸」的成數，銀行可依授信自行決定，故上限與一般貸款同為 100%；
+   方案的 8 成只約束青安部位，改在計算時以 YT_LTV_MAX 處理。 */
+const YT_SHARE_DEFAULT = 100;   /* 持買比率預設：全部由本人買下 */
 const YT_AGE_MAX = 100;
-const YT_RATIO_MAX = 80;
+const YT_RATIO_MAX = 100;
+/* 青安部位的成數上限（貸款原則三之（一）：貸款成數最高 8 成核貸） */
+const YT_LTV_MAX = 80;
 const YT_TERM_MAX = 40;
 const YT_GRACE_MAX = 5;
 function ytTermRaw() { return getCalcFieldRawString($('#ytTerm')); }
@@ -4882,7 +4928,7 @@ function resolveFieldMax(inputEl) {
   if (id === 'ytPrice' || id === 'ytAppraisal') return PRICE_MAX_WAN;
   if (id === 'ytAge') return YT_AGE_MAX;
   if (id === 'ytRatio') return YT_RATIO_MAX;
-  if (id === 'ytShare') return 100;
+  if (id === 'ytShare' || id === 'ytShareSetVal') return 100;
   if (id === 'ytTerm') return YT_TERM_MAX;
   if (id === 'ytGrace') return getYtGraceMaxValue();
   return getDeclaredFieldMax(inputEl);
@@ -4923,7 +4969,7 @@ function clampFieldToast(inputEl, before, after) {
   if (id === 'price' || id === 'appraisal' || id === 'ytPrice' || id === 'ytAppraisal') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.price });
   else if (id === 'ytAge') showToast('', { hint: true, hintHtml: YT_HINT_HTML.age });
   else if (id === 'ytRatio') showToast('', { hint: true, hintHtml: YT_HINT_HTML.ratio });
-  else if (id === 'ytShare') showToast('', { hint: true, hintHtml: YT_HINT_HTML.share });
+  else if (id === 'ytShare' || id === 'ytShareSetVal') showToast('', { hint: true, hintHtml: YT_HINT_HTML.share });
   else if (id === 'ytTerm') showToast('', { hint: true, hintHtml: YT_HINT_HTML.term });
   else if (id === 'ytGrace') {
     if (ytTermRaw() === '') showToast('', { hint: true, hintHtml: TERM_REQUIRED_HINT_HTML });
@@ -5073,7 +5119,7 @@ function updateLuxNote() {
   if (rMax !== null) parts.push('貸款成數上限 <em>' + rMax + ' %</em>');
   if (gMax !== null) parts.push(gMax === 0 ? '<em>無寬限期</em>' : '寬限期上限 <em>' + gMax + ' 年</em>');
   note.hidden = false;
-  note.innerHTML = '※ 購屋價格與銀行鑑價取高，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
+  note.innerHTML = '※ 購屋總價與銀行鑑價取高，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
     luxNum(row.amount).toLocaleString('zh-TW') + ' 萬</em> 的高價住宅門檻' +
     (parts.length ? '，' + parts.join('、') + '。' : '。');
 }
@@ -6168,7 +6214,7 @@ function buildConditionsData() {
   const apprWan = getAppraisalWan();
   const basic = [
     luxRow && ['房屋座落', luxRow.name],
-    ['購屋價格', `${price.toLocaleString('zh-TW')} 萬元`],
+    ['購屋總價', `${price.toLocaleString('zh-TW')} 萬元`],
     hasAppr && ['銀行鑑價', `${apprWan.toLocaleString('zh-TW')} 萬元`],
     hasAppr && apprWan > 0 && ['成數計算基礎', `${getLoanBasisWan().toLocaleString('zh-TW')} 萬元（取低）`],
     ['貸款成數', `${$('#ratio').value || 0} %`],
@@ -7151,7 +7197,7 @@ function getCalcValidationError() {
   let firstEl = null;
 
   if (isLoanFieldMissing(getCalcFieldRawString($('#price')))) {
-    labels.push('購屋價格');
+    labels.push('購屋總價');
     if (!firstEl) firstEl = $('#price');
   }
   if (isLoanFieldMissing(getCalcFieldRawString($('#ratio')))) {
@@ -7173,7 +7219,7 @@ function getCalcValidationError() {
 }
 
 function getSelfFundWan() {
-  // 自備款是「買價減掉銀行借的錢」；鑑價低於買價時差額同樣要自己補，故以購屋價格為基準
+  // 自備款是「買價減掉銀行借的錢」；鑑價低於買價時差額同樣要自己補，故以購屋總價為基準
   return getCalcFieldNumeric($('#price')) - getLoanYuan() / 10000;
 }
 
@@ -8825,6 +8871,17 @@ window.addEventListener('resize', () => {
   /* ---------- 上限夾制 ---------- */
   // 年限只夾法定上限 40 年；「申貸年齡加計核貸年限不得逾 80」屬資格條件，交由資格審查判定
   function maxTerm() { return 40; }
+  /* 貸款金額＝認定價格（買賣價與鑑價取低）× 成數，與一般貸款同一套顯示規則 */
+  function updateYtAmount() {
+    const el = Y('#ytAmount');
+    if (!el) return;
+    const price = num(Y('#ytPrice'));
+    const appr = raw(Y('#ytAppraisal')) !== '' ? num(Y('#ytAppraisal')) : 0;
+    const basis = appr > 0 ? Math.min(price, appr) : price;
+    const ratio = raw(Y('#ytRatio')) === '' ? 0 : num(Y('#ytRatio'));
+    el.value = fmtWan(Math.round(basis * ratio / 100 * 10000));
+  }
+
   function clampInputs() {
     const mt = maxTerm();
     // 年限與成數的標籤固定顯示默認值；寬限期只標「選填」，
@@ -8846,12 +8903,14 @@ window.addEventListener('resize', () => {
     const hasTerm = raw(Y('#ytTerm')) !== '';
     if (hasTerm && num(Y('#ytTerm')) > mt) setCalcFieldStoredValue(Y('#ytTerm'), mt);
     if (hasTerm && num(Y('#ytTerm')) < 1) setCalcFieldStoredValue(Y('#ytTerm'), 1);
-    if (raw(Y('#ytRatio')) !== '' && num(Y('#ytRatio')) > 80) setCalcFieldStoredValue(Y('#ytRatio'), 80);
+    // 成數是整筆房貸的成數，上限與一般貸款同為 100%；方案的 8 成只約束青安部位（見 compute）
+    if (raw(Y('#ytRatio')) !== '' && num(Y('#ytRatio')) > YT_RATIO_MAX) setCalcFieldStoredValue(Y('#ytRatio'), YT_RATIO_MAX);
     const mg = Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1));
     if (raw(Y('#ytGrace')) !== '' && num(Y('#ytGrace')) > mg) setCalcFieldStoredValue(Y('#ytGrace'), mg);
     syncPills('#ytTermPills', num(Y('#ytTerm')), mt);
     syncPills('#ytGracePills', num(Y('#ytGrace')), mg);
     syncStepScope();
+    updateYtAmount();
   }
   document.addEventListener('app:relayout', () => clampInputs());
 
@@ -8959,7 +9018,11 @@ window.addEventListener('resize', () => {
     const basis = appr > 0 ? Math.min(price, appr) : price;
     const total = basis * ratio / 100;
     const capWan = pass ? CAP[kind] * share / 100 : 0;
-    const youthWan = Math.min(total, capWan);
+    // 青安部位的兩道上限：額度（按持分核貸）與 8 成成數（以認定價格全額計）
+    const ltvWan = pass ? basis * YT_LTV_MAX / 100 : 0;
+    const youthWan = Math.min(total, capWan, ltvWan);
+    // 哪一道先咬住，決定下方組成要怎麼解釋；總貸款先到頂時不必解釋
+    const youthBind = !pass ? 'none' : (youthWan >= total - 1e-9 ? 'total' : (capWan <= ltvWan ? 'cap' : 'ltv'));
     const genWan = total - youthWan;
     const downWan = price - total;
 
@@ -8988,7 +9051,7 @@ window.addEventListener('resize', () => {
     const windowOk = now >= APPLY_FROM && now <= APPLY_TO;
 
     return { price, appr, basis, ratio, term, graceY, share, n, graceM, elig, pass,
-             total, capWan, youthWan, genWan, downWan, st, sy, sg, all, saved,
+             total, capWan, ltvWan, youthBind, youthWan, genWan, downWan, st, sy, sg, all, saved,
              savedNoSub, savedWithSub, savedWin, govHeadline, kind, windowOk };
   }
 
@@ -9053,17 +9116,21 @@ window.addEventListener('resize', () => {
     const genRate = num(Y('#ytGenRate'));
     const capTxt = wanTxt(CAP[kind]) + ' 萬';
     const shareTxt = d.share < 100 ? ` × 持買比率 ${d.share}%` : '';
+    // 被 8 成咬住時，講額度上限會讓人算不出眼前的數字，要改講成數
+    const youthWhy = d.youthBind === 'ltv'
+      ? `青安最高 ${YT_LTV_MAX / 10} 成，${wanTxt(d.basis)} 萬 × ${YT_LTV_MAX}%`
+      : `${CAP_NAME[kind]}申請貸款上限為 ${capTxt}${shareTxt}`;
     const segs = [
       { c: 'a', n: '新青安 3.0', v: d.youthWan, show: true, lines: d.pass
-          ? [`${CAP_NAME[kind]}申請貸款上限為 ${capTxt}${shareTxt}`, ytRateSummary(d)]
+          ? [youthWhy, ytRateSummary(d)]
           : ['不符申請青安貸款資格'] },
       { c: 'b', n: '一般貸款', v: d.genWan, show: d.genWan > 0, lines: d.pass
           ? [`總貸款 ${wanTxt(d.total)} 萬 − 新青安 ${wanTxt(d.youthWan)} 萬`,
-             `年利率 ${genRate}%（超出優惠額度部分）`]
+             `年利率 ${genRate}%（${d.youthBind === 'ltv' ? '超出青安成數部分' : '超出優惠額度部分'}）`]
           : [`不符申請青安貸款資格，總貸款 ${wanTxt(d.total)} 萬元全額按一般貸款計算`,
              `年利率 ${genRate}%`] },
       { c: 'c', n: '自備款', v: d.downWan, show: true, lines: [
-          `房屋總價 ${wanTxt(d.price)} 萬 − 總貸款 ${wanTxt(d.total)} 萬`,
+          `購屋總價 ${wanTxt(d.price)} 萬 − 總貸款 ${wanTxt(d.total)} 萬`,
           `貸款成數 ${d.ratio}%，不含稅費相關費用`] }
     ].filter((p) => p.show);
 
@@ -9395,7 +9462,7 @@ window.addEventListener('resize', () => {
       const v = o.f && o.f[id];
       if (v === '' || v == null) clearCalcField(Y(id)); else setCalcFieldStoredValue(Y(id), parseFloat(v));
     });
-    syncChoices(); clampInputs(); syncSteps(false);
+    syncChoices(); clampInputs(); syncSteps(false); syncShareTag();
     // 結果原本就在畫面上就一併還原，與一般貸款一致，不必再按一次計算
     if (o.resultsVisible && !ytMissingFields()) {
       try { resetViewsToDefault(); render(); markDone(); }
@@ -9675,7 +9742,77 @@ window.addEventListener('resize', () => {
     });
   })();
 
-  /* ---------- 預設基準利率設定視窗 ---------- */
+  /* ---------- 持買比率設定視窗 ----------
+   徽章只顯示目前設定值，修改一律進這個視窗，按「儲存並套用」才生效。 */
+  function syncShareTag() {
+    const el = Y('#ytShareTagVal');
+    if (!el) return;
+    const v = raw(Y('#ytShare')) === '' ? YT_SHARE_DEFAULT : Math.round(num(Y('#ytShare')));
+    el.textContent = v + '%';
+  }
+  (function () {
+    const dlg = Y('#ytShareSetDlg');
+    const fld = Y('#ytShareSetVal');
+    if (!dlg || !fld) return;
+    initCalcFields(dlg);            // 讓視窗內的欄位也能叫出同一套計算鍵盤
+    let lastFocus = null;
+
+    function openDlg() {
+      const cur = raw(Y('#ytShare')) === '' ? YT_SHARE_DEFAULT : num(Y('#ytShare'));
+      setCalcFieldStoredValue(fld, cur);
+      lastFocus = document.activeElement;
+      dlg.hidden = false;
+      requestAnimationFrame(() => dlg.classList.add('show'));
+      Y('#ytShareSetSave')?.focus({ preventScroll: true });
+    }
+    function closeDlg() {
+      dlg.classList.remove('show');
+      setTimeout(() => { dlg.hidden = true; }, 160);
+      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+      lastFocus = null;
+    }
+
+    Y('#ytShareTag')?.addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
+    Y('#ytShareSetCancel')?.addEventListener('click', closeDlg);
+    Y('#ytShareSetReset')?.addEventListener('click', () => {
+      setCalcFieldStoredValue(fld, YT_SHARE_DEFAULT);
+      showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
+    });
+    Y('#ytShareSetSave')?.addEventListener('click', () => {
+      const v = Math.round(num(fld));
+      if (raw(fld) === '' || !Number.isFinite(v) || v < 1 || v > 100) {
+        showAppAlert('持買比率請輸入 1 ～ 100 之間的整數');
+        return;
+      }
+      setCalcFieldStoredValue(Y('#ytShare'), v);
+      syncShareTag();
+      clampInputs(); persist(); markStale();
+      closeDlg();
+      showToast('', { html: toastLines(tOk('已套用') + ' 持買比率', tOk(v + '%')) });
+    });
+    /* 與其他設定視窗相同：Enter 直接儲存並套用，不讓下層頁面捲動 */
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || dlg.hidden) return;
+      if (document.querySelector('[data-calc-backdrop]')) return;
+      if (e.target && e.target.tagName === 'BUTTON') return;
+      e.preventDefault();
+      Y('#ytShareSetSave')?.click();
+    });
+    let pressOnBackdrop = false;
+    dlg.addEventListener('pointerdown', (e) => { pressOnBackdrop = e.target === dlg; });
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg && pressOnBackdrop) closeDlg();
+      pressOnBackdrop = false;
+    });
+    Y('#ytShareSetCard')?.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || dlg.hidden) return;
+      if (document.querySelector('[data-calc-backdrop]')) return;
+      closeDlg();
+    });
+  })();
+
+/* ---------- 預設基準利率設定視窗 ---------- */
   (function () {
     const dlg = Y('#ytBaseSetDlg');
     const fld = Y('#ytBaseDefault');
@@ -9808,10 +9945,13 @@ window.addEventListener('resize', () => {
     ytCleared = capture();
     persistCleared();
     stepsTouched = [false, false, false, false, false];
-    FIELDS.forEach((id) => clearCalcField(Y(id)));
+    // 持買比率屬於「這次購屋的固定條件」而非試算數值，清空時保留使用者設定
+    FIELDS.filter((id) => id !== '#ytShare').forEach((id) => clearCalcField(Y(id)));
     // 基準利率屬政策常數而非個人資料，清空後直接帶回預設值，
     // 並強制重算五段階梯（此時五格皆為空白，非強制模式不會回填）
     setCalcFieldStoredValue(Y('#ytBase'), loadBaseDefault());
+    if (raw(Y('#ytShare')) === '') setCalcFieldStoredValue(Y('#ytShare'), YT_SHARE_DEFAULT);
+    syncShareTag();
     syncSteps(true);
     Y('#ytResults').classList.remove('show');
     markStale(); persist();
