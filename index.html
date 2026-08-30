@@ -774,6 +774,12 @@ if ("serviceWorker" in navigator) {
     .toast-hint-body .tl-head { margin-left: -0.6em; }
     .toast-hint-body .tl-tail { margin-right: -0.6em; }
     .toast-lines > span { white-space: nowrap; }
+    /* 滿版虛線：深色底上用低不透明度的白，比實線輕，不會搶走文字 */
+    .toast-lines > .toast-hr {
+      display: block; align-self: stretch; height: 0;
+      margin: 4px 0 5px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    }
     .toast .nw { white-space: nowrap; }
     .toast-ok { color: #4FC79E; font-weight: 700; }
     /* 橫向擋板：pointer:coarse 限定觸控裝置，max-height 限定手機，
@@ -4036,7 +4042,7 @@ if ("serviceWorker" in navigator) {
 
 <div class="yt-set gl-set" id="ytRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytRegionSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="ytRegionSetCard" tabindex="-1">
-    <div class="yt-set-title" id="ytRegionSetTitle">購屋縣市設定</div>
+    <div class="yt-set-title" id="ytRegionSetTitle">購屋縣市上限設定</div>
     <p class="yt-note gl-set-lead">購屋總價與銀行鑑價 <em>取高</em> 超過所選縣市的上限時，即 <em>不符</em> 青安申請資格。</p>
   <div class="gl-set-row">
       <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">1</span></div>
@@ -4091,7 +4097,7 @@ if ("serviceWorker" in navigator) {
     <div class="yt-set-title" id="glRegionSetTitle">高價住宅門檻設定</div>
     <p class="yt-note gl-set-lead">購屋總價與銀行鑑價 <em>取高</em> 達到門檻時，會自動套用下方設定的貸款成數與寬限期上限。</p>
   <div class="gl-set-row">
-      <div class="gl-set-no">高價住宅<span class="gl-set-no-n">1</span></div>
+      <div class="gl-set-no">高價門檻<span class="gl-set-no-n">1</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName0">縣市名稱</label>
@@ -4112,7 +4118,7 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">高價住宅<span class="gl-set-no-n">2</span></div>
+      <div class="gl-set-no">高價門檻<span class="gl-set-no-n">2</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName1">縣市名稱</label>
@@ -4133,7 +4139,7 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
   <div class="gl-set-row">
-      <div class="gl-set-no">高價住宅<span class="gl-set-no-n">3</span></div>
+      <div class="gl-set-no">高價門檻<span class="gl-set-no-n">3</span></div>
       <div class="gl-set-2">
         <div class="field">
           <label for="glSetName2">縣市名稱</label>
@@ -4209,7 +4215,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29E";
+const APP_VERSION = "2026.08.29F";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4411,10 +4417,14 @@ function hintLines(main) {
     subs.map((t) => '<div class="toast-hint-sub toast-hint-line' + opticalCls(t) + '">' + t + '</div>').join('') + '</div>';
 }
 /* 一般深色提示：每個子句各佔一行，不會斷在詞中間 */
+/* 傳入 TOAST_HR 會畫一條滿版虛線，用來把「剛存了什麼」與「現在是開是關」分開 */
+const TOAST_HR = '\u0000hr';
 function toastLines() {
   const parts = Array.prototype.slice.call(arguments).filter(Boolean);
   return '<div class="toast-lines">' +
-    parts.map((t) => '<span class="' + opticalCls(t).trim() + '">' + t + '</span>').join('') + '</div>';
+    parts.map((t) => (t === TOAST_HR
+      ? '<i class="toast-hr" aria-hidden="true"></i>'
+      : '<span class="' + opticalCls(t).trim() + '">' + t + '</span>')).join('') + '</div>';
 }
 function luxHintBody(main, sub) { return hintLines(main, sub); }
 function luxRatioLine(max) { return '貸款成數上限 ' + tEm(max + '%'); }
@@ -4424,9 +4434,9 @@ function luxGraceLine(max) {
 }
 function luxRatioHintHtml(max) { return hintLines('已達高價住宅門檻', luxRatioLine(max)); }
 function luxGraceHintHtml(max) { return hintLines('已達高價住宅門檻', luxGraceLine(max)); }
-/* 開關提示：動作用綠字，與後面的名詞空一格分開 */
-function luxSwitchToastHtml(action) {
-  return toastLines(tOk(action) + ' 高價住宅門檻');
+/* 開關提示：啟用綠字、關閉紅字，與徽章的「啟用中／未啟用」同一個色彩語言 */
+function luxSwitchToastHtml(on) {
+  return toastLines((on ? tOk('已啟用') : tNo('已關閉')) + ' 高價住宅審查');
 }
 /* 剛達到門檻時的整合提示：成數與寬限期兩項上限併成一則，不分兩次跳 */
 function luxReachedHintHtml() {
@@ -8173,8 +8183,8 @@ $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   updateAmount();
   maybeRecalc();
   // 開啟時若當下就達門檻，applyLuxCaps 已經跳過整合提示，這裡不再重複
-  if (!luxOn) showToast('', { html: luxSwitchToastHtml('已關閉') });
-  else if (!luxHitRow()) showToast('', { html: luxSwitchToastHtml('已啟用') });
+  if (!luxOn) showToast('', { html: luxSwitchToastHtml(false) });
+  else if (!luxHitRow()) showToast('', { html: luxSwitchToastHtml(true) });
 });
 $('#glHhOpts') && $('#glHhOpts').addEventListener('click', (e) => {
   const b = e.target.closest('[data-gl-hh]');
@@ -8193,8 +8203,8 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
   updateAmount();
   maybeRecalc();
   // 開啟時若當下就有上限，applyLuxCaps 已跳整合提示，這裡不重複
-  if (!hhOn) showToast('', { html: toastLines(tOk('已關閉') + ' 貸款戶數限制') });
-  else if (!capRatio() && !capGrace()) showToast('', { html: toastLines(tOk('已啟用') + ' 貸款戶數限制') });
+  if (!hhOn) showToast('', { html: toastLines(tNo('已關閉') + ' 貸款戶數審查') });
+  else if (!capRatio() && !capGrace()) showToast('', { html: toastLines(tOk('已啟用') + ' 貸款戶數審查') });
 });
 
 (function () {
@@ -8272,9 +8282,9 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     closeDlg();
     showToast('', { html: toastLines(
       tOk('已套用') + ' ' + tOk(HH_LABELS.length + '組'),
-      '貸款戶數 限制設定',
-      // 同上：第二行已有「貸款戶數 限制設定」，第三行講開關管的事情
-      '戶數限制審查 ' + (hhOn ? tOk('啟用中') : tNo('未啟用'))
+      '貸款戶數限制 設定',
+      TOAST_HR,
+      '貸款戶數審查 ' + (hhOn ? tOk('啟用中') : tNo('未啟用'))
     ) });
   });
   dlg.addEventListener('keydown', (e) => {
@@ -8857,8 +8867,9 @@ $('#conditionsToggle').addEventListener('click', () => {
     showToast('', { html: toastLines(
       n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
       '高價住宅門檻 設定',
-      // 第二行已經是「高價住宅門檻 設定」，第三行講開關管的事情，避免同一個詞連出現兩次
-      '門檻審查 ' + (regionOn ? tOk('啟用中') : tNo('未啟用'))
+      TOAST_HR,
+      // 前面講剛存的資料，這裡講開關狀態，用「審查」與「門檻」區分兩件事
+      '高價住宅審查 ' + (regionOn ? tOk('啟用中') : tNo('未啟用'))
     ) });
   });
 
@@ -10457,8 +10468,9 @@ window.addEventListener('resize', () => {
       // 儲存不改動開關狀態，避免使用者搞不清楚何時會自己開啟
       showToast('', { html: toastLines(
         n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
-        '購屋縣市 設定',
-        '總價上限審查 ' + (yrActive() ? tOk('啟用中') : tNo('未啟用'))
+        '購屋縣市上限 設定',
+        TOAST_HR,
+        '購屋縣市審查 ' + (yrActive() ? tOk('啟用中') : tNo('未啟用'))
       ) });
     });
 
@@ -10520,7 +10532,7 @@ window.addEventListener('resize', () => {
       yrOn = !yrOn;
       saveYrOn(yrOn);
       syncChoices(); persist(); markStale();
-      showToast('', { html: toastLines(tOk(yrOn ? '已啟用' : '已關閉') + ' 總價上限審查') });
+      showToast('', { html: toastLines((yrOn ? tOk('已啟用') : tNo('已關閉')) + ' 購屋縣市審查') });
     });
   })();
 
