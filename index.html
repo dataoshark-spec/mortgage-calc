@@ -385,8 +385,31 @@ if ("serviceWorker" in navigator) {
       min-height: var(--hero-metrics-h);
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      /* 鎖頭靠左、查詢連結靠右 */
+      justify-content: space-between;
     }
+    /* 鎖頭：與右側文字連結同一套語言（白色線條、無框），只是換成圖示 */
+    .hero-lock {
+      position: relative;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 auto;
+      width: 30px; height: 30px; margin-left: -4px;
+      padding: 0; border: 0; background: none; color: #fff;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      opacity: 0.82; transition: opacity 0.15s ease;
+    }
+    /* 點擊熱區往外撐開，但右側不外擴以免與連結重疊 */
+    .hero-lock::after { content: ''; position: absolute; top: -9px; bottom: -9px; left: -10px; right: 0; }
+    .hero-lock svg { width: 17px; height: 17px; display: block; }
+    .hero-lock .lk-shut { display: none; }
+    .hero-lock[aria-pressed="true"] { opacity: 1; }
+    .hero-lock[aria-pressed="true"] .lk-open { display: none; }
+    .hero-lock[aria-pressed="true"] .lk-shut { display: block; }
+    .hero-lock:active { opacity: 0.55; }
+    @media (hover: hover) and (pointer: fine) {
+      .hero-lock:hover { opacity: 1; }
+    }
+    .export-capture .hero-lock { display: none !important; }
     .app-hero-brand {
       display: flex;
       align-items: center;
@@ -702,10 +725,13 @@ if ("serviceWorker" in navigator) {
       bottom: calc(24px + var(--safe-bottom));
       left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: #1a1a1a;
-      color: #fff;
+      /* 比照必填提示對話框：白卡片＋主題色細邊框，深色底在這套介面裡只留給頂帶 */
+      background: #fff;
+      color: var(--text);
+      border: 1.5px solid rgba(201, 146, 42, 0.32);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(201, 146, 42, 0.06);
       padding: 12px 22px;
-      border-radius: 14px;
+      border-radius: 18px;
       font-size: 0.95rem;
       font-weight: 500;
       line-height: 1.45;
@@ -724,9 +750,10 @@ if ("serviceWorker" in navigator) {
       padding: 15px 28px;
       font-size: 1.08rem;
       font-weight: 700;
+      /* 警示類用 2px 實框，與一般回饋的 1.5px 半透明邊框區分輕重 */
       border: 2px solid var(--teal);
-      background: #1f1f1f;
-      box-shadow: 0 10px 32px rgba(0,0,0,0.38);
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
       max-width: min(94vw, 400px);
       white-space: nowrap;
       width: max-content;
@@ -744,10 +771,10 @@ if ("serviceWorker" in navigator) {
       line-height: 1.35;
     }
     .toast-hint-main {
-      color: #fff;
+      color: var(--text);
     }
     .toast-hint-em {
-      color: #e53935;
+      color: #d0342f;
     }
     /* 兩行式提示的第二行改用 block：inline-flex 會把文字與 <span> 之間的空白吃掉，
        「貸款成數上限 30 %」會黏成「貸款成數上限30 %」 */
@@ -759,10 +786,10 @@ if ("serviceWorker" in navigator) {
       font-weight: 700;
     }
     .toast-hint-sub .toast-paren {
-      color: #fff;
+      color: var(--text);
     }
     .toast-hint-sub .toast-warn {
-      color: #e53935;
+      color: #d0342f;
     }
     /* 一般提示需要自行控制斷行時用：每個子句各佔一行，不會斷在詞中間 */
     .toast-lines { display: flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -774,14 +801,12 @@ if ("serviceWorker" in navigator) {
     .toast-hint-body .tl-head { margin-left: -0.6em; }
     .toast-hint-body .tl-tail { margin-right: -0.6em; }
     .toast-lines > span { white-space: nowrap; }
-    /* 滿版虛線：深色底上用低不透明度的白，比實線輕，不會搶走文字 */
-    .toast-lines > .toast-hr {
-      display: block; align-self: stretch; height: 0;
-      margin: 4px 0 5px;
-      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    body[data-mode="youth"] .toast {
+      border-color: rgba(18, 131, 107, 0.32);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(18, 131, 107, 0.06);
     }
     .toast .nw { white-space: nowrap; }
-    .toast-ok { color: #4FC79E; font-weight: 700; }
+    .toast-ok { color: var(--teal-dark); font-weight: 700; }
     /* 橫向擋板：pointer:coarse 限定觸控裝置，max-height 限定手機，
        桌機（含直向外接螢幕）與平板都不會被擋。 */
     .rotate-guard { display: none; }
@@ -800,7 +825,7 @@ if ("serviceWorker" in navigator) {
       html:not([data-orient="portrait"]) body { overflow: hidden; }
     }
     /* 深色底上的紅字要比提示框內的 #e53935 再亮一階才看得清楚 */
-    .toast-no { color: #FF7B72; font-weight: 700; }
+    .toast-no { color: #d0342f; font-weight: 700; }
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
@@ -1669,7 +1694,12 @@ if ("serviceWorker" in navigator) {
     /* 此列的 gap 專用：標籤與齒輪要看起來是一組，不能沿用徽章的 8px */
     #modeYouth .field > label:has(.yt-gear-btn) { gap: 3px; }
     .yt-gear-btn svg { width: 16px; height: 16px; display: block; }
-    .yt-gear-btn:hover, .yt-gear-btn:focus-visible { background: #e6efeb; color: var(--teal); }
+    /* hover 一定要包在媒體查詢裡：觸控裝置沒有真滑鼠，點完會把 hover 狀態黏在元素上，
+       看起來就是「點過的齒輪一直亮著」。focus-visible 只在鍵盤操作時才會命中。 */
+    .yt-gear-btn:focus-visible { background: #e6efeb; color: var(--teal); }
+    @media (hover: hover) and (pointer: fine) {
+      .yt-gear-btn:hover { background: #e6efeb; color: var(--teal); }
+    }
     .export-capture .yt-gear-btn { display: none !important; }
 
     /* 預設基準利率設定視窗：z-index 需低於計算鍵盤（500），鍵盤才能疊在上面 */
@@ -2821,6 +2851,20 @@ if ("serviceWorker" in navigator) {
       .gl-region-off:hover { background: #E9E9E9; color: var(--text); }
     }
     .gl-region-off[hidden] { display: none; }
+    /* 徽章旁的鎖頭只負責顯示狀態，不可點；控制端是 hero 左上那顆 */
+    .badge-lock {
+      display: inline-flex; align-items: center;
+      margin-left: auto; margin-right: 5px;
+      color: var(--muted); opacity: 0.7; pointer-events: none;
+    }
+    .badge-lock svg { width: 13px; height: 13px; display: block; }
+    .badge-lock .lk-shut { display: none; }
+    .badge-lock.is-locked { opacity: 0.9; }
+    .badge-lock.is-locked .lk-open { display: none; }
+    .badge-lock.is-locked .lk-shut { display: block; }
+    /* 鎖頭接手把徽章推到最右的責任，徽章本身就不再需要 auto 邊界 */
+    .label-cap > .badge-lock + .gl-region-off { margin-left: 0; }
+    .export-capture .badge-lock { display: none !important; }
     /* 未啟用：標題與齒輪縮小並轉為與「未啟用」同一階灰，弱化但保留入口 */
     .gl-region-sec.is-off > .label-cap { font-size: 0.8rem; color: var(--muted); }
     .gl-region-sec.is-off .yt-gear-btn { width: 18px; height: 18px; color: var(--muted); opacity: 0.75; }
@@ -3280,6 +3324,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="hero-metrics">
+        <button type="button" class="hero-lock" id="heroLock" aria-pressed="false" title="鎖定本模式的審查開關"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
         <div class="hero-links">
           <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢新青安3.0問答集與貸款原則" aria-haspopup="dialog">青安相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
           <span class="hero-links-sep" aria-hidden="true"></span>
@@ -3298,11 +3343,11 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
     <div class="section gl-region-sec" id="glRegionSec">
-      <div class="label-cap">高價住宅<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></div>
+      <div class="label-cap">高價住宅<button type="button" class="yt-gear-btn" id="glRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="glRegionOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="glRegionOff" aria-pressed="true">啟用中</button></div>
       <div class="yt-opts c3" id="glRegionOpts"></div>
     </div>
     <div class="section gl-hh-sec" id="glHhSec">
-      <div class="label-cap">貸款戶數<button type="button" class="yt-gear-btn" id="glHhSetBtn" title="設定貸款戶數限制" aria-label="設定貸款戶數限制" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="glHhOff" aria-pressed="true">啟用中</button></div>
+      <div class="label-cap">貸款戶數<button type="button" class="yt-gear-btn" id="glHhSetBtn" title="設定貸款戶數限制" aria-label="設定貸款戶數限制" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="glHhOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="glHhOff" aria-pressed="true">啟用中</button></div>
       <div class="yt-opts c2" id="glHhOpts"></div>
     </div>
     <div class="form-grid">
@@ -3602,7 +3647,7 @@ if ("serviceWorker" in navigator) {
 
       <div class="yt-cap"><span class="yt-cap-no">②</span>預計買房條件</div>
       <div class="section yt-region-sec" id="ytRegionSec">
-        <div class="label-cap yt-region-cap">購屋縣市<button type="button" class="yt-gear-btn" id="ytRegionSetBtn" title="設定購屋總價上限" aria-label="設定購屋總價上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="gl-region-off" id="ytRegionOff" aria-pressed="true">啟用中</button></div>
+        <div class="label-cap yt-region-cap">購屋縣市<button type="button" class="yt-gear-btn" id="ytRegionSetBtn" title="設定購屋總價上限" aria-label="設定購屋總價上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="ytRegionOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="ytRegionOff" aria-pressed="true">啟用中</button></div>
         <div class="yt-opts c3" id="ytRegionOpts"></div>
       </div>
       <div class="form-grid">
@@ -3977,7 +4022,7 @@ if ("serviceWorker" in navigator) {
 
 <div class="yt-set gl-set" id="glHhSetDlg" role="dialog" aria-modal="true" aria-labelledby="glHhSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="glHhSetCard" tabindex="-1">
-    <div class="yt-set-title" id="glHhSetTitle">貸款戶數限制設定</div>
+    <div class="yt-set-title" id="glHhSetTitle">貸款戶數門檻設定</div>
     <p class="yt-note gl-set-lead">依借款人名下的 <em>房屋</em> 與 <em>房貸</em> 戶數，套用成數與寬限期上限。與高價住宅門檻兩邊 <em>取嚴</em>。</p>
     <div class="gl-set-row">
       <div class="gl-set-no">無房屋／無房貸</div>
@@ -4042,7 +4087,7 @@ if ("serviceWorker" in navigator) {
 
 <div class="yt-set gl-set" id="ytRegionSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytRegionSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="ytRegionSetCard" tabindex="-1">
-    <div class="yt-set-title" id="ytRegionSetTitle">購屋縣市上限設定</div>
+    <div class="yt-set-title" id="ytRegionSetTitle">購屋縣市門檻設定</div>
     <p class="yt-note gl-set-lead">購屋總價與銀行鑑價 <em>取高</em> 超過所選縣市的上限時，即 <em>不符</em> 青安申請資格。</p>
   <div class="gl-set-row">
       <div class="gl-set-no">購屋縣市<span class="gl-set-no-n">1</span></div>
@@ -4215,7 +4260,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29F";
+const APP_VERSION = "2026.08.29J";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4417,14 +4462,10 @@ function hintLines(main) {
     subs.map((t) => '<div class="toast-hint-sub toast-hint-line' + opticalCls(t) + '">' + t + '</div>').join('') + '</div>';
 }
 /* 一般深色提示：每個子句各佔一行，不會斷在詞中間 */
-/* 傳入 TOAST_HR 會畫一條滿版虛線，用來把「剛存了什麼」與「現在是開是關」分開 */
-const TOAST_HR = '\u0000hr';
 function toastLines() {
   const parts = Array.prototype.slice.call(arguments).filter(Boolean);
   return '<div class="toast-lines">' +
-    parts.map((t) => (t === TOAST_HR
-      ? '<i class="toast-hr" aria-hidden="true"></i>'
-      : '<span class="' + opticalCls(t).trim() + '">' + t + '</span>')).join('') + '</div>';
+    parts.map((t) => '<span class="' + opticalCls(t).trim() + '">' + t + '</span>').join('') + '</div>';
 }
 function luxHintBody(main, sub) { return hintLines(main, sub); }
 function luxRatioLine(max) { return '貸款成數上限 ' + tEm(max + '%'); }
@@ -4548,6 +4589,64 @@ function applyOpticalCenter(toast) {
   });
   return measured;
 }
+
+/* ---------- 徽章鎖 ----------
+   徽章一點就翻轉審查開關，改完只有徽章文字變，容易誤觸又不易察覺。
+   鎖住後徽章不可點；齒輪不受影響（開視窗＋按儲存兩道手續，不會不小心完成）。
+   一般貸款與新青安各自一把鎖，狀態獨立保存。 */
+const BADGE_LOCK_KEY = { general: 'mortgage_badge_lock_general_v1', youth: 'mortgage_badge_lock_youth_v1' };
+const BADGE_LOCK_IDS = { general: ['glRegionOff', 'glHhOff'], youth: ['ytRegionOff'] };
+function currentLockMode() {
+  const m = document.body.dataset.mode;
+  return m === 'youth' ? 'youth' : 'general';
+}
+function loadBadgeLock(mode) {
+  try { return localStorage.getItem(BADGE_LOCK_KEY[mode]) === '1'; } catch (_) { return false; }
+}
+function saveBadgeLock(mode, v) {
+  try { localStorage.setItem(BADGE_LOCK_KEY[mode], v ? '1' : '0'); } catch (_) {}
+}
+function isBadgeLocked() { return loadBadgeLock(currentLockMode()); }
+function syncBadgeLock() {
+  const mode = currentLockMode();
+  const locked = loadBadgeLock(mode);
+  const btn = $('#heroLock');
+  if (btn) {
+    btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
+    btn.title = locked ? '已鎖定審查開關，點一下解除' : '鎖定本模式的審查開關';
+  }
+  // 三顆徽章旁的鎖頭都跟著當前模式的狀態走
+  ['general', 'youth'].forEach((m) => {
+    const on = loadBadgeLock(m);
+    BADGE_LOCK_IDS[m].forEach((id) => {
+      const el = document.querySelector('[data-badge-lock="' + id + '"]');
+      if (el) el.classList.toggle('is-locked', on);
+      const b = document.getElementById(id);
+      if (b) b.setAttribute('aria-disabled', on ? 'true' : 'false');
+    });
+  });
+}
+/* 徽章的 click 處理器一律先問這個；鎖住就只提示、不動作 */
+function badgeLockBlocked() {
+  if (!isBadgeLocked()) return false;
+  showToast('', { hint: true, hintHtml: hintLines('審查開關已鎖定', '請點左上角 ' + tEm('鎖頭') + ' 解除') });
+  return true;
+}
+
+(function () {
+  const btn = document.getElementById('heroLock');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const mode = currentLockMode();
+    const next = !loadBadgeLock(mode);
+    saveBadgeLock(mode, next);
+    syncBadgeLock();
+    showToast('', { html: toastLines(
+      (next ? tNo('已鎖定') : tOk('已解除鎖定')) + ' 審查開關',
+      next ? '徽章暫時不可點' : '徽章可以點了'
+    ) });
+  });
+})();
 
 function showToast(msg, opts) {
   opts = opts || {};
@@ -8173,6 +8272,7 @@ function renderHhOpts() {
 
 /* 徽章＝門檻總開關。設定不足 2 組時沒有東西可啟用，只提示不切換。 */
 $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
+  if (badgeLockBlocked()) return;
   if (!luxValidIndexes().length) {
     showToast('', { hint: true, hintHtml: hintLines('請先於「高價住宅」', '齒輪內設定 ' + tEm('至少1組'), '（高價住宅門檻設定）') });
     return;
@@ -8197,6 +8297,7 @@ $('#glHhOpts') && $('#glHhOpts').addEventListener('click', (e) => {
 });
 
 $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
+  if (badgeLockBlocked()) return;
   hhOn = !hhOn;
   saveHhOn(hhOn);
   applyLuxCaps();
@@ -8282,9 +8383,9 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     closeDlg();
     showToast('', { html: toastLines(
       tOk('已套用') + ' ' + tOk(HH_LABELS.length + '組'),
-      '貸款戶數限制 設定',
-      TOAST_HR,
-      '貸款戶數審查 ' + (hhOn ? tOk('啟用中') : tNo('未啟用'))
+      '貸款戶數門檻 設定',
+      // 「目前」讓啟用與未啟用兩種狀態共用同一句型，不必因語氣切換接詞
+      '目前審查 ' + (hhOn ? tOk('啟用中') : tNo('未啟用'))
     ) });
   });
   dlg.addEventListener('keydown', (e) => {
@@ -8867,9 +8968,8 @@ $('#conditionsToggle').addEventListener('click', () => {
     showToast('', { html: toastLines(
       n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
       '高價住宅門檻 設定',
-      TOAST_HR,
-      // 前面講剛存的資料，這裡講開關狀態，用「審查」與「門檻」區分兩件事
-      '高價住宅審查 ' + (regionOn ? tOk('啟用中') : tNo('未啟用'))
+      // 前兩行講剛存的資料，這行講開關狀態
+      '目前審查 ' + (regionOn ? tOk('啟用中') : tNo('未啟用'))
     ) });
   });
 
@@ -9034,6 +9134,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const prevMode = document.body.dataset.mode;
     if (prevMode && prevMode !== mode) modeScroll[prevMode] = currentScrollY();
     document.body.dataset.mode = mode;
+    // 必須放在 dataset.mode 更新之後：鎖的狀態是看「當前模式」決定的
+    if (typeof syncBadgeLock === 'function') syncBadgeLock();
     btns.forEach((btn) => {
       const on = btn.dataset.mode === mode;
       btn.classList.toggle('active', on);
@@ -10468,9 +10570,8 @@ window.addEventListener('resize', () => {
       // 儲存不改動開關狀態，避免使用者搞不清楚何時會自己開啟
       showToast('', { html: toastLines(
         n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
-        '購屋縣市上限 設定',
-        TOAST_HR,
-        '購屋縣市審查 ' + (yrActive() ? tOk('啟用中') : tNo('未啟用'))
+        '購屋縣市門檻 設定',
+        '目前審查 ' + (yrActive() ? tOk('啟用中') : tNo('未啟用'))
       ) });
     });
 
@@ -10525,6 +10626,7 @@ window.addEventListener('resize', () => {
 
     /* 徽章＝總價上限審查的開關 */
     Y('#ytRegionOff')?.addEventListener('click', () => {
+      if (badgeLockBlocked()) return;
       if (!yrValidIndexes().length) {
         showToast('', { hint: true, hintHtml: hintLines('請先於「購屋縣市」', '齒輪內設定 ' + tEm('至少1組'), '（購屋縣市設定）') });
         return;
