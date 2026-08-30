@@ -4261,7 +4261,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29L";
+const APP_VERSION = "2026.08.29M";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -7489,8 +7489,10 @@ async function shareResults() {
   }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
 }
 
+/* 購屋總價或成數任一為空就沒有金額可言，顯示 0 會被當成「算出來是 0」 */
 function updateAmount() {
-  $('#amount').value = fmtWan(getLoanYuan());
+  const blank = getCalcFieldRawString($('#price')) === '' || getCalcFieldRawString($('#ratio')) === '';
+  $('#amount').value = blank ? '' : fmtWan(getLoanYuan());
 }
 
 let calcPending = false;
@@ -8334,7 +8336,12 @@ $('#glHhOpts') && $('#glHhOpts').addEventListener('click', (e) => {
   if (!b) return;
   hhSel = parseInt(b.dataset.glHh, 10);
   saveHhSel(hhSel);
-  applyLuxCaps();
+  /* 主動點選的動作不再跳提示：徽章與下方說明列已經把新上限講清楚了，
+     再蓋一則提示只是重複。改用欄位標題閃一下，讓視線落到被清空的那一格。
+     （房價跨過高價住宅門檻是打字時的副作用，那邊仍然提示。） */
+  const before = getCalcFieldRawString($('#ratio'));
+  applyLuxCaps({ silent: true });
+  if (before !== '' && getCalcFieldRawString($('#ratio')) === '') flashFormFieldLabel($('#ratio'));
   updateAmount();
   maybeRecalc();
 });
@@ -9555,10 +9562,11 @@ window.addEventListener('resize', () => {
   function updateYtAmount() {
     const el = Y('#ytAmount');
     if (!el) return;
+    if (raw(Y('#ytPrice')) === '' || raw(Y('#ytRatio')) === '') { el.value = ''; return; }
     const price = num(Y('#ytPrice'));
     const appr = raw(Y('#ytAppraisal')) !== '' ? num(Y('#ytAppraisal')) : 0;
     const basis = appr > 0 ? Math.min(price, appr) : price;
-    const ratio = raw(Y('#ytRatio')) === '' ? 0 : num(Y('#ytRatio'));
+    const ratio = num(Y('#ytRatio'));
     el.value = fmtWan(Math.round(basis * ratio / 100 * 10000));
   }
 
@@ -9657,7 +9665,7 @@ window.addEventListener('resize', () => {
       { ok: neverUsed,
         // 窄機折行時只斷在「後」或「／」之後，兩個詞組都不從中間切開
         t: '112/8/1 後<span class="nw">未曾核貸青安貸款／</span><span class="nw">未曾核貸過農安貸款</span>',
-        s: neverUsed ? '112/7/31 前核貸之青安貸款，不受限貸一次規範影響' : '112/8/1 後經核貸青安或農安貸款者，不得再次申貸' },
+        s: neverUsed ? '112/7/31 前核貸之青安貸款，不受限貸一次規範影響' : '112/8/1 後經核貸青安或曾核貸農安貸款者，不得再次申貸' },
       { ok: selfUse,
         t: '購屋供自住使用',
         s: selfUse ? '核貸時須簽自用住宅使用切結書' : '非自住用途不得申貸，貸後查獲將追回補貼息' }
@@ -10822,6 +10830,7 @@ window.addEventListener('resize', () => {
     if (raw(Y('#ytShare')) === '') setCalcFieldStoredValue(Y('#ytShare'), YT_SHARE_DEFAULT);
     syncShareTag();
     syncSteps(true);
+    updateYtAmount();   // 唯讀的貸款金額不會自己跟著清，要主動重算成空白
     Y('#ytResults').classList.remove('show');
     markStale(); persist();
   };
