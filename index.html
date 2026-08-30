@@ -4261,7 +4261,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29K";
+const APP_VERSION = "2026.08.29L";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -5495,38 +5495,59 @@ function updateLuxNote() {
 /* 上限一改變就把該欄位清空，讓使用者重新決定。
    舊做法是超過才往下夾，於是「上限放寬」時舊值會留著（例如 30% 放寬到 60% 仍停在 30），
    使用者以為已經填好、實際上忘了往上調。放寬與縮緊一律清空，規則單一好預期。
-   清空範圍只限上限真的變動的那一格，其他欄位不動。 */
+   清空範圍只限上限真的變動的那一格，其他欄位不動。
+
+   比對的是「上限數值」而非「哪一道規則咬住」：三組門檻的成數上限都是 30% 時，
+   在縣市之間切換上限根本沒變，卻會白白清掉已填的成數、又跳一次一樣的提示。 */
 let lastCapKey = { ratio: null, grace: null };
-function capKeyOf(c) { return c ? c.why + '|' + c.max : ''; }
+function capValOf(c) { return c ? String(c.max) : ''; }
+/* 限制解除時要主動把提示收掉。放著讓它自己倒數，畫面會停在一則
+   「已有2戶以上房貸，上限30%」——而那個限制其實已經不存在了。 */
+function dismissCapToast() {
+  const toast = $('#toast');
+  if (!toast || !toast.classList.contains('show')) return;
+  if (!toast.classList.contains('toast-hint')) return;
+  const t = toast.textContent || '';
+  if (t.indexOf('上限') < 0 && t.indexOf('寬限期') < 0) return;
+  hideToast(toast);
+}
 function enforceLuxCaps(opts) {
   opts = opts || {};
   let changed = false;
 
   const rc = capRatio();
   const rEl = $('#ratio');
-  const rKey = capKeyOf(rc);
-  if (rEl && lastCapKey.ratio !== null && rKey !== lastCapKey.ratio && getCalcFieldRawString(rEl) !== '') {
+  const rVal = capValOf(rc);
+  const rChanged = lastCapKey.ratio !== null && rVal !== lastCapKey.ratio;
+  if (rChanged && rEl && getCalcFieldRawString(rEl) !== '') {
     clearCalcField(rEl);
     changed = true;
-    if (!opts.silent && rc) showToast('', { hint: true, multiline: true,
-      hintHtml: hintLines(capWhyText(rc.why), luxRatioLine(rc.max)) });
   }
-  lastCapKey.ratio = rKey;
+  if (rChanged && !opts.silent) {
+    if (rc) showToast('', { hint: true, multiline: true,
+      hintHtml: hintLines(capWhyText(rc.why), luxRatioLine(rc.max)) });
+    else dismissCapToast();
+  }
+  lastCapKey.ratio = rVal;
 
   const gc = capGrace();
   const gEl = $('#grace');
-  const gKey = capKeyOf(gc);
-  if (gEl && lastCapKey.grace !== null && gKey !== lastCapKey.grace) {
+  const gVal = capValOf(gc);
+  const gChanged = lastCapKey.grace !== null && gVal !== lastCapKey.grace;
+  if (gChanged && gEl) {
     syncGraceUnitFromDom();
     const curRaw = String(gEl.value ?? '').trim();
     if (curRaw !== '' && Number(curRaw) !== 0) {
       renderGracePills(gc ? gc.max : null);
       changed = true;
-      if (!opts.silent && gc) showToast('', { hint: true, multiline: true,
-        hintHtml: hintLines(capWhyText(gc.why), luxGraceLine(gc.max)) });
     }
   }
-  lastCapKey.grace = gKey;
+  if (gChanged && !opts.silent) {
+    if (gc) showToast('', { hint: true, multiline: true,
+      hintHtml: hintLines(capWhyText(gc.why), luxGraceLine(gc.max)) });
+    else if (!rc) dismissCapToast();
+  }
+  lastCapKey.grace = gVal;
 
   return changed;
 }
@@ -5542,9 +5563,11 @@ function luxHitStateKey() {
   // 還沒輸入購屋總價就先講上限太早，而且使用者接著輸入總價時會再跳一次同樣的提示。
   // 回傳空字串＝這次不提示也不記錄，等總價填了再一次講完。
   if (getCalcFieldRawString($('#price')) === '') return '';
+  // 同樣只看「上限數值」：門檻三組的成數上限都是 30% 時，在縣市之間切換
+  // 上限根本沒變，不該再跳一次一樣的提示。認定金額仍納入，這樣每輸入一個
+  // 新的高價數值都會再提醒一次。
   const row = luxHitRow();
-  return [rc ? rc.max + rc.why : '-', gc ? gc.max + gc.why : '-',
-          hhOn ? hhSel : '-', luxSel, row ? row.name : '-',
+  return [rc ? rc.max : '-', gc ? gc.max : '-',
           row ? getLuxBasisWan() : '-'].join('|');
 }
 
