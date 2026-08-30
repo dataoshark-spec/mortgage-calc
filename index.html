@@ -2873,16 +2873,17 @@ if ("serviceWorker" in navigator) {
       .gl-region-sec.is-off > .label-cap { font-size: 0.76rem; }
     }
     .gl-note {
-      font-size: 12px; line-height: 1.65; color: #9A6B18;
+      /* 內文用一般深色，只有判定依據與真正咬住的上限值上琥珀色，
+         重點才浮得出來；整句都琥珀反而分不出哪一道在生效。 */
+      font-size: 12px; line-height: 1.65; color: #45484C;
       margin: -14px 0 24px; letter-spacing: .01em;
     }
     .gl-note[hidden] { display: none; }
-    .gl-note em { font-style: normal; font-weight: 600; }
-    /* 說明列預設是琥珀色；被另一道規則蓋過的那句轉為一般內文色，
-       視線才會落在真正咬住的那一道上。 */
-    .gl-note .gl-note-loose { color: var(--muted); }
-    .gl-note .gl-note-loose em { font-weight: 600; }
-    .gl-note b { font-weight: 700; }
+    .gl-note em { font-style: normal; font-weight: 600; color: #9A6B18; }
+    /* 被蓋過的那道規則仍然存在、只是沒咬住，所以整句維持一般內文色（含數字）。
+       兩道的差別靠「上限值有沒有上琥珀色」來分；轉灰會讓人以為那條規則失效了。 */
+    .gl-note .gl-note-loose em { color: inherit; }
+    .gl-note b { font-weight: 700; color: #9A6B18; }
     /* 上限為 0 年時整格反灰禁止輸入：沿用既有「固定值欄位」的 .is-locked 視覺 */
     #modeGeneral .qp.qp-off {
       background: #F4F4F4; color: #C4C4C4; cursor: not-allowed;
@@ -4260,7 +4261,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29J";
+const APP_VERSION = "2026.08.29K";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4641,9 +4642,9 @@ function badgeLockBlocked() {
     const next = !loadBadgeLock(mode);
     saveBadgeLock(mode, next);
     syncBadgeLock();
+    // 綠＝比較安全的狀態：鎖上是保護，解除才是有風險的那一邊
     showToast('', { html: toastLines(
-      (next ? tNo('已鎖定') : tOk('已解除鎖定')) + ' 審查開關',
-      next ? '徽章暫時不可點' : '徽章可以點了'
+      (next ? tOk('已鎖定') : tNo('已解除鎖定')) + ' 審查開關'
     ) });
   });
 })();
@@ -5453,8 +5454,8 @@ function updateLuxNote() {
   const items = [];
   if (row) {
     items.push({
-      why: '購屋總價與銀行鑑價取高，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
-        luxNum(row.amount).toLocaleString('zh-TW') + ' 萬</em> 高價住宅門檻',
+      why: '購屋總價與銀行鑑價 <em>取高</em>，已達 <em>' + escapeAlertHtml(row.name) + ' ' +
+        luxNum(row.amount).toLocaleString('zh-TW') + ' 萬 高價住宅門檻</em>',
       ratio: getLuxRatioMax(), grace: getLuxGraceMaxYears()
     });
   }
@@ -5491,34 +5492,42 @@ function updateLuxNote() {
   note.innerHTML = '※ ' + sentences.join('；') + '。' + tail;
 }
 
-/* 門檻成立時把超過上限的既有數值往下夾，避免畫面停在一個銀行不會核的組合 */
+/* 上限一改變就把該欄位清空，讓使用者重新決定。
+   舊做法是超過才往下夾，於是「上限放寬」時舊值會留著（例如 30% 放寬到 60% 仍停在 30），
+   使用者以為已經填好、實際上忘了往上調。放寬與縮緊一律清空，規則單一好預期。
+   清空範圍只限上限真的變動的那一格，其他欄位不動。 */
+let lastCapKey = { ratio: null, grace: null };
+function capKeyOf(c) { return c ? c.why + '|' + c.max : ''; }
 function enforceLuxCaps(opts) {
   opts = opts || {};
   let changed = false;
+
   const rc = capRatio();
   const rEl = $('#ratio');
-  if (rc && rEl && getCalcFieldRawString(rEl) !== '') {
-    const cur = getCalcFieldNumeric(rEl);
-    if (Number.isFinite(cur) && cur > rc.max) {
-      setCalcFieldStoredValue(rEl, rc.max);
-      changed = true;
-      if (!opts.silent) showToast('', { hint: true, multiline: true,
-        hintHtml: hintLines(capWhyText(rc.why), luxRatioLine(rc.max)) });
-    }
+  const rKey = capKeyOf(rc);
+  if (rEl && lastCapKey.ratio !== null && rKey !== lastCapKey.ratio && getCalcFieldRawString(rEl) !== '') {
+    clearCalcField(rEl);
+    changed = true;
+    if (!opts.silent && rc) showToast('', { hint: true, multiline: true,
+      hintHtml: hintLines(capWhyText(rc.why), luxRatioLine(rc.max)) });
   }
+  lastCapKey.ratio = rKey;
+
   const gc = capGrace();
   const gEl = $('#grace');
-  if (gc && gEl) {
+  const gKey = capKeyOf(gc);
+  if (gEl && lastCapKey.grace !== null && gKey !== lastCapKey.grace) {
     syncGraceUnitFromDom();
     const curRaw = String(gEl.value ?? '').trim();
-    const cur = curRaw === '' ? 0 : Number(curRaw);
-    if (Number.isFinite(cur) && cur > gc.max) {
-      renderGracePills(gc.max);
+    if (curRaw !== '' && Number(curRaw) !== 0) {
+      renderGracePills(gc ? gc.max : null);
       changed = true;
-      if (!opts.silent) showToast('', { hint: true, multiline: true,
+      if (!opts.silent && gc) showToast('', { hint: true, multiline: true,
         hintHtml: hintLines(capWhyText(gc.why), luxGraceLine(gc.max)) });
     }
   }
+  lastCapKey.grace = gKey;
+
   return changed;
 }
 
@@ -8236,7 +8245,18 @@ function renderRateRows() {
   syncAddRateButton();
 }
 
-$('#price').addEventListener('input', () => { applyLuxCaps(); updateAmount(); maybeRecalc(); });
+/* 換一間房才會重打總價，原本的鑑價一定是舊的；數值真的變了才清，
+   避免只是修正輸入時把鑑價一起帶走。反向不成立：改鑑價不動總價。 */
+let lastPriceRaw = getCalcFieldRawString($('#price'));
+$('#price').addEventListener('input', () => {
+  const now = getCalcFieldRawString($('#price'));
+  if (now !== lastPriceRaw) {
+    lastPriceRaw = now;
+    const ap = $('#appraisal');
+    if (ap && getCalcFieldRawString(ap) !== '') clearCalcField(ap);
+  }
+  applyLuxCaps(); updateAmount(); maybeRecalc();
+});
 $('#appraisal').addEventListener('input', () => {
   const el = $('#appraisal');
   const clamped = applyFieldClamp(el, el.value);
