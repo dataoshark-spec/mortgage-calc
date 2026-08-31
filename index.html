@@ -1709,9 +1709,11 @@ if ("serviceWorker" in navigator) {
       z-index: 480;
       overscroll-behavior: contain;
       display: flex;
-      align-items: flex-start;
+      /* 垂直置中：內容少的視窗原本靠上、下方空一大塊，看起來像被推上去。
+         卡片自己有 max-height 與內部捲動，所以置中不會把頂端切掉。 */
+      align-items: center;
       justify-content: center;
-      padding: 10vh 20px 20px;
+      padding: 4vh 20px 20px;
       background: rgba(18, 24, 28, 0.42);
       backdrop-filter: blur(3px);
       -webkit-backdrop-filter: blur(3px);
@@ -2891,6 +2893,8 @@ if ("serviceWorker" in navigator) {
     #modeGeneral .qp.qp-off:hover { background: #F4F4F4; }
     /* ===== 高價住宅門檻設定視窗 ===== */
     .gl-set { padding: 4vh 20px 16px; }
+    /* 小型設定視窗也要有高度上限，置中時才不會超出畫面 */
+    .yt-set-card { max-height: 92vh; max-height: 92dvh; overflow-y: auto; }
     .gl-set-card {
       max-width: 380px; max-height: 90vh; max-height: 90dvh; overflow-y: auto; outline: none;
       padding: 0 16px 0;
@@ -4261,7 +4265,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.29M";
+const APP_VERSION = "2026.08.29N";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -9643,9 +9647,22 @@ window.addEventListener('resize', () => {
       { ok: age >= 18 && age < 50,
         t: `申貸年齡 ${age} 歲`,
         s: age >= 18 && age < 50 ? '符合民法規定之成年年齡以上且申貸時未滿 50 歲' : '申貸時須符合民法規定之成年年齡以上且未滿 50 歲' },
-      { ok: age + term <= 80,
-        t: `貸款年限 ${term} 年`,
-        s: `${age} 歲＋${term} 年＝${age + term}，合計${age + term <= 80 ? '未逾' : '已逾'} 80` },
+      // 年齡無效時算式本身沒有意義，不能掛綠勾說這關過了；
+      // 但若算式真的超過 80，仍要講真正的原因，而不是推給年齡。
+      (() => {
+        const ageOk = age >= 18 && age < 50;
+        const sumOk = age + term <= 80;
+        if (!sumOk) {
+          return { ok: false, t: `貸款年限 ${term} 年`,
+                   s: `${age} 歲＋${term} 年＝${age + term}，合計已逾 80` };
+        }
+        if (!ageOk) {
+          return { ok: false, t: `貸款年限 ${term} 年`,
+                   s: '申貸年齡不符規定，本項無法認定' };
+        }
+        return { ok: true, t: `貸款年限 ${term} 年`,
+                 s: `${age} 歲＋${term} 年＝${age + term}，合計未逾 80` };
+      })(),
       { ok: income <= 200,
         t: `本人年所得總額 ${wanTxt(income)} 萬`,
         s: income <= 200 ? '所得總額未逾 200 萬元' : '所得總額不得逾 200 萬元' },
