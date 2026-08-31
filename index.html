@@ -4265,7 +4265,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.31A";
+const APP_VERSION = "2026.08.31B";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4807,7 +4807,8 @@ function captureFormState() {
     rateSegments: JSON.parse(JSON.stringify(rateSegments)),
     termPillVal: getActivePillVal('termPills'),
     gracePillVal: getActivePillVal('gracePills'),
-    resultsVisible: $('#results').classList.contains('show')
+    resultsVisible: $('#results').classList.contains('show'),
+    resultsAutoHidden: resultsAutoHidden
   };
 }
 
@@ -4889,10 +4890,13 @@ function applyFormState(state) {
   applyLuxCaps({ silent: true });
   updateAmount();
   if (state.resultsVisible && getTotalMonths() > 0 && getLoanYuan() > 0) {
+    resultsAutoHidden = false;
     renderResults(false);
     markCalcSynced();
   } else {
     $('#results').classList.remove('show');
+    // 上次是「算過、但欄位缺了才收起來」的話，這次補齊仍要自動展開
+    resultsAutoHidden = !!(state.resultsAutoHidden || state.resultsVisible);
     maybeRecalc();
   }
   updateClearRestoreBtns();
@@ -4941,6 +4945,8 @@ function enterClearedState(opts) {
   updateAmount();
   $('#results').classList.remove('show');
   calcSynced = false;
+  // 「清空數值」維持原本規則：要重新按一次計算，不會因為補欄位就自己跳出來
+  resultsAutoHidden = false;
   updateCalcButton();
   updateClearRestoreBtns();
   // 存下「清空後」的空狀態而不是刪除保存內容：刪掉的話重開會退回 HTML 內建預設值
@@ -7517,6 +7523,10 @@ function updateAmount() {
 
 let calcPending = false;
 let calcSynced = false;
+/* 結果區「因必填欄位變空而暫時收起」的狀態。
+   要跟「從未計算」和「按過清空數值」分開：那兩種要使用者自己按按鈕，
+   這一種是欄位補回去就自動回來。 */
+let resultsAutoHidden = false;
 
 function formIsCalcEmpty() {
   return getCalcFieldRawString($('#price')) === '' && getCalcFieldRawString($('#ratio')) === '' &&
@@ -7554,10 +7564,19 @@ function markCalcSynced() {
 }
 
 /* 首次計算與「清空數值」之後仍需使用者按下按鈕（此時結果區是隱藏的）；
-   一旦結果已經出現，之後改動任何欄位都自動重算，且不捲動畫面。 */
+   一旦結果已經出現，之後改動任何欄位都自動重算，且不捲動畫面。
+   必填欄位被清空時（不論是手動清的，還是因上限縮緊被自動清掉的）直接收起結果，
+   不再留著對不上的舊數字；欄位補回去就自動展開重算。寬限期是選填，不在此列。 */
 function autoRecalcGeneral() {
-  if (!$('#results').classList.contains('show')) return false;
-  if (getCalcValidationError()) return false;   // 欄位被清空時保留上次結果，按鈕轉為「尚未計算」
+  const shown = $('#results').classList.contains('show');
+  if (!shown && !resultsAutoHidden) return false;
+  if (getCalcValidationError()) {
+    if (shown) $('#results').classList.remove('show');
+    resultsAutoHidden = true;
+    persistFormState();
+    return false;
+  }
+  resultsAutoHidden = false;
   renderResults(false);
   markCalcSynced();
   return true;
@@ -8642,6 +8661,7 @@ function runCalcAction() {
     return;
   }
   renderResults(true);
+  resultsAutoHidden = false;
   markCalcSynced();
 }
 
@@ -9458,6 +9478,8 @@ window.addEventListener('resize', () => {
   let noHome = true, neverUsed = true, selfUse = true;
   let stepsTouched = [false, false, false, false, false];
   let detailSrc = 'all', ytCum = false, ytStale = true;
+  // 結果因必填欄位變空而暫時收起（補回去就自動展開），與「首次／剛清空」區分開
+  let ytAutoHidden = false;
   let periodSrc = 'all';
   let last = null, ytCleared = null;
 
@@ -10173,7 +10195,8 @@ window.addEventListener('resize', () => {
   const FIELDS = ['#ytAge', '#ytIncome', '#ytPrice', '#ytAppraisal', '#ytRatio', '#ytTerm', '#ytGrace', '#ytBase', '#ytShare', '#ytGenRate'].concat(STEP_IDS);
   function capture() {
     const o = { kind, region, method, noHome, neverUsed, selfUse, stepsTouched: stepsTouched.slice(),
-                resultsVisible: !!Y('#ytResults') && Y('#ytResults').classList.contains('show'), f: {} };
+                resultsVisible: !!Y('#ytResults') && Y('#ytResults').classList.contains('show'),
+                autoHidden: ytAutoHidden, f: {} };
     FIELDS.forEach((id) => { o.f[id] = raw(Y(id)); });
     return o;
   }
@@ -10190,10 +10213,13 @@ window.addEventListener('resize', () => {
     syncChoices(); clampInputs(); syncSteps(false); syncShareTag();
     // 結果原本就在畫面上就一併還原，與一般貸款一致，不必再按一次計算
     if (o.resultsVisible && !ytMissingFields()) {
+      ytAutoHidden = false;
       try { resetViewsToDefault(); render(); markDone(); }
       catch (e) { console.error(e); Y('#ytResults').classList.remove('show'); }
     } else {
       Y('#ytResults').classList.remove('show');
+      // 上次是「算過、但欄位缺了才收起來」的話，這次補齊仍要自動展開
+      ytAutoHidden = !!(o.autoHidden || o.resultsVisible);
     }
   }
   function persist() { try { localStorage.setItem(STORE, JSON.stringify(capture())); } catch (e) {} }
@@ -10240,11 +10266,19 @@ window.addEventListener('resize', () => {
   }
 
   /* 結果尚未出現（首次或剛清空）時不自動計算，交由使用者按下按鈕；
-     結果已在畫面上時，改動欄位即靜默重算，不捲動、不跳缺欄位提示。 */
+     結果已在畫面上時，改動欄位即靜默重算，不捲動、不跳缺欄位提示。
+     必填欄位變空就收起結果，不留對不上的舊數字；補回去自動展開（與一般貸款同一套）。 */
   function ytAutoRecalc() {
-    if (!Y('#ytResults').classList.contains('show')) return false;
-    if (ytMissingFields()) return false;
+    const shown = Y('#ytResults').classList.contains('show');
+    if (!shown && !ytAutoHidden) return false;
+    if (ytMissingFields()) {
+      if (shown) Y('#ytResults').classList.remove('show');
+      ytAutoHidden = true;
+      persist();
+      return false;
+    }
     try {
+      ytAutoHidden = false;
       resetViewsToDefault();
       clampInputs(); render(); markDone();
       return true;
@@ -10826,6 +10860,7 @@ window.addEventListener('resize', () => {
       return;
     }
     try {
+      ytAutoHidden = false;
       resetViewsToDefault();
       clampInputs(); render(); markDone();
       const box = Y('#ytConditionsBox');
@@ -10860,6 +10895,8 @@ window.addEventListener('resize', () => {
     syncSteps(true);
     updateYtAmount();   // 唯讀的貸款金額不會自己跟著清，要主動重算成空白
     Y('#ytResults').classList.remove('show');
+    // 「清空數值」維持原本規則：要重新按一次計算
+    ytAutoHidden = false;
     markStale(); persist();
   };
   window.__ytRestore = function () {
