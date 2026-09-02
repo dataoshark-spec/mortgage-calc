@@ -4265,7 +4265,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.31B";
+const APP_VERSION = "2026.08.31C";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4478,21 +4478,9 @@ function luxRatioLine(max) { return '貸款成數上限 ' + tEm(max + '%'); }
 function luxGraceLine(max) {
   return max === 0 ? '並不可使用 ' + tEm('寬限期') : '寬限期上限 ' + tEm(max + ' 年');
 }
-function luxRatioHintHtml(max) { return hintLines('已達高價住宅門檻', luxRatioLine(max)); }
-function luxGraceHintHtml(max) { return hintLines('已達高價住宅門檻', luxGraceLine(max)); }
 /* 開關提示：啟用綠字、關閉紅字，與徽章的「啟用中／未啟用」同一個色彩語言 */
 function luxSwitchToastHtml(on) {
   return toastLines((on ? tOk('已啟用') : tNo('已關閉')) + ' 高價住宅審查');
-}
-/* 剛達到門檻時的整合提示：成數與寬限期兩項上限併成一則，不分兩次跳 */
-function luxReachedHintHtml() {
-  const rc = capRatio(), gc = capGrace();
-  const lines = [];
-  if (rc) lines.push(luxRatioLine(rc.max));
-  if (gc) lines.push(luxGraceLine(gc.max));
-  // 標題取實際咬住的那一道；兩項上限各佔一行，寬度才不會超出提示框
-  const why = capWhyText(rc ? rc.why : (gc ? gc.why : 'lux'));
-  return hintLines.apply(null, [why].concat(lines));
 }
 const TERM_REQUIRED_HINT_HTML = hintLines('請優先輸入', tEm('貸款年限'));
 
@@ -4887,7 +4875,7 @@ function applyFormState(state) {
   setCalcFieldStoredValue($('#rate'), state.rate);
   if (rateType === 'multi') renderRateRows();
 
-  applyLuxCaps({ silent: true });
+  applyLuxCaps();
   updateAmount();
   if (state.resultsVisible && getTotalMonths() > 0 && getLoanYuan() > 0) {
     resultsAutoHidden = false;
@@ -4941,7 +4929,7 @@ function enterClearedState(opts) {
   $('#multiRate').classList.add('hidden');
   clearCalcField($('#rate'));
 
-  applyLuxCaps({ silent: true });
+  applyLuxCaps();
   updateAmount();
   $('#results').classList.remove('show');
   calcSynced = false;
@@ -5511,18 +5499,9 @@ function updateLuxNote() {
    在縣市之間切換上限根本沒變，卻會白白清掉已填的成數、又跳一次一樣的提示。 */
 let lastCapKey = { ratio: null, grace: null };
 function capValOf(c) { return c ? String(c.max) : ''; }
-/* 限制解除時要主動把提示收掉。放著讓它自己倒數，畫面會停在一則
-   「已有2戶以上房貸，上限30%」——而那個限制其實已經不存在了。 */
-function dismissCapToast() {
-  const toast = $('#toast');
-  if (!toast || !toast.classList.contains('show')) return;
-  if (!toast.classList.contains('toast-hint')) return;
-  const t = toast.textContent || '';
-  if (t.indexOf('上限') < 0 && t.indexOf('寬限期') < 0) return;
-  hideToast(toast);
-}
-function enforceLuxCaps(opts) {
-  opts = opts || {};
+/* 上限本身完全不跳提示：徽章、下方說明列已經把兩道規則各自的上限寫清楚，
+   欄位真的被清掉時再由標題閃動接手。 */
+function enforceLuxCaps() {
   let changed = false;
 
   const rc = capRatio();
@@ -5532,11 +5511,6 @@ function enforceLuxCaps(opts) {
   if (rChanged && rEl && getCalcFieldRawString(rEl) !== '') {
     clearCalcField(rEl);
     changed = true;
-  }
-  if (rChanged && !opts.silent) {
-    if (rc) showToast('', { hint: true, multiline: true,
-      hintHtml: hintLines(capWhyText(rc.why), luxRatioLine(rc.max)) });
-    else dismissCapToast();
   }
   lastCapKey.ratio = rVal;
 
@@ -5552,63 +5526,32 @@ function enforceLuxCaps(opts) {
       changed = true;
     }
   }
-  if (gChanged && !opts.silent) {
-    if (gc) showToast('', { hint: true, multiline: true,
-      hintHtml: hintLines(capWhyText(gc.why), luxGraceLine(gc.max)) });
-    else if (!rc) dismissCapToast();
-  }
   lastCapKey.grace = gVal;
 
   return changed;
 }
 
-/* 門檻提示的觸發條件：只要「這次的判定結果」與上次提示過的不同就再提示一次。
-   （舊版只在數值真的被夾住時才提示，成數已經是 30% 之後就再也不會跳。）
-   認定金額只在「高價住宅那道有咬住」時才納入鍵值——戶數限制與房價無關，
-   若把金額也算進去，選完戶數跳一次、接著輸入購屋總價又會跳一次同樣的提示。 */
-let luxHintKey = null;
-function luxHitStateKey() {
-  const rc = capRatio(), gc = capGrace();
-  if (!rc && !gc) return '';
-  // 還沒輸入購屋總價就先講上限太早，而且使用者接著輸入總價時會再跳一次同樣的提示。
-  // 回傳空字串＝這次不提示也不記錄，等總價填了再一次講完。
-  if (getCalcFieldRawString($('#price')) === '') return '';
-  // 同樣只看「上限數值」：門檻三組的成數上限都是 30% 時，在縣市之間切換
-  // 上限根本沒變，不該再跳一次一樣的提示。認定金額仍納入，這樣每輸入一個
-  // 新的高價數值都會再提醒一次。
-  const row = luxHitRow();
-  return [rc ? rc.max : '-', gc ? gc.max : '-',
-          row ? getLuxBasisWan() : '-'].join('|');
-}
-
-function applyLuxCaps(opts) {
-  opts = opts || {};
+function applyLuxCaps() {
   renderLuxRegionOpts();
   renderHhOpts();
-  const key = luxHitStateKey();
-  const reached = key !== '' && key !== luxHintKey;
-  // 剛達門檻時只出一則整合提示，個別欄位被夾住的提示就不重複跳
-  const changed = enforceLuxCaps(reached ? { silent: true } : opts);
-  luxHintKey = key === '' ? null : key;
-  if (reached && !opts.silent) showToast('', { hint: true, multiline: true, hintHtml: luxReachedHintHtml() });
+  const changed = enforceLuxCaps();
   updateLuxCapBadges();
   updateLuxNote();
   if (changed) updateAmount();
   return changed;
 }
 
-/* 主動點選（高價住宅縣市、貸款戶數、兩顆審查徽章）一律走這支：不跳上限提示，
-   只把真的被動到的那一格標題閃一下。
-   原因：徽章與下方說明列已經把新上限講清楚了，再蓋一則提示就是重複；更糟的是
-   兩道限制「取嚴」之後，提示標題常常是另一道規則的名字 —— 切「高價住宅」縣市
-   卻跳出「已有1戶房貸」，看起來像點錯了。而且同一鍵值只提示一次，於是接著再切
-   戶數時反而完全不跳，前後不一致。
-   上限提示保留給「輸入購屋總價／鑑價」——那是打字時才會發生的副作用，需要主動告知。 */
-function applyCapsFromOptionClick() {
+/* 高價住宅與貸款戶數的上限一律不跳提示——不管是切選項還是打購屋總價／鑑價。
+   理由：提示講的是「先前設好的條件」，跟當下的動作對不上（打總價卻跳出
+   「已有1戶房貸」）；而且同一狀態只跳一次，於是回頭再切選項時反而完全不跳，
+   前後矛盾。資訊沒有少：徽章與下方說明列本來就是兩道規則各講各的上限。
+   使用者會操作到的路徑都走這支：套用上限後，若哪一格真的被清掉就閃一下標題。
+   （成數被清掉時結果區也會整塊收起，信號比提示更明顯。） */
+function applyCapsWithFlash() {
   const rEl = $('#ratio'), gEl = $('#grace');
   const rBefore = getCalcFieldRawString(rEl);
   const gBefore = gEl ? String(gEl.value ?? '').trim() : '';
-  applyLuxCaps({ silent: true });
+  applyLuxCaps();
   if (rBefore !== '' && getCalcFieldRawString(rEl) === '') { flashFormFieldLabel(rEl); return; }
   if (gEl && gBefore !== '' && String(gEl.value ?? '').trim() !== gBefore) flashFormFieldLabel(gEl);
 }
@@ -8319,13 +8262,13 @@ $('#price').addEventListener('input', () => {
     const ap = $('#appraisal');
     if (ap && getCalcFieldRawString(ap) !== '') clearCalcField(ap);
   }
-  applyLuxCaps(); updateAmount(); maybeRecalc();
+  applyCapsWithFlash(); updateAmount(); maybeRecalc();
 });
 $('#appraisal').addEventListener('input', () => {
   const el = $('#appraisal');
   const clamped = applyFieldClamp(el, el.value);
   if (el.value !== clamped) el.value = clamped;
-  applyLuxCaps();
+  applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
 });
@@ -8363,7 +8306,7 @@ $('#glRegionOff') && $('#glRegionOff').addEventListener('click', () => {
   }
   luxOn = !luxOn;
   saveLuxOn(luxOn);
-  applyCapsFromOptionClick();
+  applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
   // 點徽章就只回報「這顆徽章」的開關結果，不再夾帶上限提示（開／關兩邊一致）
@@ -8374,7 +8317,7 @@ $('#glHhOpts') && $('#glHhOpts').addEventListener('click', (e) => {
   if (!b) return;
   hhSel = parseInt(b.dataset.glHh, 10);
   saveHhSel(hhSel);
-  applyCapsFromOptionClick();
+  applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
 });
@@ -8383,7 +8326,7 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
   if (badgeLockBlocked()) return;
   hhOn = !hhOn;
   saveHhOn(hhOn);
-  applyCapsFromOptionClick();
+  applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
   // 與高價住宅徽章同一套：只回報開關結果
@@ -8460,7 +8403,7 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     hhRows = rows;
     saveHhRows(hhRows);
     // 存檔後由下方「已套用…」那則提示交代結果，這裡不再多跳一則上限提示
-    applyLuxCaps({ silent: true });
+    applyLuxCaps();
     updateAmount();
     maybeRecalc();
     closeDlg();
@@ -8512,7 +8455,7 @@ $('#glRegionOpts').addEventListener('click', (e) => {
   if (!Number.isFinite(i) || i === luxSel) return;
   luxSel = i;
   saveLuxSel(luxSel);
-  applyCapsFromOptionClick();
+  applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
 });
@@ -9044,7 +8987,7 @@ $('#conditionsToggle').addEventListener('click', () => {
     syncLuxSelection();
     saveLuxSel(luxSel);
     // 同上：存檔結果交給下方「已套用…」那則提示
-    applyLuxCaps({ silent: true });
+    applyLuxCaps();
     updateAmount();
     maybeRecalc();
     closeDlg();
@@ -9119,7 +9062,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   });
 })();
 
-applyLuxCaps({ silent: true });
+applyLuxCaps();
 bindCapBadgeFill();
 updateAmount();
 initCalcFields();
