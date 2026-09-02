@@ -1917,9 +1917,11 @@ if ("serviceWorker" in navigator) {
     #ytPeriodLines .payment-row > div { min-height: 54px; }
     /* 期數欄可承載第二行小標（例：最後一期） */
     #ytPeriodLines .payment-row .period-range,
-    #periodLines .payment-row .period-range { flex-direction: column; gap: 2px; }
+    #periodLines .payment-row .period-range,
+    #bdPeriodLines .payment-row .period-range { flex-direction: column; gap: 2px; }
     #ytPeriodLines .payment-row .period-range .pr-tag,
-    #periodLines .payment-row .period-range .pr-tag {
+    #periodLines .payment-row .period-range .pr-tag,
+    #bdPeriodLines .payment-row .period-range .pr-tag {
       font-size: .78em; font-weight: 500; color: #9a9a9a; letter-spacing: .02em;
     }
     /* 三欄版面：左＝期數單位開關、中＝貸款別標題（置中）、右＝圓點 */
@@ -2933,16 +2935,16 @@ if ("serviceWorker" in navigator) {
     .export-capture .bd-mini { pointer-events: none; }
     #bdResults .summary-grid { margin-bottom: 16px; }
     #bdResults .summary-item .value { font-size: 1.18rem; }
-    .gl-note em { font-style: normal; font-weight: 600; color: #9A6B18; }
+    .gl-note em { font-style: normal; font-weight: 600; color: var(--teal-dark); }
     /* 被蓋過的那道規則仍然存在、只是沒咬住，所以整句維持一般內文色（含數字）。
        兩道的差別靠「上限值有沒有上琥珀色」來分；轉灰會讓人以為那條規則失效了。 */
     .gl-note .gl-note-loose em { color: inherit; }
-    .gl-note b { font-weight: 700; color: #9A6B18; }
+    .gl-note b { font-weight: 700; color: var(--teal-dark); }
     /* 上限為 0 年時整格反灰禁止輸入：沿用既有「固定值欄位」的 .is-locked 視覺 */
-    #modeGeneral .qp.qp-off {
+    #modeGeneral .qp.qp-off, #modeBurden .qp.qp-off {
       background: #F4F4F4; color: #C4C4C4; cursor: not-allowed;
     }
-    #modeGeneral .qp.qp-off:hover { background: #F4F4F4; }
+    #modeGeneral .qp.qp-off:hover, #modeBurden .qp.qp-off:hover { background: #F4F4F4; }
     /* ===== 高價住宅門檻設定視窗 ===== */
     .gl-set { padding: 4vh 20px 16px; }
     /* 小型設定視窗也要有高度上限，置中時才不會超出畫面 */
@@ -4565,7 +4567,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.31M";
+const APP_VERSION = "2026.08.31N";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -5570,8 +5572,11 @@ function resolveFieldMax(inputEl) {
 function getBdGraceMaxValue() {
   const el = document.getElementById('bdTerm');
   const t = el ? Number(getCalcFieldRawString(el)) : NaN;
-  if (!Number.isFinite(t) || t <= 1) return 0;
-  return Math.min(5, Math.trunc(t) - 1);
+  let max = (!Number.isFinite(t) || t <= 1) ? 0 : Math.min(5, Math.trunc(t) - 1);
+  // 貸款戶數若限制了寬限期（多數是「無寬限期」），與年限取嚴
+  const hc = (typeof window.__bdHhGraceCap === 'function') ? window.__bdHhGraceCap() : null;
+  if (hc !== null) max = Math.min(max, hc);
+  return max;
 }
 
 function clampFieldValue(inputEl, rawValue) {
@@ -6841,11 +6846,18 @@ function syncExportFormatButtons() {
 // 累積利息欄以眼睛開關為準：預設關閉，使用者按過才會帶進匯出／分享
 /* 視窗關閉後把焦點還給原本的按鈕：桌機保留（鍵盤操作需要），
    觸控裝置則還完就 blur，否則齒輪會一直亮著底色，看起來像沒關掉。 */
+let dlgOpenByPointer = false;
+/* 記住視窗是「點開的」還是「鍵盤開的」。按 ESC 關閉會把瀏覽器切到鍵盤模式，
+   此時把焦點還回齒輪就會亮起 focus 樣式，看起來像視窗沒關乾淨。 */
+document.addEventListener('click', (e) => {
+  const g = e.target && e.target.closest ? e.target.closest('.yt-gear-btn') : null;
+  if (g) dlgOpenByPointer = e.detail > 0;   // detail 為 0 代表由鍵盤觸發
+}, true);
 function restoreFocusQuietly(el) {
   if (!el || typeof el.focus !== 'function') return;
   el.focus({ preventScroll: true });
   const finePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  if (!finePointer && typeof el.blur === 'function') el.blur();
+  if ((dlgOpenByPointer || !finePointer) && typeof el.blur === 'function') el.blur();
 }
 
 function isCumInterestVisible() {
@@ -9936,8 +9948,21 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     syncPills('#bdDtiPills', raw(B('#bdDti')));
     syncPills('#bdTermPills', raw(B('#bdTerm')));
     syncPills('#bdGracePills', raw(B('#bdGrace')));
+    syncBdGracePills();
     updateBdButton();
   }
+  function syncBdGracePills() {
+    const box = B('#bdGracePills');
+    if (!box) return;
+    const max = getBdGraceMaxValue();
+    box.querySelectorAll('.qp').forEach((p) => {
+      const v = Number(p.dataset.val);
+      const off = Number.isFinite(v) && v > max;
+      p.classList.toggle('qp-off', off);
+      p.disabled = off;
+    });
+  }
+
   function syncPills(box, val) {
     const el = B(box);
     if (!el) return;
@@ -10133,6 +10158,14 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const n = luxNum(r.ratio);
     return Number.isFinite(n) ? n : null;
   }
+  function bdHhGraceCap() {
+    if (!bdHhOn) return null;
+    const r = bdHhRows[bdHhSel];
+    if (!r || r.grace === '') return null;
+    const n = luxNum(r.grace);
+    return Number.isFinite(n) ? n : null;
+  }
+  window.__bdHhGraceCap = bdHhGraceCap;
 
   function renderBdLuxOpts() {
     const box = B('#bdRegionOpts'), off = B('#bdRegionOff'), sec = B('#bdRegionSec');
@@ -10179,42 +10212,58 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }).join('');
   }
 
+  /* 與一般貸款同一套寫法：判定依據與真正咬住的上限值上主題色，其餘維持內文色 */
   function renderBdLuxNote() {
     const el = B('#bdLuxNote');
     if (!el) return;
-    const bits = [];
-    const th = bdLuxThreshold();
-    if (th) {
-      const r = bdLuxActiveRow();
-      const cap = bdLuxRatioCap();
-      bits.push('可買總價達 ' + escapeAlertHtml(r.name) + ' ' + luxNum(r.amount).toLocaleString('zh-TW') +
-        ' 萬時屬高價住宅，貸款成數上限 ' + (cap === null ? '不限' : cap + '%'));
+    const capText = (ratio, grace) => {
+      const parts = [];
+      if (ratio !== null) parts.push('貸款成數上限 <em>' + ratio + '%</em>');
+      if (grace !== null) parts.push(grace === 0 ? '<em>無寬限期</em>' : '寬限期上限 <em>' + grace + ' 年</em>');
+      return parts.length ? parts.join('、') : '<em>無上限</em>';
+    };
+    const items = [];
+    const row = bdLuxActiveRow();
+    if (row) {
+      items.push('可買總價達 <em>' + escapeAlertHtml(row.name) + ' ' +
+        luxNum(row.amount).toLocaleString('zh-TW') + ' 萬 高價住宅門檻</em> 時，' +
+        capText(bdLuxRatioCap(), null));
     }
-    const hc = bdHhRatioCap();
     if (bdHhOn && bdHhRows[bdHhSel]) {
-      bits.push(HH_LABELS[bdHhSel] + '，貸款成數上限 ' + (hc === null ? '不限' : hc + '%'));
+      items.push('<em>' + escapeAlertHtml(HH_LABELS[bdHhSel]) + '</em>，' +
+        capText(bdHhRatioCap(), bdHhGraceCap()));
     }
-    if (!bits.length) { el.hidden = true; el.innerHTML = ''; return; }
+    if (!items.length) { el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false;
-    el.innerHTML = '※ ' + bits.join('；') + '。兩項同時適用時從嚴認定。';
+    el.innerHTML = '※ ' + items.join('；') +
+      (items.length > 1 ? '。兩項限制同時適用時，從嚴認定。' : '。');
   }
 
   /* 貸款戶數的成數上限直接套在欄位上（與房價無關）；超過就清掉並閃一下標題。 */
   function enforceBdHhCap() {
-    const cap = bdHhRatioCap();
-    const el = B('#bdRatio');
-    if (cap === null || !el) return false;
-    const v = raw(el);
-    if (v === '' || Number(v) <= cap) return false;
-    clearCalcField(el);
-    flashFormFieldLabel(el);
-    return true;
+    let changed = false;
+    const rc = bdHhRatioCap(), rEl = B('#bdRatio');
+    if (rc !== null && rEl) {
+      const v = raw(rEl);
+      if (v !== '' && Number(v) > rc) { clearCalcField(rEl); flashFormFieldLabel(rEl); changed = true; }
+    }
+    const gc = bdHhGraceCap(), gEl = B('#bdGrace');
+    if (gc !== null && gEl) {
+      const v = raw(gEl);
+      if (v !== '' && Number(v) > gc) {
+        if (gc === 0) setCalcFieldStoredValue(gEl, 0); else clearCalcField(gEl);
+        if (!changed) flashFormFieldLabel(gEl);
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   function applyBdCaps(opts) {
     renderBdLuxOpts();
     renderBdHhOpts();
     const changed = enforceBdHhCap();
+    syncBdGracePills();
     renderBdLuxNote();
     if (!(opts && opts.quiet)) { persist(); markStale(); }
     return changed;
