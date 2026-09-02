@@ -2642,6 +2642,8 @@ if ("serviceWorker" in navigator) {
         font-size: 0.95rem;
       }
       .summary-grid { grid-template-columns: 1fr; }
+      /* 個人評估的四個數字都很短，手機上維持兩欄才不會拉成長長一條 */
+      #bdResults .summary-grid { grid-template-columns: 1fr 1fr; }
       .header-actions { gap: 6px; }
       .clear-btn, .restore-btn { padding: 7px 10px; font-size: 0.78rem; }
       .export-actions { grid-template-columns: repeat(2, 1fr); }
@@ -2881,6 +2883,9 @@ if ("serviceWorker" in navigator) {
       margin: -14px 0 24px; letter-spacing: .01em;
     }
     .gl-note[hidden] { display: none; }
+    .bd-note-static { margin-top: 10px; }
+    #bdResults .summary-grid { margin-bottom: 16px; }
+    #bdResults .summary-item .value { font-size: 1.18rem; }
     .gl-note em { font-style: normal; font-weight: 600; color: #9A6B18; }
     /* 被蓋過的那道規則仍然存在、只是沒咬住，所以整句維持一般內文色（含數字）。
        兩道的差別靠「上限值有沒有上琥珀色」來分；轉灰會讓人以為那條規則失效了。 */
@@ -3944,11 +3949,213 @@ if ("serviceWorker" in navigator) {
   <div class="ver-line" id="ytVerLine"></div>
   </div>
 
-  <div class="mode-panel mode-placeholder-panel" id="modeBurden" hidden>
-    <div class="ph-icon" aria-hidden="true">¥</div>
-    <h2>個人評估</h2>
-    <p>依收入與支出反推可負擔房價與貸款額度，功能建置中，敬請期待。</p>
-    <span class="ph-tag">即將推出</span>
+  <div class="mode-panel" id="modeBurden" hidden>
+  <div class="main-panel">
+    <div class="card">
+
+      <div class="section">
+        <label>收入填寫方式</label>
+        <div class="choice-group">
+          <button type="button" class="choice-btn active" data-bd-income="month">每月收入</button>
+          <button type="button" class="choice-btn" data-bd-income="year">每年收入</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <label>收入輸入單位</label>
+        <div class="choice-group">
+          <button type="button" class="choice-btn active" data-bd-unit="yuan">元</button>
+          <button type="button" class="choice-btn" data-bd-unit="wan">萬元</button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label class="label-cap" id="bdIncomeLabel">每月收入</label>
+          <div class="input-box">
+            <input type="text" id="bdIncome" class="calc-field" value="" data-calc-integer="true" data-calc-max="99999999" readonly inputmode="none" autocomplete="off">
+            <span class="unit" id="bdIncomeUnit">元</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label-cap">既有負債月付<span class="yt-opt-tag">選填</span></label>
+          <div class="input-box">
+            <input type="text" id="bdDebt" class="calc-field" value="" data-calc-integer="true" data-calc-max="99999999" readonly inputmode="none" autocomplete="off">
+            <span class="unit" id="bdDebtUnit">元</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label-cap">願意負擔月付<span class="yt-opt-tag">選填</span></label>
+          <div class="input-box">
+            <input type="text" id="bdWilling" class="calc-field" value="" data-calc-integer="true" data-calc-max="99999999" readonly inputmode="none" autocomplete="off">
+            <span class="unit" id="bdWillingUnit">元</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label-cap">他人協助月付<span class="yt-opt-tag">選填</span></label>
+          <div class="input-box">
+            <input type="text" id="bdHelp" class="calc-field" value="" data-calc-integer="true" data-calc-max="99999999" readonly inputmode="none" autocomplete="off">
+            <span class="unit" id="bdHelpUnit">元</span>
+          </div>
+        </div>
+      </div>
+      <p class="gl-note bd-note-static">※ <em>既有負債月付</em>填每月要繳的金額（車貸、信貸等），不是貸款餘額。<em>願意負擔</em>與<em>他人協助</em>不計入收入，只用來壓低月付。</p>
+
+      <div class="form-grid">
+        <div class="field">
+          <label class="label-cap">收支比<button type="button" class="yt-cap-max" id="bdDtiTag" title="點一下填入該數值">默認 50 %</button></label>
+          <div class="input-box">
+            <input type="text" id="bdDti" class="calc-field" value="50" data-calc-max="100" readonly inputmode="none" autocomplete="off">
+            <span class="unit">%</span>
+          </div>
+          <div class="quick-pills fill" id="bdDtiPills">
+            <button type="button" class="qp active" data-val="50">50%</button>
+            <button type="button" class="qp" data-val="55">55%</button>
+            <button type="button" class="qp" data-val="60">60%</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label-cap">自備款<span class="yt-opt-tag">選填</span></label>
+          <div class="input-box">
+            <input type="text" id="bdDown" class="calc-field" value="" data-calc-max="9999999" readonly inputmode="none" autocomplete="off">
+            <span class="unit">萬元</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label-cap">預估貸款成數<button type="button" class="yt-cap-max" id="bdRatioTag" title="點一下填入該數值">默認 80 %</button></label>
+          <div class="input-box">
+            <input type="text" id="bdRatio" class="calc-field" value="80" data-calc-integer="true" data-calc-max="100" readonly inputmode="none" autocomplete="off">
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label-cap">貸款年限<button type="button" class="yt-cap-max" id="bdTermTag" title="點一下填入該數值">默認 30 年</button></label>
+          <div class="input-box">
+            <input type="text" id="bdTerm" class="calc-field" value="30" data-calc-integer="true" data-calc-max="40" readonly inputmode="none" autocomplete="off">
+            <span class="unit">年</span>
+          </div>
+          <div class="quick-pills fill" id="bdTermPills">
+            <button type="button" class="qp" data-val="20">20年</button>
+            <button type="button" class="qp active" data-val="30">30年</button>
+            <button type="button" class="qp" data-val="40">40年</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label-cap">寬限期<span class="yt-opt-tag">選填</span></label>
+          <div class="input-box">
+            <input type="text" id="bdGrace" class="calc-field" value="" data-calc-integer="true" data-calc-max="5" readonly inputmode="none" autocomplete="off">
+            <span class="unit">年</span>
+          </div>
+          <div class="quick-pills fill" id="bdGracePills">
+            <button type="button" class="qp qp-text" data-val="0">無</button>
+            <button type="button" class="qp" data-val="1">1</button>
+            <button type="button" class="qp" data-val="2">2</button>
+            <button type="button" class="qp" data-val="3">3</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="gl-note bd-note-static">※ <em>自備款</em>不填＝假設剛好夠，結果會告訴你需要準備多少；填了則以你的自備款與收入能力<em>取較嚴的那個</em>。</p>
+
+      <div class="section">
+        <label>利率計算方式</label>
+        <div class="choice-group">
+          <button type="button" class="choice-btn active" data-bd-rate-type="single">單一利率</button>
+          <button type="button" class="choice-btn" data-bd-rate-type="multi">多段式利率</button>
+        </div>
+      </div>
+
+      <div class="section rate-full" id="bdRateField">
+        <label class="label-cap">預估年利率<button type="button" class="yt-cap-max" id="bdRateTag" title="點一下填入該數值">默認 2.5 %</button></label>
+        <div class="input-box">
+          <input type="text" id="bdRate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
+          <span class="unit">%</span>
+        </div>
+      </div>
+
+      <div id="bdMultiRate" class="section rate-segments hidden">
+        <label>多段利率（年利率）</label>
+        <div id="bdRateRows"></div>
+        <button type="button" class="btn-add" id="bdAddRate">＋ 新增利率段</button>
+        <p class="gl-note bd-note-static">※ 反推時以<em>各段月付最高的那一段</em>不超過可負擔月付為準，這樣利率最高的期間也繳得起。</p>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn-calc btn-calc-stale" id="bdCalc">尚未計算</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card results" id="bdResults">
+    <div class="conditions-box" id="bdConditionsBox">
+      <button type="button" class="conditions-head" id="bdConditionsToggle" aria-expanded="true" title="收合試算條件">
+        <h3>試算條件</h3>
+        <span class="conditions-toggle arrow" aria-hidden="true">▼</span>
+      </button>
+      <div class="conditions-body">
+        <div class="conditions-grid" id="bdConditionsGrid"></div>
+      </div>
+    </div>
+
+    <div class="period-title results-heading">
+      <span class="title-line"></span>
+      <h3>評估結果</h3>
+      <span class="title-line"></span>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="label">預估貸款金額</div>
+        <div class="value" id="bdResLoan">—</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">可買房屋總價</div>
+        <div class="value" id="bdResPrice">—</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">需自備款</div>
+        <div class="value" id="bdResDown">—</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">預估每月房貸</div>
+        <div class="value" id="bdResPay">—</div>
+      </div>
+    </div>
+
+    <p class="gl-note" id="bdResNote"></p>
+
+    <div class="period-summary">
+      <div class="period-title period-title-dashed">
+        <span class="title-line"></span>
+        <h3>每月還款</h3>
+        <span class="title-line"></span>
+      </div>
+      <div class="period-dots" id="bdPeriodDots"></div>
+      <div class="payment-table" id="bdPeriodLines"></div>
+    </div>
+
+    <div class="detail-section" id="bdDetailSection">
+      <div class="detail-section-head">
+        <div class="period-title period-title-dashed">
+          <span class="title-line"></span>
+          <h3>還款明細</h3>
+          <span class="title-line"></span>
+        </div>
+        <div class="detail-meta-row">
+          <span class="detail-sub" id="bdDetailSub">—</span>
+          <button type="button" class="detail-eye-btn" id="bdToggleCumBtn" title="顯示累積利息" aria-pressed="false" aria-label="顯示累積利息">
+            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="year-accordion" id="bdYearAccordion"></div>
+    </div>
+
+    <p class="note">※ 本評估結果僅供參考，不構成任何貸款承諾或保證。實際可貸金額、利率、期數、寬限期、每月應繳金額及其他貸款條件，均應以各金融機構最終核准結果及正式簽訂之貸款契約為準。收支比僅為概略的負擔上限估算，各銀行對還款能力的認定方式不同。本系統對評估結果之誤差或因此衍生之任何損失，不負任何法律責任或賠償責任。</p>
+  </div>
   </div>
 </div>
 
@@ -4265,7 +4472,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.31C";
+const APP_VERSION = "2026.08.31G";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4312,6 +4519,7 @@ function setPeriodUnit(u) {
   // 兩個面板共用同一單位，一併重繪，切換面板時才不會看到上一個單位
   renderPeriodLines();
   if (typeof window.__ytRenderPeriod === 'function') window.__ytRenderPeriod();
+  if (typeof window.__bdRenderPeriod === 'function') window.__bdRenderPeriod();
 }
 let lastPeriodGroups = null;    // 快取分組結果，切換單位時只重繪表格，不會吃到尚未試算的輸入
 let rateSegments = [{ from: 1, to: 360, rate: '2.5' }];
@@ -5217,7 +5425,7 @@ function getGraceMaxValue() {
 const YT_RATE_IDS = ['ytBase', 'ytSpread', 'ytR1', 'ytR2', 'ytR3', 'ytR4', 'ytR5', 'ytGenRate', 'ytBaseDefault'];
 function isRateInput(inputEl) {
   if (!inputEl) return false;
-  if (inputEl.id === 'rate' || inputEl.classList.contains('rate-val')) return true;
+  if (inputEl.id === 'rate' || inputEl.id === 'bdRate' || inputEl.classList.contains('rate-val')) return true;
   return YT_RATE_IDS.indexOf(inputEl.id) >= 0;
 }
 
@@ -5257,7 +5465,16 @@ function resolveFieldMax(inputEl) {
   if (id === 'ytShare' || id === 'ytShareSetVal') return 100;
   if (id === 'ytTerm') return YT_TERM_MAX;
   if (id === 'ytGrace') return getYtGraceMaxValue();
+  if (id === 'bdGrace') return getBdGraceMaxValue();
   return getDeclaredFieldMax(inputEl);
+}
+
+/* 個人評估：寬限期最多 5 年，且一定要小於貸款年限（否則沒有本金可攤還） */
+function getBdGraceMaxValue() {
+  const el = document.getElementById('bdTerm');
+  const t = el ? Number(getCalcFieldRawString(el)) : NaN;
+  if (!Number.isFinite(t) || t <= 1) return 0;
+  return Math.min(5, Math.trunc(t) - 1);
 }
 
 function clampFieldValue(inputEl, rawValue) {
@@ -8007,8 +8224,9 @@ function getRateValidationError() {
 }
 
 function scrollToResultsTop() {
-  const target = document.body.dataset.mode === 'youth'
-    ? ($('#ytConditionsBox') || $('#conditionsBox'))
+  const mode = document.body.dataset.mode;
+  const target = mode === 'youth' ? ($('#ytConditionsBox') || $('#conditionsBox'))
+    : mode === 'burden' ? ($('#bdConditionsBox') || $('#conditionsBox'))
     : $('#conditionsBox');
   if (!target) return;
   const sticky = document.querySelector('.sticky-top');
@@ -8636,6 +8854,10 @@ document.addEventListener('keydown', (e) => {
       if (typeof window.__ytRunCalc === 'function') window.__ytRunCalc();
       return;
     }
+    if (document.body.dataset.mode === 'burden') {
+      if (typeof window.__bdRunCalc === 'function') window.__bdRunCalc();
+      return;
+    }
     runCalcAction();
   } catch (err) {
     console.error(err);
@@ -8643,8 +8865,10 @@ document.addEventListener('keydown', (e) => {
   }
 });
 $('#clearBtn').addEventListener('click', () => {
-  if (document.body.dataset.mode === 'youth') {
-    if (typeof window.__ytClear === 'function') window.__ytClear();
+  const mode = document.body.dataset.mode;
+  if (mode === 'youth' || mode === 'burden') {
+    const fn = mode === 'youth' ? window.__ytClear : window.__bdClear;
+    if (typeof fn === 'function') fn();
     if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
     showToast('已清空數值');
     return;
@@ -8653,8 +8877,10 @@ $('#clearBtn').addEventListener('click', () => {
 });
 $('#aprInfoBtn')?.addEventListener('click', showAprInfo);
 $('#restoreBtn').addEventListener('click', () => {
-  if (document.body.dataset.mode === 'youth') {
-    if (typeof window.__ytRestore === 'function') window.__ytRestore();
+  const mode = document.body.dataset.mode;
+  if (mode === 'youth' || mode === 'burden') {
+    const fn = mode === 'youth' ? window.__ytRestore : window.__bdRestore;
+    if (typeof fn === 'function') fn();
     if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
     showToast('', { html: toastLines(tOk('已恢復') + ' 清空前的數值') });
     return;
@@ -8671,6 +8897,11 @@ $('#toggleCumBtn').addEventListener('click', () => {
   showCumInterest = !showCumInterest;
   $('#detailSection').classList.toggle('show-cum', showCumInterest);
   $('#toggleCumBtn').classList.toggle('active', showCumInterest);
+  // 個人評估已算過的話一併同步，兩邊的眼睛狀態才會一致
+  const bdSec = document.getElementById('bdDetailSection');
+  if (bdSec) bdSec.classList.toggle('show-cum', showCumInterest);
+  const bdBtn = document.getElementById('bdToggleCumBtn');
+  if (bdBtn) { bdBtn.classList.toggle('active', showCumInterest); bdBtn.setAttribute('aria-pressed', String(showCumInterest)); }
   $('#toggleCumBtn').setAttribute('aria-pressed', showCumInterest);
   $('#toggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
   $('#toggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
@@ -9081,6 +9312,756 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   if (v) v.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
 })();
 
+/* ===== 個人評估：由收入反推可負擔的貸款、房價與月付 =====
+   刻意不做成銀行授信系統：不問職業、年資、聯徵、信用評分、共同借款人。
+   只回答一句話——「以我的收入，大概買得起多少錢的房子」。 */
+(function () {
+  const B = (sel) => document.querySelector(sel);
+  const STORE = 'mortgage_burden_state_v1';
+  const CLEAR_STORE = 'mortgage_burden_cleared_v1';
+  const REQUIRED = [['#bdIncome', '收入'], ['#bdDti', '收支比'], ['#bdRate', '預估年利率'],
+                    ['#bdRatio', '預估貸款成數'], ['#bdTerm', '貸款年限']];
+  const FIELDS = ['#bdIncome', '#bdDebt', '#bdWilling', '#bdHelp', '#bdDti',
+                  '#bdRate', '#bdRatio', '#bdTerm', '#bdGrace', '#bdDown'];
+
+  // 四格「每月金額」共用同一個輸入單位，避免收入用萬、負債用元對不起來
+  const MONEY_FIELDS = ['#bdIncome', '#bdDebt', '#bdWilling', '#bdHelp'];
+  let incomeMode = 'month';
+  // 'yuan' 整數；'wan' 可到小數第 4 位（1 元＝0.0001 萬，剛好不失真）
+  let incomeUnit = 'yuan';
+  let bdRateType = 'single';
+  let bdSegs = [{ from: 1, to: 0, rate: '2.5' }];
+  // 使用者動過分段（改利率、改分界、增刪）之後就不再自動沿用單一利率的數值
+  let segsTouched = false;
+  let bdCleared = null;
+  let bdStale = true;
+  // 與另外兩個面板同一套：因必填欄位變空而暫時收起，補回去就自動展開
+  let bdAutoHidden = false;
+
+  const raw = (el) => (el ? getCalcFieldRawString(el) : '');
+  const num = (el) => { const v = Number(raw(el)); return Number.isFinite(v) ? v : 0; };
+  const has = (sel) => raw(B(sel)) !== '';
+
+  /* ---------- 計算 ---------- */
+  /* 金額欄位一律換算成「元」再進計算，畫面上填萬或填元都得到同一個結果 */
+  function moneyYuan(sel) {
+    const v = num(B(sel));
+    return incomeUnit === 'wan' ? v * 10000 : v;
+  }
+  function incomeYuan() { return moneyYuan('#bdIncome'); }
+  function monthlyIncome() {
+    const v = incomeYuan();
+    return incomeMode === 'year' ? v / 12 : v;
+  }
+  function dtiPct() { return num(B('#bdDti')); }
+
+  /* 收支比可負擔月付上限：月收入 × 收支比 − 既有負債月付，不會低於 0 */
+  function dtiCeiling() {
+    return Math.max(0, monthlyIncome() * (dtiPct() / 100) - moneyYuan('#bdDebt'));
+  }
+
+  /* 系統採用月付：沒填「願意負擔」就直接用收支比上限；
+     填了就用「願意負擔＋他人協助」，但不論填多高都不會超過收支比上限。
+     （只填協助、沒填願意時視同沒設定個人意願，仍以收支比上限為準。） */
+  function usedMonthlyPay() {
+    const ceiling = dtiCeiling();
+    if (!has('#bdWilling')) return ceiling;
+    return Math.min(ceiling, moneyYuan('#bdWilling') + moneyYuan('#bdHelp'));
+  }
+
+  function bdMissingFields() {
+    const labels = [];
+    let firstEl = null;
+    REQUIRED.forEach(([sel, lab]) => {
+      if (sel === '#bdRate' && bdRateType === 'multi') return;   // 多段式改查下面的各段
+      if (raw(B(sel)) === '') { labels.push(lab); if (!firstEl) firstEl = B(sel); }
+    });
+    if (bdRateType === 'multi') {
+      const bad = bdSegs.findIndex((sg) => String(sg.rate ?? '').trim() === '');
+      if (bad >= 0) {
+        labels.push('多段利率第 ' + (bad + 1) + ' 段');
+        if (!firstEl) firstEl = B('#bdRateRows input.rate-val[data-i="' + bad + '"]') || B('#bdMultiRate');
+      }
+    }
+    return labels.length ? { el: firstEl, labels } : null;
+  }
+
+  /* ---------- 還款表（與一般貸款共用同一支 calAvgWithInterests，數字才會一致） ---------- */
+  function bdRatePctForMonth(m, totalMonths) {
+    if (bdRateType === 'single') return num(B('#bdRate'));
+    for (const sg of bdSegs) {
+      const to = sg.to === 0 ? totalMonths : sg.to;
+      if (m >= sg.from && m <= to) return Number(sg.rate) || 0;
+    }
+    const last = bdSegs[bdSegs.length - 1];
+    return last ? (Number(last.rate) || 0) : 0;
+  }
+  function bdPeriodList(totalMonths) {
+    const list = [];
+    for (let m = 1; m <= totalMonths; m++) list.push({ rate: bdRatePctForMonth(m, totalMonths) });
+    return list;
+  }
+  function bdSchedule(principal, totalMonths, graceMonths) {
+    return calAvgWithInterests(principal, totalMonths, bdPeriodList(totalMonths), graceMonths);
+  }
+  function maxPaymentOf(sched) {
+    let mx = 0;
+    for (const row of sched) if (row.payment > mx) mx = row.payment;
+    return mx;
+  }
+
+  /* 反推最高貸款：整條還款表對本金幾乎是等比例，先用一個參考本金量出「每 1 元本金
+     對應的最高月付」再回推，之後把取整誤差用逐萬遞減補掉，不必逼近迭代。
+     多段式利率取「各段月付最高的那一段」為準——利率最高的期間也要繳得起。 */
+  function maxLoanFor(payCap, totalMonths, graceMonths) {
+    const P0 = 10000000;
+    const max0 = maxPaymentOf(bdSchedule(P0, totalMonths, graceMonths));
+    if (!(max0 > 0)) return 0;
+    let L = Math.floor(payCap * P0 / max0 / 10000) * 10000;
+    for (let guard = 0; L > 0 && guard < 60; guard++) {
+      if (maxPaymentOf(bdSchedule(L, totalMonths, graceMonths)) <= payCap) break;
+      L -= 10000;
+    }
+    return Math.max(0, L);
+  }
+
+  /* 反推的是「寬限期結束後」的月付，攤還期＝年限−寬限期。
+     用寬限期內的只繳息月付反推會算出大得離譜的金額，寬限期一到就繳不出來。 */
+  function compute() {
+    const pay = usedMonthlyPay();
+    const term = Math.trunc(num(B('#bdTerm')));
+    const grace = has('#bdGrace') ? Math.trunc(num(B('#bdGrace'))) : 0;
+    const r = num(B('#bdRatio')) / 100;
+    const totalMonths = term * 12;
+    const graceMonths = grace * 12;
+
+    if (dtiPct() <= 0) return { err: 'dti' };
+    if (pay <= 0) return { err: 'pay' };
+    if (r <= 0) return { err: 'ratio' };
+    if (totalMonths - graceMonths <= 0) return { err: 'grace' };
+    if (bdRateType === 'single' ? num(B('#bdRate')) <= 0
+        : !bdSegs.some((sg) => Number(sg.rate) > 0)) return { err: 'rate' };
+
+    const capacity = maxLoanFor(pay, totalMonths, graceMonths);
+
+    const downGiven = has('#bdDown');
+    const D = downGiven ? num(B('#bdDown')) * 10000 : 0;
+
+    /* 有自備款時同時受三個條件限制：貸款 ≤ 收入能力、貸款 ≤ 總價×成數、
+       總價 ≤ 貸款＋自備款。整理後貸款上限＝min(收入能力, 自備款×成數÷(1−成數))。 */
+    let loan = capacity;
+    let downBound = false;
+    if (downGiven) {
+      const byDown = r >= 1 ? Infinity : D * r / (1 - r);
+      if (byDown < loan) { loan = byDown; downBound = true; }
+    }
+
+    loan = Math.floor(loan / 10000) * 10000;           // 無條件捨去到萬元
+    if (loan <= 0) return { err: 'pay' };
+
+    let price = downGiven ? loan + D : loan / r;
+    price = Math.floor(price / 10000) * 10000;
+    const needDown = Math.max(0, price - loan);
+
+    // 月付一律用捨去後的貸款額、走同一張還款表推回，四個數字才會互相對得起來
+    const sched = bdSchedule(loan, totalMonths, graceMonths);
+    const payAfter = maxPaymentOf(sched);
+    const payGrace = graceMonths > 0 && sched.length ? sched[0].payment : 0;
+
+    return { pay, ceiling: dtiCeiling(), capacity, loan, price, needDown,
+             payAfter, payGrace, grace, term, downGiven, downBound, sched };
+  }
+
+  /* ---------- 呈現 ---------- */
+  const wan = (yuan) => fmtWan(yuan) + ' 萬';
+  const yuan = (v) => Math.round(v).toLocaleString('zh-TW') + ' 元';
+
+  function renderConditions(res) {
+    const box = B('#bdConditionsGrid');
+    if (!box) return;
+    const rows = [
+      [incomeMode === 'year' ? '每年收入' : '每月收入', yuan(incomeYuan())],
+      ['收支比', dtiPct() + '%'],
+      ['既有負債月付', has('#bdDebt') ? yuan(num(B('#bdDebt'))) : '無'],
+      ['收支比可負擔月付', yuan(res.ceiling)],
+      ['採用月付', yuan(res.pay)],
+      ['預估年利率', bdRateType === 'single' ? num(B('#bdRate')) + ' %'
+        : bdSegs.map((sg, k) => '第' + (k + 1) + '段 ' + (sg.rate || '—') + '%').join('、')],
+      ['貸款年限', res.term + ' 年' + (res.grace > 0 ? '（含寬限期 ' + res.grace + ' 年）' : '（無寬限期）')],
+      ['預估貸款成數', num(B('#bdRatio')) + ' %'],
+      ['自備款', res.downGiven ? wan(num(B('#bdDown')) * 10000) : '未填']
+    ];
+    if (has('#bdWilling')) rows.splice(5, 0, ['願意負擔月付', yuan(num(B('#bdWilling')))]);
+    if (has('#bdHelp')) rows.splice(has('#bdWilling') ? 6 : 5, 0, ['他人協助月付', yuan(num(B('#bdHelp')))]);
+    box.innerHTML = rows.map(renderCondItem).join('');
+  }
+
+  function renderNote(res) {
+    const el = B('#bdResNote');
+    if (!el) return;
+    const lines = [];
+    if (res.grace > 0) {
+      lines.push('寬限期內每月只繳息 <em>' + yuan(res.payGrace) + '</em>，' +
+        '寬限期結束後回到 <em>' + yuan(res.payAfter) + '</em>。' +
+        '本金要在剩下的 ' + (res.term - res.grace) + ' 年攤完，所以月付比不用寬限期時更高。');
+    }
+    if (res.downBound) {
+      lines.push('目前卡住的是<em>自備款</em>不是收入：以你的收入還能貸到 <em>' +
+        wan(Math.floor(res.capacity / 10000) * 10000) + '</em>，但自備款只夠買到這個價位。');
+    } else if (res.downGiven) {
+      lines.push('目前卡住的是<em>收入</em>：自備款還有餘裕，可負擔月付已經用滿。');
+    }
+    if (bdRateType === 'multi') {
+      lines.push('多段式利率以<em>各段月付最高的那一段</em>（' + yuan(res.payAfter) +
+        '）不超過可負擔月付反推，利率最高的期間也繳得起。');
+    }
+    lines.push('本評估以<em>本息平均攤還</em>估算，未計入高價住宅與貸款戶數的成數上限，也未包含稅費、裝潢與其他購屋成本。');
+    el.innerHTML = '※ ' + lines.join('<br>※ ');
+    el.hidden = false;
+  }
+
+  /* 每月還款：把連續同金額的期數併成一列，寬限期結束與利率換段一定切開。
+     與一般貸款的 groupPeriodSummary 同一套邏輯，只是利率改讀本面板的設定。 */
+  let bdGroups = null;
+  function groupPeriods(sched, graceMonths, totalMonths) {
+    const groups = [];
+    let cur = null;
+    for (const row of sched) {
+      const rateChanged = row.period > 1 &&
+        bdRatePctForMonth(row.period, totalMonths) !== bdRatePctForMonth(row.period - 1, totalMonths);
+      const graceBoundary = graceMonths > 0 && row.period === graceMonths + 1;
+      if (!cur || cur.payment !== row.payment || graceBoundary || rateChanged) {
+        if (cur) groups.push(cur);
+        cur = { start: row.period, end: row.period, payment: row.payment,
+                isGrace: row.period <= graceMonths };
+      } else {
+        cur.end = row.period;
+      }
+    }
+    if (cur) groups.push(cur);
+    return groups.map((g) => ({
+      start: g.start, end: g.end, isGrace: g.isGrace,
+      rateText: formatRateDisplay(bdRatePctForMonth(g.start, totalMonths)),
+      paymentDisplay: fmt(g.payment)
+    }));
+  }
+
+  function renderPeriodBlock() {
+    if (!bdGroups) return;
+    const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
+    const rows = bdGroups.map((l, i) => {
+      const amount = l.isGrace
+        ? l.paymentDisplay + ' 元<span class="grace-note">（寬限期）</span>'
+        : l.paymentDisplay + ' 元';
+      const tail = (i === bdGroups.length - 1 && l.start === l.end)
+        ? '<span class="pr-tag">最後一期</span>' : '';
+      return '<div class="payment-row">' +
+        '<div class="period-range"><span>' + genPeriodLabel(l.start, l.end) + '</span>' + tail + '</div>' +
+        '<div class="period-mid">' + l.rateText + '</div>' +
+        '<div class="period-amount"><span class="amount-val">' + amount + '</span></div></div>';
+    }).join('');
+    B('#bdPeriodLines').innerHTML =
+      '<div class="payment-head"><span>' + h0 + '</span><span>利率</span><span>應繳金額</span></div>' + rows;
+    B('#bdPeriodDots').innerHTML = '<span class="punit" role="group" aria-label="期數顯示單位">' +
+      [['year', '年'], ['period', '期'], ['month', '月']].map(([k, t]) =>
+        '<button type="button" class="pu' + (k === periodUnitPref ? ' on' : '') +
+        '" data-punit="' + k + '" aria-pressed="' + (k === periodUnitPref) +
+        '" aria-label="以' + t + '顯示">' + t + '</button>').join('') + '</span>';
+    scheduleFitPaymentTable();
+  }
+  // 三個面板共用同一個期數單位，切換時一起重繪
+  window.__bdRenderPeriod = renderPeriodBlock;
+
+  function renderDetail(sched) {
+    const byYear = {};
+    sched.forEach((r) => {
+      const y = Math.ceil(r.period / 12);
+      (byYear[y] = byYear[y] || []).push(r);
+    });
+    B('#bdDetailSub').innerHTML = termSummaryText(sched.length);
+    B('#bdDetailSection').classList.toggle('show-cum', showCumInterest);
+    B('#bdToggleCumBtn').classList.toggle('active', showCumInterest);
+    let cum = 0;
+    B('#bdYearAccordion').innerHTML = Object.keys(byYear).map((y) => {
+      const rows = byYear[y];
+      const total = rows.reduce((a, r) => a + r.payment, 0);
+      const last = rows[rows.length - 1];
+      const body = rows.map((r) => {
+        cum += r.interest;
+        return '<tr><td class="col-period">' + r.period + '</td>' +
+          '<td class="payment-col col-payment">' + fmt(r.payment) + '</td>' +
+          '<td class="col-principal">' + fmt(r.principal) + '</td>' +
+          '<td class="col-interest">' + fmt(r.interest) + '</td>' +
+          '<td class="col-balance">' + fmt(r.balance) + '</td>' +
+          '<td class="col-cum">' + fmt(cum) + '</td></tr>';
+      }).join('');
+      return '<div class="year-item"><div class="year-header" onclick="this.parentElement.classList.toggle(\'open\')">' +
+        '<div class="year-header-text"><strong class="year-title">第 ' + y + ' 年</strong>' +
+        '<span class="year-summary">（第' + fmtPeriod(rows[0].period) + '~' + fmtPeriod(last.period) +
+        '期 · 合計年付 ' + fmt(total) + ' 元）</span></div><span class="arrow">▼</span></div>' +
+        '<div class="year-body"><div class="year-table-wrap"><table><colgroup>' +
+        '<col class="col-period"><col class="col-payment"><col class="col-principal">' +
+        '<col class="col-interest"><col class="col-balance"><col class="col-cum"></colgroup>' +
+        '<thead><tr><th class="col-period">期數</th><th class="col-payment">還款月付金額</th>' +
+        '<th class="col-principal">當期還本金額</th><th class="col-interest">當期利息金額</th>' +
+        '<th class="col-balance">本金餘額</th><th class="col-cum">累積利息</th></tr></thead>' +
+        '<tbody>' + body + '</tbody></table></div></div></div>';
+    }).join('');
+  }
+
+  function render() {
+    const res = compute();
+    if (res.err) return res;
+    B('#bdResLoan').textContent = wan(res.loan);
+    B('#bdResPrice').textContent = wan(res.price);
+    B('#bdResDown').textContent = wan(res.needDown);
+    B('#bdResPay').textContent = yuan(res.payAfter);
+    renderConditions(res);
+    renderNote(res);
+    bdGroups = groupPeriods(res.sched, res.grace * 12, res.term * 12);
+    renderPeriodBlock();
+    renderDetail(res.sched);
+    B('#bdResults').classList.add('show');
+    return res;
+  }
+
+  const ERR_MSG = {
+    pay: '以目前的收入與負債，估不出可負擔的房貸金額。請確認收入、既有負債月付與收支比的設定。',
+    dti: '收支比需大於 0%。',
+    ratio: '預估貸款成數需大於 0%。',
+    grace: '寬限期需小於貸款年限。',
+    rate: '預估年利率需大於 0%。'
+  };
+
+  /* ---------- 按鈕狀態 ---------- */
+  function updateBdButton() {
+    const b = B('#bdCalc');
+    if (!b) return;
+    b.classList.remove('btn-calc-stale', 'btn-calc-done');
+    const empty = FIELDS.every((id) => raw(B(id)) === '');
+    if (empty) { b.textContent = '開始個人評估'; return; }
+    if (!bdStale) { b.textContent = '已自動計算完成'; b.classList.add('btn-calc-done'); return; }
+    b.textContent = '開始個人評估';
+    b.classList.add('btn-calc-stale');
+  }
+  window.__bdUpdateBtn = updateBdButton;
+
+  function markDone() { bdStale = false; updateBdButton(); persist(); }
+
+  /* 與另外兩個面板一致：算過一次後改欄位就自動重算；必填欄位變空就收起結果，
+     不留對不上的舊數字；補回去自動展開。 */
+  function bdAutoRecalc() {
+    const shown = B('#bdResults').classList.contains('show');
+    if (!shown && !bdAutoHidden) return false;
+    const res = bdMissingFields() ? { err: 'missing' } : compute();
+    if (res.err) {
+      if (shown) B('#bdResults').classList.remove('show');
+      bdAutoHidden = true;
+      persist();
+      return false;
+    }
+    try { bdAutoHidden = false; render(); markDone(); return true; }
+    catch (e) { console.error(e); return false; }
+  }
+  function markStale() { bdStale = true; updateBdButton(); bdAutoRecalc(); }
+
+  function bdRunCalc() {
+    const miss = bdMissingFields();
+    if (miss) {
+      showAppAlert(buildCalcMissingAlertHtml(miss.labels), () => revealMissingFormField(miss.el), { html: true });
+      return;
+    }
+    const probe = compute();
+    if (probe.err) { showAppAlert(ERR_MSG[probe.err] || '無法評估，請檢查輸入的數值'); return; }
+    try {
+      bdAutoHidden = false;
+      render();
+      markDone();
+      if (typeof scrollToResultsTop === 'function') scrollToResultsTop();
+    } catch (e) { console.error(e); showAppAlert('評估時發生錯誤，請重新整理頁面後再試'); }
+  }
+  window.__bdRunCalc = bdRunCalc;
+
+  /* ---------- 狀態保存 ---------- */
+  function capture() {
+    const o = { incomeMode, incomeUnit, bdRateType, segsTouched,
+                bdSegs: JSON.parse(JSON.stringify(bdSegs)), f: {},
+                resultsVisible: !!B('#bdResults') && B('#bdResults').classList.contains('show'),
+                autoHidden: bdAutoHidden };
+    FIELDS.forEach((id) => { o.f[id] = raw(B(id)); });
+    return o;
+  }
+  function persist() { try { localStorage.setItem(STORE, JSON.stringify(capture())); } catch (e) {} }
+  function apply(o) {
+    if (!o) return;
+    incomeMode = o.incomeMode === 'year' ? 'year' : 'month';
+    incomeUnit = o.incomeUnit === 'wan' ? 'wan' : 'yuan';
+    bdRateType = o.bdRateType === 'multi' ? 'multi' : 'single';
+    if (Array.isArray(o.bdSegs) && o.bdSegs.length) bdSegs = JSON.parse(JSON.stringify(o.bdSegs));
+    segsTouched = !!o.segsTouched;
+    syncIncomeUnitField();
+    FIELDS.forEach((id) => {
+      const v = o.f && o.f[id];
+      if (v === '' || v == null) clearCalcField(B(id));
+      else setCalcFieldStoredValue(B(id), parseFloat(v));
+    });
+    syncChoices();
+    syncRateUI();
+    if (o.resultsVisible && !bdMissingFields()) {
+      bdAutoHidden = false;
+      try { render(); markDone(); }
+      catch (e) { console.error(e); B('#bdResults').classList.remove('show'); }
+    } else {
+      B('#bdResults').classList.remove('show');
+      bdAutoHidden = !!(o.autoHidden || o.resultsVisible);
+    }
+  }
+
+  /* ---------- UI 同步 ---------- */
+  /* 單位一換，四格的小數位與上限都要跟著換：
+     元＝整數上限 9,999 萬元；萬＝小數 4 位上限 9,999 萬。 */
+  function syncIncomeUnitField() {
+    MONEY_FIELDS.forEach((sel) => {
+      const el = B(sel);
+      if (!el) return;
+      if (incomeUnit === 'wan') {
+        delete el.dataset.calcInteger;
+        el.dataset.calcMax = '9999';
+      } else {
+        el.dataset.calcInteger = 'true';
+        el.dataset.calcMax = '99999999';
+      }
+      const u = B(sel + 'Unit');
+      if (u) u.textContent = incomeUnit === 'wan' ? '萬元' : '元';
+    });
+  }
+
+  function syncChoices() {
+    document.querySelectorAll('[data-bd-income]').forEach((b) => {
+      b.classList.toggle('active', b.dataset.bdIncome === incomeMode);
+    });
+    document.querySelectorAll('[data-bd-unit]').forEach((b) => {
+      b.classList.toggle('active', b.dataset.bdUnit === incomeUnit);
+    });
+    const lab = B('#bdIncomeLabel');
+    if (lab) lab.textContent = incomeMode === 'year' ? '每年收入' : '每月收入';
+    syncPills('#bdDtiPills', raw(B('#bdDti')));
+    syncPills('#bdTermPills', raw(B('#bdTerm')));
+    syncPills('#bdGracePills', raw(B('#bdGrace')));
+    updateBdButton();
+  }
+  function syncPills(box, val) {
+    const el = B(box);
+    if (!el) return;
+    el.querySelectorAll('.qp').forEach((p) => p.classList.toggle('active', p.dataset.val === String(val)));
+  }
+
+  /* 改任一欄位都走同一條路：存檔 → 標記待算 → 視情況自動重算 */
+  function onChange() { syncChoices(); persist(); markStale(); }
+
+  /* ---------- 綁定 ---------- */
+  initCalcFields(B('#modeBurden'));
+  /* 萬元模式最多到小數第 4 位（1 元＝0.0001 萬），再細也沒有意義。
+     必須綁在下面的 onChange 之前，這樣截位後的值才會被拿去算。 */
+  MONEY_FIELDS.forEach((sel) => {
+    const el = B(sel);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const r = raw(el);
+      if (r === '') return;
+      const n = Number(r);
+      if (!Number.isFinite(n)) return;
+      const t = truncateToDecimals(n, getFieldMaxDecimals(el));
+      if (t !== n) setCalcFieldStoredValue(el, t);
+    });
+  });
+  FIELDS.forEach((id) => {
+    const el = B(id);
+    if (el) el.addEventListener('input', onChange);
+  });
+  // 年限一改，寬限期上限跟著變，超過就要清掉
+  B('#bdTerm').addEventListener('input', () => {
+    const g = B('#bdGrace');
+    if (!g || raw(g) === '') return;
+    const max = getBdGraceMaxValue();
+    if (Number(raw(g)) > max) { clearCalcField(g); flashFormFieldLabel(g); syncChoices(); persist(); markStale(); }
+  });
+  document.querySelectorAll('[data-bd-income]').forEach((b) => {
+    b.addEventListener('click', () => {
+      if (b.dataset.bdIncome === incomeMode) return;
+      incomeMode = b.dataset.bdIncome;
+      onChange();
+    });
+  });
+  /* 切換單位時把四格已填的數字一併換算，不然 35,560 會直接變成 35,560 萬。
+     元→萬除以 1 萬、最多留 4 位小數；萬→元四捨五入到整數。 */
+  document.querySelectorAll('[data-bd-unit]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const next = b.dataset.bdUnit === 'wan' ? 'wan' : 'yuan';
+      if (next === incomeUnit) return;
+      const vals = MONEY_FIELDS.map((sel) => (raw(B(sel)) === '' ? null : num(B(sel))));
+      incomeUnit = next;
+      syncIncomeUnitField();
+      MONEY_FIELDS.forEach((sel, k) => {
+        if (vals[k] === null) return;
+        setCalcFieldStoredValue(B(sel), next === 'wan'
+          ? Math.round(vals[k] / 10000 * 1e4) / 1e4
+          : Math.round(vals[k] * 10000));
+      });
+      onChange();
+    });
+  });
+  const PILL_TARGET = { '#bdDtiPills': '#bdDti', '#bdTermPills': '#bdTerm', '#bdGracePills': '#bdGrace' };
+  Object.keys(PILL_TARGET).forEach((box) => {
+    const el = B(box);
+    if (!el) return;
+    el.addEventListener('click', (e) => {
+      const p = e.target.closest('.qp');
+      if (!p) return;
+      const target = B(PILL_TARGET[box]);
+      setCalcFieldStoredValue(target, parseFloat(p.dataset.val));
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+  [['#bdDtiTag', '#bdDti', 50], ['#bdRateTag', '#bdRate', 2.5], ['#bdRatioTag', '#bdRatio', 80], ['#bdTermTag', '#bdTerm', 30]]
+    .forEach(([tag, field, val]) => {
+      const t = B(tag);
+      if (!t) return;
+      t.addEventListener('click', () => {
+        setCalcFieldStoredValue(B(field), val);
+        B(field).dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
+  B('#bdCalc').addEventListener('click', bdRunCalc);
+  B('#bdPeriodDots').addEventListener('click', (e) => {
+    const u = e.target.closest('[data-punit]');
+    if (u) setPeriodUnit(u.dataset.punit);
+  });
+  B('#bdToggleCumBtn').addEventListener('click', () => {
+    showCumInterest = !showCumInterest;
+    const on = showCumInterest;
+    B('#bdDetailSection').classList.toggle('show-cum', on);
+    const btn = B('#bdToggleCumBtn');
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.title = on ? '隱藏累積利息' : '顯示累積利息';
+    btn.setAttribute('aria-label', on ? '隱藏累積利息' : '顯示累積利息');
+    // 一般貸款那邊若已算過，一併同步，切面板才不會兩邊不一致
+    const gl = document.getElementById('detailSection');
+    if (gl) gl.classList.toggle('show-cum', on);
+    const glBtn = document.getElementById('toggleCumBtn');
+    if (glBtn) { glBtn.classList.toggle('active', on); glBtn.setAttribute('aria-pressed', String(on)); }
+  });
+  const condToggle = B('#bdConditionsToggle');
+  if (condToggle) {
+    condToggle.addEventListener('click', () => {
+      const box = B('#bdConditionsBox');
+      const open = box.classList.toggle('collapsed');
+      condToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+      condToggle.title = open ? '展開試算條件' : '收合試算條件';
+    });
+  }
+
+  /* ---------- 多段式利率 ---------- */
+  const BD_SEG_MAX = RATE_SEGMENT_MAX;   // 與一般貸款同為 10 段
+
+  /* 把各段整理成「連續、不重疊、每段至少 1 期、最後一段收在總期數」。
+     只在總期數已知時整理；年限還沒填就先擱著，等填了再說。 */
+  function normalizeSegs(evenSplit) {
+    const total = Math.trunc(num(B('#bdTerm'))) * 12;
+    if (!(total > 0)) return;
+    const n = Math.min(bdSegs.length, total);
+    if (n < bdSegs.length) bdSegs = bdSegs.slice(0, Math.max(1, n));
+    const cnt = bdSegs.length;
+    /* 段數變了就平均重切。沿用舊分界點的話，原本「1～360」的單段在新增第 2 段時
+       會被夾成「1～359」＋「360～360」，第二段只剩 1 期。 */
+    let splits = [];
+    for (let i = 0; i < cnt - 1; i++) {
+      const v = Math.trunc(Number(bdSegs[i].to));
+      splits.push(!evenSplit && Number.isFinite(v) && v > 0 ? v : Math.round(total * (i + 1) / cnt));
+    }
+    // 由前往後推：每段至少 1 期，且要留得下後面的段
+    for (let i = 0; i < splits.length; i++) {
+      const min = i === 0 ? 1 : splits[i - 1] + 1;
+      const max = total - (cnt - 1 - i);
+      splits[i] = Math.max(min, Math.min(splits[i], max));
+    }
+    // 再由後往前收一次，避免前面被推超過後面
+    for (let i = splits.length - 2; i >= 0; i--) {
+      splits[i] = Math.min(splits[i], splits[i + 1] - 1);
+      splits[i] = Math.max(splits[i], i + 1);
+    }
+    let from = 1;
+    bdSegs = bdSegs.map((sg, i) => {
+      const to = i === cnt - 1 ? total : splits[i];
+      const row = { from, to, rate: sg.rate };
+      from = to + 1;
+      return row;
+    });
+  }
+
+  function renderRateRows(evenSplit) {
+    const box = B('#bdRateRows');
+    if (!box) return;
+    normalizeSegs(evenSplit);
+    const total = Math.trunc(num(B('#bdTerm'))) * 12;
+    const lastIdx = bdSegs.length - 1;
+    box.innerHTML = bdSegs.map((sg, i) => {
+      const toCell = i === lastIdx
+        ? '<span class="rate-readonly">' + (sg.to || total) + '</span>'
+        : '<input type="text" class="calc-field rate-period" value="' + sg.to +
+          '" data-i="' + i + '" data-f="to" data-calc-integer="true" readonly inputmode="none" autocomplete="off">';
+      const rm = bdSegs.length > 1
+        ? '<button type="button" class="btn-remove" data-rm="' + i + '" title="刪除此段" aria-label="刪除此段">×</button>' : '';
+      return '<div class="rate-row-line">' +
+        '<span class="row-seg">第 ' + (i + 1) + ' 段</span>' +
+        '<span class="row-txt">第</span><span class="rate-readonly">' + sg.from + '</span>' +
+        '<span class="row-txt">期～第</span>' + toCell + '<span class="row-txt">期</span>' +
+        '<input type="text" class="rate-val calc-field" value="' + (sg.rate ?? '') +
+        '" data-i="' + i + '" data-f="rate" readonly inputmode="none" autocomplete="off">' +
+        '<span class="row-txt">%</span>' + rm + '</div>';
+    }).join('');
+
+    box.querySelectorAll('input').forEach((inp) => {
+      inp.addEventListener('change', () => {
+        const idx = +inp.dataset.i;
+        if (inp.dataset.f === 'to') {
+          const v = Math.trunc(Number(String(inp.value).replace(/,/g, '')));
+          if (Number.isFinite(v)) bdSegs[idx].to = v;
+          renderRateRows();
+        } else {
+          // 與單一利率同一套 0.01～16 夾限；空值維持空值，交給未填提示接手
+          const typed = String(inp.value ?? '').trim();
+          let next = '';
+          if (typed !== '') {
+            const shown = applyFieldClamp(inp, typed);
+            if (shown !== '') next = getCalcFieldRawString(inp) || shown;
+          }
+          if (next === '') { delete inp.dataset.calcRaw; inp.value = ''; }
+          bdSegs[idx].rate = next;
+        }
+        segsTouched = true;
+        onChange();
+      });
+    });
+    initCalcFields(box);
+    box.querySelectorAll('input.rate-val').forEach((inp) => {
+      const idx = +inp.dataset.i;
+      if (Number.isFinite(idx) && bdSegs[idx] && String(bdSegs[idx].rate ?? '') !== '') {
+        setCalcFieldStoredValue(inp, bdSegs[idx].rate);
+      }
+    });
+    box.querySelectorAll('.btn-remove').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = +btn.dataset.rm;
+        if (bdSegs.length <= 1) return;
+        bdSegs.splice(idx, 1);
+        segsTouched = true;
+        renderRateRows();
+        onChange();
+      });
+    });
+    const add = B('#bdAddRate');
+    if (add) {
+      const atMax = bdSegs.length >= BD_SEG_MAX;
+      add.classList.toggle('btn-add-disabled', atMax);
+      add.setAttribute('aria-disabled', atMax ? 'true' : 'false');
+    }
+  }
+
+  function syncRateUI() {
+    document.querySelectorAll('[data-bd-rate-type]').forEach((b) => {
+      b.classList.toggle('active', b.dataset.bdRateType === bdRateType);
+    });
+    const single = B('#bdRateField'), multi = B('#bdMultiRate');
+    if (single) single.classList.toggle('hidden', bdRateType !== 'single');
+    if (multi) multi.classList.toggle('hidden', bdRateType !== 'multi');
+    if (bdRateType === 'multi') renderRateRows();
+  }
+
+  document.querySelectorAll('[data-bd-rate-type]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const next = b.dataset.bdRateType === 'multi' ? 'multi' : 'single';
+      if (next === bdRateType) return;
+      bdRateType = next;
+      /* 還沒動過分段就把單一利率帶過去：使用者剛把 2% 填在上面，切過來卻看到
+         內建的 2.5%，會以為算錯了。動過之後就尊重使用者自己的設定。 */
+      if (next === 'multi' && !segsTouched) {
+        const r0 = raw(B('#bdRate'));
+        if (r0 !== '') bdSegs.forEach((sg) => { sg.rate = r0; });
+      }
+      syncRateUI();
+      onChange();
+    });
+  });
+  const addBtn = B('#bdAddRate');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      if (bdSegs.length >= BD_SEG_MAX) {
+        showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rateSegmentMax });
+        return;
+      }
+      const total = Math.trunc(num(B('#bdTerm'))) * 12;
+      if (bdSegs.length >= total) {
+        showToast('', { hint: true, hintHtml: hintLines('期數不足', '無法再切分') });
+        return;
+      }
+      const last = bdSegs[bdSegs.length - 1];
+      bdSegs.push({ from: 1, to: 0, rate: last ? last.rate : (raw(B('#bdRate')) || '2.5') });
+      segsTouched = true;
+      renderRateRows(true);
+      onChange();
+    });
+  }
+  // 年限一改，分段的期數範圍要重算
+  B('#bdTerm').addEventListener('input', () => { if (bdRateType === 'multi') renderRateRows(); });
+
+  /* ---------- 清空／恢復 ---------- */
+  function persistCleared() {
+    try {
+      if (bdCleared) localStorage.setItem(CLEAR_STORE, JSON.stringify(bdCleared));
+      else localStorage.removeItem(CLEAR_STORE);
+    } catch (e) {}
+  }
+  function hasContent() { return FIELDS.some((id) => raw(B(id)) !== ''); }
+
+  window.__bdClear = function () {
+    if (hasContent()) bdCleared = capture();
+    persistCleared();
+    FIELDS.forEach((id) => clearCalcField(B(id)));
+    incomeMode = 'month';
+    incomeUnit = 'yuan';
+    bdRateType = 'single';
+    bdSegs = [{ from: 1, to: 0, rate: '2.5' }];
+    segsTouched = false;
+    syncIncomeUnitField();
+    syncRateUI();
+    B('#bdResults').classList.remove('show');
+    // 與另外兩個面板一致：清空後要重新按一次按鈕，補欄位不會自己跳出結果
+    bdAutoHidden = false;
+    syncChoices();
+    bdStale = true;
+    updateBdButton();
+    persist();
+  };
+  window.__bdRestore = function () {
+    if (!bdCleared) return;
+    apply(bdCleared);
+    bdCleared = null;
+    persistCleared();
+    persist();
+    markStale();
+  };
+  window.__bdHasCleared = function () { return !!bdCleared; };
+
+  /* ---------- 啟動 ---------- */
+  syncIncomeUnitField();
+  syncRateUI();
+  try { const c = localStorage.getItem(CLEAR_STORE); if (c) bdCleared = JSON.parse(c) || null; } catch (e) {}
+  try { const v = localStorage.getItem(STORE); if (v) apply(JSON.parse(v)); } catch (e) {}
+  syncChoices();
+})();
+
 // ===== 模式切換（一般貸款 / 新青安3.0 / 個人評估；比照房地合一 成屋/預售）=====
 (function () {
   const MODE_KEY = 'mortgage_calc_mode_v1';
@@ -9134,6 +10115,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     let has = false;
     if (m === 'youth') has = typeof window.__ytHasCleared === 'function' && window.__ytHasCleared();
     else if (m === 'general') has = typeof window.__glHasCleared === 'function' && window.__glHasCleared();
+    else if (m === 'burden') has = typeof window.__bdHasCleared === 'function' && window.__bdHasCleared();
     restoreBtn.style.display = has ? '' : 'none';
   }
   window.__syncRestoreBtn = function (mode) { syncRestoreBtn(mode); };
@@ -9174,7 +10156,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       panel.hidden = key !== mode;
     });
     if (clearBtn) {
-      const showClear = mode === 'general' || mode === 'youth';
+      const showClear = mode === 'general' || mode === 'youth' || mode === 'burden';
       clearBtn.style.visibility = showClear ? '' : 'hidden';
       clearBtn.style.pointerEvents = showClear ? '' : 'none';
       clearBtn.setAttribute('aria-hidden', showClear ? 'false' : 'true');
@@ -9184,6 +10166,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
     if (typeof updateCalcButton === 'function') updateCalcButton();
     if (typeof window.__ytUpdateBtn === 'function') window.__ytUpdateBtn();
+    if (typeof window.__bdUpdateBtn === 'function') window.__bdUpdateBtn();
     if (!opts || opts.restoreScroll !== false) restoreModeScroll(mode);
   }
 
