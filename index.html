@@ -1284,7 +1284,7 @@ if ("serviceWorker" in navigator) {
     }
     .rate-full .input-box { max-width: 100%; }
     .rate-segments { margin-top: 8px; }
-    #rateRows {
+    #rateRows, #bdRateRows {
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -1696,9 +1696,9 @@ if ("serviceWorker" in navigator) {
     .yt-gear-btn svg { width: 16px; height: 16px; display: block; }
     /* hover 一定要包在媒體查詢裡：觸控裝置沒有真滑鼠，點完會把 hover 狀態黏在元素上，
        看起來就是「點過的齒輪一直亮著」。focus-visible 只在鍵盤操作時才會命中。 */
-    .yt-gear-btn:focus-visible { background: #e6efeb; color: var(--teal); }
+    .yt-gear-btn:focus-visible { background: var(--teal-light); color: var(--teal); }
     @media (hover: hover) and (pointer: fine) {
-      .yt-gear-btn:hover { background: #e6efeb; color: var(--teal); }
+      .yt-gear-btn:hover { background: var(--teal-light); color: var(--teal); }
     }
     .export-capture .yt-gear-btn { display: none !important; }
 
@@ -2692,6 +2692,29 @@ if ("serviceWorker" in navigator) {
     body[data-mode="youth"] .main-panel {
       border-color: rgba(18, 131, 107, 0.16);
       box-shadow: 0 8px 28px rgba(11, 93, 76, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    /* ===================== 個人評估：藍色主題覆寫 ===================== */
+    body[data-mode="burden"] {
+      --teal: #2E6DA4;
+      --teal-dark: #1D4B76;
+      --teal-light: #E6EFF8;
+    }
+    /* 頂帶那層深色與另外兩個模式同色，切分頁時最上面完全不動，只換下面的主色漸層 */
+    body[data-mode="burden"] .app-hero {
+      background:
+        linear-gradient(to bottom,
+          #1E2422 0px,
+          #1E2422 var(--safe-top),
+          rgba(30, 36, 34, 0.86) calc(var(--safe-top) + 22px),
+          rgba(30, 36, 34, 0) calc(var(--safe-top) + 104px)),
+        linear-gradient(165deg, rgba(255,255,255,0.14) 0%, transparent 38%),
+        linear-gradient(128deg, #6FA8DC 0%, var(--teal) 36%, #1F4C77 72%, #17395A 100%);
+    }
+    body[data-mode="burden"] .ver-switch { background: #17395A; }
+    body[data-mode="burden"] .main-panel {
+      border-color: rgba(46, 109, 164, 0.16);
+      box-shadow: 0 8px 28px rgba(29, 75, 118, 0.1), 0 2px 6px rgba(0, 0, 0, 0.04);
     }
 
     /* ===================== 新青安 3.0：版面元件 ===================== */
@@ -3977,6 +4000,17 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
 
+      <div class="section gl-region-sec" id="bdRegionSec">
+        <div class="label-cap">高價住宅<button type="button" class="yt-gear-btn" id="bdRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="bdRegionOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="bdRegionOff" aria-pressed="true">啟用中</button></div>
+        <div class="yt-opts c3" id="bdRegionOpts"></div>
+      </div>
+
+      <div class="section gl-hh-sec" id="bdHhSec">
+        <div class="label-cap">貸款戶數<button type="button" class="yt-gear-btn" id="bdHhSetBtn" title="設定貸款戶數限制" aria-label="設定貸款戶數限制" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="bdHhOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="bdHhOff" aria-pressed="true">啟用中</button></div>
+        <div class="yt-opts c2" id="bdHhOpts"></div>
+      </div>
+      <p class="gl-note" id="bdLuxNote" hidden></p>
+
       <div class="form-grid">
         <div class="field">
           <label class="label-cap">
@@ -4022,7 +4056,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
       </div>
-      <p class="gl-note bd-note-static">※ 點<em>欄位標題</em>可切換 元／萬元，四格一起換算。<em>既有負債月付</em>填每月要繳的金額（車貸、信貸等），不是貸款餘額；<em>願意負擔</em>與<em>他人協助</em>不計入收入，只用來壓低月付。</p>
+      <p class="gl-note bd-note-static">※ 點 <em>欄位標題</em> 可切換 元／萬元，四格一起切換。<em>既有負債月付</em> 填每月要繳的金額（車貸、信貸等）；<em>願意負擔</em> 與 <em>他人協助</em> 不計入收入，只用來壓低月付。</p>
 
       <div class="form-grid">
         <div class="field">
@@ -4066,6 +4100,8 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
 
+      <p class="gl-note bd-note-static">※ <em>自備款</em> 不填＝假設剛好夠，結果會告訴你需要準備多少；填了則以你的自備款與收入能力 <em>取較嚴的那個</em>。</p>
+
       <div class="section">
         <label class="label-cap">收支比<button type="button" class="yt-cap-max" id="bdDtiTag" title="點一下填入該數值">默認 50 %</button></label>
         <div class="input-box">
@@ -4086,8 +4122,6 @@ if ("serviceWorker" in navigator) {
           <button type="button" class="choice-btn" data-bd-method="principal">本金平均攤還</button>
         </div>
       </div>
-      <p class="gl-note bd-note-static">※ <em>自備款</em>不填＝假設剛好夠，結果會告訴你需要準備多少；填了則以你的自備款與收入能力<em>取較嚴的那個</em>。</p>
-
       <div class="section">
         <label>利率計算方式</label>
         <div class="choice-group">
@@ -4531,7 +4565,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.31J";
+const APP_VERSION = "2026.08.31M";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4854,11 +4888,15 @@ function applyOpticalCenter(toast) {
    徽章一點就翻轉審查開關，改完只有徽章文字變，容易誤觸又不易察覺。
    鎖住後徽章不可點；齒輪不受影響（開視窗＋按儲存兩道手續，不會不小心完成）。
    一般貸款與新青安各自一把鎖，狀態獨立保存。 */
-const BADGE_LOCK_KEY = { general: 'mortgage_badge_lock_general_v1', youth: 'mortgage_badge_lock_youth_v1' };
-const BADGE_LOCK_IDS = { general: ['glRegionOff', 'glHhOff'], youth: ['ytRegionOff'] };
+const BADGE_LOCK_KEY = { general: 'mortgage_badge_lock_general_v1', youth: 'mortgage_badge_lock_youth_v1',
+                         burden: 'mortgage_badge_lock_burden_v1' };
+/* 兩個齒輪視窗由一般貸款與個人評估共用，這個旗標記住這次開的是誰的設定 */
+let capDlgOwner = 'general';
+const BADGE_LOCK_IDS = { general: ['glRegionOff', 'glHhOff'], youth: ['ytRegionOff'],
+                         burden: ['bdRegionOff', 'bdHhOff'] };
 function currentLockMode() {
   const m = document.body.dataset.mode;
-  return m === 'youth' ? 'youth' : 'general';
+  return m === 'youth' ? 'youth' : m === 'burden' ? 'burden' : 'general';
 }
 function loadBadgeLock(mode) {
   try { return localStorage.getItem(BADGE_LOCK_KEY[mode]) === '1'; } catch (_) { return false; }
@@ -4876,7 +4914,7 @@ function syncBadgeLock() {
     btn.title = locked ? '已鎖定審查開關，點一下解除' : '鎖定本模式的審查開關';
   }
   // 三顆徽章旁的鎖頭都跟著當前模式的狀態走
-  ['general', 'youth'].forEach((m) => {
+  ['general', 'youth', 'burden'].forEach((m) => {
     const on = loadBadgeLock(m);
     BADGE_LOCK_IDS[m].forEach((id) => {
       const el = document.querySelector('[data-badge-lock="' + id + '"]');
@@ -6801,6 +6839,15 @@ function syncExportFormatButtons() {
 }
 
 // 累積利息欄以眼睛開關為準：預設關閉，使用者按過才會帶進匯出／分享
+/* 視窗關閉後把焦點還給原本的按鈕：桌機保留（鍵盤操作需要），
+   觸控裝置則還完就 blur，否則齒輪會一直亮著底色，看起來像沒關掉。 */
+function restoreFocusQuietly(el) {
+  if (!el || typeof el.focus !== 'function') return;
+  el.focus({ preventScroll: true });
+  const finePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (!finePointer && typeof el.blur === 'function') el.blur();
+}
+
 function isCumInterestVisible() {
   const mode = document.body.dataset.mode;
   const id = mode === 'youth' ? 'ytDetailSection' : mode === 'burden' ? 'bdDetailSection' : 'detailSection';
@@ -8661,8 +8708,9 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     }
     return null;
   }
-  function openDlg() {
-    fill(hhRows);
+  function openDlg(owner) {
+    capDlgOwner = owner === 'burden' ? 'burden' : 'general';
+    fill(capDlgOwner === 'burden' ? window.__bdGetHhRows() : hhRows);
     lastFocus = document.activeElement;
     dlg.hidden = false;
     const card = $('#glHhSetCard');
@@ -8675,11 +8723,12 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     dlg.classList.remove('show');
     const card = $('#glHhSetCard');
     setTimeout(() => { dlg.hidden = true; if (card) card.scrollTop = 0; }, 160);
-    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+    restoreFocusQuietly(lastFocus);
     lastFocus = null;
   }
 
-  $('#glHhSetBtn') && $('#glHhSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
+  $('#glHhSetBtn') && $('#glHhSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg('general'); });
+  window.__bdOpenHhDlg = () => openDlg('burden');
   $('#glHhSetCancel') && $('#glHhSetCancel').addEventListener('click', closeDlg);
   $('#glHhSetReset') && $('#glHhSetReset').addEventListener('click', () => {
     fill(cloneHhRows(HH_DEFAULT_ROWS));
@@ -8692,12 +8741,16 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
       showAppAlert(bad.msg, () => { if (bad.el && bad.el.focus) bad.el.focus({ preventScroll: true }); });
       return;
     }
-    hhRows = rows;
-    saveHhRows(hhRows);
-    // 存檔後由下方「已套用…」那則提示交代結果，這裡不再多跳一則上限提示
-    applyLuxCaps();
-    updateAmount();
-    maybeRecalc();
+    if (capDlgOwner === 'burden') {
+      window.__bdSetHhRows(rows);
+    } else {
+      hhRows = rows;
+      saveHhRows(hhRows);
+      // 存檔後由下方「已套用…」那則提示交代結果，這裡不再多跳一則上限提示
+      applyLuxCaps();
+      updateAmount();
+      maybeRecalc();
+    }
     closeDlg();
     showToast('', { html: toastLines(
       tOk('已套用') + ' ' + tOk(HH_LABELS.length + '組'),
@@ -9130,7 +9183,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   function closeSheet() {
     sheet.classList.remove('show');
     setTimeout(() => { sheet.hidden = true; }, 200);
-    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+    restoreFocusQuietly(lastFocus);
     lastFocus = null;
   }
 
@@ -9254,7 +9307,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   }
 
   function openDlg() {
-    fill(luxRows);
+    fill(capDlgOwner === 'burden' ? window.__bdGetLuxRows() : luxRows);
     lastFocus = document.activeElement;
     dlg.hidden = false;
     const card = $('#glRegionSetCard');
@@ -9269,11 +9322,12 @@ $('#conditionsToggle').addEventListener('click', () => {
     dlg.classList.remove('show');
     const card = $('#glRegionSetCard');
     setTimeout(() => { dlg.hidden = true; if (card) card.scrollTop = 0; }, 160);
-    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+    restoreFocusQuietly(lastFocus);
     lastFocus = null;
   }
 
-  $('#glRegionSetBtn') && $('#glRegionSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
+  $('#glRegionSetBtn') && $('#glRegionSetBtn').addEventListener('click', (e) => { e.preventDefault(); capDlgOwner = 'general'; openDlg(); });
+  window.__bdOpenLuxDlg = () => { capDlgOwner = 'burden'; openDlg(); };
   $('#glRegionSetCancel') && $('#glRegionSetCancel').addEventListener('click', closeDlg);
   $('#glRegionSetReset') && $('#glRegionSetReset').addEventListener('click', () => {
     fill(cloneLuxRows(LUX_DEFAULT_ROWS));
@@ -9286,17 +9340,24 @@ $('#conditionsToggle').addEventListener('click', () => {
       showAppAlert(bad.msg, () => { if (bad.el && typeof bad.el.focus === 'function') bad.el.focus({ preventScroll: true }); });
       return;
     }
-    luxRows = rows;
-    saveLuxRows(luxRows);
-    const n = luxValidIndexes().length;
-    syncLuxSelection();
-    saveLuxSel(luxSel);
-    // 同上：存檔結果交給下方「已套用…」那則提示
-    applyLuxCaps();
-    updateAmount();
-    maybeRecalc();
-    closeDlg();
-    const regionOn = luxOn && n >= 1;
+    let n, regionOn;
+    if (capDlgOwner === 'burden') {
+      const r = window.__bdSetLuxRows(rows);
+      n = r.count; regionOn = r.on;
+      closeDlg();
+    } else {
+      luxRows = rows;
+      saveLuxRows(luxRows);
+      n = luxValidIndexes().length;
+      syncLuxSelection();
+      saveLuxSel(luxSel);
+      // 同上：存檔結果交給下方「已套用…」那則提示
+      applyLuxCaps();
+      updateAmount();
+      maybeRecalc();
+      closeDlg();
+      regionOn = luxOn && n >= 1;
+    }
     // 一組都沒填時設定確實存了，但沒有門檻可比對，故第三行顯示未啟用
     showToast('', { html: toastLines(
       n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
@@ -9529,23 +9590,39 @@ window.addEventListener('resize', scheduleFitPaymentTable);
 
     const capacity = maxLoanFor(pay, totalMonths, graceMonths);
 
+    /* 高價住宅門檻是看「可買總價」，而總價又是算出來的，兩者互相決定。
+       作法：先用你填的成數算一次；若算出的總價已達門檻，代表這個成數不成立，
+       改用門檻的成數上限再算一次。不會來回震盪，且取的是比較保守的那個。 */
+    const luxTh = bdLuxThreshold();
+    const luxCap = bdLuxRatioCap();
+
     const downGiven = has('#bdDown');
     const D = downGiven ? num(B('#bdDown')) * 10000 : 0;
 
     /* 有自備款時同時受三個條件限制：貸款 ≤ 收入能力、貸款 ≤ 總價×成數、
        總價 ≤ 貸款＋自備款。整理後貸款上限＝min(收入能力, 自備款×成數÷(1−成數))。 */
-    let loan = capacity;
-    let downBound = false;
-    if (downGiven) {
-      const byDown = r >= 1 ? Infinity : D * r / (1 - r);
-      if (byDown < loan) { loan = byDown; downBound = true; }
+    function solve(ratio) {
+      let ln = capacity;
+      let dBound = false;
+      if (downGiven) {
+        const byDown = ratio >= 1 ? Infinity : D * ratio / (1 - ratio);
+        if (byDown < ln) { ln = byDown; dBound = true; }
+      }
+      ln = Math.floor(ln / 10000) * 10000;             // 無條件捨去到萬元
+      let pr = downGiven ? ln + D : (ratio > 0 ? ln / ratio : 0);
+      pr = Math.floor(pr / 10000) * 10000;
+      return { loan: ln, price: pr, downBound: dBound };
     }
 
-    loan = Math.floor(loan / 10000) * 10000;           // 無條件捨去到萬元
+    let out = solve(r);
+    let luxBound = false;
+    if (luxTh !== null && out.price >= luxTh && luxCap !== null && luxCap / 100 < r) {
+      out = solve(luxCap / 100);
+      luxBound = true;
+    }
+    let loan = out.loan, price = out.price;
+    const downBound = out.downBound;
     if (loan <= 0) return { err: 'pay' };
-
-    let price = downGiven ? loan + D : loan / r;
-    price = Math.floor(price / 10000) * 10000;
     const needDown = Math.max(0, price - loan);
 
     // 月付一律用捨去後的貸款額、走同一張還款表推回，四個數字才會互相對得起來
@@ -9554,7 +9631,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const payGrace = graceMonths > 0 && sched.length ? sched[0].payment : 0;
 
     return { pay, ceiling: dtiCeiling(), capacity, loan, price, needDown,
-             payAfter, payGrace, grace, term, downGiven, downBound, sched };
+             payAfter, payGrace, grace, term, downGiven, downBound,
+             luxBound, luxCap, luxTh, hhCap: bdHhRatioCap(), sched };
   }
 
   /* ---------- 呈現 ---------- */
@@ -9575,7 +9653,12 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       ['貸款年限', res.term + ' 年' + (res.grace > 0 ? '（含寬限期 ' + res.grace + ' 年）' : '（無寬限期）')],
       ['貸款成數', num(B('#bdRatio')) + ' %'],
       ['自備款', res.downGiven ? wan(num(B('#bdDown')) * 10000) : '未填'],
-      ['還款方式', bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還']
+      ['還款方式', bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還'],
+      ['高價住宅審查', res.luxTh === null ? '未啟用'
+        : (bdLuxActiveRow().name + ' ' + luxNum(bdLuxActiveRow().amount).toLocaleString('zh-TW') +
+           ' 萬・上限 ' + (res.luxCap === null ? '不限' : res.luxCap + '%'))],
+      ['貸款戶數審查', !bdHhOn ? '未啟用'
+        : (HH_LABELS[bdHhSel] + '・上限 ' + (res.hhCap === null ? '不限' : res.hhCap + '%'))]
     ];
     if (has('#bdWilling')) rows.splice(5, 0, ['願意負擔月付', yuan(num(B('#bdWilling')))]);
     if (has('#bdHelp')) rows.splice(has('#bdWilling') ? 6 : 5, 0, ['他人協助月付', yuan(num(B('#bdHelp')))]);
@@ -9590,6 +9673,10 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       lines.push('寬限期內每月只繳息 <em>' + yuan(res.payGrace) + '</em>，' +
         '寬限期結束後回到 <em>' + yuan(res.payAfter) + '</em>。' +
         '本金要在剩下的 ' + (res.term - res.grace) + ' 年攤完，所以月付比不用寬限期時更高。');
+    }
+    if (res.luxBound) {
+      lines.push('可買總價已達<em>高價住宅門檻</em>（' + wan(res.luxTh) +
+        '），成數被壓到 <em>' + res.luxCap + '%</em> 重新計算，因此需自備的金額大幅拉高。');
     }
     if (res.downBound) {
       lines.push('目前卡住的是<em>自備款</em>不是收入：以你的收入還能貸到 <em>' +
@@ -9994,6 +10081,214 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     });
   }
 
+  /* ---------- 高價住宅／貸款戶數審查（設定與另外兩個模式各自獨立） ---------- */
+  const K_LUX_ROWS = 'mortgage_bd_lux_rows_v1', K_LUX_SEL = 'mortgage_bd_lux_sel_v1',
+        K_LUX_ON = 'mortgage_bd_lux_on_v1', K_HH_ROWS = 'mortgage_bd_hh_rows_v1',
+        K_HH_SEL = 'mortgage_bd_hh_sel_v1', K_HH_ON = 'mortgage_bd_hh_on_v1';
+
+  let bdLuxRows = cloneLuxRows(LUX_DEFAULT_ROWS);
+  let bdHhRows = cloneHhRows(HH_DEFAULT_ROWS);
+  let bdLuxSel = 0, bdHhSel = 0, bdLuxOn = true, bdHhOn = true;
+
+  const jset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const jget = (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+
+  function bdLuxValidIndexes() {
+    const out = [];
+    bdLuxRows.forEach((r, i) => {
+      if (String(r.name ?? '').trim() !== '' && luxNum(r.amount) > 0) out.push(i);
+    });
+    return out;
+  }
+  function syncBdLuxSel() {
+    const idx = bdLuxValidIndexes();
+    if (!idx.length) { bdLuxSel = 0; return; }
+    if (idx.indexOf(bdLuxSel) < 0) bdLuxSel = idx[0];
+  }
+  function bdLuxActiveRow() {
+    if (!bdLuxOn) return null;
+    const idx = bdLuxValidIndexes();
+    if (!idx.length) return null;
+    syncBdLuxSel();
+    return bdLuxRows[bdLuxSel] || null;
+  }
+  /* 高價住宅門檻（元）；沒有啟用或沒設定就回 null */
+  function bdLuxThreshold() {
+    const r = bdLuxActiveRow();
+    if (!r) return null;
+    const n = luxNum(r.amount);
+    return n > 0 ? n * 10000 : null;
+  }
+  function bdLuxRatioCap() {
+    const r = bdLuxActiveRow();
+    if (!r || r.ratio === '') return null;
+    const n = luxNum(r.ratio);
+    return Number.isFinite(n) ? n : null;
+  }
+  /* 貸款戶數與房價無關，直接當成成數欄位的上限（與一般貸款同樣會清掉超限的值） */
+  function bdHhRatioCap() {
+    if (!bdHhOn) return null;
+    const r = bdHhRows[bdHhSel];
+    if (!r || r.ratio === '') return null;
+    const n = luxNum(r.ratio);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function renderBdLuxOpts() {
+    const box = B('#bdRegionOpts'), off = B('#bdRegionOff'), sec = B('#bdRegionSec');
+    if (!box) return;
+    const idx = bdLuxValidIndexes();
+    const ready = idx.length >= 1;
+    const on = ready && bdLuxOn;
+    if (off) {
+      off.textContent = on ? '啟用中' : '未啟用';
+      off.setAttribute('aria-pressed', on ? 'true' : 'false');
+      off.title = ready ? (on ? '點擊暫時關閉高價住宅門檻' : '點擊重新套用高價住宅門檻')
+                        : '請先於齒輪內設定至少 1 組高價住宅';
+    }
+    if (sec) sec.classList.toggle('is-off', !on);
+    box.classList.toggle('c3', idx.length >= 3);
+    box.classList.toggle('c2', idx.length === 2);
+    if (!on) { box.innerHTML = ''; return; }
+    syncBdLuxSel();
+    box.innerHTML = idx.map((i) => {
+      const r = bdLuxRows[i];
+      return '<button type="button" class="yt-opt' + (i === bdLuxSel ? ' active' : '') +
+        '" data-bd-region="' + i + '"><b>' + escapeAlertHtml(r.name) + '</b><small>' +
+        luxNum(r.amount).toLocaleString('zh-TW') + ' 萬</small></button>';
+    }).join('');
+  }
+  function renderBdHhOpts() {
+    const box = B('#bdHhOpts'), off = B('#bdHhOff'), sec = B('#bdHhSec');
+    if (off) {
+      off.textContent = bdHhOn ? '啟用中' : '未啟用';
+      off.setAttribute('aria-pressed', bdHhOn ? 'true' : 'false');
+      off.title = bdHhOn ? '點擊暫時關閉貸款戶數限制' : '點擊重新套用貸款戶數限制';
+    }
+    if (sec) sec.classList.toggle('is-off', !bdHhOn);
+    if (!box) return;
+    if (!bdHhOn) { box.innerHTML = ''; return; }
+    box.innerHTML = HH_LABELS.map((label, i) => {
+      const r = bdHhRows[i] || { ratio: '', grace: '' };
+      const bits = [r.ratio === '' ? '成數不限' : '成數 ' + r.ratio + '%'];
+      if (r.grace === '0') bits.push('無寬限期');
+      else if (r.grace !== '') bits.push('寬限 ' + r.grace + ' 年');
+      return '<button type="button" class="yt-opt' + (i === bdHhSel ? ' active' : '') +
+        '" data-bd-hh="' + i + '"><b>' + escapeAlertHtml(label) + '</b><small>' +
+        bits.join('・') + '</small></button>';
+    }).join('');
+  }
+
+  function renderBdLuxNote() {
+    const el = B('#bdLuxNote');
+    if (!el) return;
+    const bits = [];
+    const th = bdLuxThreshold();
+    if (th) {
+      const r = bdLuxActiveRow();
+      const cap = bdLuxRatioCap();
+      bits.push('可買總價達 ' + escapeAlertHtml(r.name) + ' ' + luxNum(r.amount).toLocaleString('zh-TW') +
+        ' 萬時屬高價住宅，貸款成數上限 ' + (cap === null ? '不限' : cap + '%'));
+    }
+    const hc = bdHhRatioCap();
+    if (bdHhOn && bdHhRows[bdHhSel]) {
+      bits.push(HH_LABELS[bdHhSel] + '，貸款成數上限 ' + (hc === null ? '不限' : hc + '%'));
+    }
+    if (!bits.length) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.innerHTML = '※ ' + bits.join('；') + '。兩項同時適用時從嚴認定。';
+  }
+
+  /* 貸款戶數的成數上限直接套在欄位上（與房價無關）；超過就清掉並閃一下標題。 */
+  function enforceBdHhCap() {
+    const cap = bdHhRatioCap();
+    const el = B('#bdRatio');
+    if (cap === null || !el) return false;
+    const v = raw(el);
+    if (v === '' || Number(v) <= cap) return false;
+    clearCalcField(el);
+    flashFormFieldLabel(el);
+    return true;
+  }
+
+  function applyBdCaps(opts) {
+    renderBdLuxOpts();
+    renderBdHhOpts();
+    const changed = enforceBdHhCap();
+    renderBdLuxNote();
+    if (!(opts && opts.quiet)) { persist(); markStale(); }
+    return changed;
+  }
+
+  /* 給共用齒輪視窗呼叫的存取點 */
+  window.__bdGetLuxRows = () => cloneLuxRows(bdLuxRows);
+  window.__bdGetHhRows = () => cloneHhRows(bdHhRows);
+  window.__bdSetLuxRows = (rows) => {
+    bdLuxRows = rows.map(normalizeLuxRow);
+    jset(K_LUX_ROWS, bdLuxRows);
+    syncBdLuxSel();
+    jset(K_LUX_SEL, bdLuxSel);
+    applyBdCaps();
+    const count = bdLuxValidIndexes().length;
+    return { count, on: bdLuxOn && count >= 1 };
+  };
+  window.__bdSetHhRows = (rows) => {
+    bdHhRows = rows.map(normalizeHhRow);
+    jset(K_HH_ROWS, bdHhRows);
+    applyBdCaps();
+  };
+
+  B('#bdRegionSetBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (typeof window.__bdOpenLuxDlg === 'function') window.__bdOpenLuxDlg();
+  });
+  B('#bdHhSetBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (typeof window.__bdOpenHhDlg === 'function') window.__bdOpenHhDlg();
+  });
+  B('#bdRegionOpts').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-bd-region]');
+    if (!btn) return;
+    const i = +btn.dataset.bdRegion;
+    if (!Number.isFinite(i) || i === bdLuxSel) return;
+    bdLuxSel = i; jset(K_LUX_SEL, bdLuxSel);
+    applyBdCaps();
+  });
+  B('#bdHhOpts').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-bd-hh]');
+    if (!btn) return;
+    const i = +btn.dataset.bdHh;
+    if (!Number.isFinite(i) || i === bdHhSel) return;
+    bdHhSel = i; jset(K_HH_SEL, bdHhSel);
+    applyBdCaps();
+  });
+  B('#bdRegionOff').addEventListener('click', () => {
+    if (badgeLockBlocked()) return;
+    if (!bdLuxValidIndexes().length) {
+      showToast('', { hint: true, hintHtml: hintLines('請先於「高價住宅」', '齒輪內設定 ' + tEm('至少1組'), '（高價住宅門檻設定）') });
+      return;
+    }
+    bdLuxOn = !bdLuxOn; jset(K_LUX_ON, bdLuxOn);
+    applyBdCaps();
+    showToast('', { html: luxSwitchToastHtml(bdLuxOn) });
+  });
+  B('#bdHhOff').addEventListener('click', () => {
+    if (badgeLockBlocked()) return;
+    bdHhOn = !bdHhOn; jset(K_HH_ON, bdHhOn);
+    applyBdCaps();
+    showToast('', { html: toastLines((bdHhOn ? tOk('已啟用') : tNo('已關閉')) + ' 貸款戶數審查') });
+  });
+
+  function loadBdCaps() {
+    const lr = jget(K_LUX_ROWS); if (Array.isArray(lr) && lr.length) bdLuxRows = lr.map(normalizeLuxRow);
+    const hr = jget(K_HH_ROWS); if (Array.isArray(hr) && hr.length) bdHhRows = hr.map(normalizeHhRow);
+    const ls = jget(K_LUX_SEL); if (Number.isFinite(ls)) bdLuxSel = ls;
+    const hs = jget(K_HH_SEL); if (Number.isFinite(hs) && hs >= 0 && hs < HH_LABELS.length) bdHhSel = hs;
+    const lo = jget(K_LUX_ON); if (typeof lo === 'boolean') bdLuxOn = lo;
+    const ho = jget(K_HH_ON); if (typeof ho === 'boolean') bdHhOn = ho;
+    syncBdLuxSel();
+  }
+
   /* ---------- 多段式利率 ---------- */
   const BD_SEG_MAX = RATE_SEGMENT_MAX;   // 與一般貸款同為 10 段
 
@@ -10162,7 +10457,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     persistCleared();
     FIELDS.forEach((id) => clearCalcField(B(id)));
     incomeMode = 'month';
-    incomeUnit = 'yuan';
+    // 元／萬元是顯示偏好而不是數值，清空不動它；只有點欄位標題才會切換
     bdMethod = 'amortize';
     bdRateType = 'single';
     bdSegs = [{ from: 1, to: 0, rate: '2.5' }];
@@ -10203,9 +10498,11 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   /* ---------- 啟動 ---------- */
   syncIncomeUnitField();
   syncRateUI();
+  loadBdCaps();
   try { const c = localStorage.getItem(CLEAR_STORE); if (c) bdCleared = JSON.parse(c) || null; } catch (e) {}
   try { const v = localStorage.getItem(STORE); if (v) apply(JSON.parse(v)); } catch (e) {}
   syncChoices();
+  applyBdCaps({ quiet: true });
 })();
 
 // ===== 模式切換（一般貸款 / 新青安3.0 / 個人評估；比照房地合一 成屋/預售）=====
@@ -11505,7 +11802,7 @@ window.addEventListener('resize', () => {
     function closeSheet() {
       sheet.classList.remove('show');
       setTimeout(() => { sheet.hidden = true; }, 200);
-      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+      restoreFocusQuietly(lastFocus);
       lastFocus = null;
     }
 
@@ -11605,7 +11902,7 @@ window.addEventListener('resize', () => {
     function closeDlg() {
       dlg.classList.remove('show');
       setTimeout(() => { dlg.hidden = true; }, 160);
-      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+      restoreFocusQuietly(lastFocus);
       lastFocus = null;
     }
 
@@ -11729,7 +12026,7 @@ window.addEventListener('resize', () => {
       dlg.classList.remove('show');
       const card = Y('#ytRegionSetCard');
       setTimeout(() => { dlg.hidden = true; if (card) card.scrollTop = 0; }, 160);
-      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+      restoreFocusQuietly(lastFocus);
       lastFocus = null;
     }
 
@@ -11841,7 +12138,7 @@ window.addEventListener('resize', () => {
     function closeDlg() {
       dlg.classList.remove('show');
       setTimeout(() => { dlg.hidden = true; }, 160);
-      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus({ preventScroll: true });
+      restoreFocusQuietly(lastFocus);
       lastFocus = null;
     }
     function applyBase(v) {
