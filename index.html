@@ -2909,6 +2909,7 @@ if ("serviceWorker" in navigator) {
     }
     .gl-note[hidden] { display: none; }
     .bd-note-static { margin-top: 10px; }
+    .gl-note-static { margin-top: 8px; }
     /* 欄位標題本身就是切換鈕：外觀維持純文字，只在按下時給回饋，
        右邊的小標仍是可點的樣子，讓「標題可以點」這件事看得出來 */
     .bd-title-btn {
@@ -3362,8 +3363,10 @@ if ("serviceWorker" in navigator) {
     }
 
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- 匯出函式庫改成本地同源，Service Worker 才能預快取，離線冷啟動也能匯出。
+       版本與原本 CDN 完全相同：html2canvas 1.4.1、jsPDF 2.5.1。 -->
+  <script src="./html2canvas.min.js"></script>
+  <script src="./jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="wrap" id="appShell">
@@ -3408,6 +3411,7 @@ if ("serviceWorker" in navigator) {
     <div class="section gl-hh-sec" id="glHhSec">
       <div class="label-cap">貸款戶數<button type="button" class="yt-gear-btn" id="glHhSetBtn" title="設定貸款戶數限制" aria-label="設定貸款戶數限制" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="glHhOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="glHhOff" aria-pressed="true">啟用中</button></div>
       <div class="yt-opts c2" id="glHhOpts"></div>
+      <p class="gl-note gl-note-static">※ 本審查依<em>一般標準案件</em>估算；特殊案件仍以<em>金融機構查核及適用規定</em>為準。</p>
     </div>
     <div class="form-grid">
       <div class="field">
@@ -3464,6 +3468,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
+    <p class="gl-note gl-note-static">※ <em>寬限期</em>快捷鈕只是常用值，可自行輸入其他年數。實際寬限期仍依<em>金融機構核貸條件</em>為準。</p>
     <p class="gl-note" id="glLuxNote" hidden></p>
 
     <div class="section">
@@ -4567,7 +4572,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.03C";
+const APP_VERSION = "2026.09.03D";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4710,7 +4715,7 @@ let showCumInterest = false;
 const FIELD_HINT_HTML = {
   price: hintLines('購屋總價上限為', tEm('9,999,999 萬元')),
   ratio: hintLines('貸款成數上限為', tEm('100%')),
-  term: hintLines('貸款年限上限為', tEm('60 年')),
+  term: hintLines('本系統試算年限最高為', tEm('60 年')),
   rate: hintLines('請輸入年利率（區間）', tEm('0.01') + ' ～ ' + tEm('16.00')),
   rateSegmentMax: hintLines('多段利率最多', tEm('10 段')),
   rateSegmentTermShort: hintLines('貸款期數不足', '無法再新增利率段')
@@ -5130,23 +5135,98 @@ function loadClearSnapshot() {
   try {
     const raw = localStorage.getItem(CLEAR_SNAPSHOT_KEY);
     if (!raw) return null;
-    const state = JSON.parse(raw);
-    if (!state || typeof state !== 'object') return null;
-    if (!Array.isArray(state.rateSegments)) return null;
+    const state = normalizeGeneralFormState(JSON.parse(raw));
+    if (!state) return null;
     return formHasContent(state) ? state : null;
   } catch (_) {
     return null;
   }
 }
 
+/* 保存資料合法化。來源可能是舊版本、更新前殘留、localStorage 損壞或開發測試殘留，
+   不能假設一定合法。任何一般貸款保存資料進入 applyFormState() 前都要先過這裡。
+   注意：「清空數值」之後保存的空白表單是合法狀態，不可以自作主張補回 HTML 預設值。 */
+function normalizeGeneralFormState(state) {
+  if (!state || typeof state !== 'object') return null;
+  const out = {};
+  const str = (v) => (v == null ? '' : String(v).trim());
+
+  // 數值欄位：可空白；有值就必須是合法範圍內的有限數字，否則整格作廢
+  function numField(v, { min, max, integer }) {
+    const t = str(v);
+    if (t === '') return '';
+    const n = Number(t);
+    if (!Number.isFinite(n)) return '';
+    if (integer && !Number.isInteger(n)) return '';
+    if (min != null && n < min) return '';
+    if (max != null && n > max) return '';
+    return String(n);
+  }
+
+  out.price = numField(state.price, { min: 0.0001, max: PRICE_MAX_WAN });
+  // 鑑價 0 一律視同未填，避免畫面說已填、計算卻忽略
+  out.appraisal = numField(state.appraisal, { min: 0.0001, max: PRICE_MAX_WAN });
+  out.ratio = numField(state.ratio, { min: 0.0001, max: 100 });
+  out.term = numField(state.term, { min: 1, max: TERM_MAX_YEARS, integer: true });
+  out.grace = numField(state.grace, { min: 0, max: TERM_MAX_YEARS, integer: true });
+  out.rate = numField(state.rate, { min: RATE_MIN, max: RATE_MAX });
+  out.graceIsYear = state.graceIsYear !== false;
+
+  // 寬限期不得超過年限 −1；年限本身無效時寬限期也失去依據
+  if (out.grace !== '' && out.graceIsYear) {
+    if (out.term === '') out.grace = '';
+    else if (Number(out.grace) > Number(out.term) - 1) out.grace = '';
+  }
+
+  out.method = (state.method === 'principal' || state.method === 'amortize') ? state.method : 'amortize';
+  out.rateType = (state.rateType === 'multi' || state.rateType === 'single') ? state.rateType : 'single';
+
+  /* 多段利率：每一段都要是有效物件、利率在合法範圍、期間為正整數且遞增不重疊。
+     只要有一段壞掉就整組作廢並退回單一利率——半組資料比沒有更危險。 */
+  let segs = null;
+  if (Array.isArray(state.rateSegments) && state.rateSegments.length >= 1
+      && state.rateSegments.length <= RATE_SEGMENT_MAX) {
+    const cleaned = [];
+    let prevTo = 0;
+    let bad = false;
+    for (const sg of state.rateSegments) {
+      if (!sg || typeof sg !== 'object') { bad = true; break; }
+      const r = Number(str(sg.rate));
+      if (!Number.isFinite(r) || r < RATE_MIN || r > RATE_MAX) { bad = true; break; }
+      const from = Number(sg.from), to = Number(sg.to);
+      if (!Number.isInteger(from) || !Number.isInteger(to)) { bad = true; break; }
+      if (from !== prevTo + 1 || to < from) { bad = true; break; }   // 不可重疊、不可留空洞
+      prevTo = to;
+      cleaned.push({ from, to, rate: String(r) });
+    }
+    if (!bad && cleaned.length) segs = cleaned;
+  }
+  if (!segs) {
+    out.rateType = 'single';
+    const base = out.rate !== '' ? out.rate : '2.5';
+    segs = [{ from: 1, to: out.term !== '' ? Number(out.term) * 12 : 360, rate: base }];
+  }
+  out.rateSegments = segs;
+
+  out.termPillVal = str(state.termPillVal);
+  out.gracePillVal = str(state.gracePillVal);
+  if (state.effectiveRatioCap !== undefined) out.effectiveRatioCap = str(state.effectiveRatioCap);
+  if (state.effectiveGraceCap !== undefined) out.effectiveGraceCap = str(state.effectiveGraceCap);
+
+  /* 只有在必填欄位齊全、利率資料合法時才允許直接恢復結果。
+     其餘一律收起，讓按鈕回到「尚未計算」，不製造假完成。 */
+  const complete = out.price !== '' && out.ratio !== '' && out.term !== ''
+    && (out.rateType === 'single' ? out.rate !== '' : out.rateSegments.length >= 1);
+  out.resultsVisible = !!state.resultsVisible && complete;
+  out.resultsAutoHidden = !!state.resultsAutoHidden;
+  return out;
+}
+
 function loadPersistedFormState() {
   try {
     const raw = localStorage.getItem(FORM_STATE_STORAGE_KEY);
     if (!raw) return null;
-    const state = JSON.parse(raw);
-    if (!state || typeof state !== 'object') return null;
-    if (!Array.isArray(state.rateSegments)) return null;
-    return state;
+    return normalizeGeneralFormState(JSON.parse(raw));
   } catch (_) {
     return null;
   }
@@ -5172,9 +5252,11 @@ function applyFormState(state) {
 
   syncTermPillsFromInput();
 
-  method = state.method;
-  rateType = state.rateType;
-  rateSegments = JSON.parse(JSON.stringify(state.rateSegments));
+  method = (state.method === 'principal' || state.method === 'amortize') ? state.method : 'amortize';
+  rateType = (state.rateType === 'multi' || state.rateType === 'single') ? state.rateType : 'single';
+  rateSegments = Array.isArray(state.rateSegments) && state.rateSegments.length
+    ? JSON.parse(JSON.stringify(state.rateSegments))
+    : [{ from: 1, to: getTotalMonths() || 360, rate: getCalcFieldRawString($('#rate')) || '2.5' }];
   syncRateSegmentsContiguous();
   // 恢復的若是多段設定，同時放回暫存，之後 single→multi 才找得回來
   if (rateType === 'multi') snapshotMultiRateSegments();
@@ -5302,7 +5384,7 @@ function enforceSnapshotCapChange(snap) {
 
 function restoreClearedState() {
   if (!clearSnapshot) return;
-  const snap = clearSnapshot;
+  const snap = normalizeGeneralFormState(clearSnapshot) || clearSnapshot;
   clearSnapshot = null;
   persistClearSnapshot();
   applyFormState(snap);
@@ -5365,10 +5447,22 @@ function luxNum(v) {
   const n = Number(t);
   return Number.isFinite(n) ? n : NaN;
 }
+/* 齒輪內的成數上限：留白＝不設限，有效範圍 1～100。
+   0% 會讓主表永遠算不出來（主表成數必須大於 0），是「設定得起來但永遠無效」的矛盾。
+   寬限期上限 0 年不受影響，那代表無寬限期，是合法值。 */
+function sanitizeCapRatioCell(v) {
+  const t = String(v ?? '').trim();
+  if (t === '') return '';
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 1 || n > 100) return '';
+  return String(Math.trunc(n));
+}
+
 function normalizeLuxRow(r) {
   const o = r && typeof r === 'object' ? r : {};
   const str = (v) => (v === null || v === undefined ? '' : String(v).trim());
-  return { name: str(o.name).slice(0, 8), amount: str(o.amount), ratio: str(o.ratio), grace: str(o.grace) };
+  return { name: str(o.name).slice(0, 8), amount: str(o.amount),
+           ratio: sanitizeCapRatioCell(o.ratio), grace: str(o.grace) };
 }
 function cloneLuxRows(rows) {
   const out = [];
@@ -5462,7 +5556,7 @@ const HH_DEFAULT_ROWS = [
 function normalizeHhRow(r) {
   const o = r && typeof r === 'object' ? r : {};
   const str = (v) => (v === null || v === undefined ? '' : String(v).trim());
-  return { ratio: str(o.ratio), grace: str(o.grace) };
+  return { ratio: sanitizeCapRatioCell(o.ratio), grace: str(o.grace) };
 }
 function cloneHhRows(rows) {
   const out = [];
@@ -5573,6 +5667,13 @@ function getGraceMaxValue() {
 /* 新青安面板的利率欄位：基準利率、五段階梯利率、一般貸款年利率、預設基準利率。
    列入 isRateInput 後，即與一般貸款的年利率共用同一套 0.01～16.00 夾制與提示。 */
 const YT_RATE_IDS = ['ytBase', 'ytSpread', 'ytR1', 'ytR2', 'ytR3', 'ytR4', 'ytR5', 'ytGenRate', 'ytBaseDefault'];
+/* 齒輪內的成數上限欄位，提交 0 時清空並說明範圍 */
+const CAP_RATIO_INPUT_IDS = ['glHhRatio0', 'glHhRatio1', 'glHhRatio2', 'glHhRatio3',
+                             'glSetRatio0', 'glSetRatio1', 'glSetRatio2'];
+function isCapRatioInput(inputEl) {
+  return !!inputEl && CAP_RATIO_INPUT_IDS.indexOf(inputEl.id) >= 0;
+}
+
 function isRateInput(inputEl) {
   if (!inputEl) return false;
   if (inputEl.id === 'rate' || inputEl.id === 'bdRate' || inputEl.classList.contains('rate-val')) return true;
@@ -6296,6 +6397,18 @@ function calcCommitValue(rawExpr) {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
       calcKeyboard.exprFull = null;
+      return;
+    }
+    /* 齒輪的成數上限：0% 會讓主表永遠算不出來（主表成數必須大於 0），
+       是「設定得起來但永遠無效」的矛盾。留白才是「不設限」的正確表達方式。 */
+    if (isCapRatioInput(input) && fullNum < 1) {
+      clearCalcField(input);
+      showToast('', { hint: true, multiline: true,
+        hintHtml: hintLines('成數上限請輸入 1%～100%', '留白代表不設限') });
+      calcKeyboard.exprFull = null;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCalcFieldSideEffects(input);
       return;
     }
     const beforeStr = String(fullNum);
@@ -7172,6 +7285,20 @@ function getShareText() {
     `貸款總額：${$('#resTotal').textContent}`,
     `還款期間：${$('#resTerm').textContent}`
   ];
+  /* 每月還款是分享時最重要的一段，直接取畫面已算好的分組，
+     不另寫一套月付公式，文字與畫面才不會對不起來。 */
+  if (Array.isArray(lastPeriodGroups) && lastPeriodGroups.length) {
+    lines.push('', '【每月還款】');
+    lastPeriodGroups.forEach((g) => {
+      const range = g.start === g.end
+        ? `第 ${fmtPeriod(g.start)} 期`
+        : `第 ${fmtPeriod(g.start)}～${fmtPeriod(g.end)} 期`;
+      const tags = [];
+      if (g.isGrace) tags.push('寬限期');
+      if (g.rateText) tags.push('年利率 ' + g.rateText);
+      lines.push(`${range}：每月 ${g.paymentDisplay} 元` + (tags.length ? `（${tags.join('，')}）` : ''));
+    });
+  }
   if (shouldShowAprFooter()) {
     lines.push(formatAprExportLine());
   }
@@ -8777,6 +8904,14 @@ $('#appraisal').addEventListener('input', () => {
   const el = $('#appraisal');
   const clamped = applyFieldClamp(el, el.value);
   if (el.value !== clamped) el.value = clamped;
+  /* 鑑價是選填，0 在計算上一律視同未填（改用購屋總價）。
+     以前畫面留著「0 萬」但計算忽略它，畫面說已填、實際沒填，語意不一致。 */
+  const raw = getCalcFieldRawString(el);
+  if (raw !== '' && Number(raw) <= 0) {
+    clearCalcField(el);
+    showToast('', { hint: true, multiline: true,
+      hintHtml: hintLines('銀行鑑價請輸入大於 0 的金額', '0 已視為未填') });
+  }
   applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
