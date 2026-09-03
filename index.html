@@ -4088,7 +4088,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
         <div class="field">
-          <label class="label-cap">寬限期<span class="yt-opt-tag">選填</span></label>
+          <label class="label-cap">寬限期<button type="button" class="yt-cap-max" id="bdGraceTag" title="點一下填入該數值">選填</button></label>
           <div class="input-box">
             <input type="text" id="bdGrace" class="calc-field" value="" data-calc-integer="true" data-calc-max="5" readonly inputmode="none" autocomplete="off">
             <span class="unit">年</span>
@@ -4567,7 +4567,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.08.31N";
+const APP_VERSION = "2026.09.03C";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -4577,21 +4577,6 @@ const $$ = (s) => document.querySelectorAll(s);
 const graceIsYear = true;
 const GRACE_PILLS_YEAR = [0, 1, 2, 3];
 
-function snapGraceToPill(val) {
-  const vals = GRACE_PILLS_YEAR;
-  if (!val) return 0;
-  if (vals.includes(val)) return val;
-  let nearest = vals[0];
-  let minDiff = Math.abs(val - nearest);
-  for (let i = 1; i < vals.length; i++) {
-    const diff = Math.abs(val - vals[i]);
-    if (diff < minDiff) {
-      minDiff = diff;
-      nearest = vals[i];
-    }
-  }
-  return nearest;
-}
 let rateType = 'single';
 let method = 'amortize';
 /* 期數顯示單位：year 年／period 期／month 月。
@@ -4618,6 +4603,15 @@ function setPeriodUnit(u) {
 }
 let lastPeriodGroups = null;    // 快取分組結果，切換單位時只重繪表格，不會吃到尚未試算的輸入
 let rateSegments = [{ from: 1, to: 360, rate: '2.5' }];
+/* 切回單一利率時把目前的多段設定收起來，再切回多段時原樣拿出來。
+   舊版直接重建成一段，使用者辛苦設好的分界與利率會無聲消失。 */
+let lastValidMultiRateSegments = null;
+function snapshotMultiRateSegments() {
+  if (!Array.isArray(rateSegments) || !rateSegments.length) return;
+  const ok = rateSegments.every((sg) => sg && String(sg.rate ?? '').trim() !== '');
+  if (!ok) return;
+  lastValidMultiRateSegments = JSON.parse(JSON.stringify(rateSegments));
+}
 
 function rebuildRateSegmentsFromSplits(splits, rates, total) {
   const n = splits.length + 1;
@@ -5091,7 +5085,6 @@ function captureFormState() {
   return {
     price: getCalcFieldRawString($('#price')),
     appraisal: getCalcFieldRawString($('#appraisal')),
-    luxSel: luxSel,
     ratio: getCalcFieldRawString($('#ratio')),
     term: getCalcFieldRawString($('#term')),
     grace: getCalcFieldRawString($('#grace')),
@@ -5103,11 +5096,20 @@ function captureFormState() {
     termPillVal: getActivePillVal('termPills'),
     gracePillVal: getActivePillVal('gracePills'),
     resultsVisible: $('#results').classList.contains('show'),
-    resultsAutoHidden: resultsAutoHidden
+    resultsAutoHidden: resultsAutoHidden,
+    /* 純比較用：記下當下的有效上限數字。恢復時拿來判斷「清空期間上限有沒有變」。
+       不代表要恢復高價住宅／貸款戶數／開關／齒輪，那些各有獨立保存。 */
+    effectiveRatioCap: capValOf(capRatio()),
+    effectiveGraceCap: capValOf(capGrace())
   };
 }
 
+/* 啟動早期（尚未讀入保存狀態）的任何寫入都會把使用者上次的內容洗掉。
+   初始化那一輪 applyLuxCaps() 會因 HTML 預設值違反上限而清空欄位並觸發保存，
+   於是重開一次就丟失狀態。等 applyFormState() 跑完才開放寫入。 */
+let formStateReady = false;
 function persistFormState() {
+  if (!formStateReady) return;
   try {
     localStorage.setItem(FORM_STATE_STORAGE_KEY, JSON.stringify(captureFormState()));
   } catch (_) {}
@@ -5150,18 +5152,22 @@ function loadPersistedFormState() {
   }
 }
 
+/* 清空／恢復只處理「本次試算輸入值」。審查環境（高價住宅與貸款戶數的選擇、
+   開關、齒輪設定、鎖頭）各自有獨立的 localStorage，維持目前狀態不被快照覆蓋。
+   舊版快照裡的 luxSel 安全忽略。 */
 function applyFormState(state) {
-  if (Number.isFinite(state.luxSel) && state.luxSel >= 0 && state.luxSel < LUX_ROW_N) luxSel = state.luxSel;
   setCalcFieldStoredValue($('#price'), state.price);
   setCalcFieldStoredValue($('#appraisal'), state.appraisal || '');
   setCalcFieldStoredValue($('#ratio'), state.ratio);
   setCalcFieldStoredValue($('#term'), state.term);
-  if (state.grace === '') {
+  if (state.grace === '' || state.grace == null) {
     clearGraceField({ silent: true });
   } else {
-    // 舊版存檔可能是「月」制，換算回年後再套用
-    const raw = +state.grace || 0;
-    renderGracePills(state.graceIsYear === false ? Math.max(0, Math.round(raw / 12)) : raw);
+    // 舊版存檔可能是「月」制，換算回年後再套用；不再經過快捷鈕吸附
+    const rawG = +state.grace || 0;
+    const years = state.graceIsYear === false ? Math.max(0, Math.round(rawG / 12)) : rawG;
+    setCalcFieldStoredValue($('#grace'), years);
+    renderGracePills();
   }
 
   syncTermPillsFromInput();
@@ -5170,6 +5176,8 @@ function applyFormState(state) {
   rateType = state.rateType;
   rateSegments = JSON.parse(JSON.stringify(state.rateSegments));
   syncRateSegmentsContiguous();
+  // 恢復的若是多段設定，同時放回暫存，之後 single→multi 才找得回來
+  if (rateType === 'multi') snapshotMultiRateSegments();
 
   $$('.choice-btn[data-method]').forEach(b => {
     b.classList.toggle('active', b.dataset.method === method);
@@ -5183,8 +5191,11 @@ function applyFormState(state) {
   if (rateType === 'multi') renderRateRows();
 
   applyLuxCaps();
+  // 恢復進來的舊值可能違反「目前」的審查環境，cap 本身卻沒有變動，必須再驗一次
+  sanitizeGeneralInputsAgainstCurrentCaps();
+  syncLastPriceRaw();
   updateAmount();
-  if (state.resultsVisible && getTotalMonths() > 0 && getLoanYuan() > 0) {
+  if (state.resultsVisible && getTotalMonths() > 0 && getLoanYuan() > 0 && !getCalcValidationError()) {
     resultsAutoHidden = false;
     renderResults(false);
     markCalcSynced();
@@ -5226,6 +5237,7 @@ function enterClearedState(opts) {
   method = 'amortize';
   rateType = 'single';
   rateSegments = [{ from: 1, to: 360, rate: '2.5' }];
+  lastValidMultiRateSegments = null;
   $$('.choice-btn[data-method]').forEach(b => {
     b.classList.toggle('active', b.dataset.method === 'amortize');
   });
@@ -5251,12 +5263,51 @@ function enterClearedState(opts) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* 清空期間使用者可能改了審查環境。此時 enforceLuxCaps() 早就在欄位空白時比對過並
+   更新了 lastCapKey，等到恢復時「cap 沒變、值也沒超限」，50% 這種原本合法的數值
+   就會被原封不動放回來——但有效上限其實已經換了一個數字。
+   所以要拿清空當下記下的上限，跟現在的上限直接比。 */
+function enforceSnapshotCapChange(snap) {
+  if (!snap) return false;
+  let changed = false;
+
+  const curR = capValOf(capRatio());
+  const rEl = $('#ratio');
+  if (snap.effectiveRatioCap !== undefined && snap.effectiveRatioCap !== curR
+      && rEl && getCalcFieldRawString(rEl) !== '') {
+    clearCalcField(rEl);
+    changed = true;
+  }
+
+  const curG = capValOf(capGrace());
+  const gEl = $('#grace');
+  if (snap.effectiveGraceCap !== undefined && snap.effectiveGraceCap !== curG
+      && gEl && getCalcFieldRawString(gEl) !== '') {
+    clearGraceField({ silent: true });
+    changed = true;
+  }
+
+  if (changed) {
+    renderGracePills();
+    syncTermPillsFromInput();
+    updateLuxCapBadges();
+    updateAmount();
+    $('#results').classList.remove('show');
+    resultsAutoHidden = false;
+    updateCalcButton();
+    persistFormState();
+  }
+  return changed;
+}
+
 function restoreClearedState() {
   if (!clearSnapshot) return;
   const snap = clearSnapshot;
   clearSnapshot = null;
   persistClearSnapshot();
   applyFormState(snap);
+  // 舊版快照沒有這兩個欄位時安全跳過，仍由 applyFormState 內的現值驗證把關
+  enforceSnapshotCapChange(snap);
   persistFormState();
   updateClearRestoreBtns();
     showToast('', { html: toastLines(tOk('已恢復') + ' 清空前的數值') });
@@ -5820,6 +5871,11 @@ let lastCapKey = { ratio: null, grace: null };
 function capValOf(c) { return c ? String(c.max) : ''; }
 /* 上限本身完全不跳提示：徽章、下方說明列已經把兩道規則各自的上限寫清楚，
    欄位真的被清掉時再由標題閃動接手。 */
+/* 兩層把關，缺一不可：
+   第一層｜cap 本身變了 —— 這是產品行為，寬限期一律清空要求重新決定。
+   第二層｜cap 沒變，但目前的值已經違規 —— 舊版只做第一層，於是「清空→改戶數→恢復」
+           會把 80% 原封不動放回來，cap 沒變動所以沒人攔，2,400 萬照樣算出來。
+   成數只做第二層＋cap 變動時的清空；寬限期兩層都做。 */
 function enforceLuxCaps() {
   let changed = false;
 
@@ -5827,7 +5883,10 @@ function enforceLuxCaps() {
   const rEl = $('#ratio');
   const rVal = capValOf(rc);
   const rChanged = lastCapKey.ratio !== null && rVal !== lastCapKey.ratio;
-  if (rChanged && rEl && getCalcFieldRawString(rEl) !== '') {
+  const rMax = rc ? rc.max : null;
+  const rCur = rEl ? getCalcFieldRawString(rEl) : '';
+  const rIllegal = rEl && rCur !== '' && rMax !== null && Number(rCur) > rMax;
+  if ((rChanged || rIllegal) && rEl && rCur !== '') {
     clearCalcField(rEl);
     changed = true;
   }
@@ -5837,16 +5896,56 @@ function enforceLuxCaps() {
   const gEl = $('#grace');
   const gVal = capValOf(gc);
   const gChanged = lastCapKey.grace !== null && gVal !== lastCapKey.grace;
-  if (gChanged && gEl) {
-    syncGraceUnitFromDom();
-    const curRaw = String(gEl.value ?? '').trim();
-    if (curRaw !== '' && Number(curRaw) !== 0) {
-      renderGracePills(gc ? gc.max : null);
-      changed = true;
-    }
+  const gMax = gc ? gc.max : null;
+  const gCur = gEl ? getCalcFieldRawString(gEl) : '';
+  const gIllegal = gEl && gCur !== '' && gMax !== null && Number(gCur) > gMax;
+  if ((gChanged || gIllegal) && gEl && gCur !== '') {
+    // 寬限期是選填，一律清空而不是自動改成新上限——不替使用者決定數字
+    clearGraceField({ silent: true });
+    changed = true;
   }
   lastCapKey.grace = gVal;
 
+  if (changed) persistFormState();
+  return changed;
+}
+
+/* 初始化與恢復數值後的「無條件現值合法化」。
+   lastCapKey 一開始是 null，代表「還沒比較過」，不代表「現在的值合法」。
+   HTML 內建 80% / 2 年配上已保存的「已有1戶房貸」就是非法組合，必須先擋下來。 */
+function sanitizeGeneralInputsAgainstCurrentCaps() {
+  let changed = false;
+
+  const rMax = getCapRatioMax();
+  const rEl = $('#ratio');
+  const rCur = rEl ? getCalcFieldRawString(rEl) : '';
+  if (rEl && rCur !== '' && rMax !== null && Number(rCur) > rMax) {
+    clearCalcField(rEl);
+    changed = true;
+  }
+
+  // 寬限期同時受「貸款年限減 1 年」與審查上限夾制，取嚴
+  const gEl = $('#grace');
+  const gCur = gEl ? getCalcFieldRawString(gEl) : '';
+  if (gEl && gCur !== '' && Number(gCur) > getGraceMaxValue()) {
+    clearGraceField({ silent: true });
+    changed = true;
+  }
+
+  // 記下目前 cap，之後才有基準判斷「有沒有變」
+  lastCapKey.ratio = capValOf(capRatio());
+  lastCapKey.grace = capValOf(capGrace());
+
+  renderGracePills();
+  syncTermPillsFromInput();
+  updateLuxCapBadges();
+  if (changed) {
+    updateAmount();
+    $('#results').classList.remove('show');
+    resultsAutoHidden = false;
+    updateCalcButton();
+    persistFormState();
+  }
   return changed;
 }
 
@@ -5856,7 +5955,16 @@ function applyLuxCaps() {
   const changed = enforceLuxCaps();
   updateLuxCapBadges();
   updateLuxNote();
-  if (changed) updateAmount();
+  if (changed) {
+    updateAmount();
+    /* 欄位被清掉就不能再顯示舊結果。標成「因欄位不完整而收起」而不是重設旗標，
+       這樣使用者補上合法數值後，結果仍會依既有規則自己回來。 */
+    if ($('#results').classList.contains('show')) {
+      $('#results').classList.remove('show');
+      resultsAutoHidden = true;
+    }
+    updateCalcButton();
+  }
   return changed;
 }
 
@@ -5878,13 +5986,9 @@ function applyCapsWithFlash() {
 function clearGraceField(opts) {
   opts = opts || {};
   syncGraceUnitFromDom();
-  const vals = GRACE_PILLS_YEAR;
-  $('#gracePills').innerHTML = vals.map(v => {
-    const isNone = v === 0;
-    const cls = 'qp' + (isNone ? ' qp-text' : '');
-    return `<button type="button" class="${cls}" data-val="${v}">${isNone ? '無' : v}</button>`;
-  }).join('');
-  $('#grace').value = '';
+  // 真正清空：raw 一起刪掉，否則畫面空白但 data-calc-raw 還藏著舊值，重開又復活
+  clearCalcField($('#grace'));
+  renderGracePills();
   if (typeof syncGraceLock === 'function') syncGraceLock();
   if (!opts.silent) {
     showToast('', { hint: true, hintHtml: GRACE_REENTER_HINT_HTML });
@@ -5905,10 +6009,13 @@ function enforceGraceWithinTerm(opts) {
   const termYears = termRaw === '' ? NaN : Number(termRaw);
   const termInvalid = termRaw === '' || !Number.isFinite(termYears) || termYears <= 0 || termYears > TERM_MAX_YEARS;
 
+  /* 年限改變不套用「cap 一變就清空」：原寬限期仍合法就保留（30→20 年，2 年照留），
+     只有因年限縮短而不合法才清空（30→3 年，5 年要清掉）。 */
   const maxG = getGraceMaxValue();
   if (n <= maxG) return;
 
   clearGraceField(termInvalid ? { silent: true } : opts);
+  persistFormState();
 }
 
 function truncateToDecimals(n, maxDec = MAX_AMOUNT_DECIMALS) {
@@ -6201,7 +6308,15 @@ function calcCommitValue(rawExpr) {
       clampFieldToast(input, beforeStr, input.value);
     }
   } else {
-    setCalcFieldStoredValue(input, raw);
+    /* 算式無法解析（含除以 0、結果非有限數）。
+       絕不能把算式字串寫進正式欄位——之後 getCalcFieldNumeric() 會把它當 0，
+       整張還款表默默用 0 算下去。改成還原開鍵盤前的值並明講原因。 */
+    const prev = calcKeyboard.prevValid;
+    if (prev !== '' && prev != null) setCalcFieldStoredValue(input, prev);
+    else clearCalcField(input);
+    const divZero = /\/\s*0*(\.0*)?$/.test(raw) || /\/\s*0/.test(raw);
+    showToast('', { hint: true, multiline: true,
+      hintHtml: hintLines(divZero ? '不可除以 0' : '算式無效', '已還原上一個數值') });
   }
 
   calcKeyboard.exprFull = null;
@@ -6387,7 +6502,9 @@ function calcPress(key) {
         if (op === '+') result = baseVal + (baseVal * lastN / 100);
         else if (op === '-') result = baseVal - (baseVal * lastN / 100);
         else if (op === '*') result = baseVal * lastN / 100;
-        else if (op === '/') result = baseVal / lastN / 100;
+        // 除以百分比是「除以那個比例」：3000 ÷ 80% = 3000 / 0.8 = 3750。
+        // 舊寫法 baseVal / lastN / 100 會算成 0.375，方向完全相反。
+        else if (op === '/') result = lastN === 0 ? NaN : baseVal / (lastN / 100);
         if (Number.isFinite(result)) {
           calcKeyboard.exprFull = result;
           calcKeyboard.expr = calcNumberToExpr(result);
@@ -6693,6 +6810,8 @@ function openCalcKeyboard(inputEl, options) {
   calcKeyboard.inputEl = inputEl;
   calcKeyboard.exprFull = null;
   calcKeyboard.expr = getCalcFieldRawString(inputEl);
+  // 記下開鍵盤前的合法值，算式無效時原值放回去，不留下 "100/0" 這種字串
+  calcKeyboard.prevValid = getCalcFieldRawString(inputEl);
   calcKeyboard.pristine = true;
   calcKeyboard.allowNegative = !!options.allowNegative;
   calcKeyboard.integerOnly = inputEl.dataset.calcInteger === 'true';
@@ -6930,10 +7049,22 @@ function buildConditionsData() {
   const graceText = graceVal === 0 ? '無' : `${graceVal} 年`;
   const price = getCalcFieldNumeric($('#price'));
   const luxRow = luxCurrentRow();
+  const luxHit = luxHitRow();
   const hasAppr = $('#appraisal') && getCalcFieldRawString($('#appraisal')) !== '';
   const apprWan = getAppraisalWan();
+  /* 只選了地區不代表這間房就是高價住宅。舊版直接寫「高價住宅：其他縣市」，
+     房價 3,000 萬、門檻 4,000 萬時會被誤讀成已經被判定為高價住宅。 */
+  const luxRatio = getLuxRatioMax();
+  const luxGrace = getLuxGraceMaxYears();
+  const luxLimitBits = [];
+  if (luxRatio !== null) luxLimitBits.push('成數最高 ' + luxRatio + '%');
+  if (luxGrace !== null) luxLimitBits.push(luxGrace === 0 ? '無寬限期' : '寬限期最長 ' + luxGrace + ' 年');
+  const luxText = !luxRow ? null
+    : (luxHit
+        ? luxRow.name + '・已達門檻' + (luxLimitBits.length ? '（' + luxLimitBits.join('、') + '）' : '')
+        : luxRow.name + '・未達門檻');
   const basic = [
-    luxRow && ['高價住宅', luxRow.name],
+    luxRow && ['高價住宅檢核', luxText],
     hhCurrentRow() && ['貸款戶數', hhLabel()],
     ['購屋總價', `${price.toLocaleString('zh-TW')} 萬元`],
     hasAppr && ['銀行鑑價', `${apprWan.toLocaleString('zh-TW')} 萬元`],
@@ -7934,6 +8065,21 @@ function getRateMissingError() {
   };
 }
 
+/* 最後一道防守：buildSchedule() 不能收到違反目前上限的輸入，
+   不能只依賴 UI 已經反灰。 */
+function getCapViolationError() {
+  const rMax = getCapRatioMax();
+  const rCur = getCalcFieldRawString($('#ratio'));
+  if (rCur !== '' && rMax !== null && Number(rCur) > rMax) {
+    return { field: '#ratio', message: '貸款成數超過目前有效上限 ' + rMax + '%' };
+  }
+  const gCur = getCalcFieldRawString($('#grace'));
+  if (gCur !== '' && Number(gCur) > getGraceMaxValue()) {
+    return { field: '#grace', message: '寬限期超過目前有效上限 ' + getGraceMaxValue() + ' 年' };
+  }
+  return null;
+}
+
 function getCalcValidationError() {
   const labels = [];
   let firstEl = null;
@@ -7954,6 +8100,20 @@ function getCalcValidationError() {
   const rateMissing = getRateMissingItems();
   rateMissing.labels.forEach((label) => labels.push(label));
   if (!firstEl && rateMissing.firstEl) firstEl = rateMissing.firstEl;
+
+  /* 值超過目前有效上限時，一律先把它清掉再當成「未填」處理。
+     這樣按下計算或自動重算都進不到 buildSchedule()，也不會留著非法值繼續算。 */
+  const cv = getCapViolationError();
+  if (cv) {
+    const el = $(cv.field);
+    if (cv.field === '#grace') clearGraceField({ silent: true });
+    else clearCalcField(el);
+    persistFormState();
+    if (cv.field === '#ratio') {
+      labels.push('貸款成數');
+      if (!firstEl) firstEl = el;
+    }
+  }
 
   if (labels.length === 0) return getRateValidationError();
 
@@ -7978,22 +8138,17 @@ function getGraceMonths() {
   return (+$('#grace').value || 0) * 12;
 }
 
-function renderGracePills(selectVal) {
+/* 純 UI 同步：只畫快捷鈕與 active 狀態，絕不修改正式的寬限期值。
+   舊版會把值吸附到最近的快捷鈕（4/5/10/29 年一律變 3 年），
+   快捷鈕只是快速輸入，不是合法值白名單。 */
+function renderGracePills() {
   const vals = GRACE_PILLS_YEAR;
-  const maxG = getGraceMaxValue();
-  let current = selectVal != null ? selectVal : (+$('#grace').value || 0);
-  if (current > maxG) current = maxG;
-  current = snapGraceToPill(current);
-  if (current > maxG) {
-    const allowed = vals.filter(v => v <= maxG);
-    current = allowed.length ? allowed[allowed.length - 1] : 0;
-  }
+  const cur = getCalcFieldRawString($('#grace'));
   $('#gracePills').innerHTML = vals.map(v => {
     const isNone = v === 0;
-    const cls = 'qp' + (isNone ? ' qp-text' : '') + (v === current ? ' active' : '');
+    const cls = 'qp' + (isNone ? ' qp-text' : '') + (cur !== '' && Number(cur) === v ? ' active' : '');
     return `<button type="button" class="${cls}" data-val="${v}">${isNone ? '無' : v}</button>`;
   }).join('');
-  $('#grace').value = current;
   if (typeof syncGraceLock === 'function') syncGraceLock();
 }
 
@@ -8605,7 +8760,10 @@ function renderRateRows() {
 
 /* 換一間房才會重打總價，原本的鑑價一定是舊的；數值真的變了才清，
    避免只是修正輸入時把鑑價一起帶走。反向不成立：改鑑價不動總價。 */
+/* 只有使用者真的把總價從一個正式值改成另一個正式值，才視為換了一間房、清掉鑑價。
+   套用保存狀態或清空／恢復之後必須重新對齊，否則重開 App 點一下總價就會誤清鑑價。 */
 let lastPriceRaw = getCalcFieldRawString($('#price'));
+function syncLastPriceRaw() { lastPriceRaw = getCalcFieldRawString($('#price')); }
 $('#price').addEventListener('input', () => {
   const now = getCalcFieldRawString($('#price'));
   if (now !== lastPriceRaw) {
@@ -8848,7 +9006,7 @@ $('#termPills').addEventListener('click', e => {
   if (!e.target.classList.contains('qp')) return;
   $$('#termPills .qp').forEach(p => p.classList.remove('active'));
   e.target.classList.add('active');
-  $('#term').value = e.target.dataset.val;
+  setCalcFieldStoredValue($('#term'), e.target.dataset.val);
   enforceGraceWithinTerm();
   syncGraceLock();
   if (rateType === 'multi') {
@@ -8874,9 +9032,9 @@ $('#gracePills').addEventListener('click', e => {
   // 反灰只是視覺把關，這裡再夾一次，避免任何路徑寫進超過上限的值
   const v = +e.target.dataset.val;
   if (v > getGraceMaxValue()) { showToast('', { hint: true, graceHint: true }); return; }
-  $$('#gracePills .qp').forEach(p => p.classList.remove('active'));
-  e.target.classList.add('active');
-  $('#grace').value = e.target.dataset.val;
+  setCalcFieldStoredValue($('#grace'), e.target.dataset.val);
+  renderGracePills();
+  persistFormState();
   maybeRecalc();
 });
 
@@ -8886,8 +9044,9 @@ $('#glGraceTag').addEventListener('click', () => {
   if (isTermMissing()) { promptTermBeforeGrace(); return; }
   const m = getGraceMaxValue();
   if (!Number.isFinite(m) || m <= 0) return;
-  $('#grace').value = String(m);
-  $$('#gracePills .qp').forEach(p => p.classList.toggle('active', p.dataset.val === String(m)));
+  setCalcFieldStoredValue($('#grace'), String(m));
+  renderGracePills();
+  persistFormState();
   maybeRecalc();
 });
 
@@ -8922,13 +9081,27 @@ $$('.choice-btn[data-rate-type]').forEach(btn => {
   btn.addEventListener('click', () => {
     $$('.choice-btn[data-rate-type]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    const prevType = rateType;
     rateType = btn.dataset.rateType;
+    if (prevType === 'multi' && rateType === 'single') snapshotMultiRateSegments();
     $('#rateField').classList.toggle('hidden', rateType !== 'single');
     $('#multiRate').classList.toggle('hidden', rateType !== 'multi');
     if (rateType === 'multi') {
-      rateSegments = [{ from: 1, to: getTotalMonths(), rate: getCalcFieldRawString($('#rate')) || '2.5' }];
+      /* 先找回上次的多段設定；年限改過就交給既有的 syncRateSegmentsContiguous() 安全適配，
+         真的接不上才退回一段。不要無聲丟掉使用者的設定。 */
+      let restored = false;
+      if (Array.isArray(lastValidMultiRateSegments) && lastValidMultiRateSegments.length) {
+        rateSegments = JSON.parse(JSON.stringify(lastValidMultiRateSegments));
+        syncRateSegmentsContiguous();
+        restored = Array.isArray(rateSegments) && rateSegments.length > 0
+          && rateSegments.every((sg) => sg && String(sg.rate ?? '').trim() !== '');
+      }
+      if (!restored) {
+        rateSegments = [{ from: 1, to: getTotalMonths(), rate: getCalcFieldRawString($('#rate')) || '2.5' }];
+      }
       renderRateRows();
     }
+    persistFormState();
     maybeRecalc();
   });
 });
@@ -9451,6 +9624,12 @@ const persistedFormState = loadPersistedFormState();
 if (persistedFormState) {
   applyFormState(persistedFormState);
 }
+/* 沒有保存狀態時走的是 HTML 內建的 80% / 2 年，但審查環境是另外一組 localStorage，
+   兩邊可能互相矛盾。啟動時無條件依目前有效上限合法化一次。 */
+formStateReady = true;
+sanitizeGeneralInputsAgainstCurrentCaps();
+syncLastPriceRaw();
+persistFormState();
 updateClearRestoreBtns();
 updateCalcButton();
 window.addEventListener('resize', scheduleFitPaymentTable);
@@ -9476,6 +9655,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   let incomeMode = 'month';
   // 'yuan' 整數；'wan' 可到小數第 4 位（1 元＝0.0001 萬，剛好不失真）
   let incomeUnit = 'yuan';
+  /* 使用者最後自己填的成數。被上限夾下去之後不會更新，
+     這樣「會不會踩到高價住宅門檻」的判斷才有一個穩定的基準。 */
+  let bdRatioWanted = 80;
   let bdMethod = 'amortize';
   let bdRateType = 'single';
   let bdSegs = [{ from: 1, to: 0, rate: '2.5' }];
@@ -9665,12 +9847,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       ['貸款年限', res.term + ' 年' + (res.grace > 0 ? '（含寬限期 ' + res.grace + ' 年）' : '（無寬限期）')],
       ['貸款成數', num(B('#bdRatio')) + ' %'],
       ['自備款', res.downGiven ? wan(num(B('#bdDown')) * 10000) : '未填'],
-      ['還款方式', bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還'],
-      ['高價住宅審查', res.luxTh === null ? '未啟用'
-        : (bdLuxActiveRow().name + ' ' + luxNum(bdLuxActiveRow().amount).toLocaleString('zh-TW') +
-           ' 萬・上限 ' + (res.luxCap === null ? '不限' : res.luxCap + '%'))],
-      ['貸款戶數審查', !bdHhOn ? '未啟用'
-        : (HH_LABELS[bdHhSel] + '・上限 ' + (res.hhCap === null ? '不限' : res.hhCap + '%'))]
+      ['還款方式', bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還']
     ];
     if (has('#bdWilling')) rows.splice(5, 0, ['願意負擔月付', yuan(num(B('#bdWilling')))]);
     if (has('#bdHelp')) rows.splice(has('#bdWilling') ? 6 : 5, 0, ['他人協助月付', yuan(num(B('#bdHelp')))]);
@@ -9882,7 +10059,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
 
   /* ---------- 狀態保存 ---------- */
   function capture() {
-    const o = { incomeMode, incomeUnit, bdMethod, bdRateType, segsTouched,
+    const o = { incomeMode, incomeUnit, bdMethod, bdRatioWanted, bdRateType, segsTouched,
                 bdSegs: JSON.parse(JSON.stringify(bdSegs)), f: {},
                 resultsVisible: !!B('#bdResults') && B('#bdResults').classList.contains('show'),
                 autoHidden: bdAutoHidden };
@@ -9895,6 +10072,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     incomeMode = o.incomeMode === 'year' ? 'year' : 'month';
     incomeUnit = o.incomeUnit === 'wan' ? 'wan' : 'yuan';
     bdMethod = o.bdMethod === 'principal' ? 'principal' : 'amortize';
+    bdRatioWanted = Number.isFinite(o.bdRatioWanted) ? o.bdRatioWanted : 80;
     bdRateType = o.bdRateType === 'multi' ? 'multi' : 'single';
     if (Array.isArray(o.bdSegs) && o.bdSegs.length) bdSegs = JSON.parse(JSON.stringify(o.bdSegs));
     segsTouched = !!o.segsTouched;
@@ -9948,34 +10126,32 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     syncPills('#bdDtiPills', raw(B('#bdDti')));
     syncPills('#bdTermPills', raw(B('#bdTerm')));
     syncPills('#bdGracePills', raw(B('#bdGrace')));
-    syncBdGracePills();
+    syncBdCapBadges();
     updateBdButton();
   }
-  function syncBdGracePills() {
-    const box = B('#bdGracePills');
-    if (!box) return;
-    const max = getBdGraceMaxValue();
-    box.querySelectorAll('.qp').forEach((p) => {
-      const v = Number(p.dataset.val);
-      const off = Number.isFinite(v) && v > max;
-      p.classList.toggle('qp-off', off);
-      p.disabled = off;
-    });
-  }
-
   function syncPills(box, val) {
     const el = B(box);
     if (!el) return;
     el.querySelectorAll('.qp').forEach((p) => p.classList.toggle('active', p.dataset.val === String(val)));
   }
 
-  /* 改任一欄位都走同一條路：存檔 → 標記待算 → 視情況自動重算 */
-  function onChange() { syncChoices(); persist(); markStale(); }
+  /* 改任一欄位都走同一條路：套上限 → 存檔 → 標記待算 → 視情況自動重算。
+     收入、年限、自備款都會改變可買總價，所以每次都要重新判斷高價住宅有沒有咬住。 */
+  function onChange() {
+    applyBdCaps({ quiet: true });
+    syncChoices();
+    persist();
+    markStale();
+  }
 
   /* ---------- 綁定 ---------- */
   initCalcFields(B('#modeBurden'));
   /* 萬元模式最多到小數第 4 位（1 元＝0.0001 萬），再細也沒有意義。
      必須綁在下面的 onChange 之前，這樣截位後的值才會被拿去算。 */
+  B('#bdRatio').addEventListener('input', () => {
+    const v = raw(B('#bdRatio'));
+    if (v !== '') bdRatioWanted = Number(v);
+  });
   MONEY_FIELDS.forEach((sel) => {
     const el = B(sel);
     if (!el) return;
@@ -9999,10 +10175,11 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const max = getBdGraceMaxValue();
     if (Number(raw(g)) > max) { clearCalcField(g); flashFormFieldLabel(g); syncChoices(); persist(); markStale(); }
   });
+  /* 點哪一半都是「切換」。原本點已選中的那半沒反應，使用者會再點一次、
+     手指容易滑到旁邊的標題，反而把元／萬元切掉。 */
   document.querySelectorAll('#modeBurden [data-bd-income]').forEach((b) => {
     b.addEventListener('click', () => {
-      if (b.dataset.bdIncome === incomeMode) return;
-      incomeMode = b.dataset.bdIncome;
+      incomeMode = incomeMode === 'year' ? 'month' : 'year';
       onChange();
     });
   });
@@ -10044,7 +10221,25 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       target.dispatchEvent(new Event('input', { bubbles: true }));
     });
   });
-  [['#bdDtiTag', '#bdDti', 50], ['#bdRateTag', '#bdRate', 2.5], ['#bdRatioTag', '#bdRatio', 80], ['#bdTermTag', '#bdTerm', 30]]
+  const rTag = B('#bdRatioTag');
+  if (rTag) {
+    rTag.addEventListener('click', () => {
+      const cap = bdCapRatio();
+      bdRatioWanted = cap === null ? 80 : cap;
+      setCalcFieldStoredValue(B('#bdRatio'), bdRatioWanted);
+      B('#bdRatio').dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+  const gTag = B('#bdGraceTag');
+  if (gTag) {
+    gTag.addEventListener('click', () => {
+      const gMax = bdGraceMaxSelectable();
+      if (gMax <= 0) return;
+      setCalcFieldStoredValue(B('#bdGrace'), gMax);
+      B('#bdGrace').dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+  [['#bdDtiTag', '#bdDti', 50], ['#bdRateTag', '#bdRate', 2.5], ['#bdTermTag', '#bdTerm', 30]]
     .forEach(([tag, field, val]) => {
       const t = B(tag);
       if (!t) return;
@@ -10239,31 +10434,112 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       (items.length > 1 ? '。兩項限制同時適用時，從嚴認定。' : '。');
   }
 
-  /* 貸款戶數的成數上限直接套在欄位上（與房價無關）；超過就清掉並閃一下標題。 */
+  function bdLuxGraceCap() {
+    const r = bdLuxActiveRow();
+    if (!r || r.grace === '') return null;
+    const n = luxNum(r.grace);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  /* 用某個成數試算出來的可買總價，只拿來判斷會不會踩到高價住宅門檻 */
+  function bdPriceAt(ratioPct) {
+    const r = ratioPct / 100;
+    if (!(r > 0)) return 0;
+    const pay = usedMonthlyPay();
+    const term = Math.trunc(num(B('#bdTerm')));
+    const grace = has('#bdGrace') ? Math.trunc(num(B('#bdGrace'))) : 0;
+    const totalMonths = term * 12, graceMonths = grace * 12;
+    if (pay <= 0 || !(totalMonths - graceMonths > 0)) return 0;
+    let ln = maxLoanFor(pay, totalMonths, graceMonths);
+    if (has('#bdDown')) {
+      const D = num(B('#bdDown')) * 10000;
+      const byDown = r >= 1 ? Infinity : D * r / (1 - r);
+      if (byDown < ln) ln = byDown;
+      return Math.floor(ln / 10000) * 10000 + D;
+    }
+    return Math.floor(ln / 10000) * 10000 / r;
+  }
+
+  /* 高價住宅有沒有真的咬住：拿「已被戶數夾過、但還沒被高價住宅夾過」的成數去試算。
+     不能用夾完之後的欄位值——夾到 30% 後總價變小、門檻又不成立，
+     徽章會在 30% 與不限之間來回跳。 */
+  function bdLuxBinds() {
+    const th = bdLuxThreshold();
+    if (th === null) return false;
+    const hc = bdHhRatioCap();
+    const test = hc === null ? bdRatioWanted : Math.min(bdRatioWanted, hc);
+    return bdPriceAt(test) >= th;
+  }
+
+  /* 兩道規則取嚴後的實際上限 */
+  function bdCapRatio() {
+    const v = [bdHhRatioCap(), bdLuxBinds() ? bdLuxRatioCap() : null].filter((x) => x !== null);
+    return v.length ? Math.min.apply(null, v) : null;
+  }
+  function bdCapGrace() {
+    const v = [bdHhGraceCap(), bdLuxBinds() ? bdLuxGraceCap() : null].filter((x) => x !== null);
+    return v.length ? Math.min.apply(null, v) : null;
+  }
+  /* 寬限期可選上限：貸款年限減 1 年，與審查上限取嚴 */
+  function bdGraceMaxSelectable() {
+    const byTerm = getBdGraceMaxValue();
+    const byCap = bdCapGrace();
+    return byCap === null ? byTerm : Math.min(byTerm, byCap);
+  }
+
+  /* 上限收緊時把成數壓到上限（不是清空）——使用者已經選了戶數，
+     直接告訴他能貸多少，比留一格空白有用。本來就低於上限的值不動。 */
   function enforceBdHhCap() {
     let changed = false;
-    const rc = bdHhRatioCap(), rEl = B('#bdRatio');
-    if (rc !== null && rEl) {
-      const v = raw(rEl);
-      if (v !== '' && Number(v) > rc) { clearCalcField(rEl); flashFormFieldLabel(rEl); changed = true; }
+    const cap = bdCapRatio(), rEl = B('#bdRatio');
+    if (rEl && cap !== null && raw(rEl) !== '' && Number(raw(rEl)) > cap) {
+      setCalcFieldStoredValue(rEl, cap);
+      flashFormFieldLabel(rEl);
+      changed = true;
     }
-    const gc = bdHhGraceCap(), gEl = B('#bdGrace');
-    if (gc !== null && gEl) {
-      const v = raw(gEl);
-      if (v !== '' && Number(v) > gc) {
-        if (gc === 0) setCalcFieldStoredValue(gEl, 0); else clearCalcField(gEl);
-        if (!changed) flashFormFieldLabel(gEl);
-        changed = true;
-      }
+    const gEl = B('#bdGrace'), gMax = bdGraceMaxSelectable();
+    if (gEl && raw(gEl) !== '' && Number(raw(gEl)) > gMax) {
+      if (gMax <= 0) clearCalcField(gEl); else setCalcFieldStoredValue(gEl, gMax);
+      if (!changed) flashFormFieldLabel(gEl);
+      changed = true;
     }
     return changed;
+  }
+
+  /* 徽章顯示上限並可點選填入；上限 0 年時寬限期整格反灰鎖住（比照一般貸款） */
+  function syncBdCapBadges() {
+    const cap = bdCapRatio();
+    const rb = B('#bdRatioTag');
+    if (rb) rb.textContent = cap === null ? '默認 80 %' : '上限 ' + cap + ' %';
+
+    const gMax = bdGraceMaxSelectable();
+    const lock = gMax <= 0;
+    const gEl = B('#bdGrace');
+    if (gEl) {
+      gEl.disabled = lock;
+      const box = gEl.closest('.input-box');
+      if (box) box.classList.toggle('is-locked', lock);
+    }
+    document.querySelectorAll('#bdGracePills .qp').forEach((b) => {
+      const v = +b.dataset.val;
+      const over = v > gMax;
+      b.disabled = over;
+      b.classList.toggle('qp-off', over);
+      b.title = over ? '超過可選上限 ' + gMax + ' 年' : '';
+    });
+    const gt = B('#bdGraceTag');
+    if (gt) {
+      if (lock) { gt.textContent = '無寬限期'; gt.disabled = true; }
+      else if (gMax >= 3) { gt.textContent = '選填'; gt.disabled = true; }
+      else { gt.textContent = '選填 · 上限 ' + gMax + ' 年'; gt.disabled = false; }
+    }
   }
 
   function applyBdCaps(opts) {
     renderBdLuxOpts();
     renderBdHhOpts();
     const changed = enforceBdHhCap();
-    syncBdGracePills();
+    syncBdCapBadges();
     renderBdLuxNote();
     if (!(opts && opts.quiet)) { persist(); markStale(); }
     return changed;
@@ -10508,6 +10784,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     incomeMode = 'month';
     // 元／萬元是顯示偏好而不是數值，清空不動它；只有點欄位標題才會切換
     bdMethod = 'amortize';
+    bdRatioWanted = 80;
     bdRateType = 'single';
     bdSegs = [{ from: 1, to: 0, rate: '2.5' }];
     segsTouched = false;
