@@ -2614,18 +2614,50 @@ if ("serviceWorker" in navigator) {
       #termPills .qp {
         font-size: 0.8rem;
       }
+      /* ── 窄螢幕（≤360px）多段利率改成兩行 ────────────────────────────
+         9 欄擠在一行時，第 10 段標題「第 10 段」比前九段多一個字，auto 欄
+         配上 min-width:0 會被壓到寬度 0，刪除按鈕也被推出卡片右邊界。
+         改成：
+           第 1 行｜第 N 段 · 第 X 期～第 Y 期
+           第 2 行｜利率輸入 ·  % · 刪除鈕
+         用純 CSS 重新指派格線位置，DOM 完全不動，
+         一般貸款與個人評估共用同一組列，兩邊一起受惠。 */
       .rate-row-line {
-        grid-template-columns: auto auto minmax(34px, 1fr) auto minmax(34px, 1fr) auto minmax(34px, 1fr) auto auto;
+        grid-template-columns: max-content max-content minmax(30px, 1fr) max-content minmax(30px, 1fr) max-content;
         column-gap: 5px;
-        padding: 8px 8px 8px 10px;
+        row-gap: 8px;
+        padding: 9px 10px;
         font-size: 0.74rem;
+        overflow: hidden;            /* 任何殘餘溢出都夾在卡片內，不讓整頁橫向捲動 */
       }
-      .rate-row-line .row-seg {
-        font-size: 0.9rem;
-      }
+      /* 第 1～6 個子元素自動排進第 1 列，第 7 個之後手動指定到第 2 列 */
+      .rate-row-line > .rate-val { grid-column: 1 / span 3; grid-row: 2; }
+      .rate-row-line > .rate-val + .row-txt { grid-column: 4; grid-row: 2; justify-self: start; }
+      .rate-row-line > .btn-remove { grid-column: 6; grid-row: 2; justify-self: end; }
+      /* 標題與「第／期～第／期」是固定字數，給 max-content 就不會被壓成 0 */
+      .rate-row-line .row-seg { min-width: max-content; font-size: 0.88rem; }
+      .rate-row-line .row-txt { min-width: max-content; }
       .rate-row-line .row-txt {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         padding: 0 1px;
+      }
+      /* ≤340px（320px 機種）：兩行還是塞不下——第 1 行六欄需要約 238px，
+         卡片內寬只有 220px。再拆一行，標題自己一行，期數一行，利率一行。
+         寧可多一行也不把字縮到看不清楚。 */
+      @media (max-width: 340px) {
+        .rate-row-line {
+          grid-template-columns: max-content minmax(26px, 1fr) max-content minmax(26px, 1fr) max-content;
+          column-gap: 4px;
+        }
+        .rate-row-line > .row-seg { grid-column: 1 / -1; grid-row: 1; }
+        .rate-row-line > :nth-child(2) { grid-column: 1; grid-row: 2; }
+        .rate-row-line > :nth-child(3) { grid-column: 2; grid-row: 2; }
+        .rate-row-line > :nth-child(4) { grid-column: 3; grid-row: 2; }
+        .rate-row-line > :nth-child(5) { grid-column: 4; grid-row: 2; }
+        .rate-row-line > :nth-child(6) { grid-column: 5; grid-row: 2; }
+        .rate-row-line > .rate-val { grid-column: 1 / span 3; grid-row: 3; }
+        .rate-row-line > .rate-val + .row-txt { grid-column: 4; grid-row: 3; }
+        .rate-row-line > .btn-remove { grid-column: 5; grid-row: 3; justify-self: end; }
       }
       .rate-row-line input {
         height: 36px;
@@ -3411,19 +3443,18 @@ if ("serviceWorker" in navigator) {
     <div class="section gl-hh-sec" id="glHhSec">
       <div class="label-cap">貸款戶數<button type="button" class="yt-gear-btn" id="glHhSetBtn" title="設定貸款戶數限制" aria-label="設定貸款戶數限制" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="glHhOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="glHhOff" aria-pressed="true">啟用中</button></div>
       <div class="yt-opts c2" id="glHhOpts"></div>
-      <p class="gl-note gl-note-static">※ 本審查依<em>一般標準案件</em>估算；特殊案件仍以<em>金融機構查核及適用規定</em>為準。</p>
     </div>
     <div class="form-grid">
       <div class="field">
         <label>購屋總價</label>
         <div class="input-box">
-          <input type="text" id="price" class="calc-field" value="3000" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="price" class="calc-field" value="3000" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">萬元</span>
         </div>
       </div>
       <div class="field">
-        <label>貸款金額</label>
-        <div class="input-box readonly" title="依購屋總價與貸款成數自動計算">
+        <label class="label-cap">貸款金額<span class="yt-opt-tag">整數萬</span></label>
+        <div class="input-box readonly" title="依購屋總價與銀行鑑價取低，再按成數計算；未滿 1 萬元部分不計入。">
           <input type="text" id="amount" readonly value="2,400" tabindex="-1" aria-readonly="true">
           <span class="unit">萬元</span>
         </div>
@@ -3438,7 +3469,7 @@ if ("serviceWorker" in navigator) {
       <div class="field">
         <label class="label-cap">銀行鑑價<span class="yt-opt-tag">選填</span></label>
         <div class="input-box">
-          <input type="text" id="appraisal" class="calc-field" value="" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="appraisal" class="calc-field" value="" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">萬元</span>
         </div>
       </div>
@@ -3468,7 +3499,6 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
-    <p class="gl-note gl-note-static">※ <em>寬限期</em>快捷鈕只是常用值，可自行輸入其他年數。實際寬限期仍依<em>金融機構核貸條件</em>為準。</p>
     <p class="gl-note" id="glLuxNote" hidden></p>
 
     <div class="section">
@@ -4516,7 +4546,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
-    <p class="yt-note gl-set-hint"><em>恢復預設</em> 預設值依《中央銀行對金融機構辦理不動產抵押貸款業務規定》<em>115.3.20</em> 生效版第二點第四款。法規異動時可自行更新。三組全部留空 一般貸款不顯示高價住宅；<em>填幾組就顯示幾顆按鈕</em>。<em>完整</em>一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
+    <p class="yt-note gl-set-hint"><em>恢復預設</em> 預設值依《中央銀行對金融機構辦理不動產抵押貸款業務規定》<em>115.3.20</em> 生效版第二點第四款。法規異動時可自行更新。三組全部留空 一般貸款不顯示高價住宅；<em>填幾組就顯示幾顆按鈕</em>。<em>完整</em> 一組要成立，<em>縣市名稱</em> 與 <em>高價住宅金額</em> 兩格都必須填寫。<em>成數上限</em> 或 <em>寬限期上限</em> 留空＝該項不設限；填 0 年＝無寬限期（欄位反灰禁止輸入）。本設定獨立保存，不會被上方 <em>清空數值</em> 清除。</p>
     <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="glRegionSetReset">恢復預設</button>
       <button type="button" class="yt-set-ghost" id="glRegionSetCancel">取消</button>
@@ -4572,7 +4602,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.03D";
+const APP_VERSION = "2026.09.04D";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -5151,8 +5181,11 @@ function normalizeGeneralFormState(state) {
   const out = {};
   const str = (v) => (v == null ? '' : String(v).trim());
 
-  // 數值欄位：可空白；有值就必須是合法範圍內的有限數字，否則整格作廢
-  function numField(v, { min, max, integer }) {
+  /* 數值欄位：可空白；有值就必須是合法範圍內的有限數字，否則整格作廢。
+     合法的值也要先四捨五入到該欄位看得到的精度，不能把
+     2738.25349 這種隱藏精度原封不動放進欄位。 */
+  const decChanged = { any: false };
+  function numField(v, { min, max, integer, dec }) {
     const t = str(v);
     if (t === '') return '';
     const n = Number(t);
@@ -5160,20 +5193,47 @@ function normalizeGeneralFormState(state) {
     if (integer && !Number.isInteger(n)) return '';
     if (min != null && n < min) return '';
     if (max != null && n > max) return '';
+    if (dec != null && !integer) {
+      const r = roundToDecimalsSafe(n, dec);
+      if (r !== n) decChanged.any = true;
+      return String(r);
+    }
     return String(n);
   }
 
-  out.price = numField(state.price, { min: 0.0001, max: PRICE_MAX_WAN });
-  // 鑑價 0 一律視同未填，避免畫面說已填、計算卻忽略
-  out.appraisal = numField(state.appraisal, { min: 0.0001, max: PRICE_MAX_WAN });
-  out.ratio = numField(state.ratio, { min: 0.0001, max: 100 });
+  /* 購屋總價與銀行鑑價自 2026.09.04B 起是整數萬元欄位。舊版保存的 3123.45 這種
+     小數值不得四捨五入或截位後照樣顯示完成——那是拿另一筆條件冒充使用者的試算。
+     整格清空並由下方 out.repaired 接手，強制收起結果、按鈕回到「尚未計算」。 */
+  out.price = numField(state.price, { min: 1, max: PRICE_MAX_WAN, integer: true });
+  // 鑑價 0 一律視同未填；非 0 卻不合法（小數或超過上限）就是被系統改掉了，要標記
+  const apprRaw = str(state.appraisal);
+  out.appraisal = numField(state.appraisal, { min: 1, max: PRICE_MAX_WAN, integer: true });
+  const apprDropped = apprRaw !== '' && Number(apprRaw) !== 0 && out.appraisal === '';
+  /* 貸款成數是整數欄位。舊版接受 80.9 之後由 integer-only 的寫值路徑截成 80，
+     等於系統自己改了貸款條件卻照樣顯示完成。非整數視為異常保存資料。 */
+  out.ratio = numField(state.ratio, { min: 1, max: 100, integer: true });
   out.term = numField(state.term, { min: 1, max: TERM_MAX_YEARS, integer: true });
-  out.grace = numField(state.grace, { min: 0, max: TERM_MAX_YEARS, integer: true });
-  out.rate = numField(state.rate, { min: RATE_MIN, max: RATE_MAX });
-  out.graceIsYear = state.graceIsYear !== false;
+  out.rate = numField(state.rate, { min: RATE_MIN, max: RATE_MAX, dec: MAX_RATE_DECIMALS });
+
+  /* 舊版存的是「月」。必須先換算成年再驗證，否則 72 個月（＝6 年）會先被
+     當成超過 60 而清空。換算沿用既有的 Math.round(月/12) 相容政策。 */
+  const graceRawStr = str(state.grace);
+  if (graceRawStr === '') {
+    out.grace = '';
+  } else {
+    const gn = Number(graceRawStr);
+    if (!Number.isFinite(gn) || gn < 0) {
+      out.grace = '';
+    } else {
+      const years = state.graceIsYear === false ? Math.max(0, Math.round(gn / 12)) : gn;
+      out.grace = Number.isInteger(years) && years >= 0 && years <= TERM_MAX_YEARS ? String(years) : '';
+    }
+  }
+  // 正規化之後一律以「年」保存
+  out.graceIsYear = true;
 
   // 寬限期不得超過年限 −1；年限本身無效時寬限期也失去依據
-  if (out.grace !== '' && out.graceIsYear) {
+  if (out.grace !== '') {
     if (out.term === '') out.grace = '';
     else if (Number(out.grace) > Number(out.term) - 1) out.grace = '';
   }
@@ -5184,6 +5244,7 @@ function normalizeGeneralFormState(state) {
   /* 多段利率：每一段都要是有效物件、利率在合法範圍、期間為正整數且遞增不重疊。
      只要有一段壞掉就整組作廢並退回單一利率——半組資料比沒有更危險。 */
   let segs = null;
+  const wantedMulti = state.rateType === 'multi';
   if (Array.isArray(state.rateSegments) && state.rateSegments.length >= 1
       && state.rateSegments.length <= RATE_SEGMENT_MAX) {
     const cleaned = [];
@@ -5197,16 +5258,43 @@ function normalizeGeneralFormState(state) {
       if (!Number.isInteger(from) || !Number.isInteger(to)) { bad = true; break; }
       if (from !== prevTo + 1 || to < from) { bad = true; break; }   // 不可重疊、不可留空洞
       prevTo = to;
-      cleaned.push({ from, to, rate: String(r) });
+      /* 利率要統一到畫面看得到的 3 位，而且必須寫回陣列本身。
+         舊版只把畫面改成 1.235，rateSegments 仍是 1.23456，
+         buildSchedule() 算的是隱藏精度，畫面與答案不一致。 */
+      const rr = roundToDecimalsSafe(r, MAX_RATE_DECIMALS);
+      if (rr !== r) decChanged.any = true;
+      cleaned.push({ from, to, rate: String(rr) });
+    }
+    /* 還要完整覆蓋整個貸款期數。少了或多了都代表這組資料需要修正——
+       舊版靠 syncRateSegmentsContiguous() 默默把最後一期改成 360，
+       使用者原本保存的條件被改掉了卻還顯示「已自動計算完成」。 */
+    if (!bad && cleaned.length && out.term !== '') {
+      const need = Number(out.term) * 12;
+      if (prevTo !== need) bad = true;
     }
     if (!bad && cleaned.length) segs = cleaned;
   }
+  /* 原始資料要求多段、但那組資料壞掉時，回退單一利率等於默默換掉了使用者的
+     貸款條件。可以回退，但不能直接顯示「已自動計算完成」——那會讓人以為
+     算的還是原本的條件。標記起來，強制收起結果、要求重新確認。 */
+  out.invalidMultiRateState = wantedMulti && !segs;
   if (!segs) {
     out.rateType = 'single';
     const base = out.rate !== '' ? out.rate : '2.5';
     segs = [{ from: 1, to: out.term !== '' ? Number(out.term) * 12 : 360, rate: base }];
   }
   out.rateSegments = segs;
+  // 有任何欄位被修正掉，就不是原本那筆試算了
+  out.repaired = out.invalidMultiRateState
+    || apprDropped
+    || decChanged.any
+    || (str(state.price) !== '' && out.price === '')
+    || (str(state.ratio) !== '' && out.ratio === '')
+    || (str(state.term) !== '' && out.term === '')
+    || (str(state.rate) !== '' && out.rate === '')
+    || (graceRawStr !== '' && out.grace === '')
+    || (state.method !== undefined && state.method !== out.method)
+    || (state.rateType !== undefined && state.rateType !== out.rateType);
 
   out.termPillVal = str(state.termPillVal);
   out.gracePillVal = str(state.gracePillVal);
@@ -5217,8 +5305,11 @@ function normalizeGeneralFormState(state) {
      其餘一律收起，讓按鈕回到「尚未計算」，不製造假完成。 */
   const complete = out.price !== '' && out.ratio !== '' && out.term !== ''
     && (out.rateType === 'single' ? out.rate !== '' : out.rateSegments.length >= 1);
-  out.resultsVisible = !!state.resultsVisible && complete;
-  out.resultsAutoHidden = !!state.resultsAutoHidden;
+  out.resultsMustHide = !!out.repaired;
+  /* 嚴格比對 true。舊版用 !!state.resultsVisible，字串 "false" 會被當成 true。 */
+  out.resultsVisible = state.resultsVisible === true && complete && !out.resultsMustHide;
+  // 被修正過就不能靠自動重算把結果又叫回來，要使用者自己確認後按計算
+  out.resultsAutoHidden = out.resultsMustHide ? false : state.resultsAutoHidden === true;
   return out;
 }
 
@@ -5272,20 +5363,32 @@ function applyFormState(state) {
   setCalcFieldStoredValue($('#rate'), state.rate);
   if (rateType === 'multi') renderRateRows();
 
-  applyLuxCaps();
-  // 恢復進來的舊值可能違反「目前」的審查環境，cap 本身卻沒有變動，必須再驗一次
-  sanitizeGeneralInputsAgainstCurrentCaps();
+  /* 記錄「套用資料的過程中，有沒有欄位被目前的上限改掉」。
+     舊版只看資料本身合不合法，於是「寬限期被 cap 清空」之後仍會重開結果，
+     等於系統改了貸款條件卻直接給出新答案。 */
+  const capsChanged = applyLuxCaps();
+  const sanitized = sanitizeGeneralInputsAgainstCurrentCaps();
+  const touchedByCaps = capsChanged || sanitized;
   syncLastPriceRaw();
   updateAmount();
-  if (state.resultsVisible && getTotalMonths() > 0 && getLoanYuan() > 0 && !getCalcValidationError()) {
+  const mustHide = state.resultsMustHide === true || touchedByCaps;
+  if (state.resultsVisible === true && !mustHide
+      && getTotalMonths() > 0 && getLoanYuan() > 0 && !getCalcValidationError()) {
     resultsAutoHidden = false;
     renderResults(false);
     markCalcSynced();
   } else {
     $('#results').classList.remove('show');
-    // 上次是「算過、但欄位缺了才收起來」的話，這次補齊仍要自動展開
-    resultsAutoHidden = !!(state.resultsAutoHidden || state.resultsVisible);
-    maybeRecalc();
+    if (mustHide) {
+      /* 系統改過條件：要使用者自己確認後再按計算，
+         這一輪不能靠 maybeRecalc() 把答案叫回來。 */
+      resultsAutoHidden = false;
+      updateCalcButton();
+    } else {
+      // 上次是「算過、但欄位缺了才收起來」的話，這次補齊仍要自動展開
+      resultsAutoHidden = state.resultsAutoHidden === true || state.resultsVisible === true;
+      maybeRecalc();
+    }
   }
   updateClearRestoreBtns();
 }
@@ -5526,6 +5629,37 @@ function luxCurrentRow() {
   syncLuxSelection();
   return luxRows[luxSel] || null;
 }
+/* 萬元十進位字串 → 整數元。不用 Number(wan) * 10000：
+   3350.202 × 10000 在浮點下是 33502020.000000004，之後 Math.ceil 會多算 1 元。
+   直接把整數位與小數位拼成元，結果必為安全整數。 */
+function wanStringToYuan(str) {
+  const t = String(str ?? '').trim();
+  if (t === '') return null;
+  const m = /^(\d+)(?:\.(\d*))?$/.exec(t);
+  if (!m) return null;
+  const frac = ((m[2] || '') + '0000').slice(0, 4);
+  const y = Number(m[1]) * 10000 + Number(frac);
+  return Number.isSafeInteger(y) ? y : null;
+}
+
+function getPriceYuan() {
+  return wanStringToYuan(getCalcFieldRawString($('#price')));
+}
+function getAppraisalYuan() {
+  const y = wanStringToYuan(getCalcFieldRawString($('#appraisal')));
+  return y !== null && y > 0 ? y : null;      // 0 仍視為未填
+}
+/* 核貸金額以鑑價與買賣總價「取低」；高價住宅門檻認定則「取高」。方向相反，分開算。 */
+function getLoanBasisYuan() {
+  const p = getPriceYuan(), a = getAppraisalYuan();
+  if (p === null) return null;
+  return a !== null ? Math.min(p, a) : p;
+}
+function getLuxBasisYuan() {
+  const p = getPriceYuan() ?? 0, a = getAppraisalYuan() ?? 0;
+  return Math.max(p, a);
+}
+
 function getAppraisalWan() {
   const el = $('#appraisal');
   if (!el || getCalcFieldRawString(el) === '') return 0;
@@ -5534,12 +5668,11 @@ function getAppraisalWan() {
 }
 /* 核貸金額以鑑價與買賣總價「取低」；高價住宅門檻認定則「取高」。兩者方向相反，分開算。 */
 function getLoanBasisWan() {
-  const price = getCalcFieldNumeric($('#price'));
-  const appr = getAppraisalWan();
-  return appr > 0 ? Math.min(price, appr) : price;
+  const y = getLoanBasisYuan();
+  return y === null ? 0 : y / 10000;
 }
 function getLuxBasisWan() {
-  return Math.max(getCalcFieldNumeric($('#price')), getAppraisalWan());
+  return getLuxBasisYuan() / 10000;
 }
 /* ---------- 貸款戶數限制（央行 115.3.20 修正規定第四點）----------
    四個級距是規定的分類，標籤固定；只有成數與寬限期上限可由使用者維護。 */
@@ -5619,7 +5752,7 @@ function luxHitRow() {
   if (!row) return null;
   const amt = luxNum(row.amount);
   if (!Number.isFinite(amt) || amt <= 0) return null;
-  return getLuxBasisWan() >= amt ? row : null;
+  return getLuxBasisYuan() >= amt * 10000 ? row : null;
 }
 function getLuxRatioMax() {
   const row = luxHitRow();
@@ -5680,11 +5813,28 @@ function isRateInput(inputEl) {
   return YT_RATE_IDS.indexOf(inputEl.id) >= 0;
 }
 
+/* 一般貸款的購屋總價與銀行鑑價已改為整數萬元欄位（data-calc-integer），
+   由下面第一行直接回傳 0 位小數，不再需要 2 位小數的特例。
+   全域 MAX_AMOUNT_DECIMALS 仍維持 4：個人評估有自己的萬元政策。 */
 function getFieldMaxDecimals(inputEl) {
   if (!inputEl) return MAX_AMOUNT_DECIMALS;
   if (inputEl.dataset.calcInteger === 'true') return 0;
   if (isRateInput(inputEl)) return MAX_RATE_DECIMALS;
   return MAX_AMOUNT_DECIMALS;
+}
+
+/* 一般貸款的三個金額／成數欄位採「嚴格整數」：算式結果不是整數時不提交，
+   還原開鍵盤前的合法值並說明原因。不可沿用 integer-only 欄位既有的 Math.trunc()
+   ——那等於系統自己把 2279.79 改成 2279 之後照樣顯示「完成」。
+   僅限一般貸款這三格，新青安與個人評估的小數制度本次完全不動。 */
+const STRICT_INTEGER_FIELD_IDS = ['price', 'appraisal', 'ratio'];
+function isStrictIntegerField(inputEl) {
+  return !!inputEl && STRICT_INTEGER_FIELD_IDS.indexOf(inputEl.id) >= 0;
+}
+function strictIntegerHint(inputEl) {
+  return inputEl && inputEl.id === 'ratio'
+    ? '此欄位僅接受整數 %'
+    : '此欄位僅接受整數萬元';
 }
 
 function isRateOutOfRange(val) {
@@ -5731,6 +5881,9 @@ function getBdGraceMaxValue() {
   return max;
 }
 
+/* 正式提交時把數值四捨五入到該欄位「看得到」的小數位，再同時寫進 raw 與畫面。
+   舊版 raw 存全精度、畫面只截到 4 位，2738.25349 會變成畫面 2738.2534、
+   內部 2738.25349，貸款金額因此和畫面差 1 元。使用者看不到的精度不該存在。 */
 function clampFieldValue(inputEl, rawValue) {
   const raw = String(rawValue ?? '').trim();
   if (!raw || !inputEl) return raw;
@@ -5739,25 +5892,27 @@ function clampFieldValue(inputEl, rawValue) {
 
   if (isRateInput(inputEl)) {
     if (n < RATE_MIN || n > RATE_MAX) return '';
-    syncCalcFieldRawDataset(inputEl, String(n));
-    return formatCalcFieldDisplay(n, false, MAX_RATE_DECIMALS);
+    const r = normalizeFieldNumber(inputEl, n);
+    syncCalcFieldRawDataset(inputEl, String(r));
+    return formatCalcFieldDisplay(r, false, MAX_RATE_DECIMALS);
   }
+
+  const integerOnly = inputEl.dataset.calcInteger === 'true';
+  const dec = integerOnly ? 0 : getFieldMaxDecimals(inputEl);
 
   const max = resolveFieldMax(inputEl);
   if (max === null) {
-    syncCalcFieldRawDataset(inputEl, String(n));
-    return formatCalcFieldDisplay(n, inputEl.dataset.calcInteger === 'true', getFieldMaxDecimals(inputEl));
+    const v = normalizeFieldNumber(inputEl, n);
+    syncCalcFieldRawDataset(inputEl, String(v));
+    return formatCalcFieldDisplay(v, integerOnly, dec);
   }
 
   if (n > max) return '';
 
   let clamped = Math.max(0, n);
-  if (inputEl.dataset.calcInteger === 'true') {
-    clamped = Math.trunc(clamped);
-  }
+  clamped = normalizeFieldNumber(inputEl, clamped);
   syncCalcFieldRawDataset(inputEl, String(clamped));
-  if (clamped === n && inputEl.dataset.calcInteger !== 'true') return raw;
-  return formatCalcFieldDisplay(clamped, inputEl.dataset.calcInteger === 'true', getFieldMaxDecimals(inputEl));
+  return formatCalcFieldDisplay(clamped, integerOnly, dec);
 }
 
 function clampFieldToast(inputEl, before, after) {
@@ -6119,23 +6274,352 @@ function enforceGraceWithinTerm(opts) {
   persistFormState();
 }
 
-function truncateToDecimals(n, maxDec = MAX_AMOUNT_DECIMALS) {
-  if (!isFinite(n)) return n;
-  const factor = Math.pow(10, maxDec);
-  const bias = n >= 0 ? 1e-9 : -1e-9;
-  return Math.trunc(n * factor + bias) / factor;
+/* 小數處理一律走十進位字串，不碰 n × 10^d 也不靠 toFixed 的二進位進位。
+   String(n) 給的是能還原原值的最短十進位表示，浮點雜訊在這一步就消掉了
+   （0.1+0.2 → "0.30000000000000004"，截到 4 位剛好是 0.3）。 */
+function decimalParts(n) {
+  let s = String(n);
+  if (s.indexOf('e') >= 0 || s.indexOf('E') >= 0) return null;   // 科學記號另外處理
+  const neg = s.charAt(0) === '-';
+  if (neg) s = s.slice(1);
+  const dot = s.indexOf('.');
+  return { neg: neg, int: dot < 0 ? s : s.slice(0, dot), frac: dot < 0 ? '' : s.slice(dot + 1) };
 }
 
+/* 真正的截位：直接切掉多餘位數，不先進位。
+   前一版用 toFixed(d + 2) 想先洗掉浮點雜訊，但那一步本身就會進位，
+   1.2345999 會先變成 1.2346 再切，等於截位失效。 */
+function truncateToDecimals(n, maxDec = MAX_AMOUNT_DECIMALS) {
+  if (!isFinite(n)) return n;
+  const d = Math.max(0, Math.min(20, Math.trunc(maxDec)));
+  const p = decimalParts(n);
+  if (!p) return Math.abs(n) < 1 ? 0 : Number(n.toFixed(d));
+  if (p.frac.length <= d) return n;
+  const out = d > 0 ? p.int + '.' + p.frac.slice(0, d) : p.int;
+  return Number((p.neg ? '-' : '') + out);
+}
+
+/* 十進位四捨五入。Number(n.toFixed(d)) 是對二進位值做的，
+   2.5555 在二進位是 2.55549999…，toFixed(3) 會給 2.555 而不是 2.556。
+   改成看第 d+1 位十進位數字自己決定進位。 */
+function roundToDecimalsSafe(n, maxDec) {
+  if (!isFinite(n)) return n;
+  const d = Math.max(0, Math.min(20, Math.trunc(maxDec)));
+  const p = decimalParts(n);
+  if (!p) return Number(n.toFixed(d));
+  if (p.frac.length <= d) return n;
+  const keep = p.int + p.frac.slice(0, d);
+  let v = BigInt(keep === '' ? '0' : keep);
+  if (p.frac.charAt(d) >= '5') v += 1n;
+  let str = v.toString();
+  if (d > 0) {
+    str = str.padStart(d + 1, '0');
+    str = str.slice(0, str.length - d) + '.' + str.slice(str.length - d);
+  }
+  return Number((p.neg ? '-' : '') + str);
+}
+
+/* 某個欄位「看得到」的小數位數，正式值一律先統一到這個精度 */
+function visibleDecimalsOf(inputEl) {
+  if (!inputEl) return MAX_AMOUNT_DECIMALS;
+  if (inputEl.dataset.calcInteger === 'true') return 0;
+  if (isRateInput(inputEl)) return MAX_RATE_DECIMALS;
+  return getFieldMaxDecimals(inputEl);
+}
+
+/* 個人評估的萬元金額欄位，產品規則本來就是「超過 4 位採截位」（1 元＝0.0001 萬），
+   不能因為一般貸款改成四捨五入就跟著變。 */
+const TRUNCATE_FIELD_IDS = ['bdIncome', 'bdDebt', 'bdWilling', 'bdHelp'];
+
+/* 正式數值進欄位前的統一入口：畫面、raw、localStorage、計算用的是同一個數字。
+   精度政策依欄位而定——整數欄位取整、個人評估萬元欄位截位、其餘四捨五入。 */
+function normalizeFieldNumber(inputEl, n) {
+  if (!Number.isFinite(n) || !inputEl) return n;
+  if (inputEl.dataset.calcInteger === 'true') return Math.trunc(n);
+  const dec = visibleDecimalsOf(inputEl);
+  return TRUNCATE_FIELD_IDS.indexOf(inputEl.id) >= 0
+    ? truncateToDecimals(n, dec)
+    : roundToDecimalsSafe(n, dec);
+}
+
+/* 十進位數：value = i / 10^s。加減乘用 BigInt 精確運算，除法本來就可能無限小數，
+   維持浮點後再轉回十進位。這樣 0.7 − 0.6 得到的是 0.1，不是 0.09999999999999998，
+   個人評估的截位政策才不會把它變成 0.0999。 */
+function decFromDigits(str) {
+  const m = /^(\d*)(?:\.(\d*))?$/.exec(str);
+  if (!m || (m[1] === '' && (m[2] === undefined || m[2] === ''))) return null;
+  const frac = m[2] || '';
+  return { i: BigInt((m[1] || '0') + frac), s: frac.length };
+}
+function decFromNumber(n) {
+  if (!Number.isFinite(n)) return null;
+  let str = String(n);
+  if (str.indexOf('e') >= 0 || str.indexOf('E') >= 0) str = n.toFixed(20);
+  const neg = str.charAt(0) === '-';
+  const d = decFromDigits(neg ? str.slice(1) : str);
+  if (!d) return null;
+  if (neg) d.i = -d.i;
+  return d;
+}
+function decToNumber(d) {
+  if (!d) return NaN;
+  const neg = d.i < 0n;
+  const abs = (neg ? -d.i : d.i).toString().padStart(d.s + 1, '0');
+  const body = d.s > 0 ? abs.slice(0, abs.length - d.s) + '.' + abs.slice(abs.length - d.s) : abs;
+  return Number((neg ? '-' : '') + body);
+}
+function decAlign(a, b) {
+  const s = Math.max(a.s, b.s);
+  const p = (x) => x.i * (10n ** BigInt(s - x.s));
+  return [{ i: p(a), s }, { i: p(b), s }];
+}
+
+/* 自己解析算式而不是丟給 Function()：先乘除後加減，加減乘走 BigInt */
 function calcEvalExprRaw(expr) {
   try {
     if (!/^[0-9+\-*/.]*$/.test(expr)) return null;
     if (!expr) return 0;
     const clean = expr.replace(/[+\-*/]+$/, '');
     if (!clean) return 0;
-    const result = Function('"use strict"; return (' + clean + ')')();
-    if (!Number.isFinite(result)) return null;
-    return result;
-  } catch {
+
+    const tokens = [];
+    let i = 0;
+    while (i < clean.length) {
+      const c = clean.charAt(i);
+      if ((c >= '0' && c <= '9') || c === '.') {
+        let j = i;
+        while (j < clean.length && ((clean[j] >= '0' && clean[j] <= '9') || clean[j] === '.')) j++;
+        const numStr = clean.slice(i, j);
+        if ((numStr.match(/\./g) || []).length > 1) return null;
+        tokens.push({ t: 'n', v: numStr });
+        i = j;
+      } else if ('+-*/'.indexOf(c) >= 0) {
+        tokens.push({ t: 'o', v: c });
+        i++;
+      } else return null;
+    }
+    if (!tokens.length) return null;
+
+    // 開頭或運算子後面的 +／− 當成正負號
+    const norm = [];
+    for (let k = 0; k < tokens.length; k++) {
+      const tk = tokens[k];
+      const prev = norm.length ? norm[norm.length - 1] : null;
+      if (tk.t === 'o' && (tk.v === '-' || tk.v === '+') && (!prev || prev.t === 'o')) {
+        const nxt = tokens[k + 1];
+        if (!nxt || nxt.t !== 'n') return null;
+        norm.push({ t: 'n', v: (tk.v === '-' ? '-' : '') + nxt.v });
+        k++;
+        continue;
+      }
+      norm.push(tk);
+    }
+
+    const vals = [];
+    const ops = [];
+    let cur = null;
+    let mulOp = null;
+    for (const tk of norm) {
+      if (tk.t === 'n') {
+        const neg = tk.v.charAt(0) === '-';
+        const d = decFromDigits(neg ? tk.v.slice(1) : tk.v);
+        if (!d) return null;
+        if (neg) d.i = -d.i;
+        if (cur === null) cur = d;
+        else if (mulOp === '*') cur = { i: cur.i * d.i, s: cur.s + d.s };
+        else if (mulOp === '/') {
+          const b = decToNumber(d);
+          if (b === 0) return null;
+          const q = decFromNumber(decToNumber(cur) / b);
+          if (!q) return null;
+          cur = q;
+        } else return null;
+        mulOp = null;
+      } else if (tk.v === '*' || tk.v === '/') {
+        if (cur === null) return null;
+        mulOp = tk.v;
+      } else {
+        if (cur === null || mulOp) return null;
+        vals.push(cur); ops.push(tk.v); cur = null;
+      }
+    }
+    if (cur === null || mulOp) return null;
+    vals.push(cur);
+
+    let acc = vals[0];
+    for (let k = 0; k < ops.length; k++) {
+      const [x, y] = decAlign(acc, vals[k + 1]);
+      acc = { i: ops[k] === '+' ? x.i + y.i : x.i - y.i, s: x.s };
+    }
+    const out = decToNumber(acc);
+    return Number.isFinite(out) ? out : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/* ── 精確有理數層（只服務嚴格整數欄位的「是不是整數」判斷）──────────────
+   calcEvalExprRaw() 的 +、−、× 本來就是 BigInt 精確運算，唯一失準的是 ÷，
+   以及 % 鍵會「當場把算式塌縮成浮點數」寫回 expr 字串。所以
+     70 ÷ 7%  → 70 / 0.07 = 999.9999999999999
+     21 ÷ 35% → 21 / 0.35 = 60.00000000000001
+   會被 Number.isInteger() 判成小數而整筆退回。
+
+   這裡不採用「接近整數就當整數」的容許值做法——任何固定或動態 epsilon 都得回答
+   「多接近才算整數」，而那個界線一定是猜的。改成用 BigInt 分子／分母做精確運算，
+   1000/3×3 就是 1000、3123×73% 就是 227979/100，整不整除是確定的事實，
+   完全不需要誤差範圍。
+
+   刻意只在提交嚴格整數欄位時使用，浮點路徑原封不動，
+   利率欄、新青安、個人評估的行為完全不受影響。 */
+function ratMake(n, d) {
+  if (d === 0n) return null;
+  if (d < 0n) { n = -n; d = -d; }
+  let a = n < 0n ? -n : n, b = d;
+  while (b) { const t = a % b; a = b; b = t; }
+  if (a > 1n) { n /= a; d /= a; }
+  return { n: n, d: d };
+}
+function ratFromDecStr(str) {
+  const m = /^(\d*)(?:\.(\d*))?$/.exec(str);
+  if (!m || (m[1] === '' && (m[2] === undefined || m[2] === ''))) return null;
+  const frac = m[2] || '';
+  return ratMake(BigInt((m[1] || '0') + frac), 10n ** BigInt(frac.length));
+}
+function ratAdd(a, b) { return ratMake(a.n * b.d + b.n * a.d, a.d * b.d); }
+function ratSub(a, b) { return ratMake(a.n * b.d - b.n * a.d, a.d * b.d); }
+function ratMul(a, b) { return ratMake(a.n * b.n, a.d * b.d); }
+function ratDiv(a, b) { return b.n === 0n ? null : ratMake(a.n * b.d, a.d * b.n); }
+function ratIsInt(r) { return !!r && r.d === 1n; }
+function ratToNumber(r) {
+  if (!r) return null;
+  const v = Number(r.n) / Number(r.d);
+  return Number.isFinite(v) ? v : null;
+}
+/* 整數有理數轉 Number 時要保證沒有超出安全整數，否則畫面數字會失真 */
+function ratToSafeInt(r) {
+  if (!ratIsInt(r)) return null;
+  const v = Number(r.n);
+  return Number.isSafeInteger(v) ? v : null;
+}
+
+/* calcEvalExprRaw() 的精確版本：同一套 tokenizer、同一套優先順序與正負號規則，
+   差別只在乘除用有理數而非浮點。除以 0 一樣回 null，語意不變。 */
+/* 有理數 → 精確十進位字串。分母只含 2 與 5 才有有限小數表示，否則回 null。 */
+function ratToDecStr(r, maxScale) {
+  if (maxScale == null) maxScale = 12;
+  if (!r) return null;
+  let d = r.d, twos = 0n, fives = 0n;
+  while (d % 2n === 0n) { d /= 2n; twos++; }
+  while (d % 5n === 0n) { d /= 5n; fives++; }
+  if (d !== 1n) return null;                       // 非有限小數
+  const scale = twos > fives ? twos : fives;
+  if (scale > BigInt(maxScale)) return null;       // 太長就不寫回算式字串
+  const neg = r.n < 0n;
+  const num = (neg ? -r.n : r.n) * (10n ** scale) / r.d;
+  let s = num.toString().padStart(Number(scale) + 1, '0');
+  if (scale > 0n) {
+    const cut = s.length - Number(scale);
+    s = (s.slice(0, cut) + '.' + s.slice(cut)).replace(/\.?0+$/, '');
+  }
+  return (neg ? '-' : '') + (s || '0');
+}
+
+/* 塌縮一個算式結果時的共用寫法。
+   能用有限小數精確表示 → 直接把精確字串寫進 expr（畫面立刻顯示 1000 而不是
+   999.9999999999999），之後重新解析仍然精確，不需要任何額外狀態。
+   不能（例如 100/3）→ 寫浮點字串，同時把「這串浮點字其實代表哪個有理數」
+   記進代換表。使用者接著按 ×3 時，精確值不會因為轉不成字串就被丟掉。 */
+function calcCollapseWrite(floatVal, exactRat) {
+  const s = ratToDecStr(exactRat);
+  if (s !== null) return s;
+  const fs = calcNumberToExpr(floatVal);
+  if (exactRat) calcKeyboard.exactSubs[fs] = exactRat;
+  return fs;
+}
+
+/* 代換表版本的精確求值：數字字面值若命中代換表就用登記的有理數，
+   否則照字面解析。正式提交一律走這條，所以提交值必定等於畫面上的算式。 */
+function calcEvalExprExactSub(expr) {
+  const subs = calcKeyboard.exactSubs;
+  if (!subs || !Object.keys(subs).length) return calcEvalExprExact(expr);
+  return calcEvalExprExact(expr, subs);
+}
+
+function calcEvalExprExact(expr, subs) {
+  try {
+    if (!/^[0-9+\-*/.]*$/.test(expr)) return null;
+    if (!expr) return ratMake(0n, 1n);
+    const clean = expr.replace(/[+\-*/]+$/, '');
+    if (!clean) return ratMake(0n, 1n);
+
+    const tokens = [];
+    let i = 0;
+    while (i < clean.length) {
+      const c = clean.charAt(i);
+      if ((c >= '0' && c <= '9') || c === '.') {
+        let j = i;
+        while (j < clean.length && ((clean[j] >= '0' && clean[j] <= '9') || clean[j] === '.')) j++;
+        const numStr = clean.slice(i, j);
+        if ((numStr.match(/\./g) || []).length > 1) return null;
+        tokens.push({ t: 'n', v: numStr });
+        i = j;
+      } else if ('+-*/'.indexOf(c) >= 0) {
+        tokens.push({ t: 'o', v: c });
+        i++;
+      } else return null;
+    }
+    if (!tokens.length) return null;
+
+    const norm = [];
+    for (let k = 0; k < tokens.length; k++) {
+      const tk = tokens[k];
+      const prev = norm.length ? norm[norm.length - 1] : null;
+      if (tk.t === 'o' && (tk.v === '-' || tk.v === '+') && (!prev || prev.t === 'o')) {
+        const nxt = tokens[k + 1];
+        if (!nxt || nxt.t !== 'n') return null;
+        norm.push({ t: 'n', v: (tk.v === '-' ? '-' : '') + nxt.v });
+        k++;
+        continue;
+      }
+      norm.push(tk);
+    }
+
+    const vals = [];
+    const ops = [];
+    let cur = null;
+    let mulOp = null;
+    for (const tk of norm) {
+      if (tk.t === 'n') {
+        const neg = tk.v.charAt(0) === '-';
+        const lit = neg ? tk.v.slice(1) : tk.v;
+        let d = (subs && Object.prototype.hasOwnProperty.call(subs, lit))
+          ? subs[lit] : ratFromDecStr(lit);
+        if (!d) return null;
+        if (neg) d = ratMake(-d.n, d.d);
+        if (cur === null) cur = d;
+        else if (mulOp === '*') cur = ratMul(cur, d);
+        else if (mulOp === '/') { cur = ratDiv(cur, d); if (!cur) return null; }
+        else return null;
+        mulOp = null;
+      } else if (tk.v === '*' || tk.v === '/') {
+        if (cur === null) return null;
+        mulOp = tk.v;
+      } else {
+        if (cur === null || mulOp) return null;
+        vals.push(cur); ops.push(tk.v); cur = null;
+      }
+    }
+    if (cur === null || mulOp) return null;
+    vals.push(cur);
+
+    let acc = vals[0];
+    for (let k = 0; k < ops.length; k++) {
+      acc = ops[k] === '+' ? ratAdd(acc, vals[k + 1]) : ratSub(acc, vals[k + 1]);
+      if (!acc) return null;
+    }
+    return acc;
+  } catch (e) {
     return null;
   }
 }
@@ -6183,9 +6667,11 @@ function setCalcFieldStoredValue(input, value) {
     return;
   }
   const integerOnly = input.dataset.calcInteger === 'true';
-  const num = integerOnly ? Math.trunc(n) : n;
+  /* 正式值一律先統一到該欄位看得到的精度，raw 與畫面才不會各存一個數字。
+     這是所有程式寫值的共同出口，鍵盤算式結果與保存資料都會經過。 */
+  const num = normalizeFieldNumber(input, n);
   syncCalcFieldRawDataset(input, String(num));
-  input.value = formatCalcFieldDisplay(num, integerOnly, getFieldMaxDecimals(input));
+  input.value = formatCalcFieldDisplay(num, integerOnly, visibleDecimalsOf(input));
 }
 
 function clearCalcField(input) {
@@ -6328,9 +6814,13 @@ function formatRateDisplay(rate, precision) {
 const calcKeyboard = {
   expr: '',
   exprFull: null,
+  /* 無法寫成有限小數的塌縮結果：浮點字串 → 精確有理數。
+     只在按 C 或重新開啟鍵盤時整批清空。 */
+  exactSubs: {},
   pristine: true,
   allowNegative: false,
   integerOnly: false,
+  strictInteger: false,
   maxDecimals: MAX_AMOUNT_DECIMALS,
   inputEl: null,
   backdropEl: null
@@ -6347,6 +6837,10 @@ function calcHaptic(key) {
 
 function calcNumberToExpr(n) {
   if (!Number.isFinite(n)) return '0';
+  /* 嚴格整數欄位不在這裡截位。3123×73% 先被截成 "2279" 之後，再按一次「＝」會把
+     這個字串重新解析成 2279，commit 時已經看不出原本是小數，等於系統默默改掉條件。
+     保留完整值，是否合法一律交給 calcCommitValue() 判斷。 */
+  if (calcKeyboard.strictInteger) return String(n);
   if (calcKeyboard.integerOnly) return String(Math.trunc(n));
   return String(n);
 }
@@ -6365,6 +6859,9 @@ function calcKeyboardDisplayExpr(expr) {
   }
   const n = Number(s);
   if (!Number.isFinite(n)) return s;
+  /* 嚴格整數欄位算出小數時照實顯示 2279.79，使用者才看得懂為什麼按完成會被退回。
+     顯示成 2279 反而像是已經幫他算好了。 */
+  if (calcKeyboard.strictInteger && !Number.isInteger(n)) return s;
   return formatCalcFieldDisplay(n, calcKeyboard.integerOnly, calcKeyboard.maxDecimals);
 }
 
@@ -6390,6 +6887,17 @@ function calcCommitValue(rawExpr) {
   let fullNum = calcKeyboard.exprFull;
   if (fullNum == null) fullNum = calcEvalExprRaw(raw);
 
+  /* 嚴格整數欄位改用精確有理數決定「是不是整數」。
+     一律從畫面上的算式字串重新求值（數字若命中代換表就用登記的精確有理數），
+     所以提交值必定等於使用者當下看到的算式，不會有隱藏的舊結果。
+     只有在算不出精確值時才退回浮點判斷，行為與改版前一致。 */
+  let exactRat = null;
+  if (isStrictIntegerField(input)) {
+    exactRat = calcEvalExprExactSub(raw);
+    const exactInt = ratToSafeInt(exactRat);
+    if (exactInt !== null) fullNum = exactInt;
+  }
+
   if (fullNum !== null) {
     if (!calcKeyboard.allowNegative && fullNum < 0) {
       setCalcFieldStoredValue(input, '');
@@ -6397,6 +6905,28 @@ function calcCommitValue(rawExpr) {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
       calcKeyboard.exprFull = null;
+      return;
+    }
+    /* 一般貸款的購屋總價／銀行鑑價／貸款成數：算式結果非整數就整筆不提交。
+       例如 3123 × 73% ＝ 2279.79，截成 2279 等於系統擅自改掉貸款條件。
+       還原開鍵盤前的合法值（原本沒有值就保持空白），並明講欄位規則。 */
+    /* 判斷順序：有精確值就以「分母是不是 1」為準，浮點尾數完全不參與決策；
+       算不出精確值才退回 Number.isInteger()。
+       3123 × 73% 的精確值是 227979/100，分母不是 1，照樣退回並提示。 */
+    const strictReject = isStrictIntegerField(input)
+      && (exactRat ? !ratIsInt(exactRat) || ratToSafeInt(exactRat) === null
+                   : !Number.isInteger(fullNum));
+    if (strictReject) {
+      const prevInt = calcKeyboard.prevValid;
+      if (prevInt !== '' && prevInt != null) setCalcFieldStoredValue(input, prevInt);
+      else clearCalcField(input);
+      showToast('', { hint: true, multiline: true,
+        hintHtml: hintLines(strictIntegerHint(input),
+          (prevInt !== '' && prevInt != null) ? '已還原上一個數值' : '已保持空白') });
+      calcKeyboard.exprFull = null;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCalcFieldSideEffects(input);
       return;
     }
     /* 齒輪的成數上限：0% 會讓主表永遠算不出來（主表成數必須大於 0），
@@ -6467,6 +6997,7 @@ function closeCalcKeyboard(applyValue) {
   calcKeyboard.inputEl = null;
   calcKeyboard.expr = '';
   calcKeyboard.pristine = true;
+  calcKeyboard.strictInteger = false;
   clearCalcKeyboardBodyPad();
   unbindCalcKeyboardViewportScroll();
   detachCalcKeyListener();
@@ -6566,13 +7097,21 @@ function calcPress(key) {
   }
   let cur = calcKeyboard.expr || '';
   if (key === 'C') {
+    /* 只清 expr 不夠：舊版把塌縮結果留在 exprFull，之後按運算子時
+       又被當成左值撈回來，70÷7% 按 C 再按 ＋5 會變成 1005。 */
     calcKeyboard.expr = '';
+    calcKeyboard.exprFull = null;
+    calcKeyboard.exactSubs = {};
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
     return;
   }
   if (key === 'BACK') {
+    /* 退格改動了畫面上的算式，先前 = 或 % 算出的隱藏結果就不再代表它。
+       不清掉的話 calcCommitValue() 會優先採用舊值，畫面顯示 50 卻提交 500。
+       代換表不必清：被截斷後的字串不會再命中任何 key，自然退回字面解析。 */
     calcKeyboard.expr = cur.slice(0, -1);
+    calcKeyboard.exprFull = null;
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
     return;
@@ -6583,13 +7122,16 @@ function calcPress(key) {
       if (!calcKeyboard.allowNegative && result < 0) {
         calcKeyboard.expr = '';
         calcKeyboard.exprFull = null;
-        calcKeyboard.pristine = false;
+            calcKeyboard.pristine = false;
         calcUpdateDisplay();
         showToast('', { hint: true, hintHtml: NEGATIVE_INPUT_HINT_HTML });
         return;
       }
+      /* 已經被 % 塌縮過的算式，expr 只剩浮點字串（例如 999.9999999999999）。
+         此時再用字串重算精確值，等於把誤差當成事實記下來，會蓋掉 % 當下
+         算好的正確有理數。只有在沒有塌縮值時才重新解析。 */
       calcKeyboard.exprFull = result;
-      calcKeyboard.expr = calcNumberToExpr(result);
+      calcKeyboard.expr = calcCollapseWrite(result, calcEvalExprExactSub(cur));
     }
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
@@ -6604,7 +7146,9 @@ function calcPress(key) {
       if (!isNaN(n)) {
         const pct = n / 100;
         calcKeyboard.exprFull = pct;
-        calcKeyboard.expr = calcNumberToExpr(pct);
+        // 除以 100 在十進位下必定精確，直接用有理數表示，不經過浮點
+        const be = calcEvalExprExactSub(cur);
+        calcKeyboard.expr = calcCollapseWrite(pct, be ? ratDiv(be, ratMake(100n, 1n)) : null);
       }
     } else {
       const [, prefix, op, lastNum] = m;
@@ -6618,9 +7162,23 @@ function calcPress(key) {
         // 除以百分比是「除以那個比例」：3000 ÷ 80% = 3000 / 0.8 = 3750。
         // 舊寫法 baseVal / lastN / 100 會算成 0.375，方向完全相反。
         else if (op === '/') result = lastN === 0 ? NaN : baseVal / (lastN / 100);
+        /* 同一組語意再用有理數算一次。這裡是浮點誤差真正的源頭：
+           70 ÷ 7% 的浮點結果是 999.9999999999999，有理數結果就是 1000。 */
+        const baseR = calcEvalExprExactSub(prefix);
+        const lastR = ratFromDecStr(lastNum);
+        let exact = null;
+        if (baseR && lastR) {
+          const pctR = ratDiv(lastR, ratMake(100n, 1n));
+          if (op === '+') exact = pctR ? ratAdd(baseR, ratMul(baseR, pctR)) : null;
+          else if (op === '-') exact = pctR ? ratSub(baseR, ratMul(baseR, pctR)) : null;
+          else if (op === '*') exact = pctR ? ratMul(baseR, pctR) : null;
+          else if (op === '/') exact = pctR ? ratDiv(baseR, pctR) : null;
+        }
         if (Number.isFinite(result)) {
           calcKeyboard.exprFull = result;
-          calcKeyboard.expr = calcNumberToExpr(result);
+          /* 這裡就把畫面更新成精確值：70÷7% 當下顯示 1000、21÷35% 顯示 60，
+             不必等使用者再按一個運算子才修正。 */
+          calcKeyboard.expr = calcCollapseWrite(result, exact);
         }
       }
     }
@@ -6630,7 +7188,11 @@ function calcPress(key) {
   if (['+', '-', '*', '/'].includes(key)) {
     calcKeyboard.pristine = false;
     if (calcKeyboard.exprFull != null && !/[+\-*/]$/.test(cur)) {
-      cur = calcNumberToExpr(calcKeyboard.exprFull);
+      /* 能用有限小數精確表示就寫精確字串（70÷7% 寫成 1000 而非 999.9999999999999），
+         這樣接下去的 +5 仍然精確。無法有限表示（例如 1000/3）才退回浮點字串。 */
+      /* expr 在 % 與 = 當下就已經寫成正確字串（精確值，或已登記代換的浮點字串），
+         這裡不能再依 exprFull 重寫一次——那會蓋掉代換表的 key，
+         1÷3%×3 的精確值就是在這一步被弄丟的。只要讓塌縮值失效即可。 */
       calcKeyboard.exprFull = null;
     }
     if (/[+\-*/]$/.test(cur)) {
@@ -6922,12 +7484,14 @@ function openCalcKeyboard(inputEl, options) {
   if (ae && ae !== inputEl && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) ae.blur();
   calcKeyboard.inputEl = inputEl;
   calcKeyboard.exprFull = null;
+  calcKeyboard.exactSubs = {};
   calcKeyboard.expr = getCalcFieldRawString(inputEl);
   // 記下開鍵盤前的合法值，算式無效時原值放回去，不留下 "100/0" 這種字串
   calcKeyboard.prevValid = getCalcFieldRawString(inputEl);
   calcKeyboard.pristine = true;
   calcKeyboard.allowNegative = !!options.allowNegative;
   calcKeyboard.integerOnly = inputEl.dataset.calcInteger === 'true';
+  calcKeyboard.strictInteger = isStrictIntegerField(inputEl);
   calcKeyboard.maxDecimals = getFieldMaxDecimals(inputEl);
   inputEl.classList.add('calc-active');
   renderCalcSheet();
@@ -8139,8 +8703,76 @@ function maybeRecalc() {
   autoRecalcGeneral();
 }
 
+/* 正式貸款本金（整數萬元）。與中國信託的輸入制度一致：試算的本金就是一個整數萬元。
+   basisWan × ratio 兩者都是安全整數，相乘仍是精確整數；先取 %100 的餘數再相減，
+   除以 100 時被除數必為 100 的倍數，完全避開浮點誤差，不必依賴 Math.floor 的邊界行為。
+   未滿 1 萬元的部分無條件捨去——四捨五入會讓實際成數略高於使用者設定的成數。 */
+function getLoanWan() {
+  const basis = getLoanBasisYuan();
+  if (basis === null) return 0;
+  const ratio = Number(getCalcFieldRawString($('#ratio')));
+  if (!Number.isInteger(ratio) || ratio < 1 || ratio > 100) return 0;
+  // 整數萬元欄位的正式值一定是 10000 的倍數；不是就代表資料異常，不猜、直接回 0
+  if (!Number.isSafeInteger(basis) || basis % 10000 !== 0) return 0;
+  const basisWan = basis / 10000;
+  const num = basisWan * ratio;
+  if (!Number.isSafeInteger(num)) return 0;
+  const wan = (num - (num % 100)) / 100;
+  return Number.isSafeInteger(wan) ? wan : 0;
+}
+
+/* 全 App 唯一的本金來源。月付、逐期明細、APR、試算條件、分享與四種匯出都走這裡，
+   不得再從購屋總價、鑑價或成數各自重算一次。 */
 function getLoanYuan() {
-  return getLoanBasisWan() * 10000 * getCalcFieldNumeric($('#ratio')) / 100;
+  const yuan = getLoanWan() * 10000;
+  return Number.isSafeInteger(yuan) ? yuan : 0;
+}
+
+/* 送進還款排程前的最後把關。
+   兩個關鍵點：
+   1) basis % 10000 —— 舊版寫 % 100，那是「總價最多 2 位小數」時代的殘留。
+      整數萬元制度下基礎金額必為 10,000 元的倍數，用 % 100 等於根本沒擋住小數。
+   2) 本金必須「大於 0」，不能只檢查 Number.isSafeInteger()——0 也是安全整數，
+      會讓總價 1 萬×成數 1% 這種「捨去後為 0」的組合一路算到底，
+      畫面出現貸款總額 0 元、每月還款 0 元卻顯示「已自動計算完成」。 */
+function loanYuanIsSound() {
+  if (!integerWanFieldOk($('#price'), true)) return false;
+  if (!integerWanFieldOk($('#appraisal'), false)) return false;
+  const basis = getLoanBasisYuan();
+  if (basis === null || !Number.isSafeInteger(basis) || basis <= 0 || basis % 10000 !== 0) return false;
+  const ratio = Number(getCalcFieldRawString($('#ratio')));
+  if (!Number.isInteger(ratio) || ratio < 1 || ratio > 100) return false;
+  const wan = getLoanWan();
+  if (!Number.isSafeInteger(wan) || wan < 1) return false;
+  const yuan = getLoanYuan();
+  return Number.isSafeInteger(yuan) && yuan > 0;
+}
+
+/* 「欄位都合法、只是捨去後不滿 1 萬元」要跟「欄位本身有問題」分開講，
+   否則使用者看到「金額或成數不是有效數值」會以為自己打錯字。 */
+function loanFieldsWellFormed() {
+  if (!integerWanFieldOk($('#price'), true)) return false;
+  if (!integerWanFieldOk($('#appraisal'), false)) return false;
+  const basis = getLoanBasisYuan();
+  if (basis === null || !Number.isSafeInteger(basis) || basis <= 0 || basis % 10000 !== 0) return false;
+  const ratio = Number(getCalcFieldRawString($('#ratio')));
+  return Number.isInteger(ratio) && ratio >= 1 && ratio <= 100;
+}
+
+/* 單獨檢查一個整數萬元欄位。
+   鑑價非檢不可：貸款基礎是「取低」，鑑價 3000.5 萬遇上總價 3000 萬時
+   會因為取低而整個被略過，違法值就這樣混進來卻沒人發現。 */
+function integerWanFieldOk(el, required) {
+  if (!el) return !required;
+  const s = getCalcFieldRawString(el);
+  if (s === '') return !required;
+  const n = Number(s);
+  if (!Number.isFinite(n) || !Number.isInteger(n)) return false;
+  if (n === 0) return !required;          // 鑑價 0 視為未填
+  /* 上限也要在這裡擋。正常 input 事件與存檔正規化會夾限，但那些都能被繞過；
+     這是最後一道防線，不能假設前面一定有人擋過。鑑價即使因「取低」不影響
+     貸款基礎，本身超過上限就是非法欄位，不得放行。 */
+  return n > 0 && n <= PRICE_MAX_WAN;
 }
 
 function isLoanFieldMissing(val) {
@@ -8211,6 +8843,19 @@ function getCalcValidationError() {
   const labels = [];
   let firstEl = null;
 
+  /* 本金必須是安全整數才准進入還款排程。不是的話屬程式或資料錯誤，
+     寧可當成「還不能算」，也不要讓帶浮點尾數的本金流進每期計算。 */
+  if (getCalcFieldRawString($('#price')) !== '' && getCalcFieldRawString($('#ratio')) !== ''
+      && !loanYuanIsSound()) {
+    /* 欄位本身合法、只是按成數捨去後不滿 1 萬元 → 講清楚是金額太小，
+       不要用「不是有效數值」誤導使用者以為打錯字。兩種情況都一律擋下不試算。 */
+    return loanFieldsWellFormed()
+      ? { labels: ['購屋總價', '貸款成數'], firstEl: $('#price'),
+          message: '貸款金額未滿 1 萬元，無法試算' }
+      : { labels: ['購屋總價', '貸款成數'], firstEl: $('#price'),
+          message: '金額或成數不是有效數值，請重新確認' };
+  }
+
   if (isLoanFieldMissing(getCalcFieldRawString($('#price')))) {
     labels.push('購屋總價');
     if (!firstEl) firstEl = $('#price');
@@ -8248,8 +8893,12 @@ function getCalcValidationError() {
 }
 
 function getSelfFundWan() {
-  // 自備款是「買價減掉銀行借的錢」；鑑價低於買價時差額同樣要自己補，故以購屋總價為基準
-  return getCalcFieldNumeric($('#price')) - getLoanYuan() / 10000;
+  /* 自備款是「買價減掉銀行借的錢」；鑑價低於買價時差額同樣要自己補，故以購屋總價為基準。
+     購屋總價與正式本金都已是整數萬元，相減必為整數萬元。Math.round 只是防呆，
+     正常路徑下不會改變任何數字，畫面不再出現 854.0000 這種假精度。 */
+  const p = getPriceYuan();
+  if (p === null) return 0;
+  return Math.round((p - getLoanYuan()) / 10000);
 }
 
 // 浮點相減會留下 599.9999999999999 這種尾數，統一四捨五入到 4 位再輸出

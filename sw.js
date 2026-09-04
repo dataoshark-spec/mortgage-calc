@@ -1,4 +1,4 @@
-const CACHE = "mortgage-calc-v20260903D";
+const CACHE = "mortgage-calc-v20260904D";
 
 /* 核心檔案：少一個就不能宣稱「完整離線」。
    匯出用的兩個函式庫改成本地同源，必須跟著預快取，否則離線冷啟動時
