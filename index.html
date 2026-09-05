@@ -2614,32 +2614,46 @@ if ("serviceWorker" in navigator) {
       #termPills .qp {
         font-size: 0.8rem;
       }
-      /* ── 窄螢幕（≤360px）多段利率改成兩行 ────────────────────────────
-         9 欄擠在一行時，第 10 段標題「第 10 段」比前九段多一個字，auto 欄
-         配上 min-width:0 會被壓到寬度 0，刪除按鈕也被推出卡片右邊界。
-         改成：
+      /* 361～600px：維持原本的單行橫向排列，只是把欄寬與字級壓緊一點。
+         09.04D 誤把兩行版寫在這個 600px 區塊裡，導致 390／412／600px 也被
+         強制換行——兩行版必須只在 ≤386px 生效，見下方巢狀 media query。 */
+      .rate-row-line {
+        grid-template-columns: max-content max-content minmax(30px, 1fr) max-content minmax(30px, 1fr) max-content minmax(44px, 1.15fr) max-content max-content;
+        column-gap: 3px;
+        padding: 8px 8px;
+        font-size: 0.74rem;
+      }
+      .rate-row-line input,
+      .rate-row-line .rate-readonly { padding: 0 2px; }
+      .rate-row-line .row-seg {
+        min-width: max-content;      /* 「第 10 段」比前九段多一字，不給 max-content 會被壓成 0 */
+        font-size: 0.88rem;
+      }
+      .rate-row-line .row-txt {
+        min-width: max-content;
+        font-size: 0.72rem;
+        padding: 0;
+      }
+
+      /* ── ≤386px 才改成兩行 ────────────────────────────────────────
+         斷點是量出來的，不是猜的：壓緊後的單行版最小內容寬 287px，
+         卡片可用寬約等於視窗寬 −100，所以要 ≥387px 才塞得下。
+         再往下硬撐單行的話利率框會掉到 34px，「2.555」會被截斷，
+         那比多一行更難用，所以 361～386px 維持兩行。
            第 1 行｜第 N 段 · 第 X 期～第 Y 期
            第 2 行｜利率輸入 ·  % · 刪除鈕
-         用純 CSS 重新指派格線位置，DOM 完全不動，
+         純 CSS 重新指派格線，DOM 完全不動；
          一般貸款與個人評估共用同一組列，兩邊一起受惠。 */
-      .rate-row-line {
-        grid-template-columns: max-content max-content minmax(30px, 1fr) max-content minmax(30px, 1fr) max-content;
-        column-gap: 5px;
-        row-gap: 8px;
-        padding: 9px 10px;
-        font-size: 0.74rem;
-        overflow: hidden;            /* 任何殘餘溢出都夾在卡片內，不讓整頁橫向捲動 */
-      }
-      /* 第 1～6 個子元素自動排進第 1 列，第 7 個之後手動指定到第 2 列 */
-      .rate-row-line > .rate-val { grid-column: 1 / span 3; grid-row: 2; }
-      .rate-row-line > .rate-val + .row-txt { grid-column: 4; grid-row: 2; justify-self: start; }
-      .rate-row-line > .btn-remove { grid-column: 6; grid-row: 2; justify-self: end; }
-      /* 標題與「第／期～第／期」是固定字數，給 max-content 就不會被壓成 0 */
-      .rate-row-line .row-seg { min-width: max-content; font-size: 0.88rem; }
-      .rate-row-line .row-txt { min-width: max-content; }
-      .rate-row-line .row-txt {
-        font-size: 0.72rem;
-        padding: 0 1px;
+      @media (max-width: 386px) {
+        .rate-row-line {
+          grid-template-columns: max-content max-content minmax(30px, 1fr) max-content minmax(30px, 1fr) max-content;
+          row-gap: 8px;
+          padding: 9px 10px;
+          overflow: hidden;          /* 殘餘溢出夾在卡片內，不讓整頁橫向捲動 */
+        }
+        .rate-row-line > .rate-val { grid-column: 1 / span 3; grid-row: 2; }
+        .rate-row-line > .rate-val + .row-txt { grid-column: 4; grid-row: 2; justify-self: start; }
+        .rate-row-line > .btn-remove { grid-column: 6; grid-row: 2; justify-self: end; }
       }
       /* ≤340px（320px 機種）：兩行還是塞不下——第 1 行六欄需要約 238px，
          卡片內寬只有 220px。再拆一行，標題自己一行，期數一行，利率一行。
@@ -4602,7 +4616,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.04D";
+const APP_VERSION = "2026.09.04G";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -5185,7 +5199,7 @@ function normalizeGeneralFormState(state) {
      合法的值也要先四捨五入到該欄位看得到的精度，不能把
      2738.25349 這種隱藏精度原封不動放進欄位。 */
   const decChanged = { any: false };
-  function numField(v, { min, max, integer, dec }) {
+  function numField(v, { min, max, integer, dec, truncate }) {
     const t = str(v);
     if (t === '') return '';
     const n = Number(t);
@@ -5194,8 +5208,8 @@ function normalizeGeneralFormState(state) {
     if (min != null && n < min) return '';
     if (max != null && n > max) return '';
     if (dec != null && !integer) {
-      const r = roundToDecimalsSafe(n, dec);
-      if (r !== n) decChanged.any = true;
+      const r = truncate ? truncateToDecimals(n, dec) : roundToDecimalsSafe(n, dec);
+      if (r !== n) decChanged.any = true;      // 有被修正就會帶出 out.repaired
       return String(r);
     }
     return String(n);
@@ -5213,7 +5227,7 @@ function normalizeGeneralFormState(state) {
      等於系統自己改了貸款條件卻照樣顯示完成。非整數視為異常保存資料。 */
   out.ratio = numField(state.ratio, { min: 1, max: 100, integer: true });
   out.term = numField(state.term, { min: 1, max: TERM_MAX_YEARS, integer: true });
-  out.rate = numField(state.rate, { min: RATE_MIN, max: RATE_MAX, dec: MAX_RATE_DECIMALS });
+  out.rate = numField(state.rate, { min: RATE_MIN, max: RATE_MAX, dec: MAX_RATE_DECIMALS, truncate: true });
 
   /* 舊版存的是「月」。必須先換算成年再驗證，否則 72 個月（＝6 年）會先被
      當成超過 60 而清空。換算沿用既有的 Math.round(月/12) 相容政策。 */
@@ -5261,7 +5275,7 @@ function normalizeGeneralFormState(state) {
       /* 利率要統一到畫面看得到的 3 位，而且必須寫回陣列本身。
          舊版只把畫面改成 1.235，rateSegments 仍是 1.23456，
          buildSchedule() 算的是隱藏精度，畫面與答案不一致。 */
-      const rr = roundToDecimalsSafe(r, MAX_RATE_DECIMALS);
+      const rr = truncateToDecimals(r, MAX_RATE_DECIMALS);
       if (rr !== r) decChanged.any = true;
       cleaned.push({ from, to, rate: String(rr) });
     }
@@ -6337,6 +6351,11 @@ function normalizeFieldNumber(inputEl, n) {
   if (!Number.isFinite(n) || !inputEl) return n;
   if (inputEl.dataset.calcInteger === 'true') return Math.trunc(n);
   const dec = visibleDecimalsOf(inputEl);
+  /* 利率一律截斷，不四捨五入（全模式共用的正式規則）。
+     舊版走 roundToDecimalsSafe，2÷7 的鍵盤預覽是 0.285、正式值卻存 0.286，
+     等於系統把使用者的利率往上改了一格。截斷才會讓畫面＝raw＝保存＝計算。
+     truncateToDecimals 走字串切位，2.555 這種本來就是 3 位的值不會被浮點尾數咬掉。 */
+  if (isRateInput(inputEl)) return truncateToDecimals(n, dec);
   return TRUNCATE_FIELD_IDS.indexOf(inputEl.id) >= 0
     ? truncateToDecimals(n, dec)
     : roundToDecimalsSafe(n, dec);
@@ -6684,7 +6703,8 @@ function clampFieldNumeric(inputEl, n) {
   if (!inputEl || !Number.isFinite(n)) return null;
   if (isRateInput(inputEl)) {
     if (n < RATE_MIN || n > RATE_MAX) return null;
-    return n;
+    // 在這裡就截到 3 位，之後 clampFieldToast() 比對的才是真正會被保存的數字
+    return truncateToDecimals(n, MAX_RATE_DECIMALS);
   }
   const max = resolveFieldMax(inputEl);
   if (max !== null && n > max) return null;
@@ -6971,6 +6991,12 @@ function calcCommitValue(rawExpr) {
 function syncCalcFieldSideEffects(input) {
   if (!input) return;
   if (input.classList.contains('rate-val')) {
+    /* 一般貸款 #rateRows 與個人評估 #bdRateRows 的多段利率列共用 .rate-val，
+       只看 class 會把個人評估的輸入一併寫進一般貸款的 rateSegments——
+       使用者在個人評估打 7.7，一般貸款的第 1 段就被靜默改成 7.7。
+       所以改成依欄位實際所在容器分流；個人評估那邊由它自己的 change
+       監聽寫入 bdSegs，這裡不重複也不越界。 */
+    if (!input.closest('#rateRows')) return;
     const idx = +input.dataset.i;
     if (Number.isFinite(idx) && rateSegments[idx]) {
       rateSegments[idx].rate = getCalcFieldRawString(input) || '0';
@@ -10858,7 +10884,15 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     bdMethod = o.bdMethod === 'principal' ? 'principal' : 'amortize';
     bdRatioWanted = Number.isFinite(o.bdRatioWanted) ? o.bdRatioWanted : 80;
     bdRateType = o.bdRateType === 'multi' ? 'multi' : 'single';
-    if (Array.isArray(o.bdSegs) && o.bdSegs.length) bdSegs = JSON.parse(JSON.stringify(o.bdSegs));
+    if (Array.isArray(o.bdSegs) && o.bdSegs.length) {
+      /* 陣列是計算真正讀的來源，還原時要跟欄位走同一套截斷規則。
+         只改畫面不改陣列的話，排程算的仍是隱藏的第 4 位。 */
+      bdSegs = JSON.parse(JSON.stringify(o.bdSegs)).map((sg) => {
+        const n = Number(String(sg && sg.rate != null ? sg.rate : '').trim());
+        return Object.assign({}, sg, Number.isFinite(n)
+          ? { rate: String(truncateToDecimals(n, MAX_RATE_DECIMALS)) } : {});
+      });
+    }
     segsTouched = !!o.segsTouched;
     syncIncomeUnitField();
     FIELDS.forEach((id) => {
@@ -11847,13 +11881,23 @@ window.addEventListener('resize', () => {
   const BASE_OFFICIAL = 1.72;
   function loadBaseDefault() {
     try {
-      const v = parseFloat(localStorage.getItem(BASE_DEFAULT_KEY));
-      if (Number.isFinite(v) && v >= 0 && v <= 20) return v;
+      const stored = localStorage.getItem(BASE_DEFAULT_KEY);
+      const v = parseFloat(stored);
+      if (Number.isFinite(v) && v >= 0 && v <= 20) {
+        /* 這個鍵是獨立保存的，不會經過欄位的正規化流程，舊版可能留下 1.7209。
+           只把畫面顯示成 1.72 是不夠的——localStorage 仍握著隱藏的第 4 位，
+           下次載入又會帶回來。截斷後若與保存值不同就直接寫回，讓它一次乾淨。 */
+        const t = truncateToDecimals(v, MAX_RATE_DECIMALS);
+        if (String(t) !== String(stored ?? '').trim()) saveBaseDefault(t);
+        return t;
+      }
     } catch (_) {}
     return BASE_OFFICIAL;
   }
   function saveBaseDefault(v) {
-    try { localStorage.setItem(BASE_DEFAULT_KEY, String(v)); } catch (_) {}
+    const n = Number(v);
+    const out = Number.isFinite(n) ? truncateToDecimals(n, MAX_RATE_DECIMALS) : v;
+    try { localStorage.setItem(BASE_DEFAULT_KEY, String(out)); } catch (_) {}
   }
   const STEP_IDS = ['#ytR1', '#ytR2', '#ytR3', '#ytR4', '#ytR5'];
 
@@ -13387,6 +13431,11 @@ window.addEventListener('resize', () => {
   window.__ytRenderPeriod = renderPeriod;
 
   /* ---------- 啟動 ---------- */
+  /* 預設基準利率是獨立保存鍵，平常只有齒輪與「清空數值」會讀它。
+     舊版可能留下 1.7209 這種第 4 位，不在啟動時讀一次就永遠不會被清掉——
+     使用者要等到下次開齒輪才會合法化。loadBaseDefault() 現在會自我修復並寫回，
+     所以這裡呼叫一次就夠，合法值不會被動到。 */
+  loadBaseDefault();
   try { const c = localStorage.getItem(CLEAR_STORE); if (c) ytCleared = JSON.parse(c) || null; } catch (e) {}
   try { const s = localStorage.getItem(STORE); if (s) apply(JSON.parse(s)); } catch (e) {}
   syncChoices(); clampInputs(); syncSteps(false); markStale();
