@@ -4638,7 +4638,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.04L-b1";
+const APP_VERSION = "2026.09.04L-b1-r1";
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -5135,7 +5135,13 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if ($('#appAlert')?.classList.contains('show')) {
+    /* 提醒是最上層，這一次 Escape 到此為止。
+       舊版只 preventDefault 就 closeAppAlert()，同一個事件繼續往下傳，
+       各設定視窗的 document 監聽此時看到提醒已關、鍵盤也不在，就把設定一起 closeDlg()，
+       使用者被踢出設定頁、無法就地修正剛被擋下的值。 */
     e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
     closeAppAlert();
   }
 });
@@ -6571,9 +6577,40 @@ function ratToDecStr(r, maxScale) {
    999.9999999999999），之後重新解析仍然精確，不需要任何額外狀態。
    不能（例如 100/3）→ 寫浮點字串，同時把「這串浮點字其實代表哪個有理數」
    記進代換表。使用者接著按 ×3 時，精確值不會因為轉不成字串就被丟掉。 */
+/* 有理數 → 「截到 digits 位」的純十進位字串（不用科學記號）。
+   循環小數寫不成有限小數時用它產生一個可再解析的近似字串，
+   真正的精確值仍記在代換表裡，所以接續運算不會失準。 */
+function ratToPlainApproxStr(r, digits) {
+  if (!r || r.d === 0n) return null;
+  const neg = r.n < 0n;
+  const n = neg ? -r.n : r.n;
+  const scale = 10n ** BigInt(digits);
+  const scaled = (n * scale) / r.d;                 // 截斷，不進位
+  let s = scaled.toString().padStart(digits + 1, '0');
+  const cut = s.length - digits;
+  let out = s.slice(0, cut) + '.' + s.slice(cut);
+  out = out.replace(/0+$/, '');
+  if (out.endsWith('.')) out = out.slice(0, -1);
+  if (!/[1-9]/.test(out)) return null;              // 位數不夠、整串變成 0 就放棄
+  return (neg ? '-' : '') + out;
+}
+
 function calcCollapseWrite(floatVal, exactRat) {
   const s = ratToDecStr(exactRat);
   if (s !== null) return s;
+  /* 舊版直接把浮點值 String() 寫回算式。1÷3000000 的浮點是 3.3333333333333e-7，
+     字串帶 e 與負號，calcEvalExprRaw／calcEvalExprExact 的字元白名單與 tokenizer
+     都吃不下自己寫出來的東西，接著按 ×3000000 ＝ 就被判成「算式無效」而還原原值。
+     改成輸出純十進位近似字串；精確值照舊登記在代換表，接算仍以有理數為準。 */
+  if (exactRat) {
+    for (const digits of [20, 30, 40]) {
+      const approx = ratToPlainApproxStr(exactRat, digits);
+      if (approx !== null) {
+        calcKeyboard.exactSubs[approx] = exactRat;
+        return approx;
+      }
+    }
+  }
   const fs = calcNumberToExpr(floatVal);
   if (exactRat) calcKeyboard.exactSubs[fs] = exactRat;
   return fs;
@@ -7451,8 +7488,13 @@ function applyOverlayCardKeyboardSpace(el) {
   const kbTop = panel.getBoundingClientRect().top;
   const dlgTop = dlg.getBoundingClientRect().top;
   const padTop = 10, gap = 12;
-  // 至少留 200px，否則視窗小到看不到任何欄位反而更難用
-  const avail = Math.max(200, Math.round(kbTop - dlgTop - padTop - gap));
+  /* 實際可用高度就是鍵盤上緣到視窗起點之間那一段。
+     舊版硬給 Math.max(200, …)：320×568 時鍵盤高 382px，扣掉起點與間距只剩 164px，
+     卻被拉回 200px，卡片底部落到 210px，末欄（寬限期上限）已經捲到最大值仍差約 23px。
+     下限不能大於可用範圍——寧可卡片矮一點，也不能讓正在編輯的欄位永遠捲不出來。 */
+  const room = Math.round(kbTop - dlgTop - padTop - gap);
+  if (room < 48) return;                    // 空間小到放不下一列，維持原樣不硬套
+  const avail = Math.min(room, Math.max(120, room));
   dlg.classList.add('calc-kb-open');
   dlg.style.setProperty('--set-kb-max', avail + 'px');
 }
