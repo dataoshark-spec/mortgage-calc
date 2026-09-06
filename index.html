@@ -4638,7 +4638,10 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.04L-b1-r1";
+const APP_VERSION = "2026.09.04L";
+/* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
+   不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
+function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -6597,7 +6600,7 @@ function ratToPlainApproxStr(r, digits) {
 
 function calcCollapseWrite(floatVal, exactRat) {
   const s = ratToDecStr(exactRat);
-  if (s !== null) return s;
+  if (s !== null) { calcKeyboard.exactHead = null; return s; }   // 有限小數字串本身就精確
   /* 舊版直接把浮點值 String() 寫回算式。1÷3000000 的浮點是 3.3333333333333e-7，
      字串帶 e 與負號，calcEvalExprRaw／calcEvalExprExact 的字元白名單與 tokenizer
      都吃不下自己寫出來的東西，接著按 ×3000000 ＝ 就被判成「算式無效」而還原原值。
@@ -6606,25 +6609,27 @@ function calcCollapseWrite(floatVal, exactRat) {
     for (const digits of [20, 30, 40]) {
       const approx = ratToPlainApproxStr(exactRat, digits);
       if (approx !== null) {
-        calcKeyboard.exactSubs[approx] = exactRat;
+        // 塌縮一定把整條算式換成單一數字，所以它必然是新算式的第一項
+        calcKeyboard.exactHead = { text: approx, rat: exactRat };
         return approx;
       }
     }
   }
   const fs = calcNumberToExpr(floatVal);
-  if (exactRat) calcKeyboard.exactSubs[fs] = exactRat;
+  calcKeyboard.exactHead = exactRat ? { text: fs, rat: exactRat } : null;
   return fs;
 }
 
 /* 代換表版本的精確求值：數字字面值若命中代換表就用登記的有理數，
    否則照字面解析。正式提交一律走這條，所以提交值必定等於畫面上的算式。 */
 function calcEvalExprExactSub(expr) {
-  const subs = calcKeyboard.exactSubs;
-  if (!subs || !Object.keys(subs).length) return calcEvalExprExact(expr);
-  return calcEvalExprExact(expr, subs);
+  const head = calcKeyboard.exactHead;
+  // 首項必須原封不動擺在算式最前面，才採用它的精確值
+  if (!head || !String(expr).startsWith(head.text)) return calcEvalExprExact(expr);
+  return calcEvalExprExact(expr, head);
 }
 
-function calcEvalExprExact(expr, subs) {
+function calcEvalExprExact(expr, head) {
   try {
     if (!/^[0-9+\-*/.]*$/.test(expr)) return null;
     if (!expr) return ratMake(0n, 1n);
@@ -6671,8 +6676,9 @@ function calcEvalExprExact(expr, subs) {
       if (tk.t === 'n') {
         const neg = tk.v.charAt(0) === '-';
         const lit = neg ? tk.v.slice(1) : tk.v;
-        let d = (subs && Object.prototype.hasOwnProperty.call(subs, lit))
-          ? subs[lit] : ratFromDecStr(lit);
+        /* 只有第一個數字項才可能是塌縮結果；後段新輸入的同名字面照字面解析。 */
+        const isHead = head && vals.length === 0 && cur === null && lit === head.text;
+        let d = isHead ? head.rat : ratFromDecStr(lit);
         if (!d) return null;
         if (neg) d = ratMake(-d.n, d.d);
         if (cur === null) cur = d;
@@ -6898,7 +6904,11 @@ const calcKeyboard = {
   openSeq: 0,
   /* 無法寫成有限小數的塌縮結果：浮點字串 → 精確有理數。
      只在按 C 或重新開啟鍵盤時整批清空。 */
-  exactSubs: {},
+  /* 塌縮結果的精確值。舊版用「近似字串 → 有理數」全域對照表，字面一樣就被換掉：
+     300000000000000000001÷300000000000000000000＝ 寫回近似字串 "1" 並登記分數，
+     之後退格刪光重打的 1、或算式後段新輸入的減數 1，都會被換成那個舊分數。
+     改成只認「算式最前面那一項」，且一經編輯即永久失效。 */
+  exactHead: null,
   pristine: true,
   allowNegative: false,
   integerOnly: false,
@@ -7211,7 +7221,7 @@ function calcPress(key) {
        又被當成左值撈回來，70÷7% 按 C 再按 ＋5 會變成 1005。 */
     calcKeyboard.expr = '';
     calcKeyboard.exprFull = null;
-    calcKeyboard.exactSubs = {};
+    calcKeyboard.exactHead = null;
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
     return;
@@ -7220,7 +7230,14 @@ function calcPress(key) {
     /* 退格改動了畫面上的算式，先前 = 或 % 算出的隱藏結果就不再代表它。
        不清掉的話 calcCommitValue() 會優先採用舊值，畫面顯示 50 卻提交 500。
        代換表不必清：被截斷後的字串不會再命中任何 key，自然退回字面解析。 */
-    calcKeyboard.expr = cur.slice(0, -1);
+    const nextExpr = cur.slice(0, -1);
+    /* 退格動到首項（截短或整條刪光）就讓精確值「永久」失效，
+       否則刪光後重打相同字面又會 startsWith 命中舊分數。
+       只編輯後段運算元時首項未動，精度照樣保留。 */
+    if (calcKeyboard.exactHead && !nextExpr.startsWith(calcKeyboard.exactHead.text)) {
+      calcKeyboard.exactHead = null;
+    }
+    calcKeyboard.expr = nextExpr;
     calcKeyboard.exprFull = null;
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
@@ -7651,7 +7668,7 @@ function openCalcKeyboard(inputEl, options) {
   calcKeyboard.openSeq++;
   calcKeyboard.inputEl = inputEl;
   calcKeyboard.exprFull = null;
-  calcKeyboard.exactSubs = {};
+  calcKeyboard.exactHead = null;
   calcKeyboard.expr = getCalcFieldRawString(inputEl);
   // 記下開鍵盤前的合法值，算式無效時原值放回去，不留下 "100/0" 這種字串
   calcKeyboard.prevValid = getCalcFieldRawString(inputEl);
@@ -10622,7 +10639,7 @@ updateCalcButton();
 window.addEventListener('resize', scheduleFitPaymentTable);
 (function () {
   const v = document.getElementById('verLine');
-  if (v) v.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
+  if (v) v.textContent = VERSION_LINE_TEXT();
 })();
 
 /* ===== 個人評估：由收入反推可負擔的貸款、房價與月付 =====
@@ -13806,7 +13823,7 @@ window.addEventListener('resize', () => {
   if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
   const spEl = Y('#ytSpread'); if (spEl) spEl.value = SPREAD;   // 與計算共用同一常數
   const vl = Y('#ytVerLine');
-  if (vl) vl.textContent = '房屋貸款試算 · Cursor 更新日 ' + APP_VERSION;
+  if (vl) vl.textContent = VERSION_LINE_TEXT();
 })();
 
 </script>
