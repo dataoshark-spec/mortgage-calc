@@ -4638,7 +4638,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.04L";
+const APP_VERSION = "2026.09.06O";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -6579,10 +6579,10 @@ function ratToDecStr(r, maxScale) {
    能用有限小數精確表示 → 直接把精確字串寫進 expr（畫面立刻顯示 1000 而不是
    999.9999999999999），之後重新解析仍然精確，不需要任何額外狀態。
    不能（例如 100/3）→ 寫浮點字串，同時把「這串浮點字其實代表哪個有理數」
-   記進代換表。使用者接著按 ×3 時，精確值不會因為轉不成字串就被丟掉。 */
+   記成首項精確值。使用者接著按 ×3 時，精確值不會因為轉不成字串就被丟掉。 */
 /* 有理數 → 「截到 digits 位」的純十進位字串（不用科學記號）。
    循環小數寫不成有限小數時用它產生一個可再解析的近似字串，
-   真正的精確值仍記在代換表裡，所以接續運算不會失準。 */
+   真正的精確值仍記在首項 exactHead 裡，所以接續運算不會失準。 */
 function ratToPlainApproxStr(r, digits) {
   if (!r || r.d === 0n) return null;
   const neg = r.n < 0n;
@@ -6598,13 +6598,28 @@ function ratToPlainApproxStr(r, digits) {
   return (neg ? '-' : '') + out;
 }
 
+/* 首項精確值一旦被實際編輯就永久失效，之後字面又變回原字串也不能復活。
+   判斷依據不是「最後字串長什麼樣」——1 → 10 → 退格 → 1 的字面完全相同，
+   用 startsWith 或相等都看不出中間被編輯過。
+   改成看「這次按鍵會不會改到第一個運算元」：算式裡還沒有任何運算子，
+   就代表游標仍在首項上，任何數字、小數點或退格都是在改它。 */
+function calcTouchExactHead(base) {
+  if (!calcKeyboard.exactHead) return;
+  /* 算式最前面那個負號是「首項自己的符號」，不是後段二元運算子。
+     舊版直接對整段字串測「是否含 + - 乘 除」，"-1" 會被當成已經有運算子，
+     於是在負首項上追加數字或退格都不算編輯，舊精確值一直留著。 */
+  const s = String(base || '');
+  const body = s.charAt(0) === '-' ? s.slice(1) : s;
+  if (!/[+\-*/]/.test(body)) calcKeyboard.exactHead = null;
+}
+
 function calcCollapseWrite(floatVal, exactRat) {
   const s = ratToDecStr(exactRat);
   if (s !== null) { calcKeyboard.exactHead = null; return s; }   // 有限小數字串本身就精確
   /* 舊版直接把浮點值 String() 寫回算式。1÷3000000 的浮點是 3.3333333333333e-7，
      字串帶 e 與負號，calcEvalExprRaw／calcEvalExprExact 的字元白名單與 tokenizer
      都吃不下自己寫出來的東西，接著按 ×3000000 ＝ 就被判成「算式無效」而還原原值。
-     改成輸出純十進位近似字串；精確值照舊登記在代換表，接算仍以有理數為準。 */
+     改成輸出純十進位近似字串；精確值登記為首項 exactHead，接算仍以有理數為準。 */
   if (exactRat) {
     for (const digits of [20, 30, 40]) {
       const approx = ratToPlainApproxStr(exactRat, digits);
@@ -6620,7 +6635,7 @@ function calcCollapseWrite(floatVal, exactRat) {
   return fs;
 }
 
-/* 代換表版本的精確求值：數字字面值若命中代換表就用登記的有理數，
+/* 首項代換版本的精確求值：只有算式第一個運算元、且未被編輯過時才用登記的有理數，
    否則照字面解析。正式提交一律走這條，所以提交值必定等於畫面上的算式。 */
 function calcEvalExprExactSub(expr) {
   const head = calcKeyboard.exactHead;
@@ -6674,13 +6689,23 @@ function calcEvalExprExact(expr, head) {
     let mulOp = null;
     for (const tk of norm) {
       if (tk.t === 'n') {
-        const neg = tk.v.charAt(0) === '-';
-        const lit = neg ? tk.v.slice(1) : tk.v;
-        /* 只有第一個數字項才可能是塌縮結果；後段新輸入的同名字面照字面解析。 */
-        const isHead = head && vals.length === 0 && cur === null && lit === head.text;
-        let d = isHead ? head.rat : ratFromDecStr(lit);
+        /* 只有第一個數字項才可能是塌縮結果；後段新輸入的同名字面照字面解析。
+           比對必須用「含符號的完整字面」：舊版先把負號拆掉再拿 lit="1" 去比
+           head.text="-1"，永遠不相等，於是 −200% 算出的正確負分數被丟掉，
+           退回近似字面 −1 解析，(NUM/N−200%)×N＋N＋2 就從 1 變成 2。
+           head.rat 本身已經帶符號，命中後不能再取一次負，否則又變回正數。 */
+        const isHead = head && vals.length === 0 && cur === null && tk.v === head.text;
+        let d;
+        if (isHead) {
+          d = head.rat;
+        } else {
+          const neg = tk.v.charAt(0) === '-';
+          const lit = neg ? tk.v.slice(1) : tk.v;
+          d = ratFromDecStr(lit);
+          if (!d) return null;
+          if (neg) d = ratMake(-d.n, d.d);
+        }
         if (!d) return null;
-        if (neg) d = ratMake(-d.n, d.d);
         if (cur === null) cur = d;
         else if (mulOp === '*') cur = ratMul(cur, d);
         else if (mulOp === '/') { cur = ratDiv(cur, d); if (!cur) return null; }
@@ -6903,7 +6928,7 @@ const calcKeyboard = {
      跑的時候序號對不上就代表那一輪已經結束，直接放棄。 */
   openSeq: 0,
   /* 無法寫成有限小數的塌縮結果：浮點字串 → 精確有理數。
-     只在按 C 或重新開啟鍵盤時整批清空。 */
+     按 C、重開鍵盤、拒絕負值，或首項被編輯時失效。 */
   /* 塌縮結果的精確值。舊版用「近似字串 → 有理數」全域對照表，字面一樣就被換掉：
      300000000000000000001÷300000000000000000000＝ 寫回近似字串 "1" 並登記分數，
      之後退格刪光重打的 1、或算式後段新輸入的減數 1，都會被換成那個舊分數。
@@ -6983,10 +7008,10 @@ function calcCommitValue(rawExpr) {
   if (fullNum == null) fullNum = calcEvalExprRaw(raw);
 
   /* 嚴格整數欄位改用精確有理數決定「是不是整數」。
-     一律從畫面上的算式字串重新求值（數字若命中代換表就用登記的精確有理數），
+     一律從畫面上的算式字串重新求值（首項未被編輯時採用登記的精確有理數），
      所以提交值必定等於使用者當下看到的算式，不會有隱藏的舊結果。
      只有在算不出精確值時才退回浮點判斷，行為與改版前一致。 */
-  /* 正式求值來源只有一個：畫面上的算式 ＋ 代換表，用有理數精確計算。
+  /* 正式求值來源只有一個：畫面上的算式 ＋ 首項精確值，用有理數精確計算。
      舊版只有嚴格整數欄位才走精確路徑，其餘一律採 exprFull 這個浮點值——
      所以畫面顯示 10、正式值卻存 9.999999999999998 再截成 9.999。
      算不出精確值（無效算式等）才退回原本的浮點結果，行為不變。 */
@@ -7229,11 +7254,13 @@ function calcPress(key) {
   if (key === 'BACK') {
     /* 退格改動了畫面上的算式，先前 = 或 % 算出的隱藏結果就不再代表它。
        不清掉的話 calcCommitValue() 會優先採用舊值，畫面顯示 50 卻提交 500。
-       代換表不必清：被截斷後的字串不會再命中任何 key，自然退回字面解析。 */
+       首項精確值另由 calcTouchExactHead() 依「是否動到第一個運算元」處理，
+       不能只靠「截短後不會再命中」——刪光後重打相同字面還是會命中。 */
     const nextExpr = cur.slice(0, -1);
-    /* 退格動到首項（截短或整條刪光）就讓精確值「永久」失效，
-       否則刪光後重打相同字面又會 startsWith 命中舊分數。
-       只編輯後段運算元時首項未動，精度照樣保留。 */
+    /* 退格若落在首項上就讓精確值永久失效。
+       cur 還沒有運算子＝游標仍在首項，這一刀就是在改它；
+       只退掉後段運算元或後段運算子時首項未動，精度照常保留。 */
+    calcTouchExactHead(cur);
     if (calcKeyboard.exactHead && !nextExpr.startsWith(calcKeyboard.exactHead.text)) {
       calcKeyboard.exactHead = null;
     }
@@ -7244,21 +7271,39 @@ function calcPress(key) {
     return;
   }
   if (key === '=') {
+    /* 先取精確結果，再決定正負／零，最後才寫回。
+       舊版拿 calcEvalExprRaw() 的近似值判負：首項近似成 1 之後，
+       (D+1)÷D×D−D−0.5 近似算成 −0.5、(D+2)÷D×D−D−1 近似算成 −1，
+       正確答案其實是 0.5 與 1，卻被當成負值整條清空並真的存成空白；
+       反方向 (D+1)÷D−200%×D＋D 精確是 −1、近似卻是 0，真負值反而漏拒。
+       calcCommitValue() 本來就先用精確值修正再判負，所以「直接按完成」是對的——
+       ＝ 與 完成 兩條路徑本該用同一個來源。
+       精確分數已正規化（分母恆正），正負與零直接看分子，
+       不轉成 Number 再判，避免溢位或負零把符號弄丟。
+       算不出精確值（無效算式、除以 0）時維持原本的近似判斷與無效處理，不當成 0。 */
+    const exactVal = calcEvalExprExactSub(cur);
     const result = calcEvalExprRaw(cur);
-    if (result !== null) {
-      if (!calcKeyboard.allowNegative && result < 0) {
+    if (exactVal !== null || result !== null) {
+      const isNegative = exactVal !== null ? (exactVal.n < 0n) : (result < 0);
+      if (!calcKeyboard.allowNegative && isNegative) {
+        /* 這條路徑把整條算式清掉、等於重新開始，
+           舊的首項精確值不能留著——否則清空後重打的 1 又會命中它。
+           判負來源已改為精確分數，真正的負值仍照既有規則在這裡拒絕。 */
         calcKeyboard.expr = '';
         calcKeyboard.exprFull = null;
-            calcKeyboard.pristine = false;
+        calcKeyboard.exactHead = null;
+        calcKeyboard.pristine = false;
         calcUpdateDisplay();
         showToast('', { hint: true, hintHtml: NEGATIVE_INPUT_HINT_HTML });
         return;
       }
-      /* 已經被 % 塌縮過的算式，expr 只剩浮點字串（例如 999.9999999999999）。
-         此時再用字串重算精確值，等於把誤差當成事實記下來，會蓋掉 % 當下
-         算好的正確有理數。只有在沒有塌縮值時才重新解析。 */
-      calcKeyboard.exprFull = result;
-      calcKeyboard.expr = calcCollapseWrite(result, calcEvalExprExactSub(cur));
+      /* 寫回也以精確值為準。近似值只在算不出精確值時才頂替——
+         若拿符號相反的近似值去餵 calcCollapseWrite()，
+         碰到不能寫成有限小數的結果時，寫回字串的正負號會是錯的。 */
+      const exactNum = exactVal !== null ? ratToNumber(exactVal) : null;
+      const shown = (exactNum !== null && Number.isFinite(exactNum)) ? exactNum : result;
+      calcKeyboard.exprFull = shown;
+      calcKeyboard.expr = calcCollapseWrite(shown, exactVal);
     }
     calcKeyboard.pristine = false;
     calcUpdateDisplay();
@@ -7267,7 +7312,12 @@ function calcPress(key) {
   if (key === '%') {
     calcKeyboard.pristine = false;
     if (!cur || /[+\-*/]$/.test(cur)) return;
-    const m = cur.match(/^(.*?)([+\-*/])([0-9.]+)$/);
+    /* 二元運算子一定有左運算元，所以前綴不可為空。
+       舊版用 (.*?) 允許空前綴，"-1" 會被拆成 prefix=""、op="-"、lastNum="1"，
+       空前綴被當成 0，整條走成 0−0×比例 而變成 0。
+       改用 (.+?) 之後 "-1" 不再匹配，會落到單一數值分支，
+       負數自己除以 100，並沿用首項的精確分數。 */
+    const m = cur.match(/^(.+?)([+\-*/])([0-9.]+)$/);
     if (!m) {
       const n = parseFloat(cur);
       if (!isNaN(n)) {
@@ -7318,7 +7368,7 @@ function calcPress(key) {
       /* 能用有限小數精確表示就寫精確字串（70÷7% 寫成 1000 而非 999.9999999999999），
          這樣接下去的 +5 仍然精確。無法有限表示（例如 1000/3）才退回浮點字串。 */
       /* expr 在 % 與 = 當下就已經寫成正確字串（精確值，或已登記代換的浮點字串），
-         這裡不能再依 exprFull 重寫一次——那會蓋掉代換表的 key，
+         這裡不能再依 exprFull 重寫一次——那會蓋掉首項精確值對應的字串，
          1÷3%×3 的精確值就是在這一步被弄丟的。只要讓塌縮值失效即可。 */
       calcKeyboard.exprFull = null;
     }
@@ -7339,6 +7389,7 @@ function calcPress(key) {
     if (calcKeyboard.integerOnly) return;
     const lastNum = (base.match(/[0-9.]*$/) || [''])[0];
     if (lastNum.includes('.')) return;
+    calcTouchExactHead(base);
     calcKeyboard.expr = lastNum === '' ? base + '0.' : base + '.';
     calcUpdateDisplay();
     return;
@@ -7346,6 +7397,7 @@ function calcPress(key) {
   const lastNum = (base.match(/[0-9.]*$/) || [''])[0];
   const dotIdx = lastNum.indexOf('.');
   if (dotIdx >= 0 && lastNum.length - dotIdx - 1 >= calcKeyboard.maxDecimals) return;
+  calcTouchExactHead(base);          // 被上面 return 擋掉的按鍵沒有改到算式，不算編輯
   if (lastNum === '0' && key !== '.') {
     calcKeyboard.expr = base.slice(0, -1) + key;
   } else {
