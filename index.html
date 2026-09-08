@@ -3933,6 +3933,7 @@ if ("serviceWorker" in navigator) {
         <p class="yt-note">超出青安優惠額度的部分（以下簡稱 <span class="nw"><em>超額利率</em>／<em>一般利率</em>）</span>，以銀行一般貸款利率計息。<em>一般貸款的年限與寬限期固定跟隨新青安。</em></p>
       </div>
 
+      <div id="ytDataNotice" class="yt-note" role="status" hidden><p id="ytDataNoticeText"></p><button type="button" class="btn-add" id="ytDataConfirm" hidden>確認目前欄位與手動階梯</button></div>
       <div class="actions">
         <button type="button" class="btn-calc btn-calc-stale" id="ytCalc">尚未計算</button>
       </div>
@@ -4638,7 +4639,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.06O";
+const APP_VERSION = "2026.09.08U";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5372,6 +5373,11 @@ function loadPersistedFormState() {
    開關、齒輪設定、鎖頭）各自有獨立的 localStorage，維持目前狀態不被快照覆蓋。
    舊版快照裡的 luxSel 安全忽略。 */
 function applyFormState(state) {
+  /* 套用一份保存資料時，應比較該份資料記下的上限與目前審查環境。
+     啟動時 HTML 預設總價也會先更新 lastCapKey，不能拿那個暫時上限
+     清掉使用者原本合法的成數。舊存檔缺少比較值時仍由現值合法性把關。 */
+  lastCapKey.ratio = state.effectiveRatioCap === undefined ? null : state.effectiveRatioCap;
+  lastCapKey.grace = state.effectiveGraceCap === undefined ? null : state.effectiveGraceCap;
   setCalcFieldStoredValue($('#price'), state.price);
   setCalcFieldStoredValue($('#appraisal'), state.appraisal || '');
   setCalcFieldStoredValue($('#ratio'), state.ratio);
@@ -6805,17 +6811,31 @@ function clampFieldNumeric(inputEl, n) {
 
 function formatTruncNumber(n, maxDec = MAX_AMOUNT_DECIMALS) {
   const t = truncateToDecimals(n, maxDec);
-  const negative = t < 0;
-  const abs = Math.abs(t);
-  const intPart = Math.trunc(abs);
-  const frac = maxDec > 0 ? Math.trunc((abs - intPart) * Math.pow(10, maxDec) + 1e-9) : 0;
-  const intFmt = intPart.toLocaleString('zh-TW');
-  if (maxDec === 0 || frac === 0) return (negative ? '-' : '') + intFmt;
-  const dec = String(frac).padStart(maxDec, '0').replace(/0+$/, '');
-  return (negative ? '-' : '') + intFmt + (dec ? '.' + dec : '');
+  if (!Number.isFinite(t)) return String(t);
+  let text = String(Math.abs(t));
+  if (/[eE]/.test(text)) {
+    const [digits, power] = text.toLowerCase().split('e');
+    const point = (digits.indexOf('.') < 0 ? digits.length : digits.indexOf('.')) + Number(power);
+    const all = digits.replace('.', '');
+    text = point <= 0 ? '0.' + '0'.repeat(-point) + all
+      : point >= all.length ? all + '0'.repeat(point - all.length)
+      : all.slice(0, point) + '.' + all.slice(point);
+  }
+  const [whole, fraction = ''] = text.split('.');
+  const dec = fraction.slice(0, maxDec).replace(/0+$/, '');
+  return (t < 0 ? '-' : '') + whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (dec ? '.' + dec : '');
+}
+function fmtWan(yuan) {
+  // 整數元以十進位位移顯示，不從二進位除法餘數再次截小數。
+  if (Number.isSafeInteger(yuan)) {
+    const digits = String(Math.abs(yuan)).padStart(5, '0');
+    const whole = digits.slice(0, -4).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const fraction = digits.slice(-4).replace(/0+$/, '');
+    return (yuan < 0 ? '-' : '') + whole + (fraction ? '.' + fraction : '');
+  }
+  return formatTruncNumber(yuan / 10000, MAX_AMOUNT_DECIMALS);
 }
 
-function fmtWan(yuan) { return formatTruncNumber(yuan / 10000, MAX_AMOUNT_DECIMALS); }
 
 const TOTAL_AMOUNT_UNIT_KEY = 'mortgage-total-unit-v1';
 let totalAmountUnit = 'yuan';
@@ -6977,6 +6997,22 @@ function calcKeyboardDisplayExpr(expr) {
     const dec = calcKeyboard.maxDecimals == null ? MAX_AMOUNT_DECIMALS : calcKeyboard.maxDecimals;
     if (typing[1].length <= dec) return s;
   }
+  const head = calcKeyboard.exactHead;
+  if (calcKeyboard.strictInteger) {
+    const exact = head && head.text === s ? head.rat : calcEvalExprExact(s);
+    if (exact && !ratIsInt(exact)) {
+      /* 塌縮字串可能已近似成整數（例如 1＋1÷10^21 寫成 "1"）。
+         非整數部分至少為 1／分母，取分母位數就能顯示非零小數；
+         只重建預覽，不改 expr 或首項精確值，接算與提交仍走原路徑。 */
+      const digits = Math.max(20, exact.d.toString().length);
+      return ratToPlainApproxStr(exact, digits) || s;
+    }
+  }
+  if (!calcKeyboard.strictInteger && head && head.text === s) {
+    const dec = calcKeyboard.integerOnly ? 0 : calcKeyboard.maxDecimals;
+    const exactDisplay = calcExactAtPrecision(head.rat, dec, false);
+    if (Number.isFinite(exactDisplay)) return String(exactDisplay);
+  }
   const n = Number(s);
   if (!Number.isFinite(n)) return s;
   /* 嚴格整數欄位算出小數時照實顯示 2279.79，使用者才看得懂為什麼按完成會被退回。
@@ -6989,6 +7025,45 @@ function calcUpdateDisplay() {
   const input = calcKeyboard.inputEl;
   if (!input) return;
   input.value = calcKeyboardDisplayExpr(calcKeyboard.expr);
+}
+
+/* 正式提交的範圍與小數政策必須在有理數上完成，最後才轉 Number。
+   例如 2.85−1÷10^17 先轉 Number 會變成 2.85，再截三位就錯過應有的 2.849；
+   接近 0、利率邊界與欄位上限的值也不能因浮點捨入而越過驗證。 */
+function calcCompareExactToNumber(r, n) {
+  const p = decimalParts(n);
+  if (!r || !p) return null;
+  const limit = ratFromDecStr(p.int + (p.frac ? '.' + p.frac : ''));
+  if (!limit) return null;
+  if (p.neg) limit.n = -limit.n;
+  const diff = r.n * limit.d - limit.n * r.d;
+  return diff < 0n ? -1 : diff > 0n ? 1 : 0;
+}
+
+function calcExactOutsideFieldRange(input, r) {
+  if (isRateInput(input)) {
+    return calcCompareExactToNumber(r, RATE_MIN) < 0
+      || calcCompareExactToNumber(r, RATE_MAX) > 0;
+  }
+  const max = resolveFieldMax(input);
+  return max !== null && calcCompareExactToNumber(r, max) > 0;
+}
+
+function calcExactAtPrecision(r, decimals, round) {
+  const dec = Math.max(0, Math.min(20, Math.trunc(decimals)));
+  const scale = 10n ** BigInt(dec);
+  const neg = r.n < 0n;
+  const scaled = (neg ? -r.n : r.n) * scale;
+  let units = scaled / r.d;
+  if (round && (scaled % r.d) * 2n >= r.d) units++;
+  const normalized = ratMake(neg ? -units : units, scale);
+  return Number(ratToDecStr(normalized, 20));
+}
+
+function calcNormalizeExactForField(input, r) {
+  const round = input.dataset.calcInteger !== 'true' && !isRateInput(input)
+    && TRUNCATE_FIELD_IDS.indexOf(input.id) < 0;
+  return calcExactAtPrecision(r, visibleDecimalsOf(input), round);
 }
 
 function calcCommitValue(rawExpr) {
@@ -7023,8 +7098,8 @@ function calcCommitValue(rawExpr) {
     if (exactInt !== null) fullNum = exactInt;
   }
 
-  if (fullNum !== null) {
-    if (!calcKeyboard.allowNegative && fullNum < 0) {
+  if (fullNum !== null || exactRat) {
+    if (!calcKeyboard.allowNegative && (exactRat ? exactRat.n < 0n : fullNum < 0)) {
       setCalcFieldStoredValue(input, '');
       showToast('', { hint: true, hintHtml: NEGATIVE_INPUT_HINT_HTML });
       input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -7041,13 +7116,14 @@ function calcCommitValue(rawExpr) {
     const strictReject = isStrictIntegerField(input)
       && (exactRat ? (!ratIsInt(exactRat) || ratToSafeInt(exactRat) === null)
                    : !Number.isInteger(fullNum));
+    /* 第2批產品決策：嚴格整數欄算出小數時提示並「清空」value／raw／保存，
+       不再還原開鍵盤前的舊值；依賴該欄的舊結果也要一起失效。 */
     if (strictReject) {
-      const prevInt = calcKeyboard.prevValid;
-      if (prevInt !== '' && prevInt != null) setCalcFieldStoredValue(input, prevInt);
-      else clearCalcField(input);
+      /* 第2批產品決策：嚴格整數欄算出小數時提示並清空 value／raw／保存，
+         不再還原開鍵盤前的舊值；依賴該欄的舊結果一併失效。 */
+      clearCalcField(input);
       showToast('', { hint: true, multiline: true,
-        hintHtml: hintLines(strictIntegerHint(input),
-          (prevInt !== '' && prevInt != null) ? '已還原上一個數值' : '已保持空白') });
+        hintHtml: hintLines(strictIntegerHint(input), '已清空，請重新輸入') });
       calcKeyboard.exprFull = null;
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -7056,7 +7132,7 @@ function calcCommitValue(rawExpr) {
     }
     /* 齒輪的成數上限：0% 會讓主表永遠算不出來（主表成數必須大於 0），
        是「設定得起來但永遠無效」的矛盾。留白才是「不設限」的正確表達方式。 */
-    if (isCapRatioInput(input) && fullNum < 1) {
+    if (isCapRatioInput(input) && (exactRat ? calcCompareExactToNumber(exactRat, 1) < 0 : fullNum < 1)) {
       clearCalcField(input);
       showToast('', { hint: true, multiline: true,
         hintHtml: hintLines('成數上限請輸入 1%～100%', '留白代表不設限') });
@@ -7067,7 +7143,23 @@ function calcCommitValue(rawExpr) {
       return;
     }
     const beforeStr = String(fullNum);
-    const clampedNum = clampFieldNumeric(input, fullNum);
+    /* 負值改在正式提交才驗（第2批決策）：不允許負數的欄位算出負數時，
+       提示並清空，不還原開鍵盤前的舊值。 */
+    if (!calcKeyboard.allowNegative && Number.isFinite(fullNum) && fullNum < 0) {
+      clearCalcField(input);
+      showToast('', { hint: true, multiline: true,
+        hintHtml: hintLines('此欄位不接受負數', '已清空，請重新輸入') });
+      calcKeyboard.exprFull = null;
+      calcKeyboard.exactHead = null;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      syncCalcFieldSideEffects(input);
+      return;
+    }
+    const clampedNum = exactRat
+      ? (calcExactOutsideFieldRange(input, exactRat) ? null
+        : clampFieldNumeric(input, calcNormalizeExactForField(input, exactRat)))
+      : clampFieldNumeric(input, fullNum);
     if (clampedNum === null) {
       setCalcFieldStoredValue(input, '');
       clampFieldToast(input, beforeStr, '');
@@ -7284,7 +7376,10 @@ function calcPress(key) {
     const exactVal = calcEvalExprExactSub(cur);
     const result = calcEvalExprRaw(cur);
     if (exactVal !== null || result !== null) {
-      const isNegative = exactVal !== null ? (exactVal.n < 0n) : (result < 0);
+      /* 第2批產品決策：＝ 只計算並照實顯示，負數也保留可接算狀態，
+         不在這裡清空或還原。負值是否可存，改由正式提交時驗。
+         精確有理數仍是結果來源，只是不再拿它當「立即拒絕」的依據。 */
+      const isNegative = false;
       if (!calcKeyboard.allowNegative && isNegative) {
         /* 這條路徑把整條算式清掉、等於重新開始，
            舊的首項精確值不能留著——否則清空後重打的 1 又會命中它。
@@ -7726,9 +7821,18 @@ function openCalcKeyboard(inputEl, options) {
   calcKeyboard.prevValid = getCalcFieldRawString(inputEl);
   calcKeyboard.pristine = true;
   calcKeyboard.allowNegative = !!options.allowNegative;
-  calcKeyboard.integerOnly = inputEl.dataset.calcInteger === 'true';
+  /* 嚴格整數欄（price／appraisal／ratio）正式值仍只收整數，
+     但計算過程要能按小數點、輸入 0.6／0.73 這類運算元，
+     所以不套 integer-mode（那會隱藏小數鍵並在中途截位）。
+     整數限制改由提交時驗，見 calcCommitValue()。 */
+  calcKeyboard.integerOnly = inputEl.dataset.calcInteger === 'true'
+    && !isStrictIntegerField(inputEl);
   calcKeyboard.strictInteger = isStrictIntegerField(inputEl);
-  calcKeyboard.maxDecimals = getFieldMaxDecimals(inputEl);
+  /* 嚴格整數欄的正式值仍只收整數，但計算過程要能輸入 0.6／0.73 這類運算元，
+     所以鍵盤的可輸入小數位不能用欄位的 0。只影響輸入過程，
+     提交仍由 calcCommitValue() 的嚴格整數檢查把關。 */
+  calcKeyboard.maxDecimals = isStrictIntegerField(inputEl)
+    ? MAX_AMOUNT_DECIMALS : getFieldMaxDecimals(inputEl);
   inputEl.classList.add('calc-active');
   renderCalcSheet();
   syncCalcKeyboardLayout();
@@ -7926,16 +8030,37 @@ function RES() {
   }
   return document.getElementById('results');
 }
-function exportFileName(ext) {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
-  const tag = getExportFileNameTags().join('_');
+// 匯出啟動時一次固定內容、分項、格式與顏色；後續等待只讀這份快照。
+function createExportContext() {
   const mode = document.body.dataset.mode;
-  const prefix = mode === 'youth' ? '新青安3.0試算'
-    : mode === 'burden' ? '個人購屋能力評估' : '房屋貸款試算';
-  return `${prefix}_${stamp}_${tag}.${ext}`;
+  if (!hasValidExportResult(mode)) return null;
+  const text = getShareText();
+  if (!text) return null;
+  const results = RES(), template = results.cloneNode(true);
+  template.dataset.exportMode = mode;
+  const includeDetail = getExportIncludeDetail(), cum = isCumInterestVisible();
+  const style = getComputedStyle(results);
+  for (let i = 0; i < style.length; i++) {
+    const prop = style[i];
+    if (prop.startsWith('--')) template.style.setProperty(prop, style.getPropertyValue(prop));
+  }
+  forceSpecRuleInExportClone(template);
+  prepareExportAprBlock(template);
+  const prefix = mode === 'youth' ? '新青安3.0試算' : mode === 'burden' ? '個人購屋能力評估' : '房屋貸款試算';
+  const detailScope = mode === 'youth' ? (template.querySelector('#ytDetailSeg .active')?.textContent.trim() || '合計') : '';
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const tags = ['重點摘要', ...(includeDetail ? ['還款明細', ...(cum ? ['累積利息'] : [])] : [])];
+  return Object.freeze({mode, text, template, includeDetail, cum, detailScope,
+    width: results.offsetWidth, title: prefix + (mode === 'burden' ? '' : '結果'), url: location.href,
+    filename: prefix + '_' + stamp + '_' + tags.join('_')});
 }
+function exportFileName(ext, context) {
+  const snapshot = context || createExportContext();
+  if (!snapshot) throw new Error('no valid result');
+  return snapshot.filename + '.' + ext;
+}
+
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -8071,44 +8196,40 @@ function renderConditions() {
   }
 }
 
+function plainExportText(html) {
+  const node = document.createElement('div'); node.innerHTML = html;
+  return (node.textContent || '').replace(/\s+/g, ' ').trim();
+}
+function periodShareLines(table) {
+  return Array.from(table?.querySelectorAll('.payment-row') || []).map(row => {
+    const range = row.querySelector('.period-range');
+    const period = range ? Array.from(range.childNodes).map(n => n.textContent.trim()).filter(Boolean).join(' · ') : '';
+    const rate = row.querySelector('.period-mid')?.textContent.trim().replace(/\s+/g, ' ') || '';
+    const amount = row.querySelector('.period-amount')?.textContent.trim() || '';
+    return period + '　' + rate + '　' + amount;
+  });
+}
+function hasValidExportResult(mode = document.body.dataset.mode) {
+  const root = document.getElementById(mode === 'youth' ? 'ytResults' : mode === 'burden' ? 'bdResults' : 'results');
+  if (!root?.classList.contains('show')) return false;
+  if (mode === 'youth' && typeof window.__ytHasValidResult === 'function') return window.__ytHasValidResult();
+  if (mode === 'burden') return typeof window.__bdHasValidResult !== 'function' || window.__bdHasValidResult();
+  if (mode === 'general') return calcSynced && !calcPending;
+  return true;
+}
 function getShareText() {
-  if (document.body.dataset.mode === 'youth' && typeof window.__ytShareText === 'function') {
-    // 新青安有自己的結果來源，不得回頭讀一般貸款的 resTotal／rateSegments
-    const t = window.__ytShareText();
-    if (t) return t;
-  }
-  if (document.body.dataset.mode === 'burden' && typeof window.__bdShareText === 'function') {
-    return window.__bdShareText();
-  }
-  const condLines = buildConditionsRows().map(([label, value]) => `${label}：${value}`);
-  const lines = [
-    '房屋貸款試算結果',
-    '',
-    '【試算條件】',
-    ...condLines,
-    '',
-    `貸款總額：${$('#resTotal').textContent}`,
-    `還款期間：${$('#resTerm').textContent}`
-  ];
-  /* 每月還款是分享時最重要的一段，直接取畫面已算好的分組，
-     不另寫一套月付公式，文字與畫面才不會對不起來。 */
-  if (Array.isArray(lastPeriodGroups) && lastPeriodGroups.length) {
-    lines.push('', '【每月還款】');
-    lastPeriodGroups.forEach((g) => {
-      const range = g.start === g.end
-        ? `第 ${fmtPeriod(g.start)} 期`
-        : `第 ${fmtPeriod(g.start)}～${fmtPeriod(g.end)} 期`;
-      const tags = [];
-      if (g.isGrace) tags.push('寬限期');
-      if (g.rateText) tags.push('年利率 ' + g.rateText);
-      lines.push(`${range}：每月 ${g.paymentDisplay} 元` + (tags.length ? `（${tags.join('，')}）` : ''));
-    });
-  }
-  if (shouldShowAprFooter()) {
-    lines.push(formatAprExportLine());
-  }
+  const mode = document.body.dataset.mode;
+  if (!hasValidExportResult(mode)) return null;
+  if (mode === 'youth') return typeof window.__ytShareText === 'function' ? window.__ytShareText() : null;
+  if (mode === 'burden') return typeof window.__bdShareText === 'function' ? window.__bdShareText() : null;
+  const condLines = buildConditionsRows().map(([label, value]) => plainExportText(label) + '：' + plainExportText(value));
+  const lines = ['房屋貸款試算結果', '', '【試算條件】', ...condLines, '',
+    '貸款總額：' + $('#resTotal').textContent, '還款期間：' + $('#resTerm').textContent,
+    '', '【每月還款】', ...periodShareLines($('#periodLines'))];
+  if (shouldShowAprFooter()) lines.push(formatAprExportLine());
   return lines.join('\n');
 }
+
 
 const EXPORT_BOTTOM_PAD_CSS = 24;
 const PDF_PAGE_BOTTOM_PAD_CSS = 36;
@@ -8224,14 +8345,13 @@ function getPdfExportFinalizeOpts(rootEl) {
   };
 }
 
-function getCanvasCssScale(canvas) {
-  const cssWidth = RES()?.offsetWidth;
+function getCanvasCssScale(canvas, cssWidth) {
   if (cssWidth && cssWidth > 0) return canvas.width / cssWidth;
   return EXPORT_CANVAS_SCALE;
 }
 
-function finalizePdfPageCanvas(canvas) {
-  const scale = getCanvasCssScale(canvas);
+function finalizePdfPageCanvas(canvas, cssWidth) {
+  const scale = getCanvasCssScale(canvas, cssWidth);
   const trimmed = trimExportCanvasVertical(canvas, scale);
   return padExportCanvasBottom(trimmed, Math.round(PDF_PAGE_BOTTOM_PAD_CSS * scale));
 }
@@ -8353,25 +8473,27 @@ async function waitExportLayout() {
 }
 
 function prepareExportAprBlock(clone) {
-  const aprBlock = clone.querySelector('#aprBlock');
-  if (shouldShowAprFooter()) {
-    aprBlock?.classList.remove('hidden');
-    const screen = aprBlock?.querySelector('.apr-footer-screen');
-    const exp = aprBlock?.querySelector('.apr-footer-export');
+  clone.querySelectorAll('.apr-block').forEach(block => {
+    const screen = block.querySelector('.apr-footer-screen');
+    const value = screen?.querySelector('#resApr, #ytResApr')?.textContent.trim();
+    if (block.classList.contains('hidden') || !value || value === '—') { block.remove(); return; }
+    let exp = block.querySelector('.apr-footer-export');
+    if (!exp) {
+      exp = document.createElement('div'); exp.className = 'apr-footer apr-footer-export';
+      const label = document.createElement('span'); label.className = 'apr-label';
+      label.textContent = block.id === 'ytAprBlock' ? '換算年利率（全案合計）' : '換算年利率';
+      const val = document.createElement('span'); val.className = 'apr-val'; val.textContent = value;
+      exp.append(label, val); block.appendChild(exp);
+    } else {
+      const val = exp.querySelector('#resAprExport'); if (val) val.textContent = value;
+    }
     if (screen) screen.style.display = 'none';
-    if (exp) exp.style.display = 'flex';
-    const exportVal = aprBlock?.querySelector('#resAprExport');
-    if (exportVal) exportVal.textContent = $('#resApr')?.textContent || '';
-  } else {
-    aprBlock?.remove();
-  }
+    exp.style.display = 'flex';
+  });
 }
-
-// 新青安面板的「換算年利率」只有螢幕版版面，匯出時 .apr-footer-screen 會被隱藏，
-// 整塊高度歸零卻仍保留 14px 上距，在附註與下一個標題之間留下幽靈空白。
 function dropEmptyAprBlockInExportClone(clone) {
-  clone.querySelectorAll('.apr-block').forEach((block) => {
-    if (!block.querySelector('.apr-footer-export')) block.remove();
+  clone.querySelectorAll('.apr-block').forEach(block => {
+    if (block.classList.contains('hidden') || !block.querySelector('.apr-footer-export')) block.remove();
   });
 }
 
@@ -8396,15 +8518,15 @@ function parseYearItemYear(el) {
   return m ? +m[1] : 0;
 }
 
-function getYearItemsInRange(fromYear, toYear) {
-  return Array.from($$(detailAccordionSel() + ' .year-item')).filter((el) => {
+function getYearItemsInRange(fromYear, toYear, context) {
+  return Array.from(context.template.querySelectorAll('.year-item')).filter((el) => {
     const y = parseYearItemYear(el);
     return y >= fromYear && y <= toYear;
   });
 }
 
-function getDetailYearGroups() {
-  const years = Array.from($$(detailAccordionSel() + ' .year-item'))
+function getDetailYearGroups(context) {
+  const years = Array.from(context.template.querySelectorAll('.year-item'))
     .map(parseYearItemYear)
     .filter((y) => y > 0)
     .sort((a, b) => a - b);
@@ -8418,21 +8540,19 @@ function getDetailYearGroups() {
   return groups;
 }
 
-async function buildExportSummaryPart() {
-  const results = RES();
+async function buildExportSummaryPart(context) {
+  const results = context.template;
   const clone = results.cloneNode(true);
   clone.removeAttribute('id');
   clone.classList.add('export-capture', 'export-pdf-part', 'show');
-  clone.style.width = results.offsetWidth + 'px';
-  clone.style.maxWidth = results.offsetWidth + 'px';
+  clone.style.width = context.width + 'px';
+  clone.style.maxWidth = context.width + 'px';
   clone.querySelector('.export-section')?.remove();
   clone.querySelector('.detail-eye-btn')?.remove();
   clone.querySelector('.detail-section')?.remove();
   // 三個面板的條件區 id 各自不同，用 class 才不會只對一般貸款生效
   clone.querySelectorAll('.conditions-box').forEach((box) => box.classList.remove('collapsed'));
-  forceSpecRuleInExportClone(clone);
   dropEmptyAprBlockInExportClone(clone);
-  prepareExportAprBlock(clone);
   return mountExportNode(clone);
 }
 
@@ -8442,7 +8562,7 @@ function formatExportDetailYearRange(from, to) {
   return `（第 ${fromStr} 年～${toStr} 年）`;
 }
 
-function buildExportDetailHead(group, isFirstDetailPage) {
+function buildExportDetailHead(group, isFirstDetailPage, context) {
   const head = document.createElement('div');
   head.className = 'export-detail-head';
 
@@ -8454,6 +8574,7 @@ function buildExportDetailHead(group, isFirstDetailPage) {
     titleRow.innerHTML = '<h3>還款明細</h3>';
   }
 
+  if (context.detailScope) titleRow.querySelector('h3').textContent = '還款明細 · ' + context.detailScope;
   const rangeRow = document.createElement('div');
   rangeRow.className = 'export-detail-range-sub';
   rangeRow.textContent = formatExportDetailYearRange(group.from, group.to);
@@ -8463,20 +8584,22 @@ function buildExportDetailHead(group, isFirstDetailPage) {
   return head;
 }
 
-async function buildExportDetailPart(group, isFirstDetailPage) {
-  const width = RES().offsetWidth;
+async function buildExportDetailPart(group, isFirstDetailPage, context) {
+  const width = context.width;
   const shell = document.createElement('div');
   shell.className = 'card results export-capture export-pdf-part show';
+  shell.dataset.exportMode = context.mode;
+  shell.style.cssText = context.template.style.cssText;
   shell.style.width = width + 'px';
   shell.style.maxWidth = width + 'px';
 
   const detailSection = document.createElement('div');
-  detailSection.className = 'detail-section' + (isCumInterestVisible() ? ' show-cum' : '');
-  detailSection.appendChild(buildExportDetailHead(group, isFirstDetailPage));
+  detailSection.className = 'detail-section' + (context.cum ? ' show-cum' : '');
+  detailSection.appendChild(buildExportDetailHead(group, isFirstDetailPage, context));
 
   const accordion = document.createElement('div');
   accordion.className = 'year-accordion';
-  getYearItemsInRange(group.from, group.to).forEach((el) => {
+  getYearItemsInRange(group.from, group.to, context).forEach((el) => {
     const item = el.cloneNode(true);
     item.classList.add('open');
     accordion.appendChild(item);
@@ -8498,6 +8621,7 @@ async function captureExportRootSlices(rootEl, opts) {
 
   if (!needsChunkedCapture) {
     const canvas = await html2canvas(rootEl, {
+      onclone: doc => { doc.body.dataset.mode = rootEl.dataset.exportMode; },
       scale,
       backgroundColor: '#ffffff',
       useCORS: true,
@@ -8539,6 +8663,7 @@ async function captureExportRootSlices(rootEl, opts) {
       rootEl.style.marginTop = (-top) + 'px';
       await waitExportLayout();
       const sliceCanvas = await html2canvas(viewport, {
+        onclone: doc => { doc.body.dataset.mode = rootEl.dataset.exportMode; },
         scale,
         backgroundColor: '#ffffff',
         useCORS: true,
@@ -8565,13 +8690,15 @@ async function captureExportRoot(rootEl, opts) {
 async function captureExportRootByYearItems(rootEl, opts) {
   const yearItems = rootEl.querySelectorAll('.year-item');
   if (!yearItems.length) return [await captureExportRoot(rootEl, opts)];
-  const width = rootEl.offsetWidth || RES().offsetWidth;
+  const width = rootEl.offsetWidth || parseFloat(rootEl.style.width);
   const detailSectionSrc = rootEl.querySelector('.detail-section');
   const detailHead = rootEl.querySelector('.export-detail-head');
   const canvases = [];
   for (let i = 0; i < yearItems.length; i++) {
     const shell = document.createElement('div');
     shell.className = rootEl.className;
+    shell.dataset.exportMode = rootEl.dataset.exportMode;
+    shell.style.cssText = rootEl.style.cssText;
     shell.style.width = width + 'px';
     shell.style.maxWidth = width + 'px';
     const detailSection = document.createElement('div');
@@ -8605,21 +8732,21 @@ async function captureExportRootForPdf(rootEl) {
   }
 }
 
-async function captureResultsPdfCanvases() {
-  if (!getExportIncludeDetail()) {
+async function captureResultsPdfCanvases(context) {
+  if (!context.includeDetail) {
     // 與「含還款明細」相同：依內容墨水邊界水平置中，左右留白一致
-    return normalizePdfCanvases(flattenCanvases([await captureResultsRawCanvas()]));
+    return normalizePdfCanvases(flattenCanvases([await captureResultsRawCanvas(context)]));
   }
   const canvases = [];
-  const summaryNode = await buildExportSummaryPart();
+  const summaryNode = await buildExportSummaryPart(context);
   try {
     canvases.push(...await captureExportRootForPdf(summaryNode));
   } finally {
     summaryNode.remove();
   }
-  const groups = getDetailYearGroups();
+  const groups = getDetailYearGroups(context);
   for (let i = 0; i < groups.length; i++) {
-    const detailNode = await buildExportDetailPart(groups[i], i === 0);
+    const detailNode = await buildExportDetailPart(groups[i], i === 0, context);
     try {
       canvases.push(...await captureExportRootForPdf(detailNode));
     } finally {
@@ -8629,15 +8756,15 @@ async function captureResultsPdfCanvases() {
   return normalizePdfCanvases(canvases);
 }
 
-async function buildExportCaptureNode() {
-  const results = RES();
-  const includeDetail = getExportIncludeDetail();
+async function buildExportCaptureNode(context) {
+  const results = context.template;
+  const includeDetail = context.includeDetail;
   const clone = results.cloneNode(true);
   clone.removeAttribute('id');
   clone.classList.add('export-capture', 'export-offscreen-clone', 'show');
   clone.setAttribute('aria-hidden', 'true');
-  clone.style.width = results.offsetWidth + 'px';
-  clone.style.maxWidth = results.offsetWidth + 'px';
+  clone.style.width = context.width + 'px';
+  clone.style.maxWidth = context.width + 'px';
 
   clone.querySelector('.export-section')?.remove();
   clone.querySelector('.detail-eye-btn')?.remove();
@@ -8657,19 +8784,17 @@ async function buildExportCaptureNode() {
     clone.querySelectorAll('.year-item').forEach((el) => el.classList.add('open'));
   }
 
-  forceSpecRuleInExportClone(clone);
   dropEmptyAprBlockInExportClone(clone);
-  prepareExportAprBlock(clone);
 
   document.body.appendChild(clone);
   await waitExportLayout();
   return clone;
 }
 
-function polishSummaryExportCanvas(rawCanvas) {
+function polishSummaryExportCanvas(rawCanvas, cssWidth) {
   // 與含明細 PDF 同一套水平置中，避免僅摘要右側空白偏多
   const centered = centerPdfCanvas(rawCanvas, rawCanvas.width);
-  return finalizePdfPageCanvas(centered);
+  return finalizePdfPageCanvas(centered, cssWidth);
 }
 
 const SUMMARY_EXPORT_CAPTURE_OPTS = {
@@ -8679,26 +8804,27 @@ const SUMMARY_EXPORT_CAPTURE_OPTS = {
   canvasScale: EXPORT_CANVAS_SCALE_SUMMARY
 };
 
-async function captureResultsRawCanvas() {
+async function captureResultsRawCanvas(context) {
   if (typeof html2canvas !== 'function') {
     throw new Error('html2canvas not loaded');
   }
   let clone = null;
   try {
-    clone = await buildExportCaptureNode();
+    clone = await buildExportCaptureNode(context);
     return await captureExportRoot(clone, SUMMARY_EXPORT_CAPTURE_OPTS);
   } finally {
     if (clone?.parentElement === document.body) clone.remove();
   }
 }
 
-async function captureResultsCanvas() {
-  return polishSummaryExportCanvas(await captureResultsRawCanvas());
+async function captureResultsCanvas(context) {
+  return polishSummaryExportCanvas(await captureResultsRawCanvas(context), context.width);
 }
 
 async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
   if (exportBusy) return;
-  if (!RES().classList.contains('show')) {
+  const context = createExportContext();
+  if (!context) {
     showToast('', { html: toastLines('請先完成 ' + tEm('試算')) });
     return;
   }
@@ -8708,11 +8834,11 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
   exportBusy = true;
   if (activeBtn && busyLabel) setExportBtnBusy(activeBtn, busyLabel);
   syncExportFormatButtons();
-  $$('.export-detail-btn').forEach((btn) => { btn.disabled = true; });
   if (busyMsg) showToast(busyMsg);
   try {
-    await task();
+    await task(context);
   } catch (err) {
+    if (err?.name === 'AbortError') return;
     console.error(err);
     const msg = String(err?.message || '');
     if (msg.includes('canvas too large')) {
@@ -8724,8 +8850,7 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
     if (activeBtn) clearExportBtnBusy(activeBtn);
     exportBusy = false;
     syncExportFormatButtons();
-    $$('.export-detail-btn').forEach((btn) => { btn.disabled = false; });
-    window.scrollTo(savedX, savedY);
+    if (document.body.dataset.mode === context.mode) window.scrollTo(savedX, savedY);
   }
 }
 
@@ -8759,14 +8884,14 @@ function fitCanvasToPdfPage(canvas) {
   return { pageW, pageH, imgData: canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY) };
 }
 
-function canvasesToPdf(canvases) {
+function canvasesToPdf(canvases, cssWidth) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     throw new Error('jsPDF not loaded');
   }
   const { jsPDF } = window.jspdf;
   let pdf = null;
   canvases.forEach((canvas, index) => {
-    const pageCanvas = finalizePdfPageCanvas(canvas);
+    const pageCanvas = finalizePdfPageCanvas(canvas, cssWidth);
     const { pageW, pageH, imgData } = fitCanvasToPdfPage(pageCanvas);
     if (index === 0) {
       pdf = new jsPDF({
@@ -8784,9 +8909,9 @@ function canvasesToPdf(canvases) {
 }
 
 async function exportAsPdf() {
-  await withExportLock(async () => {
-    const canvases = await captureResultsPdfCanvases();
-    canvasesToPdf(canvases).save(exportFileName('pdf'));
+  await withExportLock(async (context) => {
+    const canvases = await captureResultsPdfCanvases(context);
+    canvasesToPdf(canvases, context.width).save(exportFileName('pdf', context));
     showToast('已下載PDF');
   }, '正在產生 PDF…', exportBtnOf('pdf'), 'PDF  生成中');
 }
@@ -8798,13 +8923,13 @@ async function exportAsImage(mime, ext) {
   }
   const btn = exportBtnOf(ext === 'png' ? 'png' : 'jpg');
   const tag = ext.toUpperCase();
-  await withExportLock(async () => {
-    const canvas = await captureResultsCanvas();
+  await withExportLock(async (context) => {
+    const canvas = await captureResultsCanvas(context);
     const quality = mime === 'image/jpeg' ? 0.92 : undefined;
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), mime, quality);
     });
-    downloadBlob(blob, exportFileName(ext));
+    downloadBlob(blob, exportFileName(ext, context));
     showToast('已下載' + tag);
   }, `正在產生 ${tag}…`, btn, `${tag}  生成中`);
 }
@@ -8814,19 +8939,19 @@ async function shareResults() {
     showToast('', { html: toastLines('含還款明細', '僅支援PDF') });
     return;
   }
-  await withExportLock(async () => {
-    const includeDetail = getExportIncludeDetail();
+  await withExportLock(async (context) => {
+    const includeDetail = context.includeDetail;
     let blob;
     let ext;
     let mime;
 
     if (includeDetail) {
-      const canvases = await captureResultsPdfCanvases();
-      blob = canvasesToPdf(canvases).output('blob');
+      const canvases = await captureResultsPdfCanvases(context);
+      blob = canvasesToPdf(canvases, context.width).output('blob');
       ext = 'pdf';
       mime = 'application/pdf';
     } else {
-      const canvas = await captureResultsCanvas();
+      const canvas = await captureResultsCanvas(context);
       blob = await new Promise((resolve, reject) => {
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', 0.92);
       });
@@ -8834,15 +8959,9 @@ async function shareResults() {
       mime = 'image/jpeg';
     }
 
-    const file = new File([blob], exportFileName(ext), { type: mime });
-    const mode = document.body.dataset.mode;
-    const shareTitle = mode === 'youth' ? '新青安3.0試算結果'
-      : mode === 'burden' ? '個人購屋能力評估' : '房屋貸款試算結果';
-    const shareData = {
-      title: shareTitle,
-      text: getShareText(),
-      files: [file]
-    };
+    const file = new File([blob], exportFileName(ext, context), { type: mime });
+const shareData = { title: context.title, text: context.text, files: [file] };
+
 
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       await navigator.share(shareData);
@@ -8851,7 +8970,7 @@ async function shareResults() {
     }
 
     if (includeDetail && navigator.share) {
-      downloadBlob(blob, exportFileName(ext));
+      downloadBlob(blob, exportFileName(ext, context));
       showToast('', { html: toastLines('PDF 檔案較大', '已改為下載') });
       return;
     }
@@ -8860,13 +8979,13 @@ async function shareResults() {
       await navigator.share({
         title: shareData.title,
         text: shareData.text,
-        url: location.href
+        url: context.url
       });
       showToast('已開啟分享');
       return;
     }
 
-    downloadBlob(blob, exportFileName(ext));
+    downloadBlob(blob, exportFileName(ext, context));
     showToast('', { html: toastLines('此裝置不支援分享', '已改為下載' + ext.toUpperCase()) });
   }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
 }
@@ -9348,6 +9467,8 @@ function fitPaymentCells(cells) {
 
 function fitPaymentTable() {
   $$('.payment-table').forEach((table) => {
+    // 匯出快照已保存畫面字級；其他模式的重算不可再修改這份離屏內容。
+    if (table.closest('.export-capture')) return;
     // 期數與應繳金額：逐列各自量測，長短不一的列彼此不互相牽制
     table.querySelectorAll('.payment-row').forEach(row => {
       fitPaymentCells([...row.querySelectorAll(':scope > div:not(.period-mid)')]);
@@ -9373,57 +9494,65 @@ function termSummaryText(months) {
   return `貸款年限 <span class="detail-sub-hl">共${yTxt}年</span>（${m}月／期）`;
 }
 
-function groupPeriodSummary(schedule, graceMonths, totalMonths) {
-  const groups = [];
-  let cur = null;
+// 三模式直接以同一份逐期结果分組，展示層不重算本金或利息。
+function repaymentDisplayGroups(schedule, graceMonths, rateAt, principalMethod) {
+  const sections = [];
   for (const row of schedule) {
-    const rateChanged = row.period > 1 &&
-      getRateForMonth(row.period, totalMonths) !== getRateForMonth(row.period - 1, totalMonths);
-    const graceBoundary = graceMonths > 0 && row.period === graceMonths + 1;
-    const isGrace = row.period <= graceMonths;
-    const isLast = row.period === totalMonths;
-    let shouldSplit;
-    if (method === 'amortize') {
-      shouldSplit = !cur || cur.payment !== row.payment || graceBoundary || rateChanged;
-    } else {
-      shouldSplit = !cur || graceBoundary || rateChanged || isGrace !== cur.isGrace;
+    const rate = rateAt(row.period), isGrace = row.period <= graceMonths;
+    let section = sections[sections.length - 1];
+    if (!section || section.rate !== rate || section.isGrace !== isGrace ||
+        (!principalMethod && section.rows[0].payment !== row.payment)) {
+      section = { rate, isGrace, rows: [] }; sections.push(section);
     }
-    if (shouldSplit) {
-      if (cur) groups.push(cur);
-      cur = {
-        start: row.period,
-        end: row.period,
-        payment: row.payment,
-        paymentEnd: row.payment,
-        isGrace: isGrace,
-        isLast: isLast,
-        rate: getRateForMonth(row.period, totalMonths)
-      };
-    } else {
-      cur.end = row.period;
-      cur.paymentEnd = row.payment;
+    section.rows.push(row);
+  }
+  const out = [];
+  for (const section of sections) {
+    const runs = []; let rows = [], direction = 0;
+    for (const row of section.rows) {
+      const nextDirection = rows.length ? Math.sign(row.payment - rows[rows.length - 1].payment) : 0;
+      if (principalMethod && direction && nextDirection && nextDirection !== direction) {
+        runs.push(rows); rows = []; direction = 0;
+      }
+      if (rows.length && nextDirection) direction = nextDirection;
+      rows.push(row);
+    }
+    if (rows.length) runs.push(rows);
+    for (const run of runs) {
+      const first = run[0], last = run[run.length - 1];
+      const common = { rate: section.rate, isGrace: section.isGrace,
+        segmentStart: first.period, segmentEnd: last.period };
+      const constant = run.every(row => row.payment === first.payment);
+      if (!principalMethod || constant) {
+        out.push({ ...common, start: first.period, end: last.period, payment: first.payment,
+          note: section.isGrace ? '寬限期' : (principalMethod && first.period === schedule.length ? '最後金額' : '') });
+      } else {
+        const declining = run.every((row, i) => i === 0 || row.payment <= run[i - 1].payment);
+        out.push({ ...common, start: first.period, end: first.period, payment: first.payment,
+          note: section.isGrace ? '寬限期' : declining ? '開始遞減' : '本段首期', endpoint: true });
+        out.push({ ...common, start: last.period, end: last.period, payment: last.payment,
+          note: section.isGrace ? '寬限期' : '最後金額', endpoint: true });
+      }
     }
   }
-  if (cur) groups.push(cur);
-  return groups.map(g => {
-    const rateText = formatRateDisplay(getRatePercentForMonth(g.start, totalMonths));
-    let paymentDisplay;
-    if (g.start === g.end) {
-      paymentDisplay = fmt(g.payment);
-    } else if (method === 'principal' && g.payment !== g.paymentEnd) {
-      paymentDisplay = fmt(g.payment) + ' ~ ' + fmt(g.paymentEnd);
-    } else {
-      paymentDisplay = fmt(g.payment);
-    }
-    return {
-      start: g.start,
-      end: g.end,
-      isGrace: g.isGrace,
-      rateText,
-      paymentDisplay
-    };
-  });
+  return out;
 }
+function periodGroupTag(group) {
+  if (!group.endpoint) return '';
+  const pad = n => String(n).padStart(3, '0');
+  const segment = pad(group.segmentStart) + '期～' + pad(group.segmentEnd) + '期';
+  const exact = periodUnitPref === 'year' ? pad(group.start) + '期 · ' : '';
+  return '<span class="pr-tag">' + exact + segment + '段</span>';
+}
+function paymentNote(group) {
+  return group.note ? '<span class="grace-note">（' + group.note + '）</span>' : '';
+}
+function groupPeriodSummary(schedule, graceMonths, totalMonths) {
+  return repaymentDisplayGroups(schedule, graceMonths,
+    period => getRatePercentForMonth(period, totalMonths), method === 'principal')
+    .map(group => ({ ...group, rateText: formatRateDisplay(group.rate), paymentDisplay: fmt(group.payment) }));
+}
+
 
 function calcAPR(schedule, principal) {
   if (!schedule.length || !principal) return formatAprRatePct(0);
@@ -9561,11 +9690,8 @@ function renderPeriodLines() {
   if (!gr) return;
   const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
   const rowsHtml = gr.map((l, i) => {
-    const amountText = l.isGrace
-      ? `${l.paymentDisplay} 元<span class="grace-note">（寬限期）</span>`
-      : `${l.paymentDisplay} 元`;
-    // 尾期結清餘額而單獨成列，年模式下會與前一段同年，加註避免誤讀
-    const tailTag = (i === gr.length - 1 && l.start === l.end) ? '<span class="pr-tag">最後一期</span>' : '';
+    const amountText = l.paymentDisplay + ' 元' + paymentNote(l);
+    const tailTag = periodGroupTag(l) || ((method !== 'principal' && i === gr.length - 1 && l.start === l.end) ? '<span class="pr-tag">最後一期</span>' : '');
     return `<div class="payment-row">
       <div class="period-range"><span>${genPeriodLabel(l.start, l.end)}</span>${tailTag}</div>
       <div class="period-mid">${l.rateText}</div>
@@ -10269,7 +10395,6 @@ $('#shareBtn').addEventListener('click', shareResults);
 
 $$('.export-detail-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
-    if (exportBusy) return;
     const includeDetail = btn.dataset.exportDetail === 'detail';
     setExportIncludeDetail(includeDetail);
     syncExportDetailToggle();
@@ -10946,46 +11071,18 @@ window.addEventListener('resize', scheduleFitPaymentTable);
      與一般貸款的 groupPeriodSummary 同一套邏輯，只是利率改讀本面板的設定。 */
   let bdGroups = null;
   function groupPeriods(sched, graceMonths, totalMonths) {
-    const groups = [];
-    let cur = null;
-    for (const row of sched) {
-      const rateChanged = row.period > 1 &&
-        bdRatePctForMonth(row.period, totalMonths) !== bdRatePctForMonth(row.period - 1, totalMonths);
-      const graceBoundary = graceMonths > 0 && row.period === graceMonths + 1;
-      const isGrace = row.period <= graceMonths;
-      /* 本金平均攤還每一期金額都不同，若照金額切會變成 360 段；
-         比照一般貸款：只在寬限期界線與利率換段切開，金額顯示為區間。 */
-      const shouldSplit = bdMethod === 'principal'
-        ? (!cur || graceBoundary || rateChanged || isGrace !== cur.isGrace)
-        : (!cur || cur.payment !== row.payment || graceBoundary || rateChanged);
-      if (shouldSplit) {
-        if (cur) groups.push(cur);
-        cur = { start: row.period, end: row.period, payment: row.payment,
-                paymentEnd: row.payment, isGrace };
-      } else {
-        cur.end = row.period;
-        cur.paymentEnd = row.payment;
-      }
-    }
-    if (cur) groups.push(cur);
-    return groups.map((g) => ({
-      start: g.start, end: g.end, isGrace: g.isGrace,
-      rateText: formatRateDisplay(bdRatePctForMonth(g.start, totalMonths)),
-      paymentDisplay: (bdMethod === 'principal' && g.payment !== g.paymentEnd)
-        ? fmt(g.payment) + ' ~ ' + fmt(g.paymentEnd)
-        : fmt(g.payment)
-    }));
+    return repaymentDisplayGroups(sched, graceMonths,
+      period => bdRatePctForMonth(period, totalMonths), bdMethod === 'principal')
+      .map(group => ({ ...group, rateText: formatRateDisplay(group.rate), paymentDisplay: fmt(group.payment) }));
   }
+
 
   function renderPeriodBlock() {
     if (!bdGroups) return;
     const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
     const rows = bdGroups.map((l, i) => {
-      const amount = l.isGrace
-        ? l.paymentDisplay + ' 元<span class="grace-note">（寬限期）</span>'
-        : l.paymentDisplay + ' 元';
-      const tail = (i === bdGroups.length - 1 && l.start === l.end)
-        ? '<span class="pr-tag">最後一期</span>' : '';
+      const amount = l.paymentDisplay + ' 元' + paymentNote(l);
+      const tail = periodGroupTag(l) || ((bdMethod !== 'principal' && i === bdGroups.length - 1 && l.start === l.end) ? '<span class="pr-tag">最後一期</span>' : '');
       return '<div class="payment-row">' +
         '<div class="period-range"><span>' + genPeriodLabel(l.start, l.end) + '</span>' + tail + '</div>' +
         '<div class="period-mid">' + l.rateText + '</div>' +
@@ -11872,18 +11969,20 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   };
   window.__bdHasCleared = function () { return !!bdCleared; };
 
-  /* 分享用的純文字，取畫面上已算好的同一份資料，避免和圖片內容對不起來 */
+  window.__bdHasValidResult = function () { return !bdStale && B('#bdResults').classList.contains('show'); };
+  /* 分享條件、每月還款都取已完成結果，與出圖副本使用相同畫面。 */
   window.__bdShareText = function () {
-    const cond = Array.from(document.querySelectorAll('#bdConditionsGrid .cond-item')).map((it) =>
+    if (!window.__bdHasValidResult()) return null;
+    const cond = Array.from(document.querySelectorAll('#bdConditionsGrid .cond-item')).map(it =>
       (it.querySelector('.cond-label')?.textContent || '').trim() + '：' +
       (it.querySelector('.cond-value')?.textContent || '').trim());
-    const val = (sel) => (B(sel)?.textContent || '').trim();
+    const val = sel => (B(sel)?.textContent || '').trim();
     return ['個人購屋能力評估結果', '', '【評估條件】', ...cond, '',
-      '預估貸款金額：' + val('#bdResLoan'),
-      '可買房屋總價：' + val('#bdResPrice'),
-      '需自備款：' + val('#bdResDown'),
-      '預估每月房貸：' + val('#bdResPay')].join('\n');
+      '預估貸款金額：' + val('#bdResLoan'), '可買房屋總價：' + val('#bdResPrice'),
+      '需自備款：' + val('#bdResDown'), '預估每月房貸：' + val('#bdResPay'),
+      '', '【每月還款】', ...periodShareLines(B('#bdPeriodLines'))].join('\n');
   };
+
 
   /* ---------- 啟動 ---------- */
   syncIncomeUnitField();
@@ -12119,6 +12218,8 @@ window.addEventListener('resize', () => {
      只會在「不符資格」時多疊一則不相干的警告。該判斷已移至一般貸款面板，可自行設定門檻。 */
   const APPLY_FROM = '2026-08-01', APPLY_TO = '2029-07-31', DRAW_TO = '2029-10-31';
   const STORE = 'youth_form_state_v1';
+  let ytIssues = {};
+  let ytShowComparisonRate = false;
   /* 「清空數值」前的原本數值，與試算數值分開存 */
   const CLEAR_STORE = 'youth_clear_snapshot_v1';
   /* 預設基準利率：清空數值後自動帶回的值。1.72% 為財政部公告之基準利率
@@ -12177,88 +12278,95 @@ window.addEventListener('resize', () => {
   ];
   /* 舊版把選擇存成固定代碼，改成槽位索引後要能接上，否則既有使用者的選擇會跳掉 */
   const YR_LEGACY_SEL = { taipei: 0, newtaipei: 1, other: 2 };
+  let yrRowsInvalid=false,yrOnInvalid=false;
   function yrNum(v) {
-    const t = String(v === null || v === undefined ? '' : v).trim();
-    if (t === '') return NaN;
-    const n = Number(t);
-    return Number.isFinite(n) ? n : NaN;
+    const p=storedNumber(v);
+    return p.valid&&!p.empty?p.n:NaN;
   }
   function normalizeYrRow(r) {
-    const o = r && typeof r === 'object' ? r : {};
-    const str = (v) => (v === null || v === undefined ? '' : String(v).trim());
-    return { name: str(o.name).slice(0, 8), amount: str(o.amount) };
-  }
-  function cloneYrRows(rows) {
-    const out = [];
-    for (let i = 0; i < YR_ROW_N; i++) out.push(normalizeYrRow(rows && rows[i]));
+    const src=plain(r)?r:{},invalid={};
+    if(plain(src.invalid)){for(const key of ['name','amount'])if(own(src.invalid,key))invalid[key]=src.invalid[key];}
+    else if(own(src,'invalid'))invalid.name={original:src.invalid};
+    let name='',amount='';
+    if(typeof src.name==='string')name=src.name.trim().slice(0,8);
+    else if(own(src,'name'))invalid.name={original:src.name};
+    if(!plain(r)&&r!==undefined)invalid.name={original:r};
+    if(own(src,'amount')){
+      const p=storedNumber(src.amount);
+      if(p.valid&&(p.empty||(p.dec.integer&&storedCompare(p,0)>0&&storedCompare(p,PRICE_MAX_WAN)<=0)))amount=p.empty?'':String(p.n);
+      else invalid.amount={original:src.amount};
+    }
+    const out={name,amount};
+    if(Object.keys(invalid).length)out.invalid=invalid;
     return out;
   }
+  function cloneYrRows(rows) {
+    return Array.from({length:YR_ROW_N},(_,i)=>normalizeYrRow(rows&&rows[i]));
+  }
   function loadYrRows() {
-    try {
-      const raw = localStorage.getItem(YR_ROWS_KEY);
-      if (raw) { const a = JSON.parse(raw); if (Array.isArray(a)) return cloneYrRows(a); }
-    } catch (e) {}
+    try{
+      const raw=localStorage.getItem(YR_ROWS_KEY);
+      if(raw!==null){
+        try{const a=JSON.parse(raw);if(Array.isArray(a)&&a.length<=YR_ROW_N)return cloneYrRows(a);}catch(e){}
+        yrRowsInvalid=true;return cloneYrRows([]);
+      }
+    }catch(e){}
     return cloneYrRows(YR_DEFAULT_ROWS);
   }
   function saveYrRows(rows) { try { localStorage.setItem(YR_ROWS_KEY, JSON.stringify(rows)); } catch (e) {} }
-  function loadYrOn() { try { return localStorage.getItem(YR_ON_KEY) !== '0'; } catch (e) { return true; } }
+  function loadYrOn() {
+    try{const v=localStorage.getItem(YR_ON_KEY);if(v===null||v==='1')return true;if(v==='0')return false;yrOnInvalid=true;}catch(e){}
+    return true;
+  }
   function saveYrOn(v) { try { localStorage.setItem(YR_ON_KEY, v ? '1' : '0'); } catch (e) {} }
   let yrRows = loadYrRows();
   let yrOn = loadYrOn();
   function isYrRowValid(r) {
-    const a = yrNum(r.amount);
-    return String(r.name || '').trim() !== '' && Number.isFinite(a) && a > 0;
+    const a=yrNum(r.amount);
+    return !r.invalid&&typeof r.name==='string'&&r.name!==''&&Number.isInteger(a)&&a>0&&a<=PRICE_MAX_WAN;
   }
   function yrValidIndexes() {
-    const out = [];
-    yrRows.forEach((r, i) => { if (isYrRowValid(r)) out.push(i); });
-    return out;
+    const out=[];yrRows.forEach((r,i)=>{if(isYrRowValid(r))out.push(i);});return out;
   }
-  function yrActive() { return yrOn && yrValidIndexes().length >= 1; }
-  function normYrSel(v) {
-    if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(YR_LEGACY_SEL, v)) return YR_LEGACY_SEL[v];
-    const n = parseInt(v, 10);
-    return Number.isFinite(n) && n >= 0 && n < YR_ROW_N ? n : YR_ROW_N - 1;
+  function yrInvalidRequired() {
+    if(yrOnInvalid)return true;
+    if(!yrOn)return false;
+    if(yrRowsInvalid)return true;
+    if(region===null)return true;
+    const r=yrRows[region];
+    return !!r&&(!!r.invalid?.name||(r.name!==''&&(!!r.invalid?.amount||!isYrRowValid(r))));
   }
-  /* 選中的那組被清空時落到第一組，否則會指向一個不存在的上限 */
+  function yrActive() { return yrOn && (yrValidIndexes().length>=1||yrInvalidRequired()); }
+  function regionValue(v) {
+    if(typeof v==='string'&&own(YR_LEGACY_SEL,v))return YR_LEGACY_SEL[v];
+    if(typeof v==='string'&&!/^[0-2]$/.test(v))return null;
+    if(typeof v!=='string'&&typeof v!=='number')return null;
+    const n=Number(v);return Number.isInteger(n)&&n>=0&&n<YR_ROW_N?n:null;
+  }
+  function normYrSel(v) { return regionValue(v); }
+  // 只在合法的「刻意停用該組」時換到第一個可用組，壞資料不能偷偷換門檻。
   function syncYrSelection() {
-    const idx = yrValidIndexes();
-    if (idx.length && idx.indexOf(region) < 0) region = idx[0];
+    if(region===null||yrInvalidRequired())return;
+    const idx=yrValidIndexes();
+    if(idx.length&&!idx.includes(region)&&yrRows[region]?.name===''&&!yrRows[region]?.invalid?.name)region=idx[0];
   }
   function yrCurrentRow() {
-    if (!yrActive()) return null;
-    syncYrSelection();
-    return yrRows[region] || null;
+    if(!yrActive()||yrInvalidRequired())return null;
+    return yrRows[region]||null;
   }
-  function yrCap() { const r = yrCurrentRow(); return r ? yrNum(r.amount) : NaN; }
-  function yrName() { const r = yrCurrentRow(); return r ? r.name : ''; }
+  function yrCap() { const r=yrCurrentRow();return r?yrNum(r.amount):NaN; }
+  function yrName() { const r=yrCurrentRow();return r?r.name:''; }
   function renderYrOpts() {
-    const box = Y('#ytRegionOpts');
-    const off = Y('#ytRegionOff');
-    const idx = yrValidIndexes();
-    const on = yrActive();
-    if (off) {
-      off.textContent = on ? '啟用中' : '未啟用';
-      off.setAttribute('aria-pressed', on ? 'true' : 'false');
-      off.title = idx.length
-        ? (on ? '點擊暫時關閉購屋總價上限審查' : '點擊重新套用購屋總價上限審查')
-        : '請先於齒輪內設定至少 1 組購屋縣市';
-    }
-    const sec = Y('#ytRegionSec');
-    if (sec) sec.classList.toggle('is-off', !on);
-    if (!box) return;
-    box.classList.toggle('c3', idx.length >= 3);
-    box.classList.toggle('c2', idx.length === 2);
-    box.classList.toggle('c1', idx.length === 1);
-    if (!on) { box.innerHTML = ''; return; }
-    syncYrSelection();
-    box.innerHTML = idx.map((i) => {
-      const r = yrRows[i];
-      return '<button type="button" class="yt-opt' + (i === region ? ' active' : '')
-        + '" data-yt-region="' + i + '"><b>' + esc(r.name) + '</b><small>'
-        + wan(yrNum(r.amount)) + ' 萬</small></button>';
-    }).join('');
+    const box=Y('#ytRegionOpts'),off=Y('#ytRegionOff'),invalid=yrInvalidRequired(),on=yrActive();
+    const idx=[];yrRows.forEach((r,i)=>{if(isYrRowValid(r)||r.invalid?.name||r.name!=='')idx.push(i);});
+    if(off){off.textContent=invalid?'需確認':on?'啟用中':'未啟用';off.setAttribute('aria-pressed',on?'true':'false');off.title='點擊切換購屋總價上限審查';}
+    Y('#ytRegionSec')?.classList.toggle('is-off',!on);
+    if(!box)return;
+    box.classList.toggle('c3',idx.length>=3);box.classList.toggle('c2',idx.length===2);box.classList.toggle('c1',idx.length===1);
+    if(!on){box.innerHTML='';return;}
+    box.innerHTML=idx.map(i=>{const r=yrRows[i];return '<button type="button" class="yt-opt'+(i===region?' active':'')+'" data-yt-region="'+i+'"><b>'+esc(r.name||'購屋縣市 '+(i+1))+'</b><small>'+(isYrRowValid(r)?wan(yrNum(r.amount))+' 萬':'需確認')+'</small></button>';}).join('');
   }
+
   let noHome = true, neverUsed = true, selfUse = true;
   let stepsTouched = [false, false, false, false, false];
   let detailSrc = 'all', ytCum = false, ytStale = true;
@@ -12269,7 +12377,8 @@ window.addEventListener('resize', () => {
 
   const wan = (n) => Math.round(n).toLocaleString('zh-TW');
   const yuan = (n) => Math.round(n).toLocaleString('zh-TW');
-  const wanTxt = (n) => (Math.abs(n - Math.round(n)) < 0.005 ? wan(n) : n.toFixed(2));
+  // 與結果卡既有整數元規則一致，再以共用萬元格式顯示最多四位。
+  const wanTxt = (n) => fmtWan(Math.round(n * 10000));
 
   const ICON_OK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B6B41" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   const ICON_NO = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B0301F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
@@ -12302,7 +12411,9 @@ window.addEventListener('resize', () => {
   function syncStepScope() {
     const cnt = visibleStepCount();
     const t = Math.floor(num(Y('#ytTerm')) || 0);
-    YA('#ytSteps .yt-step').forEach((el, i) => { el.hidden = i >= cnt; });
+    YA('#ytSteps .yt-step').forEach((el, i) => { el.hidden = i >= cnt && !(i === 4 && ytShowComparisonRate); });
+    const cmp=Y('#ytSteps .yt-step[data-step="4"] .yt-step-range');
+    if(cmp)cmp.textContent=cnt<5&&ytShowComparisonRate?'（省息比較使用）':'（第 073 期起）';
     // 只有第 1 段的期間會被年限截短（第 2～4 段各自剛好一年）
     const firstY = cnt === 1 && t >= 1 && t <= 3 ? t : 3;
     const lab = Y('#ytSteps .yt-step[data-step="0"] .yt-step-lab');
@@ -12345,7 +12456,7 @@ window.addEventListener('resize', () => {
       STEP_IDS.forEach((id, i) => {
         if (force) { setCalcFieldStoredValue(Y(id), d[i]); return; }
         // 使用者手動清空的格子保持空白，由必填檢查提示，不靜默回填
-        if (!stepsTouched[i] && raw(Y(id)) !== '') setCalcFieldStoredValue(Y(id), d[i]);
+        if (!stepsTouched[i] && !ytIssues[id] && raw(Y(id)) !== '') setCalcFieldStoredValue(Y(id), d[i]);
       });
       if (fb) fb.textContent = b0;
       if (fo) fo.textContent = Math.round((b0 + SPREAD) * 1000) / 1000;
@@ -12353,8 +12464,7 @@ window.addEventListener('resize', () => {
     } else {
       // 沒有基準利率就無從推算：整塊公式隱藏，各段一併清空
       if (fm) fm.hidden = true;
-      stepsTouched = [false, false, false, false, false];
-      STEP_IDS.forEach((id) => clearCalcField(Y(id)));
+      if(force){stepsTouched = [false, false, false, false, false];STEP_IDS.forEach((id) => clearCalcField(Y(id)));}
     }
     // 全改與部分改分開講：全部自訂時「部分」會讓人誤以為還有幾格是自動算的。
     // 只計入畫面上看得到的格子，被年限收掉的段落不該影響提示。
@@ -12418,7 +12528,7 @@ window.addEventListener('resize', () => {
     // 成數是整筆房貸的成數，上限與一般貸款同為 100%；方案的 8 成只約束青安部位（見 compute）
     if (raw(Y('#ytRatio')) !== '' && num(Y('#ytRatio')) > YT_RATIO_MAX) setCalcFieldStoredValue(Y('#ytRatio'), YT_RATIO_MAX);
     const mg = Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1));
-    if (raw(Y('#ytGrace')) !== '' && num(Y('#ytGrace')) > mg) setCalcFieldStoredValue(Y('#ytGrace'), mg);
+    if (!ytIssues['#ytTerm'] && raw(Y('#ytGrace')) !== '' && num(Y('#ytGrace')) > mg) setCalcFieldStoredValue(Y('#ytGrace'), mg);
     syncPills('#ytTermPills', num(Y('#ytTerm')), mt);
     syncPills('#ytGracePills', num(Y('#ytGrace')), mg);
     syncStepScope();
@@ -12428,17 +12538,18 @@ window.addEventListener('resize', () => {
 
   /* 點徽章＝把該欄位填成默認值（與一般貸款同一套操作） */
   Y('#ytTermMax')?.addEventListener('click', () => {
-    setCalcFieldStoredValue(Y('#ytTerm'), GL_DEFAULT_TERM);
+    setCalcFieldStoredValue(Y('#ytTerm'), GL_DEFAULT_TERM);clearYouthIssue('#ytTerm');
     onChange();
   });
   Y('#ytRatioTag')?.addEventListener('click', () => {
-    setCalcFieldStoredValue(Y('#ytRatio'), GL_DEFAULT_RATIO);
+    setCalcFieldStoredValue(Y('#ytRatio'), GL_DEFAULT_RATIO);clearYouthIssue('#ytRatio');
     onChange();
   });
   Y('#ytGraceMax')?.addEventListener('click', () => {
     const mg = Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1));
     if (mg <= 0) return;
     setCalcFieldStoredValue(Y('#ytGrace'), mg);
+    clearYouthIssue('#ytGrace');
     onChange();
   });
 
@@ -12551,6 +12662,17 @@ window.addEventListener('resize', () => {
   }
   /* 銀行鑑價 0 一律視同未填（與一般貸款同規則）。
      負值或超出欄位範圍屬異常，回 null，不可先轉成 0 冒充未填。 */
+  /* 鑑價 0 一律正規化成「未填」：不只結果與分享略過，欄位、raw、
+     主存檔與清空快照都要真的空白，否則重開又會看到一個 0。
+     負值／超限／亂碼屬異常，維持 apprValue() 回 null 的既有處理，不冒充空白。 */
+  function normalizeApprZero() {
+    const el = Y('#ytAppraisal');
+    if (!el || raw(el) === '') return false;
+    const v = strictNum('#ytAppraisal');
+    if (v === 0) { clearCalcField(el); return true; }
+    return false;
+  }
+
   function apprValue() {
     if (raw(Y('#ytAppraisal')) === '') return 0;
     const v = strictNum('#ytAppraisal');
@@ -12558,6 +12680,19 @@ window.addEventListener('resize', () => {
     if (v === 0) return 0;                       // 明確 0 → 視同未填
     if (v < 0 || v > PRICE_MAX_WAN) return null;
     return v;
+  }
+
+  /* 貸款組成的唯一來源。compute() 與「本次需要哪些利率」的判斷共用這一份，
+     兩邊不會再各寫一套而漂移。
+     注意持買比率只乘在額度上限（按持分核貸），
+     total 與 8 成成數上限都以認定價格全額計，不再乘一次 share。 */
+  function loanSplitOf(o) {
+    const basis = o.appr > 0 ? Math.min(o.price, o.appr) : o.price;
+    const total = basis * o.ratio / 100;
+    const capWan = o.pass ? CAP[o.kind] * o.share / 100 : 0;
+    const ltvWan = o.pass ? basis * YT_LTV_MAX / 100 : 0;
+    const youthWan = Math.min(total, capWan, ltvWan);
+    return { basis, total, capWan, ltvWan, youthWan, genWan: total - youthWan };
   }
 
   /* ---------- 主計算 ---------- */
@@ -12577,12 +12712,9 @@ window.addEventListener('resize', () => {
     const elig = checkEligibility();
     const pass = elig.every((e) => e.ok);
 
-    const basis = appr > 0 ? Math.min(price, appr) : price;
-    const total = basis * ratio / 100;
-    const capWan = pass ? CAP[kind] * share / 100 : 0;
-    // 青安部位的兩道上限：額度（按持分核貸）與 8 成成數（以認定價格全額計）
-    const ltvWan = pass ? basis * YT_LTV_MAX / 100 : 0;
-    const youthWan = Math.min(total, capWan, ltvWan);
+    const sp = loanSplitOf({ price, appr, ratio, share, pass, kind });
+    const basis = sp.basis, total = sp.total, capWan = sp.capWan, ltvWan = sp.ltvWan;
+    const youthWan = sp.youthWan;
     // 哪一道先咬住，決定下方組成要怎麼解釋；總貸款先到頂時不必解釋
     const youthBind = !pass ? 'none' : (youthWan >= total - 1e-9 ? 'total' : (capWan <= ltvWan ? 'cap' : 'ltv'));
     const genWan = total - youthWan;
@@ -12619,19 +12751,10 @@ window.addEventListener('resize', () => {
 
   /* ---------- 期間表分段 ---------- */
   function groupRows(sch, graceM, n, rates) {
-    const g = [];
-    let cur = null;
-    sch.forEach((r) => {
-      const rateChanged = r.period > 1 && rates[r.period - 1] !== rates[r.period - 2];
-      const gb = graceM > 0 && r.period === graceM + 1;
-      const isGrace = r.period <= graceM;
-      const split = !cur || gb || rateChanged || (method === 'amortize' ? cur.pay !== r.payment : isGrace !== cur.isGrace);
-      if (split) { if (cur) g.push(cur); cur = { s: r.period, e: r.period, pay: r.payment, payE: r.payment, isGrace, rate: rates[r.period - 1] }; }
-      else { cur.e = r.period; cur.payE = r.payment; }
-    });
-    if (cur) g.push(cur);
-    return g;
+    return repaymentDisplayGroups(sch, graceM, period => rates[period - 1], method === 'principal')
+      .map(group => ({ ...group, s: group.start, e: group.end, pay: group.payment, payE: group.payment }));
   }
+
 
   /* ---------- 渲染 ---------- */
   function render() {
@@ -12804,14 +12927,14 @@ window.addEventListener('resize', () => {
     Y('#ytPeriodLines').innerHTML =
       `<div class="payment-head"><span>${h0}</span><span>${h1}</span><span>${h2}</span></div>` +
       gr.map((g, gi) => {
-        const amt = method === 'principal' && g.pay !== g.payE ? yuan(g.pay) + ' ~ ' + yuan(g.payE) : yuan(g.pay);
-        const note = g.isGrace ? '<span class="grace-note">（寬限期）</span>' : '';
+        const amt = yuan(g.pay);
+        const note = paymentNote(g);
         // 合計模式下兩筆貸款利率並存，加標籤避免被誤讀成相加
         const rateCell = (src === 'all' && both)
           ? `<div class="period-mid two"><i>青安</i><b>${g.rate}%</b><i>一般</i><b>${genRate}%</b></div>`
           : `<div class="period-mid">${g.rate}%</div>`;
         // 尾期本金會結清餘額，金額與前一段不同而單獨成列；標註避免年模式下看似重複
-        const tailTag = (gi === gr.length - 1 && g.s === g.e) ? '<span class="pr-tag">最後一期</span>' : '';
+        const tailTag = periodGroupTag(g) || ((method !== 'principal' && gi === gr.length - 1 && g.s === g.e) ? '<span class="pr-tag">最後一期</span>' : '');
         return `<div class="payment-row"><div class="period-range"><span>${pLabel(g.s, g.e)}</span>${tailTag}</div>${rateCell}<div class="period-amount"><span class="amount-val">${yuan(g.pay) === '0' ? '0' : amt} 元${note}</span></div></div>`;
       }).join('');
 
@@ -13011,63 +13134,134 @@ window.addEventListener('resize', () => {
 
   /* ---------- 狀態保存 ---------- */
   const FIELDS = ['#ytAge', '#ytIncome', '#ytPrice', '#ytAppraisal', '#ytRatio', '#ytTerm', '#ytGrace', '#ytBase', '#ytShare', '#ytGenRate'].concat(STEP_IDS);
+  const FIELD_LABELS = { '#ytAge':'年齡', '#ytIncome':'本人年所得', '#ytPrice':'購屋總價', '#ytAppraisal':'銀行鑑價', '#ytRatio':'貸款成數', '#ytTerm':'貸款年限', '#ytGrace':'寬限期', '#ytBase':'基準利率', '#ytShare':'持買比率', '#ytGenRate':'一般貸款年利率', '#ytR1':'第1段利率', '#ytR2':'第2段利率', '#ytR3':'第3段利率', '#ytR4':'第4段利率', '#ytR5':'第5段利率' };
+  const OPTION_LABELS = {kind:'貸款身分',method:'還款方式',region:'購屋縣市',noHome:'無自有住宅資格',neverUsed:'青安使用紀錄',selfUse:'自住用途',stepsTouched:'手動階梯設定','$state':'儲存資料','$fields':'試算欄位'};
+  function own(o,k) { return Object.prototype.hasOwnProperty.call(o,k); }
+  function plain(o) { return !!o && typeof o === 'object' && !Array.isArray(o); }
+  function storedDecimal(s) {
+    const m=/^([+-]?)(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?$/i.exec(s);
+    const frac=m[3]||'',digits=(m[2]+frac).replace(/^0+/,'');
+    const exponent=Number(m[4]||0),scale=frac.length-exponent;
+    return {sign:digits?(m[1]==='-'?-1:1):0,digits,order:digits.length-scale,
+      integer:!digits||scale<=0||(scale<=digits.length&&/^0*$/.test(digits.slice(-scale)))};
+  }
+  function storedCompare(p,limit) {
+    const a=p.dec,b=storedDecimal(String(limit));
+    if(a.sign!==b.sign)return Math.sign(a.sign-b.sign);
+    if(!a.sign)return 0;
+    if(a.order!==b.order)return Math.sign(a.order-b.order)*a.sign;
+    const length=Math.max(a.digits.length,b.digits.length),x=a.digits.padEnd(length,'0'),y=b.digits.padEnd(length,'0');
+    return (x===y?0:x>y?1:-1)*a.sign;
+  }
+  // 原始值先驗證，才轉數字或套用欄位精度；null/物件/布林不是未填。
+  function storedNumber(v) {
+    if (typeof v !== 'string' && typeof v !== 'number') return {valid:false};
+    if (typeof v === 'string' && v.trim() === '') return {valid:true,empty:true};
+    const s = typeof v === 'string' ? v.trim() : String(v);
+    if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(s)) return {valid:false};
+    const n = Number(s);
+    return Number.isFinite(n) ? {valid:true,n,dec:storedDecimal(s)} : {valid:false};
+  }
+  function youthFieldValue(id,v,term) {
+    const p = storedNumber(v);
+    if (!p.valid) return {valid:false};
+    if (p.empty) return {valid:true,text:''};
+    const n=p.n, rate=id==='#ytBase'||id==='#ytGenRate'||STEP_IDS.includes(id);
+    const integer=['#ytAge','#ytRatio','#ytTerm','#ytGrace','#ytShare'].includes(id);
+    const max=id==='#ytAge'?YT_AGE_MAX:id==='#ytRatio'?YT_RATIO_MAX:id==='#ytTerm'?YT_TERM_MAX:id==='#ytGrace'?YT_GRACE_MAX:id==='#ytShare'?100:['#ytPrice','#ytAppraisal'].includes(id)?PRICE_MAX_WAN:rate?RATE_MAX:Infinity;
+    const min=rate?RATE_MIN:['#ytRatio','#ytTerm','#ytShare'].includes(id)?1:0;
+    if (storedCompare(p,min)<0||(Number.isFinite(max)&&storedCompare(p,max)>0)||(integer&&!p.dec.integer)||(id==='#ytPrice'&&storedCompare(p,0)<=0)) return {valid:false};
+    if(id==='#ytGrace'&&Number.isFinite(term)&&term>=1&&n>Math.min(YT_GRACE_MAX,term-1))return {valid:false};
+    if(id==='#ytAppraisal'&&n===0)return {valid:true,text:''};
+    const value=integer?n:truncateToDecimals(n,rate?MAX_RATE_DECIMALS:MAX_AMOUNT_DECIMALS);
+    if(id==='#ytPrice'&&value<=0)return {valid:false};
+    if(id==='#ytAppraisal'&&value===0)return {valid:true,text:''};
+    return {valid:true,text:String(value)};
+  }
+  function normalizeYouthState(input) {
+    const src=plain(input)?input:{}, bad={};
+    if(!plain(input))bad.$state={original:input??null};
+    if(plain(src.invalid)){for(const [k,v] of Object.entries(src.invalid))if(own(FIELD_LABELS,k)||own(OPTION_LABELS,k))bad[k]=plain(v)?v:{original:v};}
+    else if(own(src,'invalid'))bad.$state={original:src.invalid};
+    const out={kind:'general',region:2,method:'amortize',noHome:true,neverUsed:true,selfUse:true,stepsTouched:[false,false,false,false,false],resultsVisible:src.resultsVisible===true,autoHidden:src.autoHidden===true,f:{}};
+    for(const key of ['kind','method','noHome','neverUsed','selfUse','region']){
+      if(!own(src,key))continue;
+      const v=src[key];let ok=false,val=v;
+      if(key==='kind')ok=typeof v==='string'&&own(CAP,v);
+      else if(key==='method')ok=v==='amortize'||v==='principal';
+      else if(key==='region'){val=regionValue(v);ok=val!==null;}
+      else ok=typeof v==='boolean';
+      if(ok)out[key]=val;else {out[key]=null;bad[key]={original:v};}
+    }
+    if(own(src,'stepsTouched')){
+      if(Array.isArray(src.stepsTouched)&&src.stepsTouched.length===5&&src.stepsTouched.every(v=>typeof v==='boolean'))out.stepsTouched=src.stepsTouched.slice();
+      else {out.stepsTouched=[true,true,true,true,true];bad.stepsTouched={original:src.stepsTouched};}
+    }
+    const f=plain(src.f)?src.f:{};
+    if(own(src,'f')&&!plain(src.f))bad.$fields={original:src.f};
+    const tp=youthFieldValue('#ytTerm',f['#ytTerm'],null);
+    for(const id of FIELDS){
+      if(!own(f,id)){out.f[id]=id==='#ytShare'?String(YT_SHARE_DEFAULT):'';continue;}
+      const p=youthFieldValue(id,f[id],tp.valid&&tp.text!==''?Number(tp.text):null);
+      if(p.valid)out.f[id]=p.text;else {out.f[id]='';bad[id]={original:f[id]};}
+    }
+    // 錯誤記號需持久化；只有對應欄位的明確修正才移除。
+    if(Object.keys(bad).length)out.invalid=bad;
+    return out;
+  }
   function capture() {
     const o = { kind, region, method, noHome, neverUsed, selfUse, stepsTouched: stepsTouched.slice(),
                 resultsVisible: !!Y('#ytResults') && Y('#ytResults').classList.contains('show'),
                 autoHidden: ytAutoHidden, f: {} };
     FIELDS.forEach((id) => { o.f[id] = raw(Y(id)); });
+    if(Object.keys(ytIssues).length)o.invalid=JSON.parse(JSON.stringify(ytIssues));
     return o;
   }
-  function apply(o) {
-    if (!o || typeof o !== 'object' || Array.isArray(o)) return;
-    /* 保存資料是外部來源，型別一律驗證：
-       - kind／method 只接受已知值，不能讓任意字串進來當身分別。
-       - 布林用嚴格比對；舊版 !! 會把字串 "false" 當成 true，
-         等於把「損壞的資格答案」默認成通過。
-       - stepsTouched 必須是 5 個布林值，形狀不對就整組重來。 */
-    kind = Object.prototype.hasOwnProperty.call(CAP, o.kind) ? o.kind : 'general';
-    region = normYrSel(o.region);
-    method = (o.method === 'principal' || o.method === 'amortize') ? o.method : 'amortize';
-    const bool = (v, dflt) => (v === true ? true : (v === false ? false : dflt));
-    noHome = bool(o.noHome, true); neverUsed = bool(o.neverUsed, true); selfUse = bool(o.selfUse, true);
-    stepsTouched = (Array.isArray(o.stepsTouched) && o.stepsTouched.length === 5
-      && o.stepsTouched.every((x) => typeof x === 'boolean'))
-      ? o.stepsTouched.slice() : [false, false, false, false, false];
-    const f = (o.f && typeof o.f === 'object' && !Array.isArray(o.f)) ? o.f : {};
-    FIELDS.forEach((id) => {
-      const v = f[id];
-      /* parseFloat('2.5abc') 會變成 2.5，把壞掉的保存值讀成一個看似合法的數字。
-         改成整串驗證：不是有限數字就當成未填，交給必填檢查處理。 */
-      const s = (v === null || v === undefined) ? '' : String(v).trim();
-      const n = s === '' ? null : Number(s);
-      if (n === null || !Number.isFinite(n)) clearCalcField(Y(id));
-      else setCalcFieldStoredValue(Y(id), n);
-    });
-    syncChoices(); clampInputs(); syncSteps(false); syncShareTag();
-    // 結果原本就在畫面上就一併還原，與一般貸款一致，不必再按一次計算
-    if (o.resultsVisible === true && !ytMissingFields()) {
-      ytAutoHidden = false;
-      try { resetViewsToDefault(); render(); markDone(); }
-      catch (e) { console.error(e); Y('#ytResults').classList.remove('show'); }
-    } else {
-      Y('#ytResults').classList.remove('show');
-      // 上次是「算過、但欄位缺了才收起來」的話，這次補齊仍要自動展開
-      ytAutoHidden = (o.autoHidden === true) || (o.resultsVisible === true);
+  function apply(input) {
+    const o=normalizeYouthState(input);
+    ytIssues=o.invalid||{};
+    ({kind,region,method,noHome,neverUsed,selfUse}=o);
+    stepsTouched=o.stepsTouched.slice();
+    FIELDS.forEach(id=>{if(o.f[id]==='')clearCalcField(Y(id));else setCalcFieldStoredValue(Y(id),Number(o.f[id]));});
+    syncChoices();clampInputs();syncSteps(false);syncShareTag();syncYouthIssues();
+    if(o.resultsVisible&&!ytMissingFields()){
+      ytAutoHidden=false;
+      try{resetViewsToDefault();render();markDone();}catch(e){console.error(e);Y('#ytResults').classList.remove('show');last=null;}
+    }else{
+      Y('#ytResults').classList.remove('show');last=null;ytStale=true;
+      ytAutoHidden=o.autoHidden||o.resultsVisible;
     }
+    persist();
   }
-  function persist() { try { localStorage.setItem(STORE, JSON.stringify(capture())); } catch (e) {} }
+  function persist() {
+    markDirtySinceClear();
+    syncYouthIssues();
+    try { localStorage.setItem(STORE, JSON.stringify(capture())); } catch (e) {}
+  }
   function persistCleared() {
     try {
       if (ytCleared) localStorage.setItem(CLEAR_STORE, JSON.stringify(ytCleared));
       else localStorage.removeItem(CLEAR_STORE);
     } catch (e) {}
   }
+  function clearYouthIssue(key) { if(own(ytIssues,key))delete ytIssues[key]; }
+  function syncYouthIssues() {
+    const box=Y('#ytDataNotice'),text=Y('#ytDataNoticeText'),confirm=Y('#ytDataConfirm');
+    if(!box)return;
+    const keys=Object.keys(ytIssues);
+    box.hidden=!keys.length;
+    if(text)text.textContent=keys.length?'儲存資料中的'+keys.map(k=>FIELD_LABELS[k]||OPTION_LABELS[k]||'設定').join('、')+'需要重新確認。請修改相應欄位或重新選擇。':'';
+    if(confirm)confirm.hidden=!keys.some(k=>['$state','$fields','stepsTouched'].includes(k));
+    FIELDS.forEach(id=>Y(id)?.setAttribute('aria-invalid',own(ytIssues,id)?'true':'false'));
+  }
+
   function syncChoices() {
+    syncYrSelection();
     YA('[data-yt-kind]').forEach((b) => b.classList.toggle('active', b.dataset.ytKind === kind));
     renderYrOpts();
     YA('[data-yt-method]').forEach((b) => b.classList.toggle('active', b.dataset.ytMethod === method));
     YA('[data-yt-home]').forEach((b) => b.classList.toggle('active', (b.dataset.ytHome === '1') === noHome));
-    YA('[data-yt-used]').forEach((b) => b.classList.toggle('active', (b.dataset.ytUsed === '1') !== neverUsed));
+    YA('[data-yt-used]').forEach((b) => b.classList.toggle('active', typeof neverUsed === 'boolean' && (b.dataset.ytUsed === '1') !== neverUsed));
     YA('[data-yt-self]').forEach((b) => b.classList.toggle('active', (b.dataset.ytSelf === '1') === selfUse));
   }
 
@@ -13126,6 +13320,8 @@ window.addEventListener('resize', () => {
   let lastBaseRaw = null;
   function onChange(e) {
     const t = e && e.target;
+    if(t && FIELDS.includes('#'+t.id))clearYouthIssue('#'+t.id);
+    if (t && t === Y('#ytAppraisal')) normalizeApprZero();
     if (t && t === Y('#ytBase')) {
       const nowRaw = raw(Y('#ytBase'));
       /* 舊版只要 target 是 ytBase 就強制 syncSteps(true)，沒有比對正式值。
@@ -13140,6 +13336,7 @@ window.addEventListener('resize', () => {
       lastBaseRaw = nowRaw;
       // 基準利率真的改了，維持原產品行為：五段回到自動計算
       stepsTouched = [false, false, false, false, false];
+      STEP_IDS.forEach(clearYouthIssue);clearYouthIssue('stepsTouched');
       clampInputs(); syncSteps(true); persist(); markStale();
       return;
     }
@@ -13164,23 +13361,24 @@ window.addEventListener('resize', () => {
     el.addEventListener('change', onChange);
     el.addEventListener('input', onChange);
   });
-  Y('#ytResetSteps').addEventListener('click', () => { stepsTouched = [false, false, false, false, false]; syncSteps(true); persist(); markStale(); });
+  Y('#ytDataConfirm')?.addEventListener('click',()=>{['$state','$fields','stepsTouched'].forEach(clearYouthIssue);persist();markStale();});
+  Y('#ytResetSteps').addEventListener('click', () => { STEP_IDS.forEach(clearYouthIssue);clearYouthIssue('stepsTouched');stepsTouched = [false, false, false, false, false]; syncSteps(true); persist(); markStale(); });
 
-  YA('[data-yt-kind]').forEach((b) => b.addEventListener('click', () => { kind = b.dataset.ytKind; syncChoices(); persist(); markStale(); }));
+  YA('[data-yt-kind]').forEach((b) => b.addEventListener('click', () => { kind = b.dataset.ytKind; clearYouthIssue('kind'); syncChoices(); persist(); markStale(); }));
   /* 按鈕改為依設定動態產生，故採事件委派 */
   Y('#ytRegionOpts')?.addEventListener('click', (e) => {
     const b = e.target.closest('[data-yt-region]');
     if (!b) return;
-    region = parseInt(b.dataset.ytRegion, 10);
+    region = Number(b.dataset.ytRegion);clearYouthIssue('region');
     syncChoices(); persist(); markStale();
   });
-  YA('[data-yt-method]').forEach((b) => b.addEventListener('click', () => { method = b.dataset.ytMethod; syncChoices(); persist(); markStale(); }));
-  YA('[data-yt-home]').forEach((b) => b.addEventListener('click', () => { noHome = b.dataset.ytHome === '1'; syncChoices(); persist(); markStale(); }));
-  YA('[data-yt-used]').forEach((b) => b.addEventListener('click', () => { neverUsed = b.dataset.ytUsed === '0'; syncChoices(); persist(); markStale(); }));
-  YA('[data-yt-self]').forEach((b) => b.addEventListener('click', () => { selfUse = b.dataset.ytSelf === '1'; syncChoices(); persist(); markStale(); }));
+  YA('[data-yt-method]').forEach((b) => b.addEventListener('click', () => { method = b.dataset.ytMethod; clearYouthIssue('method'); syncChoices(); persist(); markStale(); }));
+  YA('[data-yt-home]').forEach((b) => b.addEventListener('click', () => { noHome = b.dataset.ytHome === '1'; clearYouthIssue('noHome'); syncChoices(); persist(); markStale(); }));
+  YA('[data-yt-used]').forEach((b) => b.addEventListener('click', () => { neverUsed = b.dataset.ytUsed === '0'; clearYouthIssue('neverUsed'); syncChoices(); persist(); markStale(); }));
+  YA('[data-yt-self]').forEach((b) => b.addEventListener('click', () => { selfUse = b.dataset.ytSelf === '1'; clearYouthIssue('selfUse'); syncChoices(); persist(); markStale(); }));
 
-  YA('#ytTermPills .qp').forEach((b) => b.addEventListener('click', () => { setCalcFieldStoredValue(Y('#ytTerm'), +b.dataset.val); onChange(); }));
-  YA('#ytGracePills .qp').forEach((b) => b.addEventListener('click', () => { setCalcFieldStoredValue(Y('#ytGrace'), +b.dataset.val); onChange(); }));
+  YA('#ytTermPills .qp').forEach((b) => b.addEventListener('click', () => { setCalcFieldStoredValue(Y('#ytTerm'), +b.dataset.val); onChange({target:Y('#ytTerm')}); }));
+  YA('#ytGracePills .qp').forEach((b) => b.addEventListener('click', () => { setCalcFieldStoredValue(Y('#ytGrace'), +b.dataset.val); onChange({target:Y('#ytGrace')}); }));
 
   [['#ytRateFold', '#ytRateFoldHead']].forEach(([f, h]) => {
     Y(h).addEventListener('click', () => {
@@ -13409,7 +13607,7 @@ window.addEventListener('resize', () => {
         showAppAlert('持買比率請輸入 1 ～ 100 之間的整數');
         return;
       }
-      setCalcFieldStoredValue(Y('#ytShare'), v);
+      setCalcFieldStoredValue(Y('#ytShare'), v);clearYouthIssue('#ytShare');
       syncShareTag();
       clampInputs(); persist(); markStale();
       closeDlg();
@@ -13466,6 +13664,7 @@ window.addEventListener('resize', () => {
     let dlgSeq = 0;
     const nameEl = (i) => Y('#ytRegSetName' + i);
     const amtEl = (i) => Y('#ytRegSetAmt' + i);
+    let draftInvalid=[],draftTopInvalid=false;
 
     function syncClearBtns() {
       for (let i = 0; i < YR_ROW_N; i++) {
@@ -13475,11 +13674,13 @@ window.addEventListener('resize', () => {
       }
     }
     function fill(rows) {
+      draftInvalid=rows.map(r=>({...r.invalid}));draftTopInvalid=yrRowsInvalid;
       for (let i = 0; i < YR_ROW_N; i++) {
-        if (nameEl(i)) nameEl(i).value = rows[i].name;
+        if (nameEl(i)) {nameEl(i).value = rows[i].name;nameEl(i).placeholder=rows[i].invalid?.name?'請重新確認名稱':'';}
         const a = amtEl(i);
         if (a) {
-          if (rows[i].amount === '') clearCalcField(a);
+          a.placeholder=rows[i].invalid?.amount?'請重新確認金額':'';
+          if (rows[i].amount === ''||rows[i].invalid?.amount) clearCalcField(a);
           else setCalcFieldStoredValue(a, Number(rows[i].amount));
         }
       }
@@ -13490,7 +13691,8 @@ window.addEventListener('resize', () => {
       for (let i = 0; i < YR_ROW_N; i++) {
         out.push(normalizeYrRow({
           name: nameEl(i) ? nameEl(i).value : '',
-          amount: getCalcFieldRawString(amtEl(i))
+          amount: getCalcFieldRawString(amtEl(i)),
+          invalid:draftInvalid[i]
         }));
       }
       return out;
@@ -13498,12 +13700,15 @@ window.addEventListener('resize', () => {
     /* 名稱留白＝該組停用，金額原樣留著，之後填回名稱即可復用；
        填了名稱就代表要用這一組，此時上限金額必須補齊。 */
     function validate(rows) {
+      if(draftTopInvalid)return {msg:'儲存的縣市設定無法辨識，請重新設定，或按恢復預設後確認。',el:nameEl(0)};
       for (let i = 0; i < YR_ROW_N; i++) {
+        if(rows[i].invalid?.name)return {msg:'購屋縣市 '+(i+1)+' 的名稱需要重新確認。',el:nameEl(i)};
+        if(rows[i].name!==''&&rows[i].invalid?.amount)return {msg:'購屋縣市 '+(i+1)+' 的購屋總價上限需要重新確認。',el:amtEl(i)};
         if (rows[i].name === '') continue;
         const a = yrNum(rows[i].amount);
         const no = '購屋縣市 ' + (i + 1);
         if (!Number.isFinite(a) || a <= 0) return { msg: no + ' 的購屋總價上限請填寫大於 0 的數字。', el: amtEl(i) };
-        if (a > 9999999) return { msg: no + ' 的購屋總價上限過大。', el: amtEl(i) };
+        if (a > PRICE_MAX_WAN || !Number.isInteger(a)) return { msg: no + ' 的購屋總價上限請輸入 1 ～ 9,999,999 之間的整數萬元。', el: amtEl(i) };
       }
       return null;
     }
@@ -13531,7 +13736,7 @@ window.addEventListener('resize', () => {
     Y('#ytRegionSetBtn')?.addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
     Y('#ytRegionSetCancel')?.addEventListener('click', closeDlg);
     Y('#ytRegionSetReset')?.addEventListener('click', () => {
-      fill(cloneYrRows(YR_DEFAULT_ROWS));
+      fill(cloneYrRows(YR_DEFAULT_ROWS));draftTopInvalid=false;draftInvalid=Array.from({length:YR_ROW_N},()=>({}));
       showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
     });
     Y('#ytRegionSetSave')?.addEventListener('click', () => {
@@ -13541,7 +13746,7 @@ window.addEventListener('resize', () => {
         showAppAlert(bad.msg, () => { if (bad.el && typeof bad.el.focus === 'function') bad.el.focus({ preventScroll: true }); });
         return;
       }
-      yrRows = rows;
+      yrRows = rows;yrRowsInvalid=false;
       saveYrRows(yrRows);
       const n = yrValidIndexes().length;
       syncYrSelection();
@@ -13563,8 +13768,12 @@ window.addEventListener('resize', () => {
       Y('#ytRegionSetSave')?.click();
     });
     dlg.addEventListener('input', (e) => {
-      if (e.target && /^ytRegSetName\d$/.test(e.target.id)) syncClearBtns();
+      const m=e.target?.id?.match(/^ytRegSetName([0-2])$/);
+      if(m){delete draftInvalid[Number(m[1])].name;draftTopInvalid=false;syncClearBtns();}
     });
+    const confirmAmountEdit=e=>{const m=e.target?.id?.match(/^ytRegSetAmt([0-2])$/);if(m){delete draftInvalid[Number(m[1])].amount;draftTopInvalid=false;}};
+    dlg.addEventListener('change',confirmAmountEdit);
+    dlg.addEventListener('calcfield:change',confirmAmountEdit);
     dlg.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-gl-clear]');
       if (!btn) return;
@@ -13607,11 +13816,11 @@ window.addEventListener('resize', () => {
     /* 徽章＝總價上限審查的開關 */
     Y('#ytRegionOff')?.addEventListener('click', () => {
       if (badgeLockBlocked()) return;
-      if (!yrValidIndexes().length) {
+      if (!yrValidIndexes().length && !yrOnInvalid && !yrRowsInvalid && !yrInvalidRequired()) {
         showToast('', { hint: true, hintHtml: hintLines('請先於「購屋縣市」', '齒輪內設定 ' + tEm('至少1組'), '（購屋縣市設定）') });
         return;
       }
-      yrOn = !yrOn;
+      yrOn = !yrOn;yrOnInvalid=false;
       saveYrOn(yrOn);
       syncChoices(); persist(); markStale();
       showToast('', { html: toastLines((yrOn ? tOk('已啟用') : tNo('已關閉')) + ' 購屋縣市審查') });
@@ -13647,10 +13856,14 @@ window.addEventListener('resize', () => {
       lastFocus = null;
     }
     function applyBase(v) {
+      const same=raw(Y('#ytBase'))===String(v);
       saveBaseDefault(v);
+      clearYouthIssue('#ytBase');
+      if(same){clampInputs();syncSteps(false);persist();markStale();return;}
       setCalcFieldStoredValue(Y('#ytBase'), v);
       // 與手動改基準利率一致：五段一律回到自動計算
       stepsTouched = [false, false, false, false, false];
+      STEP_IDS.forEach(clearYouthIssue);clearYouthIssue('stepsTouched');
       clampInputs(); syncSteps(true); persist(); markStale();
     }
 
@@ -13691,25 +13904,85 @@ window.addEventListener('resize', () => {
   })();
 
   Y('#ytAprInfoBtn')?.addEventListener('click', () => showAppAlert(APR_INFO_HTML_YT, null, { html: true }));
+  /* 不含利率的基本必填。利率是否必要，要等貸款組成算出來才知道，
+     見 requiredRateFields()。 */
   const REQUIRED = [
     ['#ytAge', '年齡'],
     ['#ytIncome', '本人年所得'],
     ['#ytPrice', '購屋總價'],
     ['#ytRatio', '貸款成數'],
-    ['#ytTerm', '貸款年限'],
-    ['#ytBase', '基準利率'],
-    ['#ytGenRate', '一般貸款年利率']
+    ['#ytTerm', '貸款年限']
   ];
+
+  /* 用目前欄位先估一次貸款組成，只為了判斷「這次真的用得到哪些利率」。
+     跟 compute() 用同一組來源與同一條 min(總額, 額度上限, 成數上限) 規則，
+     但不建立排程、不產生結果；任何一項還不能判定就回 null，
+     交給基本必填的檢查去提示，不在這裡自己編一組預設值。 */
+  function loanSplitPreview() {
+    if (!eligibilityInputsReady()) return null;
+    const price = strictNum('#ytPrice'), ratio = strictNum('#ytRatio');
+    const share = shareValue(), appr = apprValue();
+    if (price === null || ratio === null || share === null || appr === null) return null;
+    // checkEligibility() 回傳的是逐項陣列，全部 ok 才算通過（與 compute() 同一判斷）
+    const elig = checkEligibility();
+    const pass = Array.isArray(elig) && elig.every((e) => e && e.ok);
+    const sp = loanSplitOf({ price, appr, ratio, share, pass, kind });
+    if (!Number.isFinite(sp.total) || sp.total <= 0) return null;
+    return sp;
+  }
+  function eligibilityInputsReady() {
+    return ['#ytAge', '#ytIncome', '#ytPrice', '#ytRatio'].every(
+      (id) => raw(Y(id)) !== '' && strictNum(id) !== null);
+  }
+
+  /* 本次真正用到的利率欄位。
+     產品決策：一般部位為 0 就不要求一般利率；青安部位為 0 就不要求青安基準與階梯。
+     注意第 5 段：compute() 的 if (youthWan > 0) 內會用 st[4] 建無補貼比較排程，
+     所以只要有青安部位，第 5 段就是實際依賴，即使因短年限在畫面上被收起來，
+     仍必須有合法來源，不能拿空白當 0%。 */
+  function requiredRateFields() {
+    const split = loanSplitPreview();
+    const out = [];
+    // 組成還算不出來時（基本欄位尚未填妥）不追加利率必填，由基本檢查先提示
+    if (!split) return out;
+    /* 門檻與 compute() 一致：compute 用 if (youthWan > 0) 與 d.genWan > 0，
+       這裡也用 > 0，不用 1e-9，免得實際有部位卻不驗它的利率。 */
+    if (split.genWan > 0) out.push(['#ytGenRate', '一般貸款年利率']);
+    if (split.youthWan > 0) out.push(['#ytBase', '基準利率']);
+    return out;
+  }
   function ytMissingFields() {
     const labels = [];
     let firstEl = null;
-    REQUIRED.forEach(([sel, lab]) => {
+    const proposedSplit = loanSplitPreview();
+    // 金額以元呈現；總額雖為正、但尚不足可呈現的一元時，先請使用者調整輸入。
+    if(proposedSplit && Math.round(proposedSplit.total * 10000) <= 0){
+      labels.push('貸款金額過小，結果將顯示為 0 元；請調整購屋總價或貸款成數');
+      firstEl=Y('#ytPrice');
+    }
+    const rateReq = requiredRateFields();
+    const useYouth = rateReq.some(([sel]) => sel === '#ytBase');
+    const usedRates=rateReq.map(([id])=>id).concat(useYouth?STEP_IDS.slice(0,visibleStepCount()).concat(STEP_IDS[4]):[]);
+    const allRateIds=['#ytBase','#ytGenRate'].concat(STEP_IDS);
+    for(const key of Object.keys(ytIssues)){
+      if(allRateIds.includes(key)&&!usedRates.includes(key))continue;
+      if(key==='region'&&!yrOn&&!yrOnInvalid)continue;
+      labels.push((FIELD_LABELS[key]||OPTION_LABELS[key]||'儲存資料')+'（請重新確認）');
+      if(!firstEl)firstEl=key==='#ytShare'?Y('#ytShareTag'):key==='region'?Y('#ytRegionSetBtn'):key.startsWith('#')?Y(key):Y('#ytDataNotice');
+    }
+    if(yrInvalidRequired()){labels.push('購屋縣市設定（請開齒輪修正）');if(!firstEl)firstEl=Y('#ytRegionSetBtn');}
+    for(const id of FIELDS.filter(id=>!allRateIds.includes(id))){
+      const v=raw(Y(id));const valid=youthFieldValue(id,v,strictNum('#ytTerm'));
+      if(v!==''&&!valid.valid){labels.push(FIELD_LABELS[id]);if(!firstEl)firstEl=Y(id);}
+    }
+    const checkList = REQUIRED.concat(rateReq);
+    checkList.forEach(([sel, lab]) => {
       if (raw(Y(sel)) === '') { labels.push(lab); if (!firstEl) firstEl = Y(sel); }
     });
     /* 必填欄位有填、但整串不是有效數字時，num() 會回 NaN，
        接著資格判斷的 income <= 200 之類比較一律為 false，
        結果把「亂碼」講成「超過資格門檻」。這是輸入無效，不是資格不符。 */
-    REQUIRED.forEach(([sel, lab]) => {
+    checkList.forEach(([sel, lab]) => {
       if (raw(Y(sel)) === '') return;
       if (strictNum(sel) === null && labels.indexOf(lab) < 0) {
         labels.push(lab); if (!firstEl) firstEl = Y(sel);
@@ -13720,19 +13993,45 @@ window.addEventListener('resize', () => {
        不能被當成損壞資料清掉。 */
     if (shareValue() === null) { labels.push('持買比率'); if (!firstEl) firstEl = Y('#ytShareTag') || Y('#ytShare'); }
     if (apprValue() === null) { labels.push('銀行鑑價'); if (!firstEl) firstEl = Y('#ytAppraisal'); }
-    // 基準利率有填時，階梯格才可能單獨被清掉；被年限收掉的段落不列入必填
-    if (raw(Y('#ytBase')) !== '') {
+    /* 本次真正用到的利率，除了「有沒有填」還要驗既有範圍（RATE_MIN～RATE_MAX）。
+       只檢空白與 Number 有限是不夠的：一般利率 0／17、手動第 1 段 −1、
+       第 5 段 17 都會直接進排程，負利率還會算出負的每月應繳。
+       範圍常數沿用各欄現行值，不新增一套。 */
+    const rateOutOfRange = (sel) => {
+      const v = strictNum(sel);
+      return v !== null && (v < RATE_MIN || v > RATE_MAX);
+    };
+    rateReq.forEach(([sel, lab]) => {
+      if (rateOutOfRange(sel) && labels.indexOf(lab) < 0) {
+        labels.push(lab); if (!firstEl) firstEl = Y(sel);
+      }
+    });
+    /* 階梯利率只有「本次真的有青安部位」時才必填。
+       畫面上顯示幾段由年限決定，但第 5 段是省息比較的實際依賴，
+       即使被收起來也要有合法值——所以檢查範圍取「顯示段數」與「第 5 段」的聯集，
+       不能只用 hidden 判斷有沒有依賴。 */
+    if (useYouth && raw(Y('#ytBase')) !== '') {
       const shown = visibleStepCount();
-      const blank = STEP_IDS.slice(0, shown).filter((id) => raw(Y(id)) === '');
-      if (blank.length) {
-        labels.push(stepsTitleOf(shown));
-        if (!firstEl) firstEl = Y(blank[0]);
+      const need = STEP_IDS.slice(0, shown).concat([STEP_IDS[4]]);
+      const uniq = need.filter((id, i) => need.indexOf(id) === i);
+      const blank = uniq.filter((id) => raw(Y(id)) === '');
+      // 使用中（含第 5 段比較依賴）的階梯利率也要驗範圍，衍生超限一併擋下
+      const bad = uniq.filter((id) => raw(Y(id)) !== '' && (strictNum(id) === null || rateOutOfRange(id)));
+      if (blank.length || bad.length) {
+        const hidden = (blank.concat(bad)).some((id) => STEP_IDS.indexOf(id) >= shown);
+        /* 第 5 段可能因短年限而不在畫面上。只講「一段式利率」使用者找不到，
+           所以明確點名是省息比較用的第 5 段，並指向可操作的入口。 */
+        labels.push(hidden
+          ? '第5段利率（省息比較使用，確認後可直接修改；其他手動利率保留）'
+          : stepsTitleOf(shown));
+        if (!firstEl) firstEl = Y(blank[0] || bad[0]) || Y('#ytBase');
       }
     }
     return labels.length ? { el: firstEl, labels } : null;
   }
   function ytRevealMissing(el) {
     if (!el) return;
+    if(el===Y('#ytR5')){ytShowComparisonRate=true;syncStepScope();}
     const fold = el.closest('.yt-fold');
     if (fold && !fold.classList.contains('open')) {
       fold.classList.add('open');
@@ -13744,6 +14043,7 @@ window.addEventListener('resize', () => {
   function ytRunCalc() {
     const miss = ytMissingFields();
     if (miss) {
+      Y('#ytResults').classList.remove('show');last=null;ytStale=true;persist();updateYtButton();
       showAppAlert(buildCalcMissingAlertHtml(miss.labels), () => ytRevealMissing(miss.el), { html: true });
       return;
     }
@@ -13760,6 +14060,7 @@ window.addEventListener('resize', () => {
       if (typeof scrollToResultsTop === 'function') scrollToResultsTop();
     } catch (e) { console.error(e); showAppAlert('試算時發生錯誤，請重新整理頁面後再試'); }
   }
+  window.__ytHasValidResult = () => !!last && !ytStale && Y('#ytResults').classList.contains('show') && !ytMissingFields();
   window.__ytRunCalc = ytRunCalc;
   Y('#ytCalc').addEventListener('click', ytRunCalc);
 
@@ -13769,40 +14070,157 @@ window.addEventListener('resize', () => {
   Y('#ytShareBtn').addEventListener('click', shareResults);
 
   /* ---------- 清空／恢復 ---------- */
-  /* 「清空後自動帶回的東西」不算使用者新輸入：
-     基準利率是政策常數（清空時就會帶回預設）、持買比率是購屋固定條件（刻意保留）。
-     判斷有沒有新資料時要排除這兩格，否則清空→再清空會被誤認為又輸入了一份新試算，
-     把第一次的快照蓋掉，使用者按恢復就拿不回原本的資料。 */
-  function ytHasUserInput() {
-    /* 排除清空後會被自動帶回的欄位：
-       基準利率（政策常數，清空即帶回預設）、持買比率（購屋固定條件，刻意保留），
-       以及五段階梯利率——清空時 syncSteps(true) 會依基準利率重算回填，
-       把它們算成「使用者又輸入了」的話，連續清空一樣會蓋掉原快照。 */
+  /* 清空當下的狀態快照，用來判斷「後來有沒有真的被使用者改過」。
+     舊版改用固定排除清單（持買比率、基準、五段），問題是連使用者「手動」
+     把基準改成 3、或只改某一段，也一起被當成自動回填而忽略，
+     第二次清空就沿用更早的快照，那次修改整個不見。
+     改成比對基準狀態：自動回填後長什麼樣就記下來，之後只要跟它不同，
+     就是使用者確實改過。這樣單純開關鍵盤按完成（值沒變）仍不算新輸入。 */
+  /* 清空基準必須跨重開存活。P 版只放在記憶體裡，重新載入後為 null，
+     ytHasUserInput() 直接回 true，於是「清空 → 重開 → 再清空」
+     會把空白表當成新資料覆蓋第一份快照，恢復就拿不回原本的 1500。
+     存的是清空當下的指紋，不是「載入時的現況」——
+     否則「改新資料 → 重開 → 再清空」又會漏存那份新資料。 */
+  const CLEAR_BASE_KEY = 'youth_clear_baseline_v1';
+  /* 「清空之後使用者到底有沒有真的改過條件」不能只靠與現況比對推論。
+     齒輪套用預設基準 3 時會同時改預設值與主欄，兩邊都變 3，
+     用「主欄是否等於目前預設」判斷就會誤判成自動回填。
+     改成明確記錄：任何一次會寫回主存檔的使用者操作都打旗標，
+     清空／恢復時歸零。旗標持久化，跨重開仍有效。 */
+  const CLEAR_DIRTY_KEY = 'youth_dirty_since_clear_v1';
+  let ytDirtySinceClear = false;
+  try { ytDirtySinceClear = localStorage.getItem(CLEAR_DIRTY_KEY) === '1'; } catch (e) {}
+  let ytSuppressDirty = 0;
+  function setDirtySinceClear(v) {
+    ytDirtySinceClear = !!v;
+    try {
+      if (v) localStorage.setItem(CLEAR_DIRTY_KEY, '1');
+      else localStorage.removeItem(CLEAR_DIRTY_KEY);
+    } catch (e) {}
+  }
+  let ytObservedFingerprint=null;
+  function markDirtySinceClear() {
+    const now=ytStateFingerprint();
+    if(ytSuppressDirty===0&&ytObservedFingerprint!==null&&now!==ytObservedFingerprint)setDirtySinceClear(true);
+    ytObservedFingerprint=now;
+  }
+  /* baseline 只有「內容可判別為合法指紋」才採用。
+     空字串、破 JSON、"null"、{}、[]、數字、f 型別錯等都當成沒有基準，
+     不能因為「字串不相等」就推論成使用者有新輸入而覆蓋舊快照。 */
+  function validBaselineStr(s) {
+    if (typeof s !== 'string' || s === '') return null;
+    try {
+      const o = JSON.parse(s);
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+      if (!o.f || typeof o.f !== 'object' || Array.isArray(o.f)) return null;
+      /* 只驗「f 是物件、kind/method 是字串」不夠：
+         f 為空物件、noHome 被寫成字串 'true'、kind 是未知的 'broken'，
+         都會通過外觀檢查，然後因字串不相等被當成使用者有新輸入，
+         把合法的舊快照覆蓋掉。這裡改成完整驗結構、型別與合法列舉。 */
+      if (typeof o.kind!=='string'||!Object.prototype.hasOwnProperty.call(CAP, o.kind)) return null;
+      if (typeof o.region!=='number'||!Number.isInteger(o.region)||o.region<0||o.region>=YR_ROW_N) return null;
+      if (o.method !== 'amortize' && o.method !== 'principal') return null;
+      if (typeof o.noHome !== 'boolean' || typeof o.neverUsed !== 'boolean'
+          || typeof o.selfUse !== 'boolean') return null;
+      // f 必須涵蓋全部欄位且都是字串，缺一個就不是可信的指紋
+      for (const id of FIELDS) {
+        if (typeof o.f[id] !== 'string') return null;
+      }
+      // 清空基準不會包含使用者填寫的總價等條件；內容非空就不能拿來壓過真實新資料。
+      const autoFields=['#ytShare','#ytBase'].concat(STEP_IDS);
+      if(FIELDS.some(id=>!autoFields.includes(id)&&o.f[id]!==''))return null;
+      const f={};FIELDS.forEach(id=>{f[id]=o.f[id];});
+      return JSON.stringify({f,kind:o.kind,method:o.method,region:o.region,noHome:o.noHome,neverUsed:o.neverUsed,selfUse:o.selfUse});
+    } catch (e) { return null; }
+  }
+  let ytClearBaseline = null;
+  try { ytClearBaseline = validBaselineStr(localStorage.getItem(CLEAR_BASE_KEY)); } catch (e) {}
+  function setClearBaseline(v) {
+    ytClearBaseline = v;
+    try {
+      if (v === null) localStorage.removeItem(CLEAR_BASE_KEY);
+      else localStorage.setItem(CLEAR_BASE_KEY, v);
+    } catch (e) {}
+  }
+  function ytStateFingerprint() {
+    const f = {};
+    FIELDS.forEach((id) => { f[id] = raw(Y(id)); });
+    /* 不只數字欄位：身分別、還款方式與三個資格答案也是「試算條件」，
+       只改身分不填數字，再清空一次也必須保住這次的變更。 */
+    return JSON.stringify({ f, kind, method, region, noHome, neverUsed, selfUse });
+  }
+  /* 沒有可用 baseline 時（舊版升級、key 遺失或內容損壞）不能一律當成有新資料——
+     那會把舊版清空後留下的合法快照直接覆蓋掉。
+     改成語意判斷：目前畫面是不是「剛清空完、只有自動回填」的樣子。
+     清空的結果是確定的：除持買比率外全部清空、基準帶回預設、五段依基準重算且
+     stepsTouched 全 false，身分／還款方式／資格答案沿用清空前的值（存在快照裡）。
+     只要有一項對不上，就是使用者真的改過。 */
+  function looksLikeFreshClear(snap) {
+    if (!snap || typeof snap !== 'object') return false;
+    const sf = (snap.f && typeof snap.f === 'object' && !Array.isArray(snap.f)) ? snap.f : {};
     const auto = ['#ytShare', '#ytBase'].concat(STEP_IDS);
-    return FIELDS.some((id) => auto.indexOf(id) < 0 && raw(Y(id)) !== '');
+    // 除自動回填欄位外，其餘必須都是空的
+    if (FIELDS.some((id) => auto.indexOf(id) < 0 && raw(Y(id)) !== '')) return false;
+    // 基準必須還是預設值（使用者手動改成 3 就對不上）
+    if (String(raw(Y('#ytBase'))) !== String(loadBaseDefault())) return false;
+    // 五段必須仍是自動推導，沒有任何一段被手動改過
+    if (stepsTouched.some(Boolean)) return false;
+    const autoRates=derivedSteps(loadBaseDefault());
+    if(STEP_IDS.some((id,i)=>raw(Y(id))!==String(autoRates[i])))return false;
+    // 持買比率沿用清空前的設定
+    const share = (sf['#ytShare'] === undefined || sf['#ytShare'] === '')
+      ? String(YT_SHARE_DEFAULT) : String(sf['#ytShare']);
+    if (String(raw(Y('#ytShare'))) !== share) return false;
+    // 身分／還款方式／縣市／三個資格答案沿用清空前
+    if (snap.kind !== undefined && kind !== snap.kind) return false;
+    if (snap.method !== undefined && method !== snap.method) return false;
+    if (snap.region !== undefined && region !== snap.region) return false;
+    if (snap.noHome !== undefined && noHome !== snap.noHome) return false;
+    if (snap.neverUsed !== undefined && neverUsed !== snap.neverUsed) return false;
+    if (snap.selfUse !== undefined && selfUse !== snap.selfUse) return false;
+    return true;
+  }
+  function ytHasUserInput() {
+    if (ytClearBaseline !== null) return ytStateFingerprint() !== ytClearBaseline;
+    /* 無可用基準（舊版升級、key 遺失或內容損壞）：
+       用持久化旗標判斷清空之後有沒有真的改過條件。
+       旗標為假時再用語意檢查兜底，兩者都認為沒改才保護舊快照。 */
+    if (ytDirtySinceClear) return true;
+    return !looksLikeFreshClear(ytCleared);
   }
   window.__ytClear = function () {
-    // 已經有快照、而且清空後沒有再輸入任何資料 → 這次清空沒有新東西可存，保留原快照
+    // 已經有快照、而且清空後沒有再改過任何條件 → 這次清空沒有新東西可存，保留原快照
     if (!ytCleared || ytHasUserInput()) ytCleared = capture();
     persistCleared();
+    ytIssues=Object.fromEntries(Object.entries(ytIssues).filter(([key])=>['kind','method','region','noHome','neverUsed','selfUse','#ytShare'].includes(key)));
+    ytShowComparisonRate=false;
     stepsTouched = [false, false, false, false, false];
     // 持買比率屬於「這次購屋的固定條件」而非試算數值，清空時保留使用者設定
     FIELDS.filter((id) => id !== '#ytShare').forEach((id) => clearCalcField(Y(id)));
     // 基準利率屬政策常數而非個人資料，清空後直接帶回預設值，
     // 並強制重算五段階梯（此時五格皆為空白，非強制模式不會回填）
     setCalcFieldStoredValue(Y('#ytBase'), loadBaseDefault());
-    if (raw(Y('#ytShare')) === '') setCalcFieldStoredValue(Y('#ytShare'), YT_SHARE_DEFAULT);
+    if (raw(Y('#ytShare')) === ''&&!ytIssues['#ytShare']) setCalcFieldStoredValue(Y('#ytShare'), YT_SHARE_DEFAULT);
     syncShareTag();
     syncSteps(true);
-    updateYtAmount();   // 唯讀的貸款金額不會自己跟著清，要主動重算成空白
+    clampInputs();      // 清空後同步年限／寬限期快捷、上限標籤及唯讀貸款金額
     Y('#ytResults').classList.remove('show');
     // 「清空數值」維持原本規則：要重新按一次計算
     ytAutoHidden = false;
+    ytSuppressDirty++;
     markStale(); persist();
+    ytSuppressDirty--;
+    setDirtySinceClear(false);      // 這一次清空重新起算
+    // 自動回填全部做完後才記基準；之後與它不同就是使用者真的改過
+    setClearBaseline(ytStateFingerprint());
   };
   window.__ytRestore = function () {
     if (!ytCleared) return;
-    apply(ytCleared); ytCleared = null; persistCleared(); persist(); markStale();
+    setClearBaseline(null);      // 已離開清空狀態，基準作廢
+    setDirtySinceClear(false);
+    ytSuppressDirty++;
+    try{const saved=ytCleared;ytCleared=null;apply(saved);persistCleared();persist();markStale();}
+    finally{ytSuppressDirty--;setDirtySinceClear(false);ytObservedFingerprint=ytStateFingerprint();}
   };
   window.__ytHasCleared = function () { return !!ytCleared; };
   // 期數單位為兩個面板共用，另一邊切換時同步重繪本面板
@@ -13837,7 +14255,7 @@ window.addEventListener('resize', () => {
     L.push('');
     L.push('【資格審查】');
     L.push(d.pass ? '初步符合新青安 3.0 申請資格' : '不符新青安 3.0 申請資格');
-    d.elig.forEach((e) => L.push((e.ok ? '✓ ' : '✕ ') + e.t));
+    d.elig.forEach((e) => L.push((e.off ? '— ' : e.ok ? '✓ ' : '✕ ') + plainExportText(e.t) + '：' + plainExportText(e.s || '') + (e.off && !plainExportText(e.s || '').includes('未啟用') ? '（未啟用）' : '')));
     L.push('');
     L.push('【貸款組成】');
     L.push('貸款總額：' + money(d.total * 10000) + ' 元');
@@ -13845,17 +14263,15 @@ window.addEventListener('resize', () => {
     if (d.genWan > 0) L.push('　一般貸款部位：' + money(d.genWan * 10000) + ' 元');
     L.push('自備款：' + money(d.downWan * 10000) + ' 元');
     L.push('');
-    L.push('【每月還款】');
-    groupRows(d.all, d.graceM, d.n, new Array(d.n).fill(0)).forEach((g) => {
-      const per = g.s === g.e ? ('第 ' + g.s + ' 期') : ('第 ' + g.s + '～' + g.e + ' 期');
-      const pay = g.pay === g.payE ? money(g.pay) : (money(g.pay) + '～' + money(g.payE));
-      L.push(per + '：每月 ' + pay + ' 元' + (g.isGrace ? '（寬限期）' : ''));
-    });
+    const scope = Y('#ytPeriodDots .pmode')?.textContent || (d.youthWan > 0 ? '青安貸款' : '一般貸款');
+    L.push('【每月還款：' + scope + '】');
+    L.push(...periodShareLines(Y('#ytPeriodLines')));
+    if (!Y('#ytAprBlock').classList.contains('hidden')) L.push('換算年利率（全案合計）：' + Y('#ytResApr').textContent.trim());
     if (d.youthWan > 0) {
       L.push('');
       L.push('【利率】');
       L.push('新青安基準利率：' + raw(Y('#ytBase')) + ' %');
-      d.st.forEach((r, i) => L.push('　第 ' + (i + 1) + ' 段：' + r + ' %'));
+      d.st.slice(0, stepCountOf(d.term)).forEach((r, i) => L.push('　' + stepLabelAt(i, d.term) + '：' + r + ' %'));
     }
     if (d.genWan > 0) L.push((d.youthWan > 0 ? '' : '\n【利率】\n') + '一般貸款年利率：' + raw(Y('#ytGenRate')) + ' %');
     L.push('');
@@ -13869,11 +14285,24 @@ window.addEventListener('resize', () => {
      使用者要等到下次開齒輪才會合法化。loadBaseDefault() 現在會自我修復並寫回，
      所以這裡呼叫一次就夠，合法值不會被動到。 */
   loadBaseDefault();
-  try { const c = localStorage.getItem(CLEAR_STORE); if (c) ytCleared = JSON.parse(c) || null; } catch (e) {}
-  try { const s = localStorage.getItem(STORE); if (s) apply(JSON.parse(s)); } catch (e) {}
+  /* 啟動載入不是使用者操作，期間的 persist() 不可打「已修改」旗標，
+     否則一開頁就會被當成清空後又輸入了新資料。 */
+  ytSuppressDirty++;
+  try { const c=localStorage.getItem(CLEAR_STORE);if(c!==null){let value;try{value=JSON.parse(c);}catch(e){value=null;}ytCleared=normalizeYouthState(value);persistCleared();} } catch(e){}
+  try { const saved=localStorage.getItem(STORE);if(saved!==null){let value;try{value=JSON.parse(saved);}catch(e){value=null;}apply(value);} } catch(e){console.error(e);}
   syncChoices(); clampInputs(); syncSteps(false); markStale();
   if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
   const spEl = Y('#ytSpread'); if (spEl) spEl.value = SPREAD;   // 與計算共用同一常數
+  persist();ytObservedFingerprint=ytStateFingerprint();
+  /* 舊版缺少或損壞清空基準時，只在啟動確認尚未修改且確實為清空狀態，
+     才補記這一刻的原始條件。之後改值再改回也能和固定基準比較；
+     不能等齒輪已同時更改預設與主欄後才重建，也不能覆蓋有修改旗標的新資料。 */
+  if (ytClearBaseline === null && !ytDirtySinceClear && !Object.keys(ytIssues).length
+      && looksLikeFreshClear(ytCleared)) {
+    const recoveredBaseline = validBaselineStr(ytObservedFingerprint);
+    if (recoveredBaseline !== null) setClearBaseline(recoveredBaseline);
+  }
+  ytSuppressDirty--;          // 啟動載入不是使用者修改
   const vl = Y('#ytVerLine');
   if (vl) vl.textContent = VERSION_LINE_TEXT();
 })();
