@@ -4644,7 +4644,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.09AG";
+const APP_VERSION = "2026.09.09AH";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5415,7 +5415,22 @@ function beginAppModalClose(modal) {
   appModalLastFocus.delete(modal);
 }
 
-function syncInactiveAppModals() {
+/* 按鍵亮起／復原、一般內容更新不會改變浮層的開閉狀態。
+   只在浮層本身的屬性改變，或浮層節點加入／移除時同步。
+   首次初始化未傳 records，仍完整同步；不改 hidden/inert 與關閉防護規則。 */
+function appModalMutationChangesState(record) {
+  if (record.type === 'attributes') {
+    return record.target.nodeType === 1 && record.target.matches(APP_MODAL_SELECTOR);
+  }
+  if (record.type === 'childList') {
+    return [...record.addedNodes, ...record.removedNodes].some(node =>
+      node.nodeType === 1 && (node.matches(APP_MODAL_SELECTOR) || node.querySelector(APP_MODAL_SELECTOR)));
+  }
+  return false;
+}
+
+function syncInactiveAppModals(records) {
+  if (records && !records.some(appModalMutationChangesState)) return;
   document.querySelectorAll(APP_MODAL_SELECTOR).forEach(el => {
     const inactive = !appModalIsOpen(el);
     if (el.inert !== inactive) el.inert = inactive;
