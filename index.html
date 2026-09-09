@@ -4707,7 +4707,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.10A";
+const APP_VERSION = "2026.09.10B";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -11896,12 +11896,21 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     fitBdFlowRows();
   }
 
+  function hasBdFlowResult() {
+    return !!bdFlowSnapshot && !bdStale && B('#bdResults').classList.contains('show');
+  }
+  function syncBdFlowEntry() {
+    const valid = hasBdFlowResult();
+    const visible = document.body.dataset.mode === 'burden' && valid;
+    B('#bdFlowBtn').hidden = !visible;
+    B('#bdFlowSep').hidden = !visible;
+    if (!valid && B('#bdFlowBody').innerHTML) B('#bdFlowBody').innerHTML = '';
+    if (!visible && !bdFlowSheet.hidden) closeBdFlow();
+  }
+
   function renderBdFlow() {
     const body = B('#bdFlowBody');
-    if (!bdFlowSnapshot || bdStale || !B('#bdResults').classList.contains('show')) {
-      body.innerHTML = '<div class="bd-flow-card"><div class="bd-flow-empty"><h3 class="bd-flow-title">看懂可負擔房價怎麼算</h3><p>填寫條件並完成「開始個人評估」後，這裡會帶入本次數字，逐步顯示公式。</p><ol><li>收入與收支比 → 可負擔月付</li><li>願意負擔與他人協助 → 採用月付</li><li>年限、利率、成數與寬限限制</li><li>檢查全期月付 → 可貸能力</li><li>合併自備款 → 可負擔房價</li><li>每期本金、利息與餘額</li></ol><p>尚無有效評估結果，先返回個人評估完成試算。</p></div></div>';
-      return;
-    }
+    if (!hasBdFlowResult()) { body.innerHTML = ''; return false; }
     const s = bdFlowSnapshot, r = s.res, count = r.sched.length;
     const monthly = s.incomeMode === 'year' ? s.income / 12 : s.income;
     const monthlyText = (Number.isInteger(monthly) ? '' : '約 ') + flowNumber(monthly);
@@ -11968,6 +11977,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     body.innerHTML = html + '</div>';
     renderBdFlowPeriod(s, Number(B('#bdFlowPeriod').value));
     B('#bdFlowPeriod').addEventListener('change', e => renderBdFlowPeriod(s, Number(e.target.value)));
+    return true;
   }
 
   const bdFlowSheet = B('#bdFlowSheet');
@@ -11982,10 +11992,10 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     bdFlowFocus = null;
   }
   B('#bdFlowBtn').addEventListener('click', () => {
-    if (document.body.dataset.mode !== 'burden') return;
+    syncBdFlowEntry();
+    if (B('#bdFlowBtn').hidden || !renderBdFlow()) return;
     const seq = ++bdFlowSeq;
     bdFlowFocus = document.activeElement;
-    renderBdFlow();
     bdFlowSheet.querySelector('.spec-sheet-scroll').scrollTop = 0;
     bdFlowSheet.hidden = false;
     beginAppModalOpen(bdFlowSheet, closeBdFlow);
@@ -12435,6 +12445,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
 
   /* ---------- 按鈕狀態 ---------- */
   function updateBdButton() {
+    syncBdFlowEntry();
     const b = B('#bdCalc');
     if (!b) return;
     b.classList.remove('btn-calc-stale', 'btn-calc-done');
@@ -12512,6 +12523,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       B('#bdResults').classList.remove('show'); bdStale = true;
       bdAutoHidden = !displayIssue && (o.autoHidden || o.resultsVisible);
     }
+    updateBdButton();
     persist();
   }
 
@@ -13388,8 +13400,6 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const prevMode = document.body.dataset.mode;
     if (prevMode && prevMode !== mode) modeScroll[prevMode] = currentScrollY();
     document.body.dataset.mode = mode;
-    document.getElementById('bdFlowBtn').hidden = mode !== 'burden';
-    document.getElementById('bdFlowSep').hidden = mode !== 'burden';
     // 必須放在 dataset.mode 更新之後：鎖的狀態是看「當前模式」決定的
     if (typeof syncBadgeLock === 'function') syncBadgeLock();
     btns.forEach((btn) => {
