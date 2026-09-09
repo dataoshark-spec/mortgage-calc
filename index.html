@@ -4707,7 +4707,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.10B";
+const APP_VERSION = "2026.09.10C";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -10302,18 +10302,31 @@ function repaymentDisplayGroups(schedule, graceMonths, rateAt, principalMethod) 
   }
   return out;
 }
+// 端點列的金額仍取原逐期結果；只有首列標示延伸到本段末期前一期。
+function periodGroupDisplayEnd(group) {
+  return group.endpoint && group.start === group.segmentStart
+    ? Math.max(group.start, group.segmentEnd - 1) : group.end;
+}
+function periodGroupLabel(group) {
+  // 年顯示保留「開始遞減的年份」，完整適用期數列在下方。
+  return genPeriodLabel(group.start, periodUnitPref === 'year' ? group.end : periodGroupDisplayEnd(group));
+}
 function periodGroupTag(group, lastSettlement = false) {
   const pad = n => String(n).padStart(3, '0');
   let tag = '';
   if (group.endpoint) {
-    const segment = pad(group.segmentStart) + '期～' + pad(group.segmentEnd) + '期';
-    const exact = periodUnitPref === 'year' ? pad(group.start) + '期 · ' : '';
-    tag = exact + segment + '段';
+    if (periodUnitPref === 'year') {
+      const end = periodGroupDisplayEnd(group);
+      tag = pad(group.start) + '期' + (group.start === end ? '' : '～' + pad(end) + '期');
+    }
   } else if (periodUnitPref === 'year' && (group.start % 12 !== 1 || group.end % 12 !== 0)) {
-    // 年中換率、尾期結清及單一期不可只寫年份，否則同年不同金額無法對回適用期數。
+    // 年中換率、尾期結清及單一期仍補上期數，讓同年不同金額可對回原逐期結果。
     tag = pad(group.start) + '期' + (group.start === group.end ? '' : '～' + pad(group.end) + '期');
   }
-  if (lastSettlement) tag += (tag ? ' · ' : '') + '最後一期';
+  // 本金攤還的年顯示已有末期編號；期／月顯示則補上最後一期。
+  if (lastSettlement && !(periodUnitPref === 'year' && group.note === '最後金額')) {
+    tag += (tag ? ' · ' : '') + '最後一期';
+  }
   return tag ? '<span class="pr-tag">' + tag + '</span>' : '';
 }
 function paymentNote(group) {
@@ -10463,9 +10476,9 @@ function renderPeriodLines() {
   const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
   const rowsHtml = gr.map((l, i) => {
     const amountText = l.paymentDisplay + ' 元' + paymentNote(l);
-    const tailTag = periodGroupTag(l, method !== 'principal' && i === gr.length - 1 && l.start === l.end);
+    const tailTag = periodGroupTag(l, i === gr.length - 1 && l.start === l.end);
     return `<div class="payment-row">
-      <div class="period-range"><span>${genPeriodLabel(l.start, l.end)}</span>${tailTag}</div>
+      <div class="period-range"><span>${periodGroupLabel(l)}</span>${tailTag}</div>
       <div class="period-mid">${l.rateText}</div>
       <div class="period-amount"><span class="amount-val">${amountText}</span></div>
     </div>`;
@@ -12362,9 +12375,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
     const rows = bdGroups.map((l, i) => {
       const amount = l.paymentDisplay + ' 元' + paymentNote(l);
-      const tail = periodGroupTag(l, bdMethod !== 'principal' && i === bdGroups.length - 1 && l.start === l.end);
+      const tail = periodGroupTag(l, i === bdGroups.length - 1 && l.start === l.end);
       return '<div class="payment-row">' +
-        '<div class="period-range"><span>' + genPeriodLabel(l.start, l.end) + '</span>' + tail + '</div>' +
+        '<div class="period-range"><span>' + periodGroupLabel(l) + '</span>' + tail + '</div>' +
         '<div class="period-mid">' + l.rateText + '</div>' +
         '<div class="period-amount"><span class="amount-val">' + amount + '</span></div></div>';
     }).join('');
@@ -14255,20 +14268,9 @@ window.addEventListener('resize', () => {
     }[src];
 
     const gr = groupRows(conf.sch, d.graceM, d.n, conf.rates);
-    const pad = (x) => String(x).padStart(3, '0');
     const h1 = '利率', h2 = '應繳金額';
     // 期數欄位可切換以 年／期／月 呈現
     const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
-    const pLabel = (s, e) => {
-      if (periodUnitPref === 'year') {
-        const ys = Math.ceil(s / 12), ye = Math.ceil(e / 12);
-        return ys === ye ? `第 ${ys} 年` : `第 ${ys}～${ye} 年`;
-      }
-      const u = periodUnitPref === 'month' ? '月' : '期';
-      // 與一般貸款採同一寫法：起訖各自帶單位；單一期則不寫成區間
-      return s === e ? `${pad(s)}${u}` : `${pad(s)}${u}～${pad(e)}${u}`;
-    };
-
     Y('#ytPeriodLines').innerHTML =
       `<div class="payment-head"><span>${h0}</span><span>${h1}</span><span>${h2}</span></div>` +
       gr.map((g, gi) => {
@@ -14279,8 +14281,8 @@ window.addEventListener('resize', () => {
           ? `<div class="period-mid two"><i>青安</i><b>${g.rate}%</b><i>一般</i><b>${genRate}%</b></div>`
           : `<div class="period-mid">${g.rate}%</div>`;
         // 尾期本金會結清餘額，金額與前一段不同而單獨成列；標註避免年模式下看似重複
-        const tailTag = periodGroupTag(g, method !== 'principal' && gi === gr.length - 1 && g.s === g.e);
-        return `<div class="payment-row"><div class="period-range"><span>${pLabel(g.s, g.e)}</span>${tailTag}</div>${rateCell}<div class="period-amount"><span class="amount-val">${yuan(g.pay) === '0' ? '0' : amt} 元${note}</span></div></div>`;
+        const tailTag = periodGroupTag(g, gi === gr.length - 1 && g.s === g.e);
+        return `<div class="payment-row"><div class="period-range"><span>${periodGroupLabel(g)}</span>${tailTag}</div>${rateCell}<div class="period-amount"><span class="amount-val">${yuan(g.pay) === '0' ? '0' : amt} 元${note}</span></div></div>`;
       }).join('');
 
     Y('#ytPeriodLines').classList.toggle('tappable', both);
