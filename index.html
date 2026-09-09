@@ -699,6 +699,55 @@ if ("serviceWorker" in navigator) {
     #ytSpecSheet .spec-hit { background: #BEEBDA; }
     #cbSpecSheet .spec-hit { background: #FFE9A8; }
 
+    /* 個人評估公式流程：沿用說明頁外殼，算式格參考房地合一 N。 */
+    #bdFlowBtn[hidden], #bdFlowSep[hidden] { display: none !important; }
+    body[data-mode="burden"] .hero-links .spec-btn { padding-left: 10px; padding-right: 10px; gap: 4px; }
+    body[data-mode="burden"] .hero-links .spec-btn:last-child { padding-right: 0; }
+    @media(max-width:360px) {
+      body[data-mode="burden"] .hero-links .spec-btn { padding-left: 7px; padding-right: 7px; font-size: 12px; letter-spacing: 0; }
+    }
+    #bdFlowSheet { --teal: #2E6DA4; --teal-dark: #1D4B76; --teal-light: #E6EFF8; }
+    #bdFlowSheet .spec-sheet-scroll { padding: 14px 12px calc(28px + var(--safe-bottom)); }
+    .bd-flow-wrap { max-width: 720px; margin: 0 auto; }
+    .bd-flow-intro { font-size: 13px; line-height: 1.7; color: var(--muted); margin: 0 0 14px; }
+    .bd-flow-card { background: var(--card, #fff); border: 1px solid var(--border); border-radius: 14px; padding: 18px 14px 6px; }
+    .bd-flow-group { margin: 0 0 18px; }
+    .bd-flow-group + .bd-flow-group { border-top: 1px dashed #CCD7E2; padding-top: 18px; }
+    .bd-flow-title { font-size: 13px; color: var(--teal-dark); font-weight: 700; letter-spacing: .5px; margin: 0 0 10px; }
+    .bd-flow-line { display: flex; align-items: center; gap: 5px; padding: 5px 0; }
+    .bd-flow-cell { flex: 1 1 0; min-width: 0; padding: 4px 2px; text-align: center; }
+    .bd-flow-label { color: var(--muted); font-size: 11px; line-height: 1.4; margin-bottom: 3px; overflow-wrap: anywhere; }
+    .bd-flow-value { color: var(--text); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.45; white-space: nowrap; }
+    .bd-flow-result { flex: 1.25 1 0; background: var(--teal-dark); padding: 7px 5px; border-radius: 7px; box-shadow: 0 1px 3px #17395a18; }
+    .bd-flow-result .bd-flow-label { color: #D8E6F2; }
+    .bd-flow-result .bd-flow-value { color: #fff; }
+    .bd-flow-soft { background: var(--teal-light); box-shadow: inset 0 0 0 1px #CAD9E8; }
+    .bd-flow-soft .bd-flow-label { color: #536A80; }
+    .bd-flow-soft .bd-flow-value { color: var(--teal-dark); }
+    .bd-flow-op { flex: 0 0 auto; min-width: 12px; text-align: center; color: #70869A; font-size: 12px; }
+    .bd-flow-note { font-size: 12px; line-height: 1.8; color: #536A80; background: #F2F6FA; padding: 9px 10px; border-radius: 6px; margin: 9px 0; overflow-wrap: anywhere; }
+    .bd-flow-math { color: var(--teal-dark); font-size: 13px; line-height: 1.9; overflow-wrap: anywhere; margin: 8px 0; }
+    .bd-flow-terms { font-size: 12px; color: var(--muted); line-height: 1.85; margin: 8px 0; }
+    .bd-flow-pick { display: flex; gap: 10px; align-items: center; margin: 12px 0; }
+    .bd-flow-pick label { font-size: 13px; color: var(--teal-dark); }
+    .bd-flow-pick select { flex: 1; min-width: 0; max-width: 280px; font: inherit; font-size: 14px; padding: 9px; border: 1px solid #B8CBDE; border-radius: 8px; background: #fff; color: var(--teal-dark); }
+    .bd-flow-pick select { appearance: auto; -webkit-appearance: menulist; }
+    .bd-flow-pick select:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+    #bdFlowClose:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .bd-flow-line.bd-flow-stacked { flex-wrap: wrap; }
+    .bd-flow-stacked > .bd-flow-cell, .bd-flow-stacked > .bd-flow-op { flex: 1 0 100%; }
+    .bd-flow-empty { padding: 10px 4px 20px; color: var(--muted); font-size: 14px; line-height: 1.9; }
+    .bd-flow-empty ol { margin: 14px 0; padding-left: 24px; color: var(--teal-dark); }
+    @media(max-width:360px) {
+      .bd-flow-card { padding-left: 10px; padding-right: 10px; }
+      .bd-flow-value { font-size: 12px; }
+      .bd-flow-label { font-size: 10px; }
+      .bd-flow-line { gap: 3px; }
+    }
+    .bd-flow-period-status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -4px 0 12px; font-size: 12px; line-height: 1.5; color: var(--teal-dark); }
+    .bd-flow-status-label { color: var(--muted); margin-right: 2px; }
+    .bd-flow-status-tag { background: var(--teal-light); border: 1px solid #CAD9E8; border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
+
     .clear-btn {
       background: var(--teal);
       color: #fff;
@@ -3461,6 +3510,8 @@ if ("serviceWorker" in navigator) {
       <div class="hero-metrics">
         <button type="button" class="hero-lock" id="heroLock" aria-pressed="false" title="鎖定本模式的審查開關"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
         <div class="hero-links">
+          <button type="button" class="spec-btn" id="bdFlowBtn" title="查看本次個人評估公式流程" aria-haspopup="dialog" hidden>公式流程<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
+          <span class="hero-links-sep" id="bdFlowSep" aria-hidden="true" hidden></span>
           <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢新青安3.0問答集與貸款原則" aria-haspopup="dialog">青安相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
           <span class="hero-links-sep" aria-hidden="true"></span>
           <button type="button" class="spec-btn" id="cbSpecBtn" title="查詢中央銀行不動產抵押貸款業務規定問與答及修正規定" aria-haspopup="dialog">貸款相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
@@ -4352,6 +4403,18 @@ if ("serviceWorker" in navigator) {
     </div>
   </div>
 
+<div class="spec-sheet" id="bdFlowSheet" role="dialog" aria-modal="true" aria-labelledby="bdFlowTitle" hidden>
+  <div class="spec-sheet-head">
+    <div class="spec-sheet-bar">
+      <h2 id="bdFlowTitle">個人評估・公式流程</h2>
+      <button type="button" class="spec-sheet-close" id="bdFlowClose" aria-label="關閉公式流程">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="spec-sheet-scroll"><div class="bd-flow-wrap" id="bdFlowBody"></div></div>
+</div>
+
 <div class="spec-sheet" id="ytSpecSheet" role="dialog" aria-modal="true" aria-labelledby="ytSheetTitle" hidden>
   <div class="spec-sheet-head">
     <div class="spec-sheet-bar">
@@ -4644,7 +4707,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.09AH";
+const APP_VERSION = "2026.09.10A";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -8622,7 +8685,7 @@ let dlgOpenByPointer = false;
 /* 記住視窗是「點開的」還是「鍵盤開的」。按 ESC 關閉會把瀏覽器切到鍵盤模式，
    此時把焦點還回齒輪就會亮起 focus 樣式，看起來像視窗沒關乾淨。 */
 document.addEventListener('click', (e) => {
-  const g = e.target && e.target.closest ? e.target.closest('.yt-gear-btn, #ytShareTag, #cbSpecBtn, #ytSpecBtn') : null;
+  const g = e.target && e.target.closest ? e.target.closest('.yt-gear-btn, #ytShareTag, #cbSpecBtn, #ytSpecBtn, #bdFlowBtn') : null;
   if (g) dlgOpenByPointer = e.detail > 0;   // detail 為 0 代表由鍵盤觸發
 }, true);
 function restoreFocusQuietly(el) {
@@ -11753,6 +11816,202 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   }
 
   /* ---------- 計算 ---------- */
+  /* 公式頁只保存 render() 同次結果與條件；不另訂一套評估或提交規則。 */
+  let bdFlowSnapshot = null;
+  const flowEscape = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const flowNumber = n => Number(n).toLocaleString('zh-TW', { maximumFractionDigits: 6 });
+  const flowCell = (label, value, type = '', key = '') => '<div class="bd-flow-cell ' + type + '"><div class="bd-flow-label">' + flowEscape(label) + '</div><div class="bd-flow-value"' + (key ? ' data-flow-value="' + key + '"' : '') + '>' + flowEscape(value) + '</div></div>';
+  const flowOp = text => '<span class="bd-flow-op">' + flowEscape(text) + '</span>';
+  const flowLine = (...items) => '<div class="bd-flow-line">' + items.join('') + '</div>';
+  const flowNote = text => '<p class="bd-flow-note">' + flowEscape(text) + '</p>';
+  const flowGroup = (title, body) => '<section class="bd-flow-group"><h3 class="bd-flow-title">' + title + '</h3>' + body + '</section>';
+  const flowResult = (label, value, key, soft = false) => flowCell(label, value, 'bd-flow-result' + (soft ? ' bd-flow-soft' : ''), key);
+  function captureBdFlow(res) {
+    return { res, income: incomeYuan(), incomeMode, incomeUnit, incomeRaw: raw(B('#bdIncome')), debt: moneyYuan('#bdDebt'),
+      willingGiven: has('#bdWilling'), willing: moneyYuan('#bdWilling'), help: moneyYuan('#bdHelp'),
+      dti: raw(B('#bdDti')), down: has('#bdDown') ? Math.round(num(B('#bdDown')) * 10000) : null,
+      wantedRatio: bdRatioWanted, hhGrace: bdHhGraceCap(), luxGrace: bdLuxGraceCap(),
+      rateType: bdRateType, method: bdMethod, rates: bdPeriodList(res.term * 12),
+      segments: bdRateType === 'multi' ? bdCopy(bdSegs) : [] };
+  }
+
+  /* 長數字維持完整一行；只有放不下的算式改直排，不縮小整頁或截斷金額。 */
+  function fitBdFlowRows() {
+    const sheet = B('#bdFlowSheet');
+    if (!sheet || sheet.hidden) return;
+    const rows = [...sheet.querySelectorAll('.bd-flow-line')];
+    rows.forEach(row => row.classList.remove('bd-flow-stacked'));
+    const wide = rows.filter(row => [...row.querySelectorAll('.bd-flow-value')].some(value => value.scrollWidth > value.clientWidth + 1));
+    wide.forEach(row => row.classList.add('bd-flow-stacked'));
+  }
+
+  function renderBdFlowPeriod(snapshot, index) {
+    const r = snapshot.res, row = r.sched[index], count = r.sched.length;
+    if (!row) return;
+    const opening = index ? r.sched[index - 1].balance : r.loan;
+    const rate = formatDecimal(snapshot.rates[index].rate / 12 / 100, 14);
+    const graceMonths = r.grace * 12;
+    let formula = '';
+    if (index < graceMonths) {
+      formula = flowLine(flowCell('寬限期內不還本金', '只繳利息'), flowOp('→'), flowResult('當期本金（元）', '0', 'principalBasis', true)) + flowNote('這一期在寬限期內，只繳利息，不償還本金。');
+    } else if (index === count - 1) {
+      formula = flowLine(flowCell('剩餘本金（元）', flowNumber(opening)), flowOp('='), flowResult('當期本金（元）', flowNumber(row.principal), 'principalBasis', true)) + flowNote('最後一期償還全部剩餘本金，吸收先前整元計算的尾差，再加當期利息。');
+    } else if (snapshot.method === 'principal') {
+      const n = count - graceMonths;
+      let base = Math.ceil(r.loan / n);
+      const adjusted = base * (n - 1) > r.loan;
+      if (adjusted) base = Math.floor(r.loan / n);
+      formula = flowLine(flowCell('原始貸款（元）', flowNumber(r.loan)), flowOp('÷'), flowCell('還本期數', n), flowOp('→'), flowResult('每期基準本金（元）', flowNumber(base), 'basePrincipal', true)) +
+        flowNote(adjusted ? '本金平均攤還：這組金額若每期進位，會在最後一期前超付，因此每期本金改向下取整，餘數留給末期。' : '本金平均攤還：每期基準本金無條件進位至整元；實際還本不超過剩餘本金，末期補足餘額。');
+    } else {
+      let anchorBalance = r.loan, anchorPeriod = graceMonths;
+      for (let k = 1; k <= index; k++) {
+        if (snapshot.rates[k].rate !== snapshot.rates[k - 1].rate) {
+          anchorBalance = r.sched[k - 1].balance;
+          if (k > graceMonths) anchorPeriod = k;
+        }
+      }
+      const n = count - anchorPeriod;
+      const factor = rate === 0 ? 1 / n : exactAnnuityFactor(rate, n);
+      const base = rate === 0 ? Math.ceil(anchorBalance / n) : ceilSchedulePayment(anchorBalance, factor);
+      formula = '<p class="bd-flow-math">本息平均攤還：月付係數 = r × (1 + r)<sup>n</sup> ÷ [(1 + r)<sup>n</sup> − 1]</p>' +
+        flowLine(flowResult('本段月付係數', String(factor), 'factor', true)) +
+        flowLine(flowCell('本段起算本金（元）', flowNumber(anchorBalance)), flowOp('×'), flowCell('上列月付係數', '係數'), flowOp('→'), flowResult('本段基準月付（元）', flowNumber(base), 'basePayment', true)) +
+        flowNote('r 為月利率，n 為本段起算時的剩餘還本期數（本段 n = ' + n + '）。成長倍數與係數各四捨五入至小數第 14 位，月付無條件進位至整元；利率變動時依當時餘額重算。當期還本介於 0 與剩餘本金之間。') +
+        flowLine(flowCell('基準月付（元）', flowNumber(base)), flowOp('−'), flowCell('當期利息（元）', flowNumber(row.interest)), flowOp('→'), flowResult('當期本金（元）', flowNumber(row.principal), 'principalBasis', true));
+    }
+    const body = flowLine(flowCell('當期年利率（%）', flowNumber(snapshot.rates[index].rate)), flowOp('÷'), flowCell('12 × 100', '1,200'), flowOp('→'), flowCell('月利率', 'r')) +
+      flowLine(flowResult('月利率 r（取小數第 14 位）', String(rate), 'monthlyRate', true)) +
+      flowLine(flowCell('期初本金（元）', flowNumber(opening)), flowOp('×'), flowCell('月利率', 'r'), flowOp('→'), flowResult('當期利息（元）', flowNumber(row.interest), 'interest')) +
+      flowNote('月利率先四捨五入至小數第 14 位，利息再四捨五入至整元。箭頭表示依取整規則計算。') + formula +
+      flowLine(flowCell('當期本金（元）', flowNumber(row.principal), '', 'principal'), flowOp('+'), flowCell('當期利息（元）', flowNumber(row.interest)), flowOp('='), flowResult('當期月付（元）', flowNumber(row.payment), 'payment')) +
+      flowLine(flowCell('期初本金（元）', flowNumber(opening)), flowOp('−'), flowCell('當期本金（元）', flowNumber(row.principal)), flowOp('='), flowResult('期末餘額（元）', flowNumber(row.balance), 'balance', true));
+    const flags = [];
+    if (index < graceMonths) flags.push('寬限期');
+    if (index === count - 1) flags.push('最後一期');
+    if (index === r.sched.findIndex(item => item.payment === r.payAfter)) flags.push('最高月付');
+    B('#bdFlowPeriodStatus').innerHTML = '<span class="bd-flow-status-label">本期狀態</span>' +
+      (flags.length ? flags : ['一般還款']).map(flag => '<span class="bd-flow-status-tag">' + flowEscape(flag) + '</span>').join('');
+    B('#bdFlowPeriodBody').innerHTML = body;
+    fitBdFlowRows();
+  }
+
+  function renderBdFlow() {
+    const body = B('#bdFlowBody');
+    if (!bdFlowSnapshot || bdStale || !B('#bdResults').classList.contains('show')) {
+      body.innerHTML = '<div class="bd-flow-card"><div class="bd-flow-empty"><h3 class="bd-flow-title">看懂可負擔房價怎麼算</h3><p>填寫條件並完成「開始個人評估」後，這裡會帶入本次數字，逐步顯示公式。</p><ol><li>收入與收支比 → 可負擔月付</li><li>願意負擔與他人協助 → 採用月付</li><li>年限、利率、成數與寬限限制</li><li>檢查全期月付 → 可貸能力</li><li>合併自備款 → 可負擔房價</li><li>每期本金、利息與餘額</li></ol><p>尚無有效評估結果，先返回個人評估完成試算。</p></div></div>';
+      return;
+    }
+    const s = bdFlowSnapshot, r = s.res, count = r.sched.length;
+    const monthly = s.incomeMode === 'year' ? s.income / 12 : s.income;
+    const monthlyText = (Number.isInteger(monthly) ? '' : '約 ') + flowNumber(monthly);
+    const ratioText = flowNumber(Number(s.dti)) + '%';
+    let html = '<p class="bd-flow-intro">依本次已完成的評估，從收入一路算到房價。金額標明「元」或「萬元」；深藍色是這一步的結果。</p><div class="bd-flow-card">';
+    let income = s.incomeMode === 'year'
+      ? flowLine(flowCell('年收入（元）', flowNumber(s.income)), flowOp('÷'), flowCell('每年月份', '12'), flowOp(Number.isInteger(monthly) ? '=' : '≈'), flowResult('月收入（元）', flowNumber(monthly), 'monthlyIncome', true))
+      : flowLine(flowCell('月收入（元）', flowNumber(s.income)), flowOp('='), flowResult('計算用月收入（元）', flowNumber(s.income), 'monthlyIncome', true));
+    if (s.incomeUnit === 'wan') income = flowLine(flowCell(s.incomeMode === 'year' ? '年收入（萬元）' : '月收入（萬元）', flowNumber(s.incomeRaw)), flowOp('×'), flowCell('萬元換成元', '10,000'), flowOp('→'), flowResult('收入（元）', flowNumber(s.income), 'incomeYuan', true)) + income + flowNote('收入與月付欄位以萬元輸入時，先換成元再計算。');
+    income += '<p class="bd-flow-math">可負擔月付 = 月收入 × 收支比 − 既有負債月付</p>' +
+      flowLine(flowCell('月收入（元）', monthlyText), flowOp('×'), flowCell('收支比', ratioText), flowOp('−'), flowCell('負債月付（元）', flowNumber(s.debt))) +
+      flowLine(flowCell('最後向下取整元', '最低為 0'), flowOp('→'), flowResult('收支比月付上限（元）', flowNumber(r.ceiling), 'ceiling')) +
+      flowNote('收入、收支比與年收入除以 12 合併計算，最後才向下取整元；畫面月收入若顯示「約」，不會拿約數代替原始收入計算。');
+    html += flowGroup('① 收入換算與可負擔月付', income);
+    const willing = s.willingGiven
+      ? flowLine(flowCell('願意負擔（元）', flowNumber(s.willing)), flowOp('+'), flowCell('他人協助（元）', flowNumber(s.help)), flowOp('='), flowResult('合計意願月付（元）', flowNumber(s.willing + s.help), 'willingTotal', true)) +
+        flowLine(flowCell('收支比上限（元）', flowNumber(r.ceiling)), flowOp('與'), flowCell('合計意願月付（元）', flowNumber(s.willing + s.help)), flowOp('取低'), flowResult('採用月付（元）', flowNumber(r.pay), 'pay'))
+      : flowLine(flowCell('收支比上限（元）', flowNumber(r.ceiling)), flowOp('='), flowResult('採用月付（元）', flowNumber(r.pay), 'pay')) +
+        flowNote('未填「願意負擔月付」時，直接採用收支比上限；他人協助不另外加計。填 0 與未填不同。');
+    html += flowGroup('② 本次採用多少月付', willing);
+    const rates = s.rateType === 'single' ? '單一利率 ' + flowNumber(s.rates[0].rate) + '%'
+      : s.segments.map(sg => '第 ' + sg.from + '～' + (sg.to || count) + ' 期：' + flowNumber(sg.rate) + '%').join('；');
+    let terms = flowLine(flowCell('貸款年限', r.term + ' 年'), flowOp('×'), flowCell('每年期數', '12'), flowOp('='), flowResult('總期數', count + ' 期', 'totalMonths', true)) +
+      flowLine(flowCell('原填寬限期', r.requestedGrace + ' 年'), flowOp('→'), flowResult('採用寬限期', r.grace + ' 年', 'grace', true)) +
+      flowLine(flowCell('希望成數', s.wantedRatio + '%'), flowOp('→'), flowResult('採用成數上限', r.ratioPct + '%', 'ratio', true)) +
+      '<p class="bd-flow-terms">' + flowEscape(rates) + '<br>' + (s.method === 'principal' ? '本金平均攤還' : '本息平均攤還') + '；寬限期結束後，於剩餘 ' + (count - r.grace * 12) + ' 期償還本金。</p>';
+    if (r.hhCap !== null || s.hhGrace !== null) terms += flowNote('貸款戶數設定：' + (r.hhCap !== null ? '成數上限 ' + r.hhCap + '%' : '未另限成數') + '；' + (s.hhGrace !== null ? '寬限上限 ' + s.hhGrace + ' 年' : '未另限寬限期') + '。');
+    if (r.luxTh !== null) terms += flowNote('高價住宅門檻為 ' + flowNumber(r.luxTh / 10000) + ' 萬元。分別檢查門檻以下與以上的成數、寬限及自備款條件，再取可行的最高房價。本次採用' + (r.luxBound ? '門檻以上' : '門檻以下') + '方案；' + (r.luxCap !== null ? '高價區成數上限 ' + r.luxCap + '%' : '高價區未另限成數') + '，' + (s.luxGrace !== null ? '寬限上限 ' + s.luxGrace + ' 年' : '未另限寬限期') + '。');
+    else terms += flowNote('高價住宅審查未啟用或未設定門檻，本次不另分高價房價區間。');
+    html += flowGroup('③ 套用利率、年限與限制', terms);
+    html += flowGroup('④ 由月付反推貸款能力',
+      flowLine(flowCell('每期月付都須 ≤', flowNumber(r.pay) + ' 元'), flowOp('→'), flowResult('本方案貸款能力（萬元）', flowNumber(r.capacity / 10000), 'capacity')) +
+      flowNote('以整萬元本金尋找可負擔的最大值。每筆候選都依選定利率、還款方式與寬限期產生還款表，檢查全期最高月付，包含利率變動與最後一期補差。這是月付條件下的能力，尚須通過下一步的自備款與房價限制。'));
+    const minLuxWan = r.luxTh === null ? null : Math.ceil(r.luxTh / 10000);
+    const maxPrice = !r.luxBound && minLuxWan !== null ? (minLuxWan - 1) * 10000 : Infinity;
+    const byPrice = Number.isFinite(maxPrice) ? Number(BigInt(maxPrice / 10000) * BigInt(r.ratioPct) / 100n) * 10000 : Infinity;
+    let property = '';
+    if (r.downGiven) {
+      const usable = Math.floor(s.down / 10000) * 10000;
+      const byDown = bdLoanByDown(usable, r.ratioPct);
+      property += flowLine(flowCell('填入自備款（萬元）', flowNumber(s.down / 10000)), flowOp('→'), flowResult('可用整萬元自備款', flowNumber(usable / 10000), 'usableDown', true));
+      if (r.ratioPct < 100) property += '<p class="bd-flow-math">自備款可支持貸款 = 自備款 × 成數 ÷ (100% − 成數)</p>' +
+        flowLine(flowCell('自備款（萬元）', flowNumber(usable / 10000)), flowOp('×'), flowCell('成數 ÷ 自備比例', r.ratioPct + ' ÷ ' + (100 - r.ratioPct)), flowOp('→'), flowResult('自備款貸款上限（萬元）', flowNumber(byDown / 10000), 'byDown', true));
+      else property += flowNote('採用成數 100% 時，不以自備款反推貸款上限，仍需通過全期月付與房價區間限制。');
+      property += flowNote('貸款搜尋上限取「月付能力、自備款支持額度、房價區間額度」最低值，再以整萬元逐期檢查，得本次貸款 ' + flowNumber(r.loan / 10000) + ' 萬元。') +
+        flowLine(flowCell('本次貸款（萬元）', flowNumber(r.loan / 10000), '', 'loan'), flowOp('+'), flowCell('可用自備款（萬元）', flowNumber(usable / 10000)), flowOp(Number.isFinite(maxPrice) && r.loan + usable > maxPrice ? '→' : '='), flowResult('可負擔房價（萬元）', flowNumber(r.price / 10000), 'price'));
+    } else {
+      const basePriceWan = Number(BigInt(r.capacity / 10000) * 100n / BigInt(r.ratioPct));
+      property += flowLine(flowCell('貸款能力（萬元）', flowNumber(r.capacity / 10000)), flowOp('÷'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('整萬元推估房價', flowNumber(basePriceWan), 'priceBeforeZone', true)) +
+        flowNote('自備款未填：先將貸款能力除以採用成數，房價向下取整萬元，再套房價區間上限。依該房價的成數額度重新逐期檢查，所以本次貸款可能小於前一步的貸款能力。') +
+        flowLine(flowCell('可負擔房價（萬元）', flowNumber(r.price / 10000), '', 'price'), flowOp('×'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('房價成數額度（萬元）', flowNumber(Number(BigInt(r.price / 10000) * BigInt(r.ratioPct) / 100n)), 'priceLimit', true)) +
+        flowLine(flowCell('整萬元重新檢查', '全期月付'), flowOp('→'), flowResult('本次貸款（萬元）', flowNumber(r.loan / 10000), 'loan'));
+    }
+    if (Number.isFinite(maxPrice)) property += flowNote('此方案位於門檻以下，房價最高 ' + flowNumber(maxPrice / 10000) + ' 萬元，對應成數額度 ' + flowNumber(byPrice / 10000) + ' 萬元；房價加總超過時取此上限。');
+    property += flowLine(flowCell('可負擔房價（萬元）', flowNumber(r.price / 10000)), flowOp('−'), flowCell('本次貸款（萬元）', flowNumber(r.loan / 10000)), flowOp('='), flowResult('需自備（萬元）', flowNumber(r.needDown / 10000), 'needDown')) +
+      flowNote('貸款與房價採整萬元。評估未包含稅費、裝潢及其他購屋成本；請另行預留。');
+    html += flowGroup('⑤ 合併自備款，算出可負擔房價', property);
+    html += flowGroup('⑥ 每期還款怎麼算', '<p class="bd-flow-terms">選一個期數，看這一期的本金、利息與餘額。數字取自本次實際還款明細。</p><div class="bd-flow-pick"><label for="bdFlowPeriod">查看期數</label><select id="bdFlowPeriod" aria-describedby="bdFlowPeriodStatus">' +
+      r.sched.map((row, i) => '<option value="' + i + '"' + (i === Math.min(r.grace * 12, count - 1) ? ' selected' : '') + '>第 ' + row.period + ' 期' + '</option>').join('') + '</select></div><div class="bd-flow-period-status" id="bdFlowPeriodStatus" role="status" aria-live="polite" aria-atomic="true"></div><div id="bdFlowPeriodBody"></div>');
+    html += flowGroup('⑦ 核對整段還款結果',
+      flowLine(flowCell('全期最高月付（元）', flowNumber(r.payAfter), '', 'peakPayment'), flowOp('≤'), flowResult('採用月付（元）', flowNumber(r.pay), 'payLimit', true)) +
+      flowLine(flowCell('全期本金合計（萬元）', flowNumber(r.sched.reduce((a, row) => a + row.principal, 0) / 10000)), flowOp('='), flowResult('本次貸款（萬元）', flowNumber(r.loan / 10000), 'principalSum', true)) +
+      flowLine(flowCell('全期利息合計（元）', flowNumber(r.sched.reduce((a, row) => a + row.interest, 0))), flowResult('最後本金餘額（元）', flowNumber(r.sched[count - 1].balance), 'endingBalance', true)));
+    body.innerHTML = html + '</div>';
+    renderBdFlowPeriod(s, Number(B('#bdFlowPeriod').value));
+    B('#bdFlowPeriod').addEventListener('change', e => renderBdFlowPeriod(s, Number(e.target.value)));
+  }
+
+  const bdFlowSheet = B('#bdFlowSheet');
+  let bdFlowSeq = 0, bdFlowFocus = null;
+  function closeBdFlow() {
+    if (bdFlowSheet.hidden || bdFlowSheet.dataset.modalClosing === '1') return;
+    beginAppModalClose(bdFlowSheet);
+    bdFlowSheet.classList.remove('show');
+    const seq = ++bdFlowSeq;
+    setTimeout(() => { if (seq === bdFlowSeq) bdFlowSheet.hidden = true; }, 200);
+    restoreFocusQuietly(bdFlowFocus);
+    bdFlowFocus = null;
+  }
+  B('#bdFlowBtn').addEventListener('click', () => {
+    if (document.body.dataset.mode !== 'burden') return;
+    const seq = ++bdFlowSeq;
+    bdFlowFocus = document.activeElement;
+    renderBdFlow();
+    bdFlowSheet.querySelector('.spec-sheet-scroll').scrollTop = 0;
+    bdFlowSheet.hidden = false;
+    beginAppModalOpen(bdFlowSheet, closeBdFlow);
+    requestAnimationFrame(() => { if (seq === bdFlowSeq && !bdFlowSheet.hidden) { bdFlowSheet.classList.add('show'); fitBdFlowRows(); } });
+    B('#bdFlowClose').focus({ preventScroll: true });
+  });
+  B('#bdFlowClose').addEventListener('click', closeBdFlow);
+  let bdFlowResize = 0;
+  window.addEventListener('resize', () => {
+    if (bdFlowSheet.hidden) return;
+    cancelAnimationFrame(bdFlowResize);
+    bdFlowResize = requestAnimationFrame(fitBdFlowRows);
+  });
+  let bdFlowSwipe = null;
+  bdFlowSheet.addEventListener('touchstart', e => {
+    bdFlowSwipe = e.touches.length === 1 && !e.target.closest('input,select,textarea,button')
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+  }, { passive: true });
+  bdFlowSheet.addEventListener('touchcancel', () => { bdFlowSwipe = null; }, { passive: true });
+  bdFlowSheet.addEventListener('touchend', e => {
+    if (!bdFlowSwipe || !e.changedTouches.length) return;
+    const dx = e.changedTouches[0].clientX - bdFlowSwipe.x, dy = e.changedTouches[0].clientY - bdFlowSwipe.y;
+    bdFlowSwipe = null;
+    if (Math.abs(dx) >= 56 && Math.abs(dx) >= Math.abs(dy) * 1.6) closeBdFlow();
+  }, { passive: true });
+
   /* 金額欄位一律換算成「元」再進計算，畫面上填萬或填元都得到同一個結果 */
   function moneyYuan(sel) {
     const value = ratFromDecStr(raw(B(sel))) || ratMake(0n, 1n);
@@ -12151,6 +12410,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   function render() {
     const res = compute();
     if (res.err) return res;
+    bdFlowSnapshot = captureBdFlow(res);
     B('#bdResLoan').textContent = wan(res.loan);
     B('#bdResPrice').textContent = wan(res.price);
     B('#bdResDown').textContent = wan(res.needDown);
@@ -13128,6 +13388,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const prevMode = document.body.dataset.mode;
     if (prevMode && prevMode !== mode) modeScroll[prevMode] = currentScrollY();
     document.body.dataset.mode = mode;
+    document.getElementById('bdFlowBtn').hidden = mode !== 'burden';
+    document.getElementById('bdFlowSep').hidden = mode !== 'burden';
     // 必須放在 dataset.mode 更新之後：鎖的狀態是看「當前模式」決定的
     if (typeof syncBadgeLock === 'function') syncBadgeLock();
     btns.forEach((btn) => {
