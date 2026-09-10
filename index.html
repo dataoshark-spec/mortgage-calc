@@ -3275,6 +3275,14 @@ if ("serviceWorker" in navigator) {
     .yt-banner .yt-b-title { font-size: 20px; font-weight: 800; letter-spacing: .02em; line-height: 1.3; }
     .yt-banner .yt-b-mid { font-size: 14px; font-weight: 700; line-height: 1.4; opacity: .92; }
     .yt-banner .yt-b-sub { font-size: 12px; font-weight: 500; opacity: .78; line-height: 1.55; max-width: 20em; }
+    .yt-general-notice {
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      gap: 2px; margin: 20px 0 0; padding: 14px 12px; border-radius: 14px;
+      background: #FFF4D6; border: 1px solid #EBCB83; color: #805716;
+      font-size: 14px; line-height: 1.65;
+    }
+    .yt-general-notice strong { font-size: 15px; font-weight: 700; }
+    .yt-general-notice .yt-general-notice-items { font-weight: 700; }
     .yt-chk-head {
       display: flex; align-items: center; gap: 10px; margin: 18px 0 10px;
     }
@@ -3473,7 +3481,7 @@ if ("serviceWorker" in navigator) {
     .yt-split { margin-top: 0; margin-bottom: 4px; }
     /* 首列不需與標題再拉開，改用小內距即可 */
     .yt-split .yt-split-row:first-child { padding-top: 4px; }
-    #ytEligBlock { margin-bottom: 6px; }
+    #ytEligBlock { margin-bottom: 24px; }
     #ytDetailSeg { margin-top: 12px; }
     .yt-fold + .actions { margin-top: 24px; }
     /* 一般貸款年利率獨立在收合區之外，需自行拉開與收合區的距離 */
@@ -4084,6 +4092,12 @@ if ("serviceWorker" in navigator) {
         <span class="title-line"></span>
       </div>
       <div id="ytEligBlock"></div>
+
+      <div class="period-title results-heading" id="ytResultHeading">
+        <span class="title-line"></span>
+        <h3>試算結果</h3>
+        <span class="title-line"></span>
+      </div>
 
       <div class="summary-grid">
         <div class="summary-item">
@@ -4778,7 +4792,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.10M";
+const APP_VERSION = "2026.09.10P";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -10461,7 +10475,7 @@ function periodGroupLabel(group) {
   // 年顯示保留「開始遞減的年份」，完整適用期數列在下方。
   return genPeriodLabel(group.start, periodUnitPref === 'year' ? group.end : periodGroupDisplayEnd(group));
 }
-function periodGroupTag(group, lastSettlement = false) {
+function periodGroupTag(group, lastSettlement = false, includeYearFinalSettlement = false) {
   const pad = n => String(n).padStart(3, '0');
   let tag = '';
   if (group.endpoint) {
@@ -10473,8 +10487,8 @@ function periodGroupTag(group, lastSettlement = false) {
     // 年中換率、尾期結清及單一期仍補上期數，讓同年不同金額可對回原逐期結果。
     tag = pad(group.start) + '期' + (group.start === group.end ? '' : '～' + pad(group.end) + '期');
   }
-  // 本金攤還的年顯示已有末期編號；期／月顯示則補上最後一期。
-  if (lastSettlement && !(periodUnitPref === 'year' && group.note === '最後金額')) {
+  // 一般模式明確啟用年檢視的全案末期標示；其餘模式保留既有呈現。
+  if (lastSettlement && (includeYearFinalSettlement || !(periodUnitPref === 'year' && group.note === '最後金額'))) {
     tag += (tag ? ' · ' : '') + '最後一期';
   }
   return tag ? '<span class="pr-tag">' + tag + '</span>' : '';
@@ -10636,7 +10650,7 @@ function renderPeriodLines() {
   const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
   const rowsHtml = gr.map((l, i) => {
     const amountText = l.paymentDisplay + ' 元' + paymentNote(l);
-    const tailTag = periodGroupTag(l, i === gr.length - 1 && l.start === l.end);
+    const tailTag = periodGroupTag(l, i === gr.length - 1 && l.start === l.end, true);
     return `<div class="payment-row">
       <div class="period-range"><span>${periodGroupLabel(l)}</span>${tailTag}</div>
       <div class="period-mid">${l.rateText}</div>
@@ -14463,7 +14477,8 @@ window.addEventListener('resize', () => {
     <div class="yt-chk-head"><span class="yt-chk-head-line"></span><span class="yt-chk-head-t">逐項檢查　${nOk} / ${d.elig.length}</span><span class="yt-chk-head-line"></span></div>`;
     let extra = '';
     if (!d.windowOk) extra += `<p class="yt-note warn">※ 青安 3.0 受理期間為 115.8.1 至 118.7.31（撥款不得逾 118.10.31），目前日期已不在受理期間內。</p>`;
-    Y('#ytEligBlock').innerHTML = `${banner}${chk}${extra}`;
+    const generalNotice = !d.pass ? '<div class="yt-general-notice" role="note"><strong>下列為一般貸款試算</strong><span>不帶入以下審查機制</span><span class="yt-general-notice-items">高價住宅／貸款戶數</span></div>' : '';
+    Y('#ytEligBlock').innerHTML = `${banner}${chk}${extra}${generalNotice}`;
 
     // 貸款組成讀本次正式利率快照。
     const genRateText = d.genRateType === 'multi'
@@ -16225,6 +16240,7 @@ window.addEventListener('resize', () => {
     L.push('');
     L.push('【資格審查】');
     L.push(d.pass ? '初步符合新青安 3.0 申請資格' : '不符新青安 3.0 申請資格');
+    if (!d.pass) L.push('下列為一般貸款試算', '不帶入以下審查機制', '高價住宅／貸款戶數');
     d.elig.forEach((e) => L.push((e.off ? '— ' : e.ok ? '✓ ' : '✕ ') + plainExportText(e.t) + '：' + plainExportText(e.s || '') + (e.off && !plainExportText(e.s || '').includes('未啟用') ? '（未啟用）' : '')));
     L.push('');
     L.push('【貸款組成】');
