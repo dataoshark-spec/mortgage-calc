@@ -1565,17 +1565,21 @@ if ("serviceWorker" in navigator) {
       transform: rotate(0deg);
     }
     .conditions-body { padding: 16px 18px; }
+    @media (max-width: 360px) {
+      .conditions-body { padding-left: 12px; padding-right: 12px; }
+    }
     .conditions-box.collapsed .conditions-body { display: none; }
     .conditions-box.collapsed .conditions-head { border-bottom: none; }
     .conditions-box:not(.collapsed) .conditions-toggle { transform: rotate(180deg); }
     .conditions-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px 24px;
     }
     .cond-item {
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      min-width: 0;
+      grid-template-columns: 8px max-content minmax(0, 1fr);
       gap: 8px 10px;
       align-items: start;
       font-size: 0.84rem;
@@ -1589,15 +1593,28 @@ if ("serviceWorker" in navigator) {
       margin-top: 6px;
       flex-shrink: 0;
     }
-    .cond-label { color: var(--muted); min-width: 0; }
-    #ytConditionsGrid .cond-label { white-space: nowrap; }
-    #ytConditionsGrid .cond-value { white-space: normal; word-break: keep-all; }
+    /* 標題保留完整一行；長條件在值欄換行，不能反過來擠成直排標題。 */
+    .cond-label { color: var(--muted); white-space: nowrap; }
     .cond-value {
+      min-width: 0;
       font-weight: 600;
       color: var(--text);
       text-align: right;
-      white-space: nowrap;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: anywhere;
     }
+    /* 高價住宅標題保留圓點；第二排限制說明不另放圓點。 */
+    .cond-item--lux { row-gap: 3px; }
+    .cond-item--lux .cond-dot { grid-column: 1; grid-row: 1; }
+    .cond-item--lux .cond-label { grid-column: 2; grid-row: 1; }
+    .cond-item--lux .cond-value { display: contents; }
+    .cond-item--lux .cond-main { grid-column: 3; grid-row: 1; min-width: 0; }
+    .cond-item--lux .cond-note { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
+    @media (max-width: 430px) {
+      .cond-item--lux { column-gap: 4px; }
+    }
+
     .conditions-rates {
       margin-top: 14px;
       padding-top: 14px;
@@ -4707,7 +4724,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.10C";
+const APP_VERSION = "2026.09.10E";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -8801,7 +8818,7 @@ function buildConditionsData() {
         ? luxRow.name + '・已達門檻' + (luxLimitBits.length ? '（' + luxLimitBits.join('、') + '）' : '')
         : luxRow.name + '・未達門檻');
   const basic = [
-    luxRow && ['高價住宅檢核', luxText],
+    luxRow && ['高價住宅', luxText, { luxury: true, note: luxHit && luxLimitBits.length ? '（' + luxLimitBits.join('、') + '）' : '' }],
     hhCurrentRow() && ['貸款戶數', hhLabel()],
     ['購屋總價', `${price.toLocaleString('zh-TW')} 萬元`],
     hasAppr && ['銀行鑑價', `${apprWan.toLocaleString('zh-TW')} 萬元`],
@@ -8840,7 +8857,13 @@ function buildConditionsRows() {
   return [...basic, ...rates];
 }
 
-function renderCondItem([label, value]) {
+function renderCondItem([label, value, layout]) {
+  if (layout?.luxury) {
+    const note = layout.note || '';
+    const main = note ? value.slice(0, -note.length) : value;
+    // value 仍是完整純文字，分享資料不因視覺分行而少掉限制。
+    return `<div class="cond-item cond-item--lux"><span class="cond-dot" aria-hidden="true"></span><span class="cond-label">${label}</span><span class="cond-value"><span class="cond-main">${escapeAlertHtml(main)}</span>${note ? `<span class="cond-note">${escapeAlertHtml(note)}</span>` : ''}</span></div>`;
+  }
   return `<div class="cond-item">
     <span class="cond-dot" aria-hidden="true"></span>
     <span class="cond-label">${label}</span>
@@ -8921,7 +8944,7 @@ function getShareText() {
   if (!hasValidExportResult(mode)) return null;
   if (mode === 'youth') return typeof window.__ytShareText === 'function' ? window.__ytShareText() : null;
   if (mode === 'burden') return typeof window.__bdShareText === 'function' ? window.__bdShareText() : null;
-  const condLines = buildConditionsRows().map(([label, value]) => plainExportText(label) + '：' + plainExportText(value));
+  const condLines = buildConditionsRows().map(([label, value, layout]) => plainExportText(label) + '：' + (layout?.luxury ? String(value) : plainExportText(value)));
   const lines = ['房屋貸款試算結果', '', '【試算條件】', ...condLines, '',
     '貸款總額：' + $('#resTotal').textContent, '還款期間：' + $('#resTerm').textContent,
     '', '【每月還款】', ...periodShareLines($('#periodLines'))];
@@ -11055,6 +11078,8 @@ $$('.choice-btn[data-method]').forEach(btn => {
 
 $$('.choice-btn[data-rate-type]').forEach(btn => {
   btn.addEventListener('click', () => {
+    // 重按目前選項不應還原舊利率記憶、覆蓋當前多段輸入。
+    if (btn.dataset.rateType === rateType) return;
     $$('.choice-btn[data-rate-type]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const prevType = rateType;
