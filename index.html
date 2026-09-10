@@ -2099,6 +2099,25 @@ if ("serviceWorker" in navigator) {
       white-space: nowrap;
       flex-shrink: 0;
     }
+    /* 多利率本金攤還的註記分兩行；同表所有資料格留相同高度。 */
+    #periodLines.has-rate-segment-notes .payment-row > div,
+    #ytPeriodLines.has-rate-segment-notes .payment-row > div,
+    #bdPeriodLines.has-rate-segment-notes .payment-row > div { min-height: 64px; }
+    .has-rate-segment-notes .payment-row .period-amount {
+      font-size: clamp(0.78rem, 3.1vw, 1.05rem);
+    }
+    .has-rate-segment-notes .payment-row .amount-val {
+      display: block;
+      font-size: inherit;
+      max-width: none;
+    }
+    .payment-row .amount-val .rate-segment-note {
+      display: inline-block;
+      margin-left: 2px;
+      text-align: center;
+      line-height: 1.25;
+    }
+    .rate-segment-note .note-scope { display: block; }
     .apr-footer {
       display: flex;
       justify-content: space-between;
@@ -2123,16 +2142,22 @@ if ("serviceWorker" in navigator) {
       color: var(--text);
     }
     .apr-export-hint {
-      margin-left: 0.5em;
+      flex: 0 0 100%;
+      min-width: 0;
+      margin: 0;
       font-size: 0.68rem;
       font-weight: 300;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
       color: #999;
     }
     .export-capture .apr-footer-screen { display: none !important; }
     .export-capture .apr-footer-export {
       display: flex !important;
+      flex-wrap: wrap;
       justify-content: space-between;
-      align-items: center;
+      align-items: baseline;
+      row-gap: 3px;
     }
     .apr-footer .apr-label-wrap {
       display: inline-flex;
@@ -3454,6 +3479,24 @@ if ("serviceWorker" in navigator) {
     /* 一般貸款年利率獨立在收合區之外，需自行拉開與收合區的距離 */
     .yt-fold + .yt-gen-rate { margin-top: 22px; }
     .yt-gen-rate + .actions { margin-top: 24px; }
+    #modeYouth .yt-gen-rate-label { display: block; margin-top: 20px; line-height: 1.6; }
+    #modeYouth .yt-gen-rate > label { display: block; line-height: 1.6; }
+    #modeYouth .yt-gen-rate-scope { display: inline-block; margin-left: 4px; font-size: 0.666667em; font-weight: 400; color: var(--muted); }
+    #ytGenRateRows { display: flex; flex-direction: column; gap: 10px; }
+    /* 保留在匯出副本內的專屬類名，不依賴畫面面板祖先，也不改其他模式。 */
+    .yt-condition-rate-group { margin-top: 16px; padding-top: 14px; border-top: 1px solid #eee; }
+    .yt-condition-rate-title { margin: 0 0 10px; font-size: 0.92rem; font-weight: 600; line-height: 1.5; color: var(--text); text-align: center; }
+    .yt-condition-rate-scope { display: inline-block; max-width: 100%; margin-left: 4px; font-size: 0.85em; font-weight: 400; color: var(--muted); vertical-align: baseline; }
+    .yt-condition-rate-row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding: 10px 4px; font-size: 0.86rem; line-height: 1.5; text-align: center; border-bottom: 1px solid #f0f0f0; }
+    .yt-condition-rate-row:last-child { border-bottom: none; }
+    .yt-condition-rate-period { color: #666; white-space: nowrap; }
+    .yt-condition-rate-quote { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+    .yt-condition-rate-tag { color: #888; }
+    .yt-condition-rate-value { font-weight: 600; color: var(--teal); }
+    @media (max-width: 360px) {
+      .yt-condition-rate-row { font-size: 0.8rem; column-gap: 6px; padding-left: 0; padding-right: 0; }
+    }
+    #modeYouth #ytGenRateRows .row-seg { color: var(--teal-dark); }
     .yt-split-row.a .yt-split-v { color: var(--teal-dark); }
     .yt-split-row.b .yt-split-v { color: #9A6B18; }
     .yt-split-row.c .yt-split-v { color: #55595E; }
@@ -3627,13 +3670,13 @@ if ("serviceWorker" in navigator) {
     <div class="section">
       <label>利率計算方式</label>
       <div class="choice-group">
-        <button type="button" class="choice-btn active" data-rate-type="single">單一利率</button>
+        <button type="button" class="choice-btn active" data-rate-type="single">單一式利率</button>
         <button type="button" class="choice-btn" data-rate-type="multi">多段式利率</button>
       </div>
     </div>
 
     <div class="section rate-full" id="rateField">
-      <label>單一利率（年利率）</label>
+      <label>單一式年利率</label>
       <div class="input-box">
         <input type="text" id="rate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
         <span class="unit">%</span>
@@ -3641,7 +3684,7 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div id="multiRate" class="section rate-segments hidden">
-      <label>多段利率（年利率）</label>
+      <label>多段式年利率</label>
       <div id="rateRows"></div>
       <button type="button" class="btn-add" id="addRate">＋ 新增利率段</button>
     </div>
@@ -3707,9 +3750,10 @@ if ("serviceWorker" in navigator) {
         </div>
         <div class="apr-footer apr-footer-export" id="aprFooterExport" aria-hidden="true">
           <span class="apr-export-prefix">
-            <span class="apr-export-title">換算年利率</span><span class="apr-export-hint">（換算年利率係依全期還款現金流換算）</span>
+            <span class="apr-export-title">換算年利率</span>
           </span>
           <span class="apr-val" id="resAprExport">—</span>
+          <span class="apr-export-hint">（換算年利率係依全期還款現金流換算）</span>
         </div>
       </div>
     </div>
@@ -3998,10 +4042,19 @@ if ("serviceWorker" in navigator) {
       </div>
 
       <div class="section yt-gen-rate">
-        <label>一般貸款年利率（超出優惠額度部分）</label>
-        <div class="input-box">
+        <label><span>利率計算方式</span><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span></label>
+        <div class="choice-group" id="ytGenRateType" role="group" aria-label="利率計算方式（一般貸款／超出優惠額度部分）">
+          <button type="button" class="choice-btn active" data-yt-gen-type="single" aria-pressed="true">單一式利率</button>
+          <button type="button" class="choice-btn" data-yt-gen-type="multi" aria-pressed="false">多段式利率</button>
+        </div>
+        <label id="ytGenRateLabel" class="yt-gen-rate-label"><span id="ytGenRateLabelMain">單一式年利率</span><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span></label>
+        <div id="ytGenRateSingle" class="input-box">
           <input type="text" id="ytGenRate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
           <span class="unit">%</span>
+        </div>
+        <div id="ytGenRateMulti" class="rate-segments hidden">
+          <div id="ytGenRateRows"></div>
+          <button type="button" class="btn-add" id="ytGenAddRate">＋ 新增利率段</button>
         </div>
         <p class="yt-note">超出青安優惠額度的部分（以下簡稱 <span class="nw"><em>超額利率</em>／<em>一般利率</em>）</span>，以銀行一般貸款利率計息。<em>一般貸款的年限與寬限期固定跟隨新青安。</em></p>
       </div>
@@ -4021,6 +4074,7 @@ if ("serviceWorker" in navigator) {
         </button>
         <div class="conditions-body">
           <div class="conditions-grid" id="ytConditionsGrid"></div>
+          <div id="ytConditionsRates"></div>
         </div>
       </div>
 
@@ -4041,7 +4095,7 @@ if ("serviceWorker" in navigator) {
             <span class="ts-val ts-val-b" id="ytTsGen">—</span>
             <span class="ts-op ts-op-2">＝</span>
           </div>
-          <div class="label">貸款總額</div>
+          <div class="label" id="ytResTotalLabel">貸款總額</div>
           <div class="value" id="ytResTotal">—</div>
         </div>
         <div class="summary-item">
@@ -4724,7 +4778,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.10E";
+const APP_VERSION = "2026.09.10M";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5611,10 +5665,10 @@ const APR_INFO_FOOT = `<p class="mi-note mi-note-mark">※ 本數值未納入未
 
 const APR_INFO_HTML = APR_INFO_BODY + APR_INFO_FOOT;
 const APR_INFO_HTML_YT = APR_INFO_BODY + APR_INFO_SCOPE_YT + APR_INFO_FOOT;
-const APR_EXPORT_INLINE_NOTE = '（換算年利率係依全期還款現金流換算）';
+const APR_EXPORT_NOTE = '（換算年利率係依全期還款現金流換算）';
 
 function formatAprExportLine() {
-  return `換算年利率  ${APR_EXPORT_INLINE_NOTE} ${$('#resApr').textContent.trim()}`;
+  return `換算年利率  ${$('#resApr').textContent.trim()}\n${APR_EXPORT_NOTE}`;
 }
 
 function syncAprExportDisplay() {
@@ -8829,7 +8883,7 @@ function buildConditionsData() {
     ['貸款年限', `${$('#term').value} 年`],
     ['寬限期', graceText],
     ['還款方式', getMethodLabel()],
-    ['利率計算方式', rateType === 'single' ? '單一利率' : '多段式利率']
+    ['利率計算方式', rateType === 'single' ? '單一式利率' : (rateSegments.length === 1 ? '多段式利率（目前 1 段）' : '多段式利率')]
   ].filter(Boolean);
   let rates = [];
   if (rateType === 'single') {
@@ -8927,7 +8981,12 @@ function periodShareLines(table) {
     const range = row.querySelector('.period-range');
     const period = range ? Array.from(range.childNodes).map(n => n.textContent.trim()).filter(Boolean).join(' · ') : '';
     const rate = row.querySelector('.period-mid')?.textContent.trim().replace(/\s+/g, ' ') || '';
-    const amount = row.querySelector('.period-amount')?.textContent.trim() || '';
+    const amountNode = row.querySelector('.period-amount')?.cloneNode(true);
+    amountNode?.querySelectorAll('.rate-segment-note').forEach(note => {
+      const text = note.querySelector('.note-text').textContent;
+      note.textContent = '（此利率段：' + text.slice(1, -1) + '）';
+    });
+    const amount = amountNode?.textContent.trim() || '';
     return period + '　' + rate + '　' + amount;
   });
 }
@@ -9202,10 +9261,13 @@ function prepareExportAprBlock(clone) {
     let exp = block.querySelector('.apr-footer-export');
     if (!exp) {
       exp = document.createElement('div'); exp.className = 'apr-footer apr-footer-export';
-      const label = document.createElement('span'); label.className = 'apr-label';
+      const prefix = document.createElement('span'); prefix.className = 'apr-export-prefix';
+      const label = document.createElement('span'); label.className = 'apr-export-title';
       label.textContent = block.id === 'ytAprBlock' ? '換算年利率（全案合計）' : '換算年利率';
+      prefix.appendChild(label);
       const val = document.createElement('span'); val.className = 'apr-val'; val.textContent = value;
-      exp.append(label, val); block.appendChild(exp);
+      const hint = document.createElement('span'); hint.className = 'apr-export-hint'; hint.textContent = APR_EXPORT_NOTE;
+      exp.append(prefix, val, hint); block.appendChild(exp);
     } else {
       const val = exp.querySelector('#resAprExport'); if (val) val.textContent = value;
     }
@@ -9344,6 +9406,7 @@ async function captureExportRootSlices(rootEl, opts) {
   if (!needsChunkedCapture) {
     const canvas = await html2canvas(rootEl, {
       onclone: doc => { doc.body.dataset.mode = rootEl.dataset.exportMode; },
+      ...(rootEl.dataset.exportMode === 'youth' ? { scrollX: 0, scrollY: 0 } : {}),
       scale,
       backgroundColor: '#ffffff',
       useCORS: true,
@@ -9386,6 +9449,7 @@ async function captureExportRootSlices(rootEl, opts) {
       await waitExportLayout();
       const sliceCanvas = await html2canvas(viewport, {
         onclone: doc => { doc.body.dataset.mode = rootEl.dataset.exportMode; },
+      ...(rootEl.dataset.exportMode === 'youth' ? { scrollX: 0, scrollY: 0 } : {}),
         scale,
         backgroundColor: '#ffffff',
         useCORS: true,
@@ -9543,6 +9607,63 @@ async function captureResultsCanvas(context) {
   return polishSummaryExportCanvas(await captureResultsRawCanvas(context), context.width);
 }
 
+// Only Youth exports preserve navigation made after their immutable snapshot.
+// Other modes retain the existing scroll-restoration contract.
+function watchYouthExportNavigation() {
+  let navigated = false, intentUntil = 0, touch = null;
+  const cleanups = [];
+  const on = (target, type, fn, options) => {
+    target.addEventListener(type, fn, options);
+    cleanups.push(() => target.removeEventListener(type, fn, options));
+  };
+  const position = () => ({ x: window.scrollX, y: window.scrollY });
+  let intentPosition = position();
+  function arm() { intentPosition = position(); intentUntil = performance.now() + 800; }
+  on(window, 'wheel', e => {
+    if (e.isTrusted && !e.ctrlKey && (e.deltaX || e.deltaY)) arm();
+  }, { passive: true, capture: true });
+  on(window, 'keydown', e => {
+    if (!e.isTrusted || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest?.('input,textarea,select,button,[contenteditable="true"],[role="dialog"]')) return;
+    if (['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(e.key)) arm();
+  }, true);
+  on(window, 'pointerdown', e => {
+    if (e.isTrusted && e.pointerType === 'mouse' && e.clientX >= document.documentElement.clientWidth) arm();
+  }, { passive: true, capture: true });
+  on(window, 'touchstart', e => {
+    touch = e.isTrusted && e.touches.length === 1
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY, scroll: position() } : null;
+  }, { passive: true, capture: true });
+  on(window, 'touchmove', e => {
+    if (!touch || e.touches.length !== 1) { touch = null; return; }
+    if (Math.abs(e.touches[0].clientY - touch.y) > 8) {
+      intentPosition = touch.scroll;
+      intentUntil = performance.now() + 800;
+      if (window.scrollY !== touch.scroll.y || window.scrollX !== touch.scroll.x) navigated = true;
+    }
+  }, { passive: true, capture: true });
+  on(window, 'touchend', () => { touch = null; }, { passive: true, capture: true });
+  on(window, 'touchcancel', () => { touch = null; }, { passive: true, capture: true });
+  on(window, 'scroll', () => {
+    if (performance.now() <= intentUntil && (window.scrollY !== intentPosition.y || window.scrollX !== intentPosition.x)) navigated = true;
+  }, { passive: true });
+  const detail = document.getElementById('ytDetailSection');
+  if (detail) on(detail, 'youth-detail-navigation', () => { navigated = true; });
+  const observer = new MutationObserver(records => {
+    // A leave-and-return still constitutes navigation, even within one task.
+    if (records.some(r => r.oldValue !== 'youth') || document.body.dataset.mode !== 'youth') navigated = true;
+  });
+  observer.observe(document.body, { attributes: true, attributeFilter: ['data-mode'], attributeOldValue: true });
+  cleanups.push(() => observer.disconnect());
+  return {
+    restoreAllowed() {
+      if (observer.takeRecords().some(r => r.oldValue !== 'youth') || document.body.dataset.mode !== 'youth') navigated = true;
+      return !navigated;
+    },
+    dispose() { cleanups.forEach(fn => fn()); }
+  };
+}
+
 async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
   if (exportBusy) return;
   const context = createExportContext();
@@ -9552,6 +9673,7 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
   }
   const savedX = window.scrollX;
   const savedY = window.scrollY;
+  const youthNavigation = context.mode === 'youth' ? watchYouthExportNavigation() : null;
   document.activeElement?.blur?.();
   exportBusy = true;
   if (activeBtn && busyLabel) setExportBtnBusy(activeBtn, busyLabel);
@@ -9572,7 +9694,9 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
     if (activeBtn) clearExportBtnBusy(activeBtn);
     exportBusy = false;
     syncExportFormatButtons();
-    if (document.body.dataset.mode === context.mode) window.scrollTo(savedX, savedY);
+    const restoreScroll = !youthNavigation || youthNavigation.restoreAllowed();
+    if (youthNavigation) youthNavigation.dispose();
+    if (restoreScroll && document.body.dataset.mode === context.mode) window.scrollTo(savedX, savedY);
   }
 }
 
@@ -10294,6 +10418,8 @@ function repaymentDisplayGroups(schedule, graceMonths, rateAt, principalMethod) 
     }
     section.rows.push(row);
   }
+  // 寬限期或尾期整元差也會分組，僅有實際換率才加利率段範圍說明。
+  const rateScoped = principalMethod && sections.some((section, i) => i > 0 && section.rate !== sections[i - 1].rate);
   const out = [];
   for (const section of sections) {
     const runs = []; let rows = [], direction = 0;
@@ -10309,6 +10435,7 @@ function repaymentDisplayGroups(schedule, graceMonths, rateAt, principalMethod) 
     for (const run of runs) {
       const first = run[0], last = run[run.length - 1];
       const common = { rate: section.rate, isGrace: section.isGrace,
+        rateScoped: rateScoped && !section.isGrace, rateSegmentEnd: section.rows[section.rows.length - 1].period,
         segmentStart: first.period, segmentEnd: last.period };
       const constant = run.every(row => row.payment === first.payment);
       if (!principalMethod || constant) {
@@ -10353,7 +10480,17 @@ function periodGroupTag(group, lastSettlement = false) {
   return tag ? '<span class="pr-tag">' + tag + '</span>' : '';
 }
 function paymentNote(group) {
-  return group.note ? '<span class="grace-note">（' + group.note + '）</span>' : '';
+  if (!group.note) return '';
+  if (group.rateScoped && group.note === '最後金額' && group.end !== group.rateSegmentEnd) {
+    return '<span class="grace-note">（遞減末期）</span>';
+  }
+  if (group.rateScoped && (group.note === '開始遞減' || group.note === '最後金額')) {
+    return '<span class="grace-note rate-segment-note"><span class="note-scope">此利率段</span><span class="note-text">（' + group.note + '）</span></span>';
+  }
+  return '<span class="grace-note">（' + group.note + '）</span>';
+}
+function syncPaymentNoteLayout(table) {
+  table.classList.toggle('has-rate-segment-notes', !!table.querySelector('.rate-segment-note'));
 }
 function groupPeriodSummary(schedule, graceMonths, totalMonths) {
   return repaymentDisplayGroups(schedule, graceMonths,
@@ -10513,6 +10650,7 @@ function renderPeriodLines() {
       <span>應繳金額</span>
     </div>
     ${rowsHtml}`;
+  syncPaymentNoteLayout($('#periodLines'));
   $('#periodDots').innerHTML = `<span class="punit" role="group" aria-label="期數顯示單位">` +
     [['year', '年'], ['period', '期'], ['month', '月']].map(([k, t]) =>
       `<button type="button" class="pu${k === periodUnitPref ? ' on' : ''}" data-punit="${k}" aria-pressed="${k === periodUnitPref}" aria-label="以${t}顯示">${t}</button>`
@@ -12408,6 +12546,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }).join('');
     B('#bdPeriodLines').innerHTML =
       '<div class="payment-head"><span>' + h0 + '</span><span>利率</span><span>應繳金額</span></div>' + rows;
+    syncPaymentNoteLayout(B('#bdPeriodLines'));
     B('#bdPeriodDots').innerHTML = '<span class="punit" role="group" aria-label="期數顯示單位">' +
       [['year', '年'], ['period', '期'], ['month', '月']].map(([k, t]) =>
         '<button type="button" class="pu' + (k === periodUnitPref ? ' on' : '') +
@@ -13625,6 +13764,8 @@ window.addEventListener('resize', () => {
   const STEP_IDS = ['#ytR1', '#ytR2', '#ytR3', '#ytR4', '#ytR5'];
 
   let kind = 'general', region = 2, method = 'amortize';
+  let genRateType = 'single', genSegments = [];
+  const YT_GEN_SEG_MAX = 10;
 
   /* ---------- 購屋縣市（購屋總價上限）----------
      數字不寫死：法規異動時使用者可自行維護。與試算數值分開保存，「清空數值」不會清掉。
@@ -13901,7 +14042,7 @@ window.addEventListener('resize', () => {
   /* 點徽章＝把該欄位填成默認值（與一般貸款同一套操作） */
   Y('#ytTermMax')?.addEventListener('click', () => {
     setCalcFieldStoredValue(Y('#ytTerm'), GL_DEFAULT_TERM);clearYouthIssue('#ytTerm');
-    onChange();
+    onChange({target:Y('#ytTerm')});
   });
   Y('#ytRatioTag')?.addEventListener('click', () => {
     setCalcFieldStoredValue(Y('#ytRatio'), GL_DEFAULT_RATIO);clearYouthIssue('#ytRatio');
@@ -13980,6 +14121,96 @@ window.addEventListener('resize', () => {
         t: '購屋供自住使用',
         s: selfUse ? '核貸時須簽自用住宅使用切結書' : '非自住用途不得申貸，貸後查獲將追回補貼息' }
     ];
+  }
+
+  /* 一般貸款部位的利率編輯只持有新青安狀態，攤還公式仍使用原核心。 */
+  function genTermMonths() {
+    const term = strictNum('#ytTerm');
+    return term !== null && Number.isInteger(term) && term >= 1 && term <= YT_TERM_MAX
+      ? term * 12 : (genSegments.length ? genSegments[genSegments.length - 1].to : GL_DEFAULT_TERM * 12);
+  }
+  function syncGenSegmentsToTerm() {
+    if (!genSegments.length) return;
+    const total = genTermMonths(), count = genSegments.length;
+    let from = 1;
+    genSegments = genSegments.map((seg, i) => {
+      const to = i === count - 1 ? total : Math.max(from, Math.min(seg.to, total - (count - 1 - i)));
+      const next = { from, to, rate: seg.rate };
+      from = to + 1;
+      return next;
+    });
+  }
+  function genRatesFor(n) {
+    if (genRateType === 'single') return new Array(n).fill(num(Y('#ytGenRate')));
+    if (genRateType !== 'multi') throw new Error('一般貸款利率方式未確認');
+    const rates = new Array(n); let next = 1;
+    for (const seg of genSegments) {
+      const rate = Number(seg.rate);
+      if (seg.from !== next || !Number.isInteger(seg.to) || seg.to < seg.from || seg.to > n ||
+          String(seg.rate).trim() === '' || !Number.isFinite(rate) || rate < RATE_MIN || rate > RATE_MAX) {
+        throw new Error('一般貸款利率段未完整覆蓋貸款年限');
+      }
+      for (let period = seg.from; period <= seg.to; period++) rates[period - 1] = rate;
+      next = seg.to + 1;
+    }
+    if (next !== n + 1) throw new Error('一般貸款利率段未完整覆蓋貸款年限');
+    return rates;
+  }
+  function renderGenRateRows() {
+    const box = Y('#ytGenRateRows'), total = genTermMonths();
+    box.innerHTML = genSegments.map((seg, i) => {
+      const end = i === genSegments.length - 1
+        ? `<span class="rate-readonly">${seg.to}</span>`
+        : `<input type="text" id="ytGenTo${i}" class="calc-field rate-period yt-gen-period" data-yt-gen-index="${i}" data-calc-integer="true" readonly inputmode="none" autocomplete="off" aria-label="一般貸款第${i + 1}段截止期數">`;
+      const remove = genSegments.length > 1 ? `<button type="button" class="btn-remove" data-yt-gen-remove="${i}" aria-label="刪除一般貸款第${i + 1}段">×</button>` : '';
+      return `<div class="rate-row-line"><span class="row-seg">第 ${i + 1} 段</span><span class="row-txt">第</span><span class="rate-readonly">${seg.from}</span><span class="row-txt">期～第</span>${end}<span class="row-txt">期</span><input type="text" id="ytGenR${i}" class="calc-field rate-val yt-gen-rate-val" data-yt-gen-index="${i}" readonly inputmode="none" autocomplete="off" aria-label="一般貸款第${i + 1}段年利率"><span class="row-txt">%</span>${remove}</div>`;
+    }).join('');
+    box.querySelectorAll('input').forEach(input => {
+      const i = Number(input.dataset.ytGenIndex), isEnd = input.classList.contains('yt-gen-period');
+      setCalcFieldStoredValue(input, isEnd ? genSegments[i].to : genSegments[i].rate);
+      input.addEventListener('change', () => {
+        if (!genSegments[i]) return;
+        const accepted = storedCapAcceptedEdit(input);
+        if (isEnd) {
+          const typed = raw(input), value = Number(typed);
+          genSegments[i].to = Math.max(genSegments[i].from, Math.min(Number.isFinite(value) ? Math.trunc(value) : genSegments[i].from, total - (genSegments.length - 1 - i)));
+          syncGenSegmentsToTerm(); renderGenRateRows();
+          showRateEndAdjustment(typed, genSegments[i].to);
+        } else {
+          const typed = raw(input), parsed = youthFieldValue('#ytGenRate', typed, null);
+          genSegments[i].rate = parsed.valid ? parsed.text : '';
+          setCalcFieldStoredValue(input, genSegments[i].rate);
+        }
+        if (accepted) clearGenSegmentIssue(i, isEnd ? 'to' : 'rate');
+        persist(); markStale();
+      });
+    });
+    initCalcFields(box);
+    box.querySelectorAll('[data-yt-gen-remove]').forEach(button => button.addEventListener('click', () => {
+      const i = Number(button.dataset.ytGenRemove);
+      if (genSegments.length <= 1) return;
+      const removed = genSegments.splice(i, 1)[0];
+      if (genSegments[i - 1] && !genSegments[i]) genSegments[i - 1].to = removed.to;
+      syncGenSegmentsToTerm();
+      clearGenSegmentIssue(-1, 'structure');
+      renderGenRateRows(); persist(); markStale();
+    }));
+    const atMax = genSegments.length >= YT_GEN_SEG_MAX;
+    const add = Y('#ytGenAddRate');
+    add.classList.toggle('btn-add-disabled', atMax);
+    add.setAttribute('aria-disabled', String(atMax));
+  }
+  function syncGenRateUI() {
+    YA('#ytGenRateType [data-yt-gen-type]').forEach(button => {
+      const selected = button.dataset.ytGenType === genRateType;
+      button.classList.toggle('active', selected); button.setAttribute('aria-pressed', String(selected));
+    });
+    Y('#ytGenRateSingle').classList.toggle('hidden', genRateType !== 'single');
+    Y('#ytGenRateMulti').classList.toggle('hidden', genRateType !== 'multi');
+    Y('#ytGenRateLabelMain').textContent = genRateType === 'multi'
+      ? '多段式年利率'
+      : '單一式年利率';
+    renderGenRateRows();
   }
 
   /* ---------- 攤還 ---------- */
@@ -14104,7 +14335,8 @@ window.addEventListener('resize', () => {
 
     const st = currentSteps();
     const sy = build(sp.youthYuan, n, youthRates(n, st), graceM);
-    const sg = build(sp.genYuan, n, new Array(n).fill(num(Y('#ytGenRate'))), graceM);
+    const gRates = sp.genYuan > 0 ? genRatesFor(n) : new Array(n).fill(0);
+    const sg = build(sp.genYuan, n, gRates, graceM);
     const all = merge(sy, sg, n);
 
     // 補貼省息（精算）：新青安該筆 有補貼 vs 全期第5段利率
@@ -14129,13 +14361,66 @@ window.addEventListener('resize', () => {
     return { price, appr, basis, ratio, term, graceY, share, n, graceM, elig, pass,
              priceYuan: sp.priceYuan, totalYuan: sp.totalYuan, youthYuan: sp.youthYuan, genYuan: sp.genYuan, downYuan: sp.downYuan,
              total, capWan, ltvWan, youthBind, youthWan, genWan, downWan, st, sy, sg, all, saved,
-             savedNoSub, savedWithSub, savedWin, govHeadline, kind, windowOk };
+             savedNoSub, savedWithSub, savedWin, govHeadline, kind, windowOk,
+              genRateType, genSegments: genRateType === 'multi' ? genSegments.map(x => ({...x})) : [], gRates };
   }
 
   /* ---------- 期間表分段 ---------- */
   function groupRows(sch, graceM, n, rates) {
     return repaymentDisplayGroups(sch, graceM, period => rates[period - 1], method === 'principal')
       .map(group => ({ ...group, s: group.start, e: group.end, pay: group.payment, payE: group.payment }));
+  }
+
+
+  /* 利率條件只讀本次正式計算資料，保留設定段界，不借用月付分組或其他模式的精度。 */
+  function youthConditionRateGroups(d) {
+    const groups = [];
+    if (d.youthYuan > 0) {
+      const rates = youthRates(d.n, d.st), rows = [];
+      let from = 1;
+      for (const boundary of [36, 48, 60, 72, d.n]) {
+        if (from > d.n) break;
+        const to = Math.min(boundary, d.n);
+        rows.push({ from, to, rate: rates[from - 1] });
+        from = to + 1;
+      }
+      groups.push({ kind: 'youth', title: '青安貸款利率', method: rows.length === 1 ? '單一式利率' : stepsTitleOf(rows.length),
+        precision: getRateDisplayPrecision(rows.map(row => row.rate)), rows });
+    }
+    if (d.genYuan > 0) {
+      const multi = d.genRateType === 'multi';
+      const rows = multi
+        ? d.genSegments.map(seg => ({ from: seg.from, to: seg.to, rate: d.gRates[seg.from - 1] }))
+        : [{ from: 1, to: d.n, rate: d.gRates[0] }];
+      const precisionValues = multi ? d.genSegments.map(seg => seg.rate) : [d.gRates[0]];
+      groups.push({ kind: 'general', title: '一般貸款利率', method: multi ? (rows.length === 1 ? '多段式利率，目前 1 段' : '多段式利率') : '單一式利率',
+        precision: getRateDisplayPrecision(precisionValues), rows });
+    }
+    return groups;
+  }
+
+  /* 總額標示跟隨本次有效結果；輸入缺漏仍由原流程隱藏結果。 */
+  function youthLoanTotalLabel(d) {
+    return !d.pass && d.youthYuan === 0 && d.genYuan > 0
+      ? '貸款總額（一般貸款）' : '貸款總額';
+  }
+
+  function youthConditionRatePeriod(row) {
+    return `第 ${pad3(row.from)}～${pad3(row.to)} 個月`;
+  }
+
+  function youthConditionRatesHTML(d) {
+    return youthConditionRateGroups(d).map(group => `<section class="yt-condition-rate-group" data-rate-part="${group.kind}" aria-label="${group.title}（${group.method}）">
+      <h4 class="yt-condition-rate-title"><span class="yt-condition-rate-name">${group.title}</span><span class="yt-condition-rate-scope">（${group.method}）</span></h4>
+      ${group.rows.map(row => `<div class="yt-condition-rate-row"><span class="yt-condition-rate-period">${youthConditionRatePeriod(row)}</span><span class="yt-condition-rate-quote"><span class="yt-condition-rate-tag">年利率</span><span class="yt-condition-rate-value">${formatRatePct(row.rate, group.precision)} %</span></span></div>`).join('')}
+    </section>`).join('');
+  }
+
+  function youthConditionRateShareLines(d) {
+    return youthConditionRateGroups(d).flatMap(group => [
+      '', '【' + group.title + '（' + group.method + '）】',
+      ...group.rows.map(row => youthConditionRatePeriod(row) + '　年利率 ' + formatRatePct(row.rate, group.precision) + ' %')
+    ]);
   }
 
 
@@ -14159,11 +14444,10 @@ window.addEventListener('resize', () => {
       ['貸款年限', d.term + ' 年'],
       ['寬限期', d.graceY === 0 ? '無' : d.graceY + ' 年'],
       ['還款方式', method === 'amortize' ? '本息平均攤還' : '本金平均攤還'],
-      hasShare && ['持買比率', d.share + ' %'],
-      // 有一般貸款部位時，這個利率才真正參與試算，此時才列入試算條件。
-      // 全額皆為一般貸款（青安為 0）時並沒有「超出」的部分，改稱一般利率。
-      d.genWan > 0 && [d.youthWan > 0 ? '超額利率' : '一般利率', num(Y('#ytGenRate')) + ' %']
+      hasShare && ['持買比率', d.share + ' %']
     ].filter(Boolean).map(([k, v]) => `<div class="cond-item"><span class="cond-dot" aria-hidden="true"></span><span class="cond-label">${k}</span><span class="cond-value">${v}</span></div>`).join('');
+
+    Y('#ytConditionsRates').innerHTML = youthConditionRatesHTML(d);
 
     // 資格審查
     const chk = d.elig.map((e) => `<div class="yt-chk ${e.ok ? 'ok' : 'no'}">${e.ok ? ICON_OK : ICON_NO}<div class="yt-chk-t">${e.t}<span class="yt-chk-s${e.off ? ' yt-chk-off' : ''}">${e.s}</span></div></div>`).join('');
@@ -14181,8 +14465,10 @@ window.addEventListener('resize', () => {
     if (!d.windowOk) extra += `<p class="yt-note warn">※ 青安 3.0 受理期間為 115.8.1 至 118.7.31（撥款不得逾 118.10.31），目前日期已不在受理期間內。</p>`;
     Y('#ytEligBlock').innerHTML = `${banner}${chk}${extra}`;
 
-    // 貸款組成
-    const genRate = num(Y('#ytGenRate'));
+    // 貸款組成讀本次正式利率快照。
+    const genRateText = d.genRateType === 'multi'
+      ? '多段式年利率（' + (d.genSegments.length === 1 ? '目前 1 段' : '共 ' + d.genSegments.length + ' 段') + '，詳見試算條件）'
+      : '單一式年利率 ' + d.gRates[0] + '%';
     const capTxt = wanTxt(CAP[kind]) + ' 萬';
     const shareTxt = d.share < 100 ? ` × 持買比率 ${d.share}%` : '';
     // 被 8 成咬住時，講額度上限會讓人算不出眼前的數字，要改講成數
@@ -14195,10 +14481,10 @@ window.addEventListener('resize', () => {
           : ['不符申請青安貸款資格'] },
       { c: 'b', n: '一般貸款', v: d.genWan, show: d.genWan > 0, lines: d.pass
           ? [`總貸款 ${wanTxt(d.total)} 萬 − 新青安 ${wanTxt(d.youthWan)} 萬`,
-             `年利率 ${genRate}%（${d.youthBind === 'ltv' ? '超出青安成數部分' : '超出優惠額度部分'}）`]
+             `${genRateText}（${d.youthBind === 'ltv' ? '超出青安成數部分' : '超出優惠額度部分'}）`]
           // 上一列已經講過不符資格，這裡不重複，否則長句折行會把這一列撐高
           : [`總貸款 ${wanTxt(d.total)} 萬元全額按一般貸款計算`,
-             `年利率 ${genRate}%`] },
+             `${genRateText}`] },
       { c: 'c', n: '自備款', v: d.downWan, show: true, lines: [
           `購屋總價 ${wanTxt(d.price)} 萬 − 總貸款 ${wanTxt(d.total)} 萬`,
           `貸款成數 ${d.ratio}%，不含稅費相關費用`] }
@@ -14224,6 +14510,7 @@ window.addEventListener('resize', () => {
         Y('#ytTsGen').textContent = yuan(genYuan);
       }
     }
+    Y('#ytResTotalLabel').textContent = youthLoanTotalLabel(d);
     Y('#ytResTotal').textContent = yuan(totalYuan) + ' 元';
     Y('#ytResTerm').innerHTML = d.graceY === 0
       ? `${d.term} 年（無寬限期）`
@@ -14233,7 +14520,7 @@ window.addEventListener('resize', () => {
        顯示出來只會讓人以為算錯，故直接隱藏，沒有落差可解釋。 */
     const caseRates = new Set();
     if (d.youthWan > 0) youthRates(d.n, d.st).forEach((r) => caseRates.add(Number(r)));
-    if (d.genWan > 0) caseRates.add(Number(genRate));
+    if (d.genWan > 0) d.gRates.forEach(r => caseRates.add(Number(r)));
     const showApr = d.total > 0 && caseRates.size > 1;
     Y('#ytAprBlock')?.classList.toggle('hidden', !showApr);
     Y('#ytResApr').textContent = (d.total > 0 ? calcAPR(d.all, d.totalYuan) : '0.00') + ' %';
@@ -14279,15 +14566,16 @@ window.addEventListener('resize', () => {
   function renderPeriod() {
     if (!last) return;
     const d = last;
-    const genRate = num(Y('#ytGenRate'));
     const both = d.youthWan > 0 && d.genWan > 0;
     const src = both ? periodSrc : 'all';
 
     // 各模式的資料來源、利率序列、欄位標題
-    const yRates = d.youthWan > 0 ? youthRates(d.n, d.st) : new Array(d.n).fill(genRate);
-    const gRates = new Array(d.n).fill(genRate);
+    const yRates = d.youthWan > 0 ? youthRates(d.n, d.st) : d.gRates;
+    const gRates = d.gRates;
+    // 合計按兩筆利率的聯集切段，不能只靠月付金額是否剛好改變。
+    const combinedRates = both ? yRates.map((rate, i) => rate + '|' + gRates[i]) : yRates;
     const conf = {
-      all:     { sch: d.all, rates: yRates, tag: '合計' },
+      all:     { sch: d.all, rates: combinedRates, tag: '合計' },
       youth:   { sch: d.sy,  rates: yRates, tag: '青安' },
       general: { sch: d.sg,  rates: gRates, tag: '一般' }
     }[src];
@@ -14303,13 +14591,14 @@ window.addEventListener('resize', () => {
         const note = paymentNote(g);
         // 合計模式下兩筆貸款利率並存，加標籤避免被誤讀成相加
         const rateCell = (src === 'all' && both)
-          ? `<div class="period-mid two"><i>青安</i><b>${g.rate}%</b><i>一般</i><b>${genRate}%</b></div>`
+          ? `<div class="period-mid two"><i>青安</i><b>${yRates[g.s - 1]}%</b><i>一般</i><b>${gRates[g.s - 1]}%</b></div>`
           : `<div class="period-mid">${g.rate}%</div>`;
         // 尾期本金會結清餘額，金額與前一段不同而單獨成列；標註避免年模式下看似重複
         const tailTag = periodGroupTag(g, gi === gr.length - 1 && g.s === g.e);
         return `<div class="payment-row"><div class="period-range"><span>${periodGroupLabel(g)}</span>${tailTag}</div>${rateCell}<div class="period-amount"><span class="amount-val">${yuan(g.pay) === '0' ? '0' : amt} 元${note}</span></div></div>`;
       }).join('');
 
+    syncPaymentNoteLayout(Y('#ytPeriodLines'));
     Y('#ytPeriodLines').classList.toggle('tappable', both);
     const PMODE = { all: '青安貸款＋一般貸款（合計）', youth: '青安貸款', general: '一般貸款' };
     // 單位開關固定顯示；貸款別標題與圓點僅在兩筆貸款並存時出現
@@ -14324,6 +14613,150 @@ window.addEventListener('resize', () => {
         ).join('') + '</span>'
       : '');
     if (typeof scheduleFitPaymentTable === 'function') scheduleFitPaymentTable();
+  }
+
+  /* 明細閱讀狀態只留在本次有效試算，不寫入財務儲存。 */
+  let ytDetailOpenYears = new Set();
+  let ytDetailGesture = null;
+  let ytDetailClickGuardUntil = 0;
+
+  function cancelYouthDetailGesture() { ytDetailGesture = null; }
+  function resetYouthDetailReading() {
+    cancelYouthDetailGesture();
+    ytDetailClickGuardUntil = 0;
+    ytDetailOpenYears.clear();
+  }
+  function youthDetailNavigationReady() {
+    return document.body.dataset.mode === 'youth' && !document.hidden
+      && !!last && !ytStale && Y('#ytResults').classList.contains('show') && !ytMissingFields();
+  }
+  function youthDetailAvailableSources() {
+    if (!last) return [];
+    const youth = last.youthWan > 0, general = last.genWan > 0;
+    return ['all', 'youth', 'general'].filter(k => k === 'all' ? youth && general : k === 'youth' ? youth : general);
+  }
+  function rememberYouthDetailOpenYears() {
+    ytDetailOpenYears = new Set(Array.from(Y('#ytYearAccordion').querySelectorAll('.year-item.open'), item => item.dataset.year));
+  }
+  function captureYouthDetailAnchor() {
+    const box = Y('#ytYearAccordion');
+    const sticky = document.querySelector('.sticky-top');
+    const stickyRect = sticky?.getBoundingClientRect();
+    const visibleTop = sticky && getComputedStyle(sticky).position === 'sticky' && stickyRect.top <= 0 ? Math.max(0, stickyRect.bottom) : 0;
+    const visible = el => { const r = el.getBoundingClientRect(); return r.height > 0 && r.bottom > visibleTop && r.top < window.innerHeight; };
+    const row = Array.from(box.querySelectorAll('.year-item.open tbody tr[data-period]')).find(visible);
+    const header = row ? null : Array.from(box.querySelectorAll('.year-header')).find(visible);
+    const target = row || header;
+    if (!target) return null;
+    return { year: target.closest('.year-item').dataset.year, period: row?.dataset.period || '', top: target.getBoundingClientRect().top };
+  }
+  function restoreYouthDetailAnchor(anchor) {
+    if (!anchor) return;
+    const item = Array.from(Y('#ytYearAccordion').querySelectorAll('.year-item')).find(el => el.dataset.year === anchor.year);
+    if (!item) return;
+    const target = anchor.period
+      ? Array.from(item.querySelectorAll('tbody tr[data-period]')).find(el => el.dataset.period === anchor.period)
+      : item.querySelector('.year-header');
+    if (!target) return;
+    const delta = target.getBoundingClientRect().top - anchor.top;
+    if (Math.abs(delta) > 0.5) window.scrollTo({ left: window.scrollX, top: Math.max(0, window.scrollY + delta), behavior: 'instant' });
+  }
+  function switchYouthDetailSource(next) {
+    if (!youthDetailNavigationReady() || next === detailSrc || !youthDetailAvailableSources().includes(next)) return false;
+    rememberYouthDetailOpenYears();
+    const anchor = captureYouthDetailAnchor();
+    cancelYouthDetailGesture();
+    detailSrc = next;
+    renderDetail();
+    restoreYouthDetailAnchor(anchor);
+    Y('#ytDetailSection').dispatchEvent(new Event('youth-detail-navigation'));
+    return true;
+  }
+  function moveYouthDetailSource(step) {
+    const available = youthDetailAvailableSources();
+    if (available.length <= 1) return false;
+    const at = available.indexOf(detailSrc), next = at + step;
+    return at >= 0 && next >= 0 && next < available.length ? switchYouthDetailSource(available[next]) : false;
+  }
+  function youthDetailHasSelection() {
+    const selection = window.getSelection();
+    return !!selection && !selection.isCollapsed;
+  }
+  function youthDetailGestureCurrent(g) {
+    return !!g && g.snapshot === last && g.source === detailSrc && youthDetailNavigationReady() && !youthDetailHasSelection();
+  }
+  function bindYouthDetailNavigation() {
+    const accordion = Y('#ytYearAccordion'), tabs = Y('#ytDetailSeg');
+    const roots = [accordion, tabs];
+    const touchOf = (list, id) => Array.from(list).find(t => t.identifier === id);
+    function begin(e) {
+      cancelYouthDetailGesture();
+      // A fresh contact is a new intentional tap, not the previous swipe's click.
+      ytDetailClickGuardUntil = 0;
+      if (e.touches.length !== 1 || !youthDetailNavigationReady() || youthDetailHasSelection()) return;
+      const target = e.target instanceof Element ? e.target : e.target.parentElement;
+      if (!target) return;
+      const control = target.closest('button, input, textarea, select, a, [contenteditable]:not([contenteditable="false"])');
+      // 來源按鈕也是滑動區；其他控制項仍只執行原有操作。
+      if (control && !(tabs.contains(control) && control.matches('button[data-yt-src]'))) return;
+      const table = target.closest('.year-table-wrap');
+      if (table && table.scrollWidth > table.clientWidth + 1) return;
+      const t = e.touches[0];
+      if (t.clientX <= 20 || t.clientX >= window.innerWidth - 20) return;
+      ytDetailGesture = { id: t.identifier, x: t.clientX, y: t.clientY, axis: '', snapshot: last, source: detailSrc, scrollY: window.scrollY };
+    }
+    function move(e) {
+      const g = ytDetailGesture;
+      if (!g) return;
+      if (e.touches.length !== 1 || !youthDetailGestureCurrent(g) || Math.abs(window.scrollY - g.scrollY) > 2) { cancelYouthDetailGesture(); return; }
+      const t = touchOf(e.touches, g.id);
+      if (!t) { cancelYouthDetailGesture(); return; }
+      const ax = Math.abs(t.clientX - g.x), ay = Math.abs(t.clientY - g.y);
+      if (!g.axis) {
+        if (ay >= 8 && ay >= ax * 1.4) { cancelYouthDetailGesture(); return; }
+        if (ax >= 8 && ax >= ay * 1.4) g.axis = 'horizontal';
+      }
+      if (g.axis === 'horizontal' && e.cancelable) e.preventDefault();
+    }
+    function finish(e) {
+      const g = ytDetailGesture;
+      cancelYouthDetailGesture();
+      if (!g || e.touches.length !== 0 || !youthDetailGestureCurrent(g) || Math.abs(window.scrollY - g.scrollY) > 2) return;
+      const t = touchOf(e.changedTouches, g.id);
+      if (!t) return;
+      const dx = t.clientX - g.x, dy = t.clientY - g.y;
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+      // 觸及邊界也屬滑動；不可讓補發 click 改變年份開合。
+      ytDetailClickGuardUntil = Date.now() + 450;
+      if (e.cancelable) e.preventDefault();
+      moveYouthDetailSource(dx < 0 ? 1 : -1);
+    }
+    roots.forEach(root => {
+      root.addEventListener('touchstart', begin, { passive: true });
+      root.addEventListener('touchmove', move, { passive: false });
+      root.addEventListener('touchend', finish, { passive: false });
+      root.addEventListener('click', e => {
+        const fromTouch = e.pointerType === 'touch' || e.sourceCapabilities?.firesTouchEvents;
+        if (fromTouch && e.detail !== 0 && Date.now() < ytDetailClickGuardUntil) { e.preventDefault(); e.stopImmediatePropagation(); }
+      }, true);
+    });
+    tabs.addEventListener('click', e => {
+      const button = e.target.closest('button[data-yt-src]');
+      if (button && !button.disabled) switchYouthDetailSource(button.dataset.ytSrc);
+    });
+    accordion.addEventListener('click', e => {
+      if (e.target.closest('.year-header')) rememberYouthDetailOpenYears();
+    });
+    document.addEventListener('touchstart', e => { if (e.touches.length !== 1) cancelYouthDetailGesture(); }, { passive: true, capture: true });
+    document.addEventListener('touchcancel', cancelYouthDetailGesture, { passive: true, capture: true });
+    document.addEventListener('pointercancel', cancelYouthDetailGesture, true);
+    document.addEventListener('visibilitychange', cancelYouthDetailGesture);
+    document.addEventListener('selectionchange', () => { if (youthDetailHasSelection()) cancelYouthDetailGesture(); });
+    window.addEventListener('resize', cancelYouthDetailGesture);
+    window.addEventListener('blur', cancelYouthDetailGesture);
+    // 觀察每次切換紀錄；即使同一輪離開又回來，也不能完成舊手勢。
+    new MutationObserver(cancelYouthDetailGesture).observe(document.body, { attributes: true, attributeFilter: ['data-mode'] });
+    new MutationObserver(cancelYouthDetailGesture).observe(Y('#ytResults'), { attributes: true, attributeFilter: ['class'] });
   }
 
   function renderDetail() {
@@ -14346,8 +14779,8 @@ window.addEventListener('resize', () => {
     let cum = 0;
     Y('#ytYearAccordion').innerHTML = Object.keys(byYear).map((y) => {
       const rs = byYear[y], tot = rs.reduce((s, r) => s + r.payment, 0), lastR = rs[rs.length - 1];
-      const body = rs.map((r) => { cum += r.interest; return `<tr><td class="col-period">${r.period}</td><td class="payment-col col-payment">${yuan(r.payment)}</td><td class="col-principal">${yuan(r.principal)}</td><td class="col-interest">${yuan(r.interest)}</td><td class="col-balance">${yuan(r.balance)}</td><td class="col-cum">${yuan(cum)}</td></tr>`; }).join('');
-      return `<div class="year-item"><div class="year-header" onclick="this.parentElement.classList.toggle('open')"><div class="year-header-text"><strong class="year-title">第 ${y} 年</strong><span class="year-summary">（第${String(rs[0].period).padStart(3, '0')}~${String(lastR.period).padStart(3, '0')}期 · 合計年付 ${yuan(tot)} 元）</span></div><span class="arrow">▼</span></div><div class="year-body"><div class="year-table-wrap"><table><colgroup><col class="col-period"><col class="col-payment"><col class="col-principal"><col class="col-interest"><col class="col-balance"><col class="col-cum"></colgroup><thead><tr><th class="col-period">期數</th><th class="col-payment">還款月付金額</th><th class="col-principal">當期還本金額</th><th class="col-interest">當期利息金額</th><th class="col-balance">本金餘額</th><th class="col-cum">累積利息</th></tr></thead><tbody>${body}</tbody></table></div></div></div>`;
+      const body = rs.map((r) => { cum += r.interest; return `<tr data-period="${r.period}"><td class="col-period">${r.period}</td><td class="payment-col col-payment">${yuan(r.payment)}</td><td class="col-principal">${yuan(r.principal)}</td><td class="col-interest">${yuan(r.interest)}</td><td class="col-balance">${yuan(r.balance)}</td><td class="col-cum">${yuan(cum)}</td></tr>`; }).join('');
+      return `<div class="year-item${ytDetailOpenYears.has(String(y)) ? ' open' : ''}" data-year="${y}"><div class="year-header" onclick="this.parentElement.classList.toggle('open')"><div class="year-header-text"><strong class="year-title">第 ${y} 年</strong><span class="year-summary">（第${String(rs[0].period).padStart(3, '0')}~${String(lastR.period).padStart(3, '0')}期 · 合計年付 ${yuan(tot)} 元）</span></div><span class="arrow">▼</span></div><div class="year-body"><div class="year-table-wrap"><table><colgroup><col class="col-period"><col class="col-payment"><col class="col-principal"><col class="col-interest"><col class="col-balance"><col class="col-cum"></colgroup><thead><tr><th class="col-period">期數</th><th class="col-payment">還款月付金額</th><th class="col-principal">當期還本金額</th><th class="col-interest">當期利息金額</th><th class="col-balance">本金餘額</th><th class="col-cum">累積利息</th></tr></thead><tbody>${body}</tbody></table></div></div></div>`;
     }).join('');
   }
 
@@ -14507,7 +14940,7 @@ window.addEventListener('resize', () => {
   /* ---------- 狀態保存 ---------- */
   const FIELDS = ['#ytAge', '#ytIncome', '#ytPrice', '#ytAppraisal', '#ytRatio', '#ytTerm', '#ytGrace', '#ytBase', '#ytShare', '#ytGenRate'].concat(STEP_IDS);
   const FIELD_LABELS = { '#ytAge':'年齡', '#ytIncome':'本人年所得', '#ytPrice':'購屋總價', '#ytAppraisal':'銀行鑑價', '#ytRatio':'貸款成數', '#ytTerm':'貸款年限', '#ytGrace':'寬限期', '#ytBase':'基準利率', '#ytShare':'持買比率', '#ytGenRate':'一般貸款年利率', '#ytR1':'第1段利率', '#ytR2':'第2段利率', '#ytR3':'第3段利率', '#ytR4':'第4段利率', '#ytR5':'第5段利率' };
-  const OPTION_LABELS = {kind:'貸款身分',method:'還款方式',region:'購屋縣市',noHome:'無自有住宅資格',neverUsed:'青安使用紀錄',selfUse:'自住用途',stepsTouched:'手動階梯設定','$state':'儲存資料','$fields':'試算欄位'};
+  const OPTION_LABELS = {kind:'貸款身分',method:'還款方式',region:'購屋縣市',noHome:'無自有住宅資格',neverUsed:'青安使用紀錄',selfUse:'自住用途',stepsTouched:'手動階梯設定',genRateType:'一般貸款利率方式',genSegments:'一般貸款多段利率','$state':'儲存資料','$fields':'試算欄位'};
   function own(o,k) { return Object.prototype.hasOwnProperty.call(o,k); }
   function plain(o) { return !!o && typeof o === 'object' && !Array.isArray(o); }
   function storedDecimal(s) {
@@ -14553,12 +14986,41 @@ window.addEventListener('resize', () => {
     if(id==='#ytAppraisal'&&value===0)return {valid:true,text:''};
     return {valid:true,text};
   }
+  /* F：單一欄與多段草稿各自保存。先驗原文邊界，再按既有三位利率精度保存。
+     inactive多段保留其原年限；只有正在使用multi且年限有效時才要求覆蓋當前年限。
+     此函式不調整分界、不更改state；UI年限適配不能用於掩蓋壞存檔。 */
+  function normalizeYouthGenSegments(value, term, type) {
+    if (!Array.isArray(value) || value.length > 10) return null;
+    if (value.length === 0) return type === 'single' ? [] : null;
+    const termValid = Number.isInteger(term) && term >= 1 && term <= YT_TERM_MAX;
+    const total = termValid ? term * 12 : null;
+    const out = [];
+    let previous = 0;
+    for (let i = 0; i < value.length; i++) {
+      const row = value[i];
+      if (!plain(row)) return null;
+      const fp = storedNumber(row.from), tp = storedNumber(row.to);
+      if (!fp.valid || fp.empty || !tp.valid || tp.empty || !fp.dec.integer || !tp.dec.integer
+          || storedCompare(fp, 1) < 0 || storedCompare(fp, YT_TERM_MAX * 12) > 0
+          || storedCompare(tp, 1) < 0 || storedCompare(tp, YT_TERM_MAX * 12) > 0) return null;
+      const from = fp.n, to = tp.n;
+      if (from !== previous + 1 || to < from) return null;
+      const rp = youthFieldValue('#ytGenRate', row.rate, null);
+      if (!rp.valid) return null;
+      out.push({ from, to, rate: rp.text });
+      previous = to;
+    }
+    if (previous % 12 !== 0) return null;
+    if (type === 'multi' && total !== null && previous !== total) return null;
+    return out;
+  }
+
   function normalizeYouthState(input) {
     const src=plain(input)?input:{}, bad={};
     if(!plain(input))bad.$state={original:input??null};
     if(plain(src.invalid)){for(const [k,v] of Object.entries(src.invalid))if(own(FIELD_LABELS,k)||own(OPTION_LABELS,k))bad[k]=plain(v)?v:{original:v};}
     else if(own(src,'invalid'))bad.$state={original:src.invalid};
-    const out={kind:'general',region:2,method:'amortize',noHome:true,neverUsed:true,selfUse:true,stepsTouched:[false,false,false,false,false],resultsVisible:src.resultsVisible===true,autoHidden:src.autoHidden===true,f:{}};
+    const out={kind:'general',region:2,method:'amortize',noHome:true,neverUsed:true,selfUse:true,stepsTouched:[false,false,false,false,false],genRateType:'single',genSegments:[],resultsVisible:src.resultsVisible===true,autoHidden:src.autoHidden===true,f:{}};
     for(const key of ['kind','method','noHome','neverUsed','selfUse','region']){
       if(!own(src,key))continue;
       const v=src[key];let ok=false,val=v;
@@ -14585,6 +15047,21 @@ window.addEventListener('resize', () => {
       const p=youthFieldValue(id,f[id],tp.valid&&tp.text!==''?Number(tp.text):null);
       if(p.valid)out.f[id]=p.text;else {out.f[id]='';bad[id]={original:f[id]};}
     }
+    // E沒有這兩欄時合法遷移single/[]；明確存在的異常值不能冒充E資料。
+    if (own(src, 'genRateType')) {
+      if (src.genRateType === 'single' || src.genRateType === 'multi') out.genRateType = src.genRateType;
+      else if (!own(bad, 'genRateType')) bad.genRateType = { original: src.genRateType };
+    }
+    if (own(src, 'genSegments') || out.genRateType === 'multi') {
+      const term = out.f['#ytTerm'] === '' ? null : Number(out.f['#ytTerm']);
+      const rows = normalizeYouthGenSegments(src.genSegments, term, out.genRateType);
+      if (rows !== null) out.genSegments = rows;
+      else {
+        if (!own(bad, 'genSegments')) bad.genSegments = { original: own(src, 'genSegments') ? src.genSegments : { missing: true } };
+        // 保留錯誤原值，同時給使用者一列可修改的空利率；不冒充2.5%。
+        out.genSegments = [{ from: 1, to: term === null ? GL_DEFAULT_TERM * 12 : term * 12, rate: '' }];
+      }
+    }
     if(!own(src,'stepsTouched')){
       // 缺旗標不代表五段全自動：合法化後才推斷，不能覆寫已存手動值或空白。
       const base=out.f['#ytBase'];
@@ -14597,6 +15074,7 @@ window.addEventListener('resize', () => {
   }
   function capture() {
     const o = { kind, region, method, noHome, neverUsed, selfUse, stepsTouched: stepsTouched.slice(),
+                genRateType, genSegments: genSegments.map(row => ({ from: row.from, to: row.to, rate: row.rate })),
                 resultsVisible: !!Y('#ytResults') && Y('#ytResults').classList.contains('show'),
                 autoHidden: ytAutoHidden, f: {} };
     FIELDS.forEach((id) => { o.f[id] = raw(Y(id)); });
@@ -14608,8 +15086,10 @@ window.addEventListener('resize', () => {
     ytIssues=o.invalid||{};
     ({kind,region,method,noHome,neverUsed,selfUse}=o);
     stepsTouched=o.stepsTouched.slice();
+    genRateType=o.genRateType;
+    genSegments=o.genSegments.map(row => ({ from: row.from, to: row.to, rate: row.rate }));
     FIELDS.forEach(id=>{if(o.f[id]==='')clearCalcField(Y(id));else setCalcFieldStoredValue(Y(id),Number(o.f[id]));});
-    syncChoices();clampInputs();syncSteps(false);syncShareTag();syncYouthIssues();
+    syncChoices();clampInputs();syncSteps(false);syncShareTag();syncGenRateUI();syncYouthIssues();
     if(o.resultsVisible&&!ytMissingFields()){
       ytAutoHidden=false;
       try{resetViewsToDefault();render();markDone();}catch(e){console.error(e);Y('#ytResults').classList.remove('show');last=null;}
@@ -14631,6 +15111,14 @@ window.addEventListener('resize', () => {
     } catch (e) {}
   }
   function clearYouthIssue(key) { if(own(ytIssues,key))delete ytIssues[key]; }
+  /* 多段錯誤以整组原值保存；只有整组已完整合法才解除，不能改一格就洗掉其餘錯誤。
+     UI的有效rate/end編輯，以及明確新增/刪除後，都走這個入口。 */
+  function clearGenSegmentIssue(index, field) {
+    if (!own(ytIssues, 'genSegments')) return;
+    const rows = normalizeYouthGenSegments(genSegments, strictNum('#ytTerm'), genRateType);
+    if (rows === null || !rows.length || rows.some(row => row.rate === '')) return;
+    clearYouthIssue('genSegments');
+  }
   function syncYouthIssues() {
     const box=Y('#ytDataNotice'),text=Y('#ytDataNoticeText'),confirm=Y('#ytDataConfirm');
     if(!box)return;
@@ -14639,6 +15127,8 @@ window.addEventListener('resize', () => {
     if(text)text.textContent=keys.length?'儲存資料中的'+keys.map(k=>FIELD_LABELS[k]||OPTION_LABELS[k]||'設定').join('、')+'需要重新確認。請修改相應欄位或重新選擇。':'';
     if(confirm)confirm.hidden=!keys.some(k=>['$state','$fields','stepsTouched'].includes(k));
     FIELDS.forEach(id=>Y(id)?.setAttribute('aria-invalid',own(ytIssues,id)?'true':'false'));
+    Y('#ytGenRateType')?.setAttribute('aria-invalid', own(ytIssues,'genRateType') ? 'true' : 'false');
+    YA('#ytGenRateRows input').forEach(el => el.setAttribute('aria-invalid', own(ytIssues,'genSegments') ? 'true' : 'false'));
   }
 
   function syncChoices() {
@@ -14671,6 +15161,7 @@ window.addEventListener('resize', () => {
   /* 每次重新計算都回到預設檢視：每月還款與還款明細回到合計（只有一筆時自動退為
      青安或一般），規格區回到問答集並收合已展開的細目。 */
   function resetViewsToDefault() {
+    resetYouthDetailReading();
     detailSrc = 'all';
     periodSrc = 'all';
     closeAllFaq();
@@ -14735,8 +15226,36 @@ window.addEventListener('resize', () => {
         stepsTouched[i] = cur !== '' && Math.abs(num(Y(STEP_IDS[i])) - auto) > 1e-9;
       }
     }
-    clampInputs(); syncSteps(false); persist(); markStale();
+    clampInputs();
+    if (t === Y('#ytTerm')) { syncGenSegmentsToTerm(); syncGenRateUI(); }
+    syncSteps(false); persist(); markStale();
   }
+
+  Y('#ytGenRateType').addEventListener('click', event => {
+    const button = event.target.closest('[data-yt-gen-type]');
+    if (!button) return;
+    const next = button.dataset.ytGenType;
+    if (next === genRateType && !ytIssues.genRateType) return;
+    genRateType = next; clearYouthIssue('genRateType');
+    if (genRateType === 'multi' && !genSegments.length) {
+      genSegments = [{ from: 1, to: genTermMonths(), rate: ytIssues.genSegments ? '' : raw(Y('#ytGenRate')) }];
+    }
+    syncGenSegmentsToTerm(); syncGenRateUI(); persist(); markStale();
+  });
+  Y('#ytGenAddRate').addEventListener('click', () => {
+    if (genSegments.length >= YT_GEN_SEG_MAX) {
+      showToast('', { hint: true, hintHtml: hintLines('一般貸款多段利率', '最多可設定 10 段') }); return;
+    }
+    const total = genTermMonths(), count = genSegments.length + 1;
+    const rates = genSegments.map(seg => seg.rate);
+    rates.push(rates.length ? rates[rates.length - 1] : raw(Y('#ytGenRate')));
+    const size = Math.floor(total / count); let from = 1;
+    genSegments = rates.map((rate, i) => {
+      const to = i === count - 1 ? total : size * (i + 1);
+      const row = {from, to, rate}; from = to + 1; return row;
+    });
+    clearGenSegmentIssue(-1, 'structure'); renderGenRateRows(); persist(); markStale();
+  });
 
   /* ---------- 綁定 ---------- */
   initCalcFields(Y('#modeYouth'));
@@ -14788,7 +15307,7 @@ window.addEventListener('resize', () => {
     Y('#ytToggleCumBtn').title = ytCum ? '隱藏累積利息' : '顯示累積利息';
     Y('#ytToggleCumBtn').setAttribute('aria-label', ytCum ? '隱藏累積利息' : '顯示累積利息');
   });
-  YA('#ytDetailSeg button').forEach((b) => b.addEventListener('click', () => { if (b.disabled) return; detailSrc = b.dataset.ytSrc; renderDetail(); }));
+  bindYouthDetailNavigation();
   Y('#ytPeriodLines').addEventListener('click', () => {
     if (!last || !(last.youthWan > 0 && last.genWan > 0)) return;
     const order = ['all', 'youth', 'general'];
@@ -15346,7 +15865,7 @@ window.addEventListener('resize', () => {
     if (!split) return out;
     /* 門檻與 compute() 一致：compute 用 if (youthWan > 0) 與 d.genWan > 0，
        這裡也用 > 0，不用 1e-9，免得實際有部位卻不驗它的利率。 */
-    if (split.genWan > 0) out.push(['#ytGenRate', '一般貸款年利率']);
+    if (split.genWan > 0 && genRateType === 'single') out.push(['#ytGenRate', '一般貸款年利率']);
     if (split.youthWan > 0) out.push(['#ytBase', '基準利率']);
     return out;
   }
@@ -15354,6 +15873,7 @@ window.addEventListener('resize', () => {
     const labels = [];
     let firstEl = null;
     const proposedSplit = loanSplitPreview();
+    const useGeneral = !!proposedSplit && proposedSplit.genWan > 0;
     // 金額以元呈現；總額雖為正、但尚不足可呈現的一元時，先請使用者調整輸入。
     if(proposedSplit && proposedSplit.totalYuan <= 0){
       labels.push('貸款金額不足 1 元，取整後為 0 元；請調整購屋總價或貸款成數');
@@ -15364,10 +15884,12 @@ window.addEventListener('resize', () => {
     const usedRates=rateReq.map(([id])=>id).concat(useYouth?STEP_IDS.slice(0,visibleStepCount()).concat(STEP_IDS[4]):[]);
     const allRateIds=['#ytBase','#ytGenRate'].concat(STEP_IDS);
     for(const key of Object.keys(ytIssues)){
+      if (key === 'genRateType' && !useGeneral) continue;
+      if (key === 'genSegments' && (!useGeneral || genRateType !== 'multi')) continue;
       if(allRateIds.includes(key)&&!usedRates.includes(key))continue;
       if(key==='region'&&!yrOn&&!yrOnInvalid)continue;
       labels.push((FIELD_LABELS[key]||OPTION_LABELS[key]||'儲存資料')+'（請重新確認）');
-      if(!firstEl)firstEl=key==='#ytShare'?Y('#ytShareTag'):key==='region'?Y('#ytRegionSetBtn'):key.startsWith('#')?Y(key):Y('#ytDataNotice');
+      if(!firstEl)firstEl=key==='genRateType'?Y('#ytGenRateType'):key==='genSegments'?(Y('#ytGenR0')||Y('#ytGenRateType')):key==='#ytShare'?Y('#ytShareTag'):key==='region'?Y('#ytRegionSetBtn'):key.startsWith('#')?Y(key):Y('#ytDataNotice');
     }
     if(yrInvalidRequired()){labels.push('購屋縣市設定（請開齒輪修正）');if(!firstEl)firstEl=Y('#ytRegionSetBtn');}
     for(const id of FIELDS.filter(id=>!allRateIds.includes(id))){
@@ -15405,6 +15927,21 @@ window.addEventListener('resize', () => {
         labels.push(lab); if (!firstEl) firstEl = Y(sel);
       }
     });
+    // 一般部位只驗當次所選利率制度；沒有一般本金時，隱藏草稿/錯誤不得擋住青安試算。
+    if (useGeneral && genRateType === 'multi') {
+      const rows = normalizeYouthGenSegments(genSegments, strictNum('#ytTerm'), 'multi');
+      if (rows === null) {
+        labels.push('一般貸款多段利率（期數須連續並涵蓋完整年限，最多10段，利率0.01%～16%）');
+        if (!firstEl) firstEl = Y('#ytGenR0') || Y('#ytGenRateType');
+      } else {
+        rows.forEach((row, i) => {
+          if (row.rate === '') {
+            labels.push('一般貸款第' + (i + 1) + '段利率');
+            if (!firstEl) firstEl = Y('#ytGenR' + i) || Y('#ytGenRateType');
+          }
+        });
+      }
+    }
     /* 階梯利率只有「本次真的有青安部位」時才必填。
        畫面上顯示幾段由年限決定，但第 5 段是省息比較的實際依賴，
        即使被收起來也要有合法值——所以檢查範圍取「顯示段數」與「第 5 段」的聯集，
@@ -15548,7 +16085,10 @@ window.addEventListener('resize', () => {
       if(base===''||(base.split('.')[1]||'').length>MAX_RATE_DECIMALS)return null;
       const expectedRates=derivedSteps(Number(base));
       if(STEP_IDS.some((id,i)=>f[id]===''?expectedRates[i]<=RATE_MAX:Number(f[id])!==expectedRates[i]))return null;
-      return JSON.stringify({f,kind:o.kind,method:o.method,region:o.region,noHome:o.noHome,neverUsed:o.neverUsed,selfUse:o.selfUse});
+      // E指紋缺新欄時補清空預設；F指紋只能接受真正可由清空產生的single/[]。
+      if (own(o,'genRateType') && o.genRateType !== 'single') return null;
+      if (own(o,'genSegments') && (!Array.isArray(o.genSegments) || o.genSegments.length !== 0)) return null;
+      return JSON.stringify({f,kind:o.kind,method:o.method,region:o.region,noHome:o.noHome,neverUsed:o.neverUsed,selfUse:o.selfUse,genRateType:'single',genSegments:[]});
     } catch (e) { return null; }
   }
   let ytClearBaseline = null;
@@ -15565,7 +16105,7 @@ window.addEventListener('resize', () => {
     FIELDS.forEach((id) => { f[id] = raw(Y(id)); });
     /* 不只數字欄位：身分別、還款方式與三個資格答案也是「試算條件」，
        只改身分不填數字，再清空一次也必須保住這次的變更。 */
-    return JSON.stringify({ f, kind, method, region, noHome, neverUsed, selfUse });
+    return JSON.stringify({ f, kind, method, region, noHome, neverUsed, selfUse, genRateType, genSegments: genSegments.map(row => ({ from: row.from, to: row.to, rate: row.rate })) });
   }
   /* 沒有可用 baseline 時（舊版升級、key 遺失或內容損壞）不能一律當成有新資料——
      那會把舊版清空後留下的合法快照直接覆蓋掉。
@@ -15575,6 +16115,7 @@ window.addEventListener('resize', () => {
      只要有一項對不上，就是使用者真的改過。 */
   function looksLikeFreshClear(snap) {
     if (!snap || typeof snap !== 'object') return false;
+    if (genRateType !== 'single' || !Array.isArray(genSegments) || genSegments.length !== 0) return false;
     const sf = (snap.f && typeof snap.f === 'object' && !Array.isArray(snap.f)) ? snap.f : {};
     const auto = ['#ytShare', '#ytBase'].concat(STEP_IDS);
     // 除自動回填欄位外，其餘必須都是空的
@@ -15607,6 +16148,7 @@ window.addEventListener('resize', () => {
     return !looksLikeFreshClear(ytCleared);
   }
   window.__ytClear = function () {
+    resetYouthDetailReading();
     // 已經有快照、而且清空後沒有再改過任何條件 → 這次清空沒有新東西可存，保留原快照
     if (!ytCleared || ytHasUserInput()) ytCleared = capture();
     persistCleared();
@@ -15615,6 +16157,8 @@ window.addEventListener('resize', () => {
     stepsTouched = [false, false, false, false, false];
     // 持買比率屬於「這次購屋的固定條件」而非試算數值，清空時保留使用者設定
     FIELDS.filter((id) => id !== '#ytShare').forEach((id) => clearCalcField(Y(id)));
+    genRateType = 'single'; genSegments = [];
+    syncGenRateUI();
     // 基準利率屬政策常數而非個人資料，清空後直接帶回預設值，
     // 並強制重算五段階梯（此時五格皆為空白，非強制模式不會回填）
     setCalcFieldStoredValue(Y('#ytBase'), loadBaseDefault());
@@ -15684,7 +16228,7 @@ window.addEventListener('resize', () => {
     d.elig.forEach((e) => L.push((e.off ? '— ' : e.ok ? '✓ ' : '✕ ') + plainExportText(e.t) + '：' + plainExportText(e.s || '') + (e.off && !plainExportText(e.s || '').includes('未啟用') ? '（未啟用）' : '')));
     L.push('');
     L.push('【貸款組成】');
-    L.push('貸款總額：' + money(d.totalYuan) + ' 元');
+    L.push(youthLoanTotalLabel(d) + '：' + money(d.totalYuan) + ' 元');
     if (d.youthWan > 0) L.push('　新青安部位：' + money(d.youthYuan) + ' 元');
     if (d.genWan > 0) L.push('　一般貸款部位：' + money(d.genYuan) + ' 元');
     L.push('自備款：' + money(d.downYuan) + ' 元');
@@ -15692,14 +16236,8 @@ window.addEventListener('resize', () => {
     const scope = Y('#ytPeriodDots .pmode')?.textContent || (d.youthWan > 0 ? '青安貸款' : '一般貸款');
     L.push('【每月還款：' + scope + '】');
     L.push(...periodShareLines(Y('#ytPeriodLines')));
-    if (!Y('#ytAprBlock').classList.contains('hidden')) L.push('換算年利率（全案合計）：' + Y('#ytResApr').textContent.trim());
-    if (d.youthWan > 0) {
-      L.push('');
-      L.push('【利率】');
-      L.push('新青安基準利率：' + raw(Y('#ytBase')) + ' %');
-      d.st.slice(0, stepCountOf(d.term)).forEach((r, i) => L.push('　' + stepLabelAt(i, d.term) + '：' + r + ' %'));
-    }
-    if (d.genWan > 0) L.push((d.youthWan > 0 ? '' : '\n【利率】\n') + '一般貸款年利率：' + raw(Y('#ytGenRate')) + ' %');
+    if (!Y('#ytAprBlock').classList.contains('hidden')) L.push('換算年利率（全案合計）：' + Y('#ytResApr').textContent.trim(), APR_EXPORT_NOTE);
+    L.push(...youthConditionRateShareLines(d));
     L.push('');
     L.push('※ 本試算結果、青安資格審核僅供參考，實際條件以各金融機構核准結果為準。');
     return L.join('\n');
