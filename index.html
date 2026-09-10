@@ -4792,7 +4792,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.10P";
+const APP_VERSION = "2026.09.10Q";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -8929,8 +8929,8 @@ function renderCondItem([label, value, layout]) {
   if (layout?.luxury) {
     const note = layout.note || '';
     const main = note ? value.slice(0, -note.length) : value;
-    // value 仍是完整純文字，分享資料不因視覺分行而少掉限制。
-    return `<div class="cond-item cond-item--lux"><span class="cond-dot" aria-hidden="true"></span><span class="cond-label">${label}</span><span class="cond-value"><span class="cond-main">${escapeAlertHtml(main)}</span>${note ? `<span class="cond-note">${escapeAlertHtml(note)}</span>` : ''}</span></div>`;
+    // 一般貸款試算條件只顯示地區與門檻狀態；完整限制仍保留於純文字資料。
+    return `<div class="cond-item cond-item--lux"><span class="cond-dot" aria-hidden="true"></span><span class="cond-label">${label}</span><span class="cond-value"><span class="cond-main">${escapeAlertHtml(main)}</span></span></div>`;
   }
   return `<div class="cond-item">
     <span class="cond-dot" aria-hidden="true"></span>
