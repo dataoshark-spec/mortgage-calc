@@ -1843,6 +1843,9 @@ if ("serviceWorker" in navigator) {
     .yt-set.calc-kb-open { align-items: flex-start; padding-top: 10px; }
     .yt-set.calc-kb-open > .yt-set-card,
     .yt-set.calc-kb-open > .gl-set-card { max-height: var(--set-kb-max, 92dvh); }
+    @media (hover: hover) and (pointer: fine) {
+      .yt-set.calc-kb-open:has(.calc-field.calc-active) { padding-top: var(--set-kb-top, 10px); }
+    }
     .yt-set-card {
       width: 100%;
       max-width: 360px;
@@ -3613,7 +3616,13 @@ if ("serviceWorker" in navigator) {
       #bdResults .summary-grid { grid-template-columns: minmax(0, 1fr); }
     }
 
-  </style>
+  
+    /* I：基準利率視窗比照持買比率外觀；保留原 yt-set 鍵盤顯示條件。 */
+    #ytBaseSetDlg { padding-bottom: 16px; }
+
+    /* 三模式完整名稱換行時，螢幕上的利率數字與百分號仍保持一行。 */
+    .apr-footer-screen .apr-val { white-space: nowrap; flex-shrink: 0; }
+</style>
   <!-- 匯出函式庫改成本地同源，Service Worker 才能預快取，離線冷啟動也能匯出。
        版本與原本 CDN 完全相同：html2canvas 1.4.1、jsPDF 2.5.1。 -->
   <script src="./html2canvas.min.js"></script>
@@ -3806,7 +3815,7 @@ if ("serviceWorker" in navigator) {
       <div class="apr-block hidden" id="aprBlock">
         <div class="apr-footer apr-footer-screen">
           <span class="apr-label-wrap">
-            <span class="apr-label">換算年利率</span>
+            <span class="apr-label">換算年利率<span class="apr-scope">（全案合計）</span></span>
             <button type="button" class="apr-info-btn" id="aprInfoBtn" aria-label="換算年利率說明">
               <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                 <circle cx="12" cy="12" r="9"/>
@@ -3819,7 +3828,7 @@ if ("serviceWorker" in navigator) {
         </div>
         <div class="apr-footer apr-footer-export" id="aprFooterExport" aria-hidden="true">
           <span class="apr-export-prefix">
-            <span class="apr-export-title">換算年利率</span>
+            <span class="apr-export-title">換算年利率（全案合計）</span>
           </span>
           <span class="apr-val" id="resAprExport">—</span>
           <span class="apr-export-hint">（換算年利率係依全期還款現金流換算）</span>
@@ -4446,6 +4455,9 @@ if ("serviceWorker" in navigator) {
       </button>
       <div class="conditions-body">
         <div class="conditions-grid" id="bdConditionsGrid"></div>
+        <div class="conditions-rates hidden" id="bdConditionsRates">
+          <div class="conditions-rates-grid" id="bdConditionsRatesGrid"></div>
+        </div>
       </div>
     </div>
 
@@ -4484,6 +4496,21 @@ if ("serviceWorker" in navigator) {
       </div>
       <div class="period-dots" id="bdPeriodDots"></div>
       <div class="payment-table" id="bdPeriodLines"></div>
+        <div class="apr-block hidden" id="bdAprBlock">
+          <div class="apr-footer apr-footer-screen">
+            <span class="apr-label-wrap">
+              <span class="apr-label">換算年利率<span class="apr-scope">（全案合計）</span></span>
+              <button type="button" class="apr-info-btn" id="bdAprInfoBtn" aria-label="換算年利率說明">
+                <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                  <circle cx="12" cy="8" r="1.1" fill="currentColor" stroke="none"/>
+                  <path d="M12 11v5" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </span>
+            <span class="apr-val" id="bdResApr">—</span>
+          </div>
+        </div>
     </div>
 
     <div class="detail-section" id="bdDetailSection">
@@ -4856,7 +4883,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <div class="yt-set" id="ytBaseSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytBaseSetTitle" hidden>
-  <div class="yt-set-card" id="ytBaseSetCard">
+  <div class="yt-set-card gl-set-card" id="ytBaseSetCard">
     <div class="yt-set-title" id="ytBaseSetTitle">預設基準利率</div>
     <div class="field">
       <div class="input-box">
@@ -4865,7 +4892,7 @@ if ("serviceWorker" in navigator) {
       </div>
     </div>
     <p class="yt-note" id="ytBaseSetNote">按上方 <em>清空數值</em> 之後，基準利率會自動帶回這裡設定的數值，不必每次重打；五段階梯利率也會一併重新自動計算。</p>
-    <div class="yt-set-actions">
+    <div class="yt-set-actions gl-set-actions">
       <button type="button" class="yt-set-ghost" id="ytBaseSetCancel">取消</button>
       <button type="button" class="yt-set-main" id="ytBaseSetSave">儲存並套用</button>
     </div>
@@ -4883,7 +4910,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11H";
+const APP_VERSION = "2026.09.11I";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5797,7 +5824,7 @@ const APR_INFO_HTML_YT = APR_INFO_BODY + APR_INFO_SCOPE_YT + APR_INFO_FOOT;
 const APR_EXPORT_NOTE = '（換算年利率係依全期還款現金流換算）';
 
 function formatAprExportLine() {
-  return `換算年利率  ${$('#resApr').textContent.trim()}\n${APR_EXPORT_NOTE}`;
+  return `換算年利率（全案合計）  ${$('#resApr').textContent.trim()}\n${APR_EXPORT_NOTE}`;
 }
 
 function syncAprExportDisplay() {
@@ -8567,12 +8594,46 @@ function getCalcKeyboardOverlayHeight() {
 /* 設定視窗（高價住宅／貸款戶數／購屋縣市／持買比率／預設基準利率共用同一組 .yt-set）
    在鍵盤開啟時，依實際量到的鍵盤頂端縮小卡片可用高度，
    讓內部捲動範圍足以把正在編輯的欄位帶到鍵盤上方。 */
+let desktopOverlayKeyboardAnchor = null;
+function prepareOverlayCardKeyboardSpace(el) {
+  desktopOverlayKeyboardAnchor = null;
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const card = el && el.closest('.yt-set-card');
+  const dlg = card && card.parentElement;
+  if (!card || !dlg || !dlg.classList.contains('yt-set')) return;
+  const rect = dlg.getBoundingClientRect();
+  const scale = dlg.offsetHeight > 0 ? rect.height / dlg.offsetHeight : 1;
+  if (!(scale > 0)) return;
+  desktopOverlayKeyboardAnchor = {
+    dlg, top: (card.getBoundingClientRect().top - rect.top) / scale, height: dlg.offsetHeight
+  };
+}
 function applyOverlayCardKeyboardSpace(el) {
   const card = el && el.closest('.yt-set-card');
   const dlg = card && card.parentElement;
   if (!card || !dlg || !dlg.classList.contains('yt-set')) return;
   const panel = document.querySelector('.calc-sheet-panel');
   if (!panel) return;
+  const anchor = desktopOverlayKeyboardAnchor;
+  if (window.matchMedia('(hover: hover) and (pointer: fine)').matches && anchor && anchor.dlg === dlg) {
+    const rect = dlg.getBoundingClientRect();
+    const scale = dlg.offsetHeight > 0 ? rect.height / dlg.offsetHeight : 1;
+    if (!(scale > 0)) return;
+    const panelRect = panel.getBoundingClientRect();
+    // 滑入動畫尚未完成時，也以鍵盤最後停靠的上緣預留空間。
+    const kbTop = Math.min(panelRect.top, panel.parentElement.getBoundingClientRect().bottom - panelRect.height);
+    const bottom = (kbTop - rect.top) / scale - 12;
+    const room = Math.floor(bottom - 10);
+    if (room < 48) return;
+    dlg.classList.add('calc-kb-open');
+    dlg.style.setProperty('--set-kb-max', room + 'px');
+    const cardHeight = card.getBoundingClientRect().height / scale;
+    // 每次都由開啟前的位置重算；切欄或 resize 不累計先前的上移。
+    const preferredTop = anchor.top + (dlg.offsetHeight - anchor.height) / 2;
+    const top = Math.max(10, Math.min(preferredTop, bottom - cardHeight));
+    dlg.style.setProperty('--set-kb-top', top + 'px');
+    return;
+  }
   const kbTop = panel.getBoundingClientRect().top;
   const dlgTop = dlg.getBoundingClientRect().top;
   const padTop = 10, gap = 12;
@@ -8590,7 +8651,9 @@ function clearOverlayCardKeyboardSpace() {
   document.querySelectorAll('.yt-set.calc-kb-open').forEach((d) => {
     d.classList.remove('calc-kb-open');
     d.style.removeProperty('--set-kb-max');
+    d.style.removeProperty('--set-kb-top');
   });
+  desktopOverlayKeyboardAnchor = null;
 }
 
 function applyCalcKeyboardBodyPad() {
@@ -8771,6 +8834,7 @@ function openCalcKeyboard(inputEl, options) {
      提交仍由 calcCommitValue() 的嚴格整數檢查把關。 */
   calcKeyboard.maxDecimals = isStrictIntegerField(inputEl)
     ? MAX_AMOUNT_DECIMALS : getFieldMaxDecimals(inputEl);
+  prepareOverlayCardKeyboardSpace(inputEl);
   inputEl.classList.add('calc-active');
   renderCalcSheet();
   syncCalcKeyboardLayout();
@@ -9446,14 +9510,14 @@ async function waitExportLayout() {
 function prepareExportAprBlock(clone) {
   clone.querySelectorAll('.apr-block').forEach(block => {
     const screen = block.querySelector('.apr-footer-screen');
-    const value = screen?.querySelector('#resApr, #ytResApr')?.textContent.trim();
+    const value = screen?.querySelector('#resApr, #ytResApr, #bdResApr')?.textContent.trim();
     if (block.classList.contains('hidden') || !value || value === '—') { block.remove(); return; }
     let exp = block.querySelector('.apr-footer-export');
     if (!exp) {
       exp = document.createElement('div'); exp.className = 'apr-footer apr-footer-export';
       const prefix = document.createElement('span'); prefix.className = 'apr-export-prefix';
       const label = document.createElement('span'); label.className = 'apr-export-title';
-      label.textContent = block.id === 'ytAprBlock' ? '換算年利率（全案合計）' : '換算年利率';
+      label.textContent = '換算年利率（全案合計）';
       prefix.appendChild(label);
       const val = document.createElement('span'); val.className = 'apr-val'; val.textContent = value;
       const hint = document.createElement('span'); hint.className = 'apr-export-hint'; hint.textContent = APR_EXPORT_NOTE;
@@ -9587,6 +9651,9 @@ async function captureExportRootSlices(rootEl, opts) {
   opts = opts || {};
   const finalize = (canvas) => finalizeExportCanvas(canvas, opts);
   const finalizeSlice = (canvas) => finalizeExportCanvas(canvas, { ...opts, bottomPadPx: 0, skipVerticalTrim: true });
+  // 量測與畫圖使用同一個視窗，避免複製頁面縮窄後重新換行而截掉底部。
+  const captureWindowWidth = window.innerWidth;
+  const captureWindowHeight = window.innerHeight;
   const totalWidth = rootEl.offsetWidth;
   const totalHeight = getResultsExportHeight(rootEl);
   const sliceMax = EXPORT_SLICE_MAX_CSS_PX;
@@ -9603,8 +9670,8 @@ async function captureExportRootSlices(rootEl, opts) {
       logging: false,
       width: totalWidth,
       height: totalHeight,
-      windowWidth: totalWidth,
-      windowHeight: totalHeight
+      windowWidth: captureWindowWidth,
+      windowHeight: captureWindowHeight
     });
     return [finalize(canvas)];
   }
@@ -9646,8 +9713,8 @@ async function captureExportRootSlices(rootEl, opts) {
         logging: false,
         width: totalWidth,
         height: sliceH,
-        windowWidth: totalWidth,
-        windowHeight: sliceH
+        windowWidth: captureWindowWidth,
+        windowHeight: captureWindowHeight
       });
       slices.push(finalizeSlice(sliceCanvas));
     }
@@ -12808,12 +12875,13 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       ['既有負債月付', has('#bdDebt') ? yuan(moneyYuan('#bdDebt')) : '無'],
       ['收支比可負擔月付', yuan(res.ceiling)],
       ['採用月付', yuan(res.pay)],
-      ['預估年利率', bdRateType === 'single' ? num(B('#bdRate')) + ' %'
-        : bdSegs.map((sg, k) => '第' + (k + 1) + '段 ' + (sg.rate || '—') + '%').join('、')],
-      ['貸款年限', res.term + ' 年' + (res.grace > 0 ? '（含寬限期 ' + res.grace + ' 年）' : '（無寬限期）')],
+      ['貸款年限', res.term + ' 年'],
+      ['寬限期', res.grace > 0 ? res.grace + ' 年' : '無'],
       ['採用成數上限', res.ratioPct + ' %'],
       ['自備款', res.downGiven ? wan(bdFlowSnapshot.down) : '未填'],
-      ['還款方式', bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還']
+      ['還款方式', bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還'],
+      ['利率計算方式', bdFlowSnapshot.rateType === 'single' ? '單一式利率'
+        : (bdFlowSnapshot.segments.length === 1 ? '多段式利率（目前 1 段）' : '多段式利率')]
     ];
     if (has('#bdWilling')) rows.splice(5, 0, ['願意負擔月付', yuan(moneyYuan('#bdWilling'))]);
     if (has('#bdHelp')) rows.splice(has('#bdWilling') ? 6 : 5, 0, ['他人協助月付', yuan(moneyYuan('#bdHelp'))]);
@@ -12827,6 +12895,29 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       rows.splice(at, 0, ['欄位設定寬限期', res.requestedGrace + ' 年']);
     }
     box.innerHTML = rows.map(renderCondItem).join('');
+    const flow = bdFlowSnapshot;
+    const prominent = flow.rateType === 'single' || flow.segments.length === 1;
+    const rateRows = prominent
+      ? [['年利率', formatRatePct(flow.rates[0].rate) + ' %']]
+      : flow.segments.map(seg => [
+          '第 ' + fmtPeriod(seg.from) + ' ~ ' + fmtPeriod(seg.to || res.term * 12) + ' 個月 年利率',
+          formatRatePct(seg.rate) + ' %']);
+    B('#bdConditionsRates').classList.remove('hidden');
+    B('#bdConditionsRates').classList.toggle('single-rate', prominent);
+    B('#bdConditionsRatesGrid').innerHTML = rateRows.map(renderRateCondItem).join('');
+  }
+
+  function bdShouldShowApr() {
+    const flow = bdFlowSnapshot;
+    if (!flow || flow.rateType === 'single' || flow.segments.length <= 1) return false;
+    const rates = flow.segments.map(seg => Number(seg.rate));
+    return !rates.every(rate => Number.isFinite(rate) && rate === rates[0]);
+  }
+
+  function renderApr(res) {
+    // The solved loan and its actual schedule include every applied limit.
+    B('#bdResApr').textContent = calcAPR(res.sched, res.loan) + ' %';
+    B('#bdAprBlock').classList.toggle('hidden', !bdShouldShowApr());
   }
 
 /* Display-only diagnosis. Does not change result, inputs, solver or App state.
@@ -13092,6 +13183,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     bdGroups = groupPeriods(res.sched, res.grace * 12, res.term * 12);
     renderPeriodBlock();
     renderDetail(res.sched);
+    renderApr(res);
     B('#bdResults').classList.add('show');
     return res;
   }
@@ -13408,6 +13500,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   B('#bdExportJpgBtn').addEventListener('click', () => exportAsImage('image/jpeg', 'jpg'));
   B('#bdShareBtn').addEventListener('click', shareResults);
 
+  B('#bdAprInfoBtn').addEventListener('click', showAprInfo);
   B('#bdCalc').addEventListener('click', bdRunCalc);
   B('#bdExportPdfBtn').addEventListener('click', exportAsPdf);
   B('#bdExportPngBtn').addEventListener('click', () => exportAsImage('image/png', 'png'));
@@ -13995,11 +14088,19 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     const cond = Array.from(document.querySelectorAll('#bdConditionsGrid .cond-item')).map(it =>
       (it.querySelector('.cond-label')?.textContent || '').trim() + '：' +
       (it.querySelector('.cond-value')?.textContent || '').trim());
+    const rates = Array.from(B('#bdConditionsRatesGrid').querySelectorAll('.cond-rate-row')).map(row =>
+      [row.querySelector('.cond-rate-period')?.textContent.trim(),
+       row.querySelector('.cond-rate-tag')?.textContent.trim()].filter(Boolean).join(' ') + '：' +
+      (row.querySelector('.cond-rate-value')?.textContent || '').trim());
     const val = sel => (B(sel)?.textContent || '').trim();
-    return ['個人購屋能力評估結果', '', '【評估條件】', ...cond, '',
+    const lines = ['個人購屋能力評估結果', '', '【評估條件】', ...cond, ...rates, '',
       '預估貸款金額：' + val('#bdResLoan'), val('#bdResPriceLabel') + '：' + val('#bdResPrice'),
       '需自備款：' + val('#bdResDown'), '預估每月房貸：' + val('#bdResPay'),
-      '', '【每月還款】', ...periodShareLines(B('#bdPeriodLines'))].join('\n');
+      '', '【每月還款】', ...periodShareLines(B('#bdPeriodLines'))];
+    if (!B('#bdAprBlock').classList.contains('hidden')) {
+      lines.push('換算年利率（全案合計）：' + val('#bdResApr'), APR_EXPORT_NOTE);
+    }
+    return lines.join('\n');
   };
 
 
@@ -17108,6 +17209,15 @@ function getBadgeDefault(mode, key, fallback) {
     saveButton.focus({ preventScroll: true });
   }
   initCalcFields(dlg);
+  // 提交仍由原計算鍵盤處理；它關閉並 blur 後，把焦點交回此視窗的儲存鍵。
+  // 等目前事件完成再處理，第一次 Enter 只關鍵盤，下一次才依原按鈕行為儲存。
+  fld.addEventListener('change', () => {
+    queueMicrotask(() => {
+      if (!calcKeyboard.backdropEl && getTopAppModal() === dlg) {
+        saveButton.focus({ preventScroll: true });
+      }
+    });
+  });
   document.getElementById('loanDefaultCancel').addEventListener('click', closeDlg);
   document.getElementById('loanDefaultReset').addEventListener('click', () => {
     if (!selected) return;
@@ -17186,7 +17296,7 @@ function getBadgeDefault(mode, key, fallback) {
     const button = document.getElementById(spec.id);
     if (!button) return;
     button.dataset.defaultBadge = spec.mode + '-' + spec.key;
-    button.title = '短按帶入；長按、右鍵或 Shift+F10 修改默認值';
+    button.title = '短按帶入／長按進入／右鍵進入';
     button.setAttribute('aria-haspopup', 'dialog');
     button.addEventListener('pointerdown', e => {
       if (!e.isPrimary || e.button !== 0 || button.disabled) return;
