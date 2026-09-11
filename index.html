@@ -2415,6 +2415,51 @@ if ("serviceWorker" in navigator) {
       color: #999;
       font-size: 0.75rem;
     }
+    /* Youth year-source indicator: decoration only, fixed all/youth/general slots. */
+    #ytYearAccordion .year-header { position: relative; }
+    #ytYearAccordion .yt-year-source-indicator {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: 19px;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 5px;
+      grid-template-columns: repeat(3, 20px);
+      align-items: center;
+      justify-items: center;
+      pointer-events: none;
+      user-select: none;
+    }
+    #ytYearAccordion .year-item.open .yt-year-source-indicator { display: grid; }
+    #ytYearAccordion .yt-year-source-indicator::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: .75px;
+      background: #c4d0c8;
+    }
+    #ytYearAccordion .yt-year-source-dot {
+      position: relative;
+      width: 3.5px;
+      height: 3.5px;
+      border-radius: 50%;
+      background: #b7c4be;
+      box-shadow: 0 0 0 1.5px var(--input-bg);
+    }
+    #ytYearAccordion .yt-year-source-dot.is-active {
+      width: 5px;
+      height: 5px;
+      background: var(--teal);
+    }
+    .export-capture .yt-year-source-indicator { display: none !important; }
+    @media print {
+      .yt-year-source-indicator { display: none !important; }
+    }
+    /* End Youth year-source indicator. */
     .year-body {
       display: none;
       background: #fff;
@@ -3384,8 +3429,8 @@ if ("serviceWorker" in navigator) {
 
     /* --- 規格速查卡片 --- */
     /* ---------- 問答集／貸款原則 兩視圖 ---------- */
-    /* 上一區塊（每月還款）已有 28px 下距，這裡只補少量，避免上下留白過大 */
-    .period-title.spec-title { margin-top: 6px; }
+    /* 青安免責說明與問答集／貸款原則之間保留一個段落的距離。 */
+    .period-title.spec-title { margin-top: 24px; }
     /* 匯出時「每月還款」與規格區之間不需要螢幕上的 28px，收到 16px */
     .export-capture .period-summary { margin-bottom: 16px; }
     .export-capture .period-title.spec-title { margin-top: 2px; }
@@ -3479,8 +3524,6 @@ if ("serviceWorker" in navigator) {
        不強制等高，避免較短的青安說明下方多出空白。 */
     .yt-split-rows { display: grid; grid-auto-rows: auto; }
     .yt-split-rows > .yt-split-row { align-items: center; }
-    /* 首列的小內距在等高排列下會讓文字上移，與其他兩列對不齊 */
-    .yt-split .yt-split-rows > .yt-split-row:first-child { padding-top: 14px; }
     .yt-split-n { font-size: 14.5px; font-weight: 700; letter-spacing: .01em; }
     .yt-split-row.a .yt-split-n { color: var(--teal-dark); }
     .yt-split-row.b .yt-split-n { color: #9A6B18; }
@@ -3568,7 +3611,7 @@ if ("serviceWorker" in navigator) {
     .yt-save-cmp p { margin: 0 0 6px; }
     .yt-save-cmp p:last-child { margin-bottom: 0; }
     .input-box input::placeholder { color: #b8b8b8; font-weight: 400; }
-    .yt-save { margin: 6px 0 16px; padding: 13px 14px 12px; border-radius: 12px; background: #F8F8F6; }
+    .yt-save { margin: 16px 0 16px; padding: 13px 14px 12px; border-radius: 12px; background: #F8F8F6; }
     .yt-save-l { font-size: 11.5px; color: #8A6218; font-weight: 600; }
     .yt-save-v { font-size: 25px; font-weight: 800; color: #7A5512; margin-top: 3px; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
 
@@ -4123,7 +4166,7 @@ if ("serviceWorker" in navigator) {
           <button type="button" class="choice-btn active" data-yt-gen-type="single" aria-pressed="true">單一式利率</button>
           <button type="button" class="choice-btn" data-yt-gen-type="multi" aria-pressed="false">多段式利率</button>
         </div>
-        <label id="ytGenRateLabel" class="yt-gen-rate-label"><span id="ytGenRateLabelMain">單一式年利率</span><button type="button" class="yt-cap-max" id="ytGenRateTag" title="點一下填入該數值">默認 2.5 %</button><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span></label>
+        <label id="ytGenRateLabel" class="yt-gen-rate-label"><span id="ytGenRateLabelMain">單一式年利率</span><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span><button type="button" class="yt-cap-max" id="ytGenRateTag" title="點一下填入該數值">默認 2.5 %</button></label>
         <div id="ytGenRateSingle" class="input-box">
           <input type="text" id="ytGenRate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
           <span class="unit">%</span>
@@ -4907,7 +4950,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12A";
+const APP_VERSION = "2026.09.12B";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -15533,7 +15576,7 @@ window.addEventListener('resize', () => {
     Y('#ytYearAccordion').innerHTML = Object.keys(byYear).map((y) => {
       const rs = byYear[y], tot = rs.reduce((s, r) => s + r.payment, 0), lastR = rs[rs.length - 1];
       const body = rs.map((r) => { cum += r.interest; return `<tr data-period="${r.period}"><td class="col-period">${r.period}</td><td class="payment-col col-payment">${yuan(r.payment)}</td><td class="col-principal">${yuan(r.principal)}</td><td class="col-interest">${yuan(r.interest)}</td><td class="col-balance">${yuan(r.balance)}</td><td class="col-cum">${yuan(cum)}</td></tr>`; }).join('');
-      return `<div class="year-item${ytDetailOpenYears.has(String(y)) ? ' open' : ''}" data-year="${y}"><div class="year-header" onclick="this.parentElement.classList.toggle('open')"><div class="year-header-text"><strong class="year-title">第 ${y} 年</strong><span class="year-summary">（第${String(rs[0].period).padStart(3, '0')}~${String(lastR.period).padStart(3, '0')}期 · 合計年付 ${yuan(tot)} 元）</span></div><span class="arrow">▼</span></div><div class="year-body"><div class="year-table-wrap"><table><colgroup><col class="col-period"><col class="col-payment"><col class="col-principal"><col class="col-interest"><col class="col-balance"><col class="col-cum"></colgroup><thead><tr><th class="col-period">期數</th><th class="col-payment">還款月付金額</th><th class="col-principal">當期還本金額</th><th class="col-interest">當期利息金額</th><th class="col-balance">本金餘額</th><th class="col-cum">累積利息</th></tr></thead><tbody>${body}</tbody></table></div></div></div>`;
+      return `<div class="year-item${ytDetailOpenYears.has(String(y)) ? ' open' : ''}" data-year="${y}"><div class="year-header" onclick="this.parentElement.classList.toggle('open')"><div class="year-header-text"><strong class="year-title">第 ${y} 年</strong><span class="year-summary">（第${String(rs[0].period).padStart(3, '0')}~${String(lastR.period).padStart(3, '0')}期 · 合計年付 ${yuan(tot)} 元）</span></div><span class="yt-year-source-indicator" data-source="${detailSrc}" aria-hidden="true" data-html2canvas-ignore="true"><span class="yt-year-source-dot${detailSrc === 'all' ? ' is-active' : ''}" data-source="all"></span><span class="yt-year-source-dot${detailSrc === 'youth' ? ' is-active' : ''}" data-source="youth"></span><span class="yt-year-source-dot${detailSrc === 'general' ? ' is-active' : ''}" data-source="general"></span></span><span class="arrow">▼</span></div><div class="year-body"><div class="year-table-wrap"><table><colgroup><col class="col-period"><col class="col-payment"><col class="col-principal"><col class="col-interest"><col class="col-balance"><col class="col-cum"></colgroup><thead><tr><th class="col-period">期數</th><th class="col-payment">還款月付金額</th><th class="col-principal">當期還本金額</th><th class="col-interest">當期利息金額</th><th class="col-balance">本金餘額</th><th class="col-cum">累積利息</th></tr></thead><tbody>${body}</tbody></table></div></div></div>`;
     }).join('');
   }
 

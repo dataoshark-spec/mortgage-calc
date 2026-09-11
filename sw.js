@@ -1,4 +1,4 @@
-const CACHE = "mortgage-calc-v20260912A";
+const CACHE = "mortgage-calc-v20260912B";
 /* 每個安裝路徑使用自己的快取；同源其他工具與另一份貸款試算互不刪除或取用。 */
 const SCOPE = self.registration.scope;
 const CACHE_KEY = CACHE + "::" + SCOPE;
