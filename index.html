@@ -3517,6 +3517,12 @@ if ("serviceWorker" in navigator) {
     /* 首列不需與標題再拉開，改用小內距即可 */
     .yt-split .yt-split-row:first-child { padding-top: 4px; }
     #ytEligBlock { margin-bottom: 24px; }
+    /* 合格時兩層容器不參與排版；不符時才顯示一般貸款收合框。 */
+    #ytGeneralLoanBox:not(.conditions-box),
+    #ytGeneralLoanBox:not(.conditions-box) > #ytGeneralLoanBody { display: contents; }
+    #ytGeneralLoanToggle[hidden], #ytGeneralLoanBody[hidden], #ytGeneralNotice[hidden] { display: none !important; }
+    #ytGeneralLoanBox.conditions-box > #ytGeneralLoanBody { padding: 16px 0 0; }
+    #ytGeneralNotice .yt-general-notice { margin: 0 12px 24px; }
     #ytDetailSeg { margin-top: 12px; }
     .yt-fold + .actions { margin-top: 24px; }
     /* 一般貸款年利率獨立在收合區之外，需自行拉開與收合區的距離 */
@@ -4148,6 +4154,13 @@ if ("serviceWorker" in navigator) {
       </div>
       <div id="ytEligBlock"></div>
 
+      <div id="ytGeneralLoanBox">
+        <button type="button" class="conditions-head" id="ytGeneralLoanToggle" aria-expanded="false" aria-controls="ytGeneralLoanBody" title="展開一般貸款" hidden>
+          <h3>一般貸款</h3>
+          <span class="conditions-toggle arrow" aria-hidden="true">▼</span>
+        </button>
+        <div id="ytGeneralLoanBody" hidden>
+          <div id="ytGeneralNotice" hidden></div>
       <div class="period-title results-heading" id="ytResultHeading">
         <span class="title-line"></span>
         <h3>試算結果</h3>
@@ -4229,6 +4242,8 @@ if ("serviceWorker" in navigator) {
           <button type="button" data-yt-src="general">一般貸款</button>
         </div>
         <div class="year-accordion" id="ytYearAccordion"></div>
+      </div>
+        </div>
       </div>
       <div id="ytSpecBlock"></div>
       <p class="note">※ 本試算結果、青安資格審核僅供參考，不構成任何貸款承諾或保證。實際貸款金額、利率、期數、寬限期、每月應繳金額、相關費用及其他貸款條件，均應以各金融機構最終核准結果及正式簽訂之貸款契約為準。本系統已盡力提供正確之試算結果，但因各銀行計息方式、四捨五入規則、作業流程、政策調整或其他因素可能產生差異，本系統對試算結果之誤差或因此衍生之任何損失，不負任何法律責任或賠償責任。</p>
@@ -4868,7 +4883,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11G";
+const APP_VERSION = "2026.09.11H";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -8883,7 +8898,6 @@ function exportBtnOf(kind) {
 }
 
 function syncExportFormatButtons() {
-  const includeDetail = getExportIncludeDetail();
   const detailOnlyPdfTitle = '含還款明細僅支援 PDF';
   // 三組按鈕套用同一規則，避免只有一邊會反灰
   [
@@ -8893,6 +8907,8 @@ function syncExportFormatButtons() {
   ].forEach(([sels, title]) => {
     sels.map((x) => $(x)).forEach((btn) => {
       if (!btn) return;
+      const mode = btn.id.startsWith('yt') ? 'youth' : btn.id.startsWith('bd') ? 'burden' : 'general';
+      const includeDetail = getEffectiveExportIncludeDetail(mode);
       btn.disabled = includeDetail || exportBusy;
       btn.title = includeDetail ? detailOnlyPdfTitle : title;
     });
@@ -8932,9 +8948,28 @@ function detailAccordionSel() {
   return mode === 'youth' ? '#ytYearAccordion' : mode === 'burden' ? '#bdYearAccordion' : '#yearAccordion';
 }
 
+/* 青安收起一般貸款時，本次實際匯出沒有明細；不改共用的使用者偏好。 */
+function getEffectiveExportIncludeDetail(mode = document.body.dataset.mode, includeGeneralLoan) {
+  if (!getExportIncludeDetail()) return false;
+  if (mode !== 'youth') return true;
+  const include = typeof includeGeneralLoan === 'boolean' ? includeGeneralLoan
+    : typeof window.__ytIncludeGeneralLoan !== 'function' || window.__ytIncludeGeneralLoan();
+  return !!include;
+}
+
+/* 在同步快照建立時完成取捨，所有圖片／摘要／分頁明細只讀同一份 template。
+   明細會被另行抽出重建，不能只留下 hidden 容器；展開時則還原原本輸出結構。 */
+function prepareYouthGeneralLoanExport(template, includeGeneralLoan) {
+  const box = template.querySelector('#ytGeneralLoanBox');
+  if (!box) return;
+  if (!includeGeneralLoan) { box.remove(); return; }
+  const body = box.querySelector('#ytGeneralLoanBody');
+  if (body) box.replaceWith(...Array.from(body.childNodes));
+}
+
 function getExportFileNameTags() {
   const tags = ['重點摘要'];
-  if (getExportIncludeDetail()) {
+  if (getEffectiveExportIncludeDetail()) {
     tags.push('還款明細');
     if (isCumInterestVisible()) tags.push('累積利息');
   }
@@ -8957,11 +8992,13 @@ function RES() {
 function createExportContext() {
   const mode = document.body.dataset.mode;
   if (!hasValidExportResult(mode)) return null;
-  const text = getShareText();
+  const includeGeneralLoan = mode !== 'youth' || typeof window.__ytIncludeGeneralLoan !== 'function' || !!window.__ytIncludeGeneralLoan();
+  const text = getShareText(includeGeneralLoan);
   if (!text) return null;
   const results = RES(), template = results.cloneNode(true);
   template.dataset.exportMode = mode;
-  const includeDetail = getExportIncludeDetail(), cum = isCumInterestVisible();
+  if (mode === 'youth') prepareYouthGeneralLoanExport(template, includeGeneralLoan);
+  const includeDetail = getEffectiveExportIncludeDetail(mode, includeGeneralLoan), cum = isCumInterestVisible();
   const style = getComputedStyle(results);
   for (let i = 0; i < style.length; i++) {
     const prop = style[i];
@@ -8974,7 +9011,7 @@ function createExportContext() {
   const d = new Date(), pad = n => String(n).padStart(2, '0');
   const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
   const tags = ['重點摘要', ...(includeDetail ? ['還款明細', ...(cum ? ['累積利息'] : [])] : [])];
-  return Object.freeze({mode, text, template, includeDetail, cum, detailScope,
+  return Object.freeze({mode, text, template, includeDetail, includeGeneralLoan, cum, detailScope,
     width: results.offsetWidth, title: prefix + (mode === 'burden' ? '' : '結果'), url: location.href,
     filename: prefix + '_' + stamp + '_' + tags.join('_')});
 }
@@ -9151,10 +9188,10 @@ function hasValidExportResult(mode = document.body.dataset.mode) {
   if (mode === 'general') return calcSynced && !calcPending;
   return true;
 }
-function getShareText() {
+function getShareText(includeGeneralLoan) {
   const mode = document.body.dataset.mode;
   if (!hasValidExportResult(mode)) return null;
-  if (mode === 'youth') return typeof window.__ytShareText === 'function' ? window.__ytShareText() : null;
+  if (mode === 'youth') return typeof window.__ytShareText === 'function' ? window.__ytShareText(includeGeneralLoan) : null;
   if (mode === 'burden') return typeof window.__bdShareText === 'function' ? window.__bdShareText() : null;
   const condLines = buildConditionsRows().map(([label, value, layout]) => plainExportText(label) + '：' + (layout?.luxury ? String(value) : plainExportText(value)));
   const lines = ['房屋貸款試算結果', '', '【試算條件】', ...condLines, '',
@@ -9802,6 +9839,8 @@ function watchYouthExportNavigation() {
   }, { passive: true });
   const detail = document.getElementById('ytDetailSection');
   if (detail) on(detail, 'youth-detail-navigation', () => { navigated = true; });
+  const generalLoan = document.getElementById('ytGeneralLoanBox');
+  if (generalLoan) on(generalLoan, 'youth-general-loan-navigation', () => { navigated = true; });
   const observer = new MutationObserver(records => {
     // A leave-and-return still constitutes navigation, even within one task.
     if (records.some(r => r.oldValue !== 'youth') || document.body.dataset.mode !== 'youth') navigated = true;
@@ -9916,7 +9955,7 @@ async function exportAsPdf() {
 }
 
 async function exportAsImage(mime, ext) {
-  if (getExportIncludeDetail()) {
+  if (getEffectiveExportIncludeDetail()) {
     showToast('', { html: toastLines('含還款明細', '僅支援PDF') });
     return;
   }
@@ -9934,7 +9973,7 @@ async function exportAsImage(mime, ext) {
 }
 
 async function shareResults() {
-  if (getExportIncludeDetail()) {
+  if (getEffectiveExportIncludeDetail()) {
     showToast('', { html: toastLines('含還款明細', '僅支援PDF') });
     return;
   }
@@ -15010,9 +15049,38 @@ window.addEventListener('resize', () => {
 
 
   /* ---------- 渲染 ---------- */
+  // 當次閱讀選擇，不放進輸入保存或清空前快照；新試算一律回到收起。
+  let ytGeneralLoanExpanded = false;
+  function youthGeneralLoanIncluded() {
+    return !!last && (last.pass || ytGeneralLoanExpanded);
+  }
+  window.__ytIncludeGeneralLoan = youthGeneralLoanIncluded;
+  function syncYouthGeneralLoanView() {
+    const failed = !!last && !last.pass;
+    const included = youthGeneralLoanIncluded();
+    const box = Y('#ytGeneralLoanBox'), head = Y('#ytGeneralLoanToggle'), body = Y('#ytGeneralLoanBody');
+    box.classList.toggle('conditions-box', failed);
+    box.classList.toggle('collapsed', failed && !included);
+    head.hidden = !failed;
+    head.setAttribute('aria-expanded', included ? 'true' : 'false');
+    head.title = included ? '收合一般貸款' : '展開一般貸款';
+    body.classList.toggle('conditions-body', failed);
+    body.hidden = !included;
+    if (document.body.dataset.mode === 'youth' && typeof syncExportFormatButtons === 'function') syncExportFormatButtons();
+  }
+  Y('#ytGeneralLoanToggle').addEventListener('click', () => {
+    if (!last || last.pass || ytStale || !Y('#ytResults').classList.contains('show')) return;
+    cancelYouthDetailGesture();
+    ytGeneralLoanExpanded = !ytGeneralLoanExpanded;
+    syncYouthGeneralLoanView();
+    Y('#ytGeneralLoanBox').dispatchEvent(new Event('youth-general-loan-navigation'));
+    if (ytGeneralLoanExpanded && typeof scheduleFitPaymentTable === 'function') scheduleFitPaymentTable();
+    if (typeof window.__applyDesktopScale === 'function') window.__applyDesktopScale();
+  });
   function render() {
     const d = compute();
     last = d;
+    syncYouthGeneralLoanView();
 
     // 試算條件
     const hasAppr = raw(Y('#ytAppraisal')) !== '' && d.appr > 0;   // 鑑價 0 視同未填，不顯示
@@ -15049,7 +15117,9 @@ window.addEventListener('resize', () => {
     let extra = '';
     if (!d.windowOk) extra += `<p class="yt-note warn">※ 青安 3.0 受理期間為 115.8.1 至 118.7.31（撥款不得逾 118.10.31），目前日期已不在受理期間內。</p>`;
     const generalNotice = !d.pass ? '<div class="yt-general-notice" role="note"><strong>下列為一般貸款試算</strong><span>不帶入以下審查機制</span><span class="yt-general-notice-items">高價住宅／貸款戶數</span></div>' : '';
-    Y('#ytEligBlock').innerHTML = `${banner}${chk}${extra}${generalNotice}`;
+    Y('#ytEligBlock').innerHTML = `${banner}${chk}${extra}`;
+    Y('#ytGeneralNotice').innerHTML = generalNotice;
+    Y('#ytGeneralNotice').hidden = d.pass;
 
     // 貸款組成讀本次正式利率快照。
     const genRateText = d.genRateType === 'multi'
@@ -15751,6 +15821,7 @@ window.addEventListener('resize', () => {
   /* 每次重新計算都回到預設檢視：每月還款與還款明細回到合計（只有一筆時自動退為
      青安或一般），規格區回到問答集並收合已展開的細目。 */
   function resetViewsToDefault() {
+    ytGeneralLoanExpanded = false;
     resetYouthDetailReading();
     detailSrc = 'all';
     periodSrc = 'all';
@@ -16796,6 +16867,8 @@ window.addEventListener('resize', () => {
     return !looksLikeFreshClear(ytCleared);
   }
   window.__ytClear = function () {
+    ytGeneralLoanExpanded = false;
+    syncYouthGeneralLoanView();
     resetYouthDetailReading();
     // 已經有快照、而且清空後沒有再改過任何條件 → 這次清空沒有新東西可存，保留原快照
     if (!ytCleared || ytHasUserInput()) ytCleared = capture();
@@ -16858,9 +16931,11 @@ window.addEventListener('resize', () => {
      讀 resTotal／rateSegments／lastPeriodGroups，分享出去的是別的模式的數字。
      這裡只取本次 render() 算出的 last，沒有有效結果就回 null，
      由 getShareText() 決定不分享，不會拿上一次或別的模式的舊結果頂替。 */
-  window.__ytShareText = function () {
+  window.__ytShareText = function (includeGeneralLoan) {
     if (!last || !Y('#ytResults').classList.contains('show')) return null;
     const d = last;
+    const include = typeof includeGeneralLoan === 'boolean' ? includeGeneralLoan
+      : typeof window.__ytIncludeGeneralLoan !== 'function' || !!window.__ytIncludeGeneralLoan();
     const money = (yuan) => Math.round(yuan).toLocaleString('en-US');
     const L = [];
     L.push('新青安 3.0 試算結果', '');
@@ -16882,8 +16957,9 @@ window.addEventListener('resize', () => {
     L.push('');
     L.push('【資格審查】');
     L.push(d.pass ? '初步符合新青安 3.0 申請資格' : '不符新青安 3.0 申請資格');
-    if (!d.pass) L.push('下列為一般貸款試算', '不帶入以下審查機制', '高價住宅／貸款戶數');
+    if (!d.pass && include) L.push('下列為一般貸款試算', '不帶入以下審查機制', '高價住宅／貸款戶數');
     d.elig.forEach((e) => L.push((e.off ? '— ' : e.ok ? '✓ ' : '✕ ') + plainExportText(e.t) + '：' + plainExportText(e.s || '') + (e.off && !plainExportText(e.s || '').includes('未啟用') ? '（未啟用）' : '')));
+    if (include) {
     L.push('');
     L.push('【貸款組成】');
     L.push(youthLoanTotalLabel(d) + '：' + money(d.totalYuan) + ' 元');
@@ -16895,6 +16971,8 @@ window.addEventListener('resize', () => {
     L.push('【每月還款：' + scope + '】');
     L.push(...periodShareLines(Y('#ytPeriodLines')));
     if (!Y('#ytAprBlock').classList.contains('hidden')) L.push('換算年利率（全案合計）：' + Y('#ytResApr').textContent.trim(), APR_EXPORT_NOTE);
+    }
+    // 利率表在畫面上屬於摺疊外的試算條件，收起結果仍須保留。
     L.push(...youthConditionRateShareLines(d));
     L.push('');
     L.push('※ 本試算結果、青安資格審核僅供參考，實際條件以各金融機構核准結果為準。');
