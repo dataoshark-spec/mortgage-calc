@@ -3014,6 +3014,10 @@ if ("serviceWorker" in navigator) {
       .yt-cap-max:not(:disabled):hover { filter: brightness(0.96); }
     }
     .export-capture .yt-cap-max { pointer-events: none; }
+    /* 只限十個默認徽章；保留觸控捲動，避免長按跳出原生文字選單。 */
+    [data-default-badge] { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+    #ytGenRateTag { float: none; margin-left: 6px; vertical-align: middle; }
+    #ytGenRateTag[hidden] { display: none; }
     /* ===== 一般貸款：房屋座落（高價住宅門檻） ===== */
     /* 帶齒輪或上限徽章的小標改用 flex：float 在 flex 容器內失效，徽章改以 auto 邊距推到最右 */
     /* 房屋座落標題改用 div：<label> 會把 hover／click 轉給裡面第一個表單控制項，
@@ -3376,6 +3380,8 @@ if ("serviceWorker" in navigator) {
       font-size: 10.5px; font-weight: 500; color: var(--muted);
       background: var(--input-bg); border-radius: 6px; padding: 1px 6px; line-height: 1.6;
     }
+    /* 選填按鈕與銀行鑑價標籤同色；disabled 僅控制原有操作。 */
+    .yt-cap-max.yt-opt-tag:disabled { opacity: 1; }
 
     /* --- 概抓總額列 --- */
 
@@ -3695,7 +3701,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="field">
-        <label class="label-cap">寬限期<button type="button" class="yt-cap-max" id="glGraceTag" title="點一下填入該數值">選填</button></label>
+        <label class="label-cap">寬限期<button type="button" class="yt-cap-max yt-opt-tag" id="glGraceTag" title="點一下填入該數值">選填</button></label>
         <div class="input-box">
           <input type="text" id="grace" class="calc-field" value="2" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
           <span class="unit">年</span>
@@ -3733,7 +3739,7 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="section rate-full" id="rateField">
-      <label>單一式年利率</label>
+      <label class="label-cap">單一式年利率<button type="button" class="yt-cap-max" id="glRateTag" title="點一下填入該數值">默認 2.5 %</button></label>
       <div class="input-box">
         <input type="text" id="rate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
         <span class="unit">%</span>
@@ -3996,7 +4002,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
         <div class="field">
-          <label>寬限期<button type="button" class="yt-cap-max" id="ytGraceMax" title="點一下填入該數值">選填</button></label>
+          <label>寬限期<button type="button" class="yt-cap-max yt-opt-tag" id="ytGraceMax" title="點一下填入該數值">選填</button></label>
           <div class="input-box">
             <input type="text" id="ytGrace" class="calc-field" value="0" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
             <span class="unit">年</span>
@@ -4104,7 +4110,7 @@ if ("serviceWorker" in navigator) {
           <button type="button" class="choice-btn active" data-yt-gen-type="single" aria-pressed="true">單一式利率</button>
           <button type="button" class="choice-btn" data-yt-gen-type="multi" aria-pressed="false">多段式利率</button>
         </div>
-        <label id="ytGenRateLabel" class="yt-gen-rate-label"><span id="ytGenRateLabelMain">單一式年利率</span><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span></label>
+        <label id="ytGenRateLabel" class="yt-gen-rate-label"><span id="ytGenRateLabelMain">單一式年利率</span><button type="button" class="yt-cap-max" id="ytGenRateTag" title="點一下填入該數值">默認 2.5 %</button><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span></label>
         <div id="ytGenRateSingle" class="input-box">
           <input type="text" id="ytGenRate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
           <span class="unit">%</span>
@@ -4351,7 +4357,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
         <div class="field">
-          <label class="label-cap">寬限期<button type="button" class="yt-cap-max" id="bdGraceTag" title="點一下填入該數值">選填</button></label>
+          <label class="label-cap">寬限期<button type="button" class="yt-cap-max yt-opt-tag" id="bdGraceTag" title="點一下填入該數值">選填</button></label>
           <div class="input-box">
             <input type="text" id="bdGrace" class="calc-field" value="" data-calc-integer="true" data-calc-max="5" readonly inputmode="none" autocomplete="off">
             <span class="unit">年</span>
@@ -4377,6 +4383,7 @@ if ("serviceWorker" in navigator) {
           <button type="button" class="qp active" data-val="50">50%</button>
           <button type="button" class="qp" data-val="55">55%</button>
           <button type="button" class="qp" data-val="60">60%</button>
+          <button type="button" class="qp" data-val="65">65%</button>
         </div>
       </div>
 
@@ -4514,6 +4521,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
   </div>
+  <div class="ver-line" id="bdVerLine"></div>
   </div>
 </div>
 
@@ -4795,6 +4803,24 @@ if ("serviceWorker" in navigator) {
   </div>
 </div>
 
+<div class="yt-set gl-set" id="loanDefaultDlg" role="dialog" aria-modal="true" aria-labelledby="loanDefaultTitle" aria-describedby="loanDefaultHelp" hidden>
+  <div class="yt-set-card gl-set-card" id="loanDefaultCard">
+    <div class="yt-set-title" id="loanDefaultTitle">默認值設定</div>
+    <div class="field">
+      <div class="input-box">
+        <input type="text" id="loanDefaultValue" class="calc-field" aria-label="默認值" value="" readonly inputmode="none" autocomplete="off">
+        <span class="unit" id="loanDefaultUnit">%</span>
+      </div>
+    </div>
+    <p class="yt-note" id="loanDefaultHelp">按「儲存」只修改默認值；回到欄位點默認即可帶入。本設定不會被清空數值清除。</p>
+    <div class="yt-set-actions gl-set-actions">
+      <button type="button" class="yt-set-ghost" id="loanDefaultReset">恢復預設</button>
+      <button type="button" class="yt-set-ghost" id="loanDefaultCancel">取消</button>
+      <button type="button" class="yt-set-main" id="loanDefaultSave">儲存</button>
+    </div>
+  </div>
+</div>
+
 <div class="yt-set gl-set" id="ytShareSetDlg" role="dialog" aria-modal="true" aria-labelledby="ytShareSetTitle" hidden>
   <div class="yt-set-card gl-set-card" id="ytShareSetCard">
     <div class="yt-set-title" id="ytShareSetTitle">持買比率設定</div>
@@ -4842,7 +4868,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11F";
+const APP_VERSION = "2026.09.11G";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -6631,6 +6657,7 @@ function isCapRatioInput(inputEl) {
 
 function isRateInput(inputEl) {
   if (!inputEl) return false;
+  if (inputEl.id === 'loanDefaultValue' && inputEl.dataset.defaultKind === 'rate') return true;
   if (inputEl.id === 'rate' || inputEl.id === 'bdRate' || inputEl.classList.contains('rate-val')) return true;
   return YT_RATE_IDS.indexOf(inputEl.id) >= 0;
 }
@@ -6651,9 +6678,11 @@ function isGeneralWanAmountField(inputEl) {
   return !!inputEl && (inputEl.id === 'price' || inputEl.id === 'appraisal');
 }
 function isStrictIntegerField(inputEl) {
-  return !!inputEl && STRICT_INTEGER_FIELD_IDS.indexOf(inputEl.id) >= 0;
+  return !!inputEl && (STRICT_INTEGER_FIELD_IDS.indexOf(inputEl.id) >= 0
+    || (inputEl.id === 'loanDefaultValue' && inputEl.dataset.defaultStrict === 'true'));
 }
 function strictIntegerHint(inputEl) {
+  if (inputEl && inputEl.id === 'loanDefaultValue') return '此欄位僅接受整數 ' + inputEl.dataset.defaultUnit;
   return inputEl && inputEl.id === 'ratio'
     ? '此欄位僅接受整數 %'
     : '此欄位僅接受整數萬元';
@@ -6857,10 +6886,10 @@ function syncGraceLock() {
     // 這種數字只是雜訊，標籤就只留「選填」。
     const maxPill = graceMaxPillValue();
     if (isTermMissing()) { tag.textContent = '選填'; tag.disabled = true; }
-    // 上限 0 年時只剩「無」一種選擇，講「選填」反而像還有得選
-    else if (capUnit <= 0) { tag.textContent = '無寬限期'; tag.disabled = true; }
+    // 上限與是否可按仍照原規則；限制另由下方說明呈現。
+    else if (capUnit <= 0) { tag.textContent = '選填'; tag.disabled = true; }
     else if (capUnit > maxPill) { tag.textContent = '選填'; tag.disabled = true; }
-    else { tag.textContent = '選填 · 上限 ' + capUnit + unit; tag.disabled = false; }
+    else { tag.textContent = '選填'; tag.disabled = false; }
   }
   alignCapLabels($('#glTermTag'), tag);
 }
@@ -6889,13 +6918,13 @@ function glRatioBadgeValue() {
   // 必須用合併後的上限：只看高價住宅時，戶數限制生效的情況會填進超過上限的數字，
   // 隨即被「超出上限就清空」的機制清掉，欄位空白但貸款金額已按舊值算過一輪。
   const m = getCapRatioMax();
-  return m === null ? GL_DEFAULT_RATIO : m;
+  return m === null ? getBadgeDefault('general', 'ratio', GL_DEFAULT_RATIO) : m;
 }
 function updateLuxCapBadges() {
   const rMax = getCapRatioMax();
   const rb = $('#glRatioMax');
   if (rb) rb.textContent = rMax === null
-    ? '默認 ' + GL_DEFAULT_RATIO + ' %'
+    ? '默認 ' + getBadgeDefault('general', 'ratio', GL_DEFAULT_RATIO) + ' %'
     : '上限 ' + rMax + ' %';
   syncGraceLock();
 }
@@ -6909,8 +6938,12 @@ function bindCapBadgeFill() {
   });
   const tb = $('#glTermTag');
   if (tb) tb.addEventListener('click', () => {
-    $('#term').value = String(GL_DEFAULT_TERM);
+    setCalcFieldStoredValue($('#term'), getBadgeDefault('general', 'term', GL_DEFAULT_TERM));
     $('#term').dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  $('#glRateTag')?.addEventListener('click', () => {
+    setCalcFieldStoredValue($('#rate'), getBadgeDefault('general', 'rate', 2.5));
+    $('#rate').dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
 
@@ -13294,7 +13327,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   if (rTag) {
     rTag.addEventListener('click', () => {
       const cap = bdCapRatio();
-      bdRatioWanted = cap === null ? 80 : cap;
+      bdRatioWanted = cap === null ? getBadgeDefault('burden', 'ratio', 80) : cap;
       setCalcFieldStoredValue(B('#bdRatio'), bdRatioWanted);
       B('#bdRatio').dispatchEvent(new Event('input', { bubbles: true }));
     });
@@ -13308,12 +13341,12 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
       B('#bdGrace').dispatchEvent(new Event('input', { bubbles: true }));
     });
   }
-  [['#bdDtiTag', '#bdDti', 50], ['#bdRateTag', '#bdRate', 2.5], ['#bdTermTag', '#bdTerm', 30]]
-    .forEach(([tag, field, val]) => {
+  [['#bdDtiTag', '#bdDti', 50, 'dti'], ['#bdRateTag', '#bdRate', 2.5, 'rate'], ['#bdTermTag', '#bdTerm', 30, 'term']]
+    .forEach(([tag, field, val, key]) => {
       const t = B(tag);
       if (!t) return;
       t.addEventListener('click', () => {
-        setCalcFieldStoredValue(B(field), val);
+        setCalcFieldStoredValue(B(field), getBadgeDefault('burden', key, val));
         B(field).dispatchEvent(new Event('input', { bubbles: true }));
       });
     });
@@ -13582,7 +13615,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   function syncBdCapBadges() {
     const cap = bdCapRatio();
     const rb = B('#bdRatioTag');
-    if (rb) rb.textContent = cap === null ? '默認 80 %' : '上限 ' + cap + ' %';
+    if (rb) rb.textContent = cap === null ? '默認 ' + getBadgeDefault('burden', 'ratio', 80) + ' %' : '上限 ' + cap + ' %';
 
     const gMax = bdGraceMaxSelectable();
     const lock = gMax <= 0;
@@ -13601,9 +13634,9 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     });
     const gt = B('#bdGraceTag');
     if (gt) {
-      if (lock) { gt.textContent = '無寬限期'; gt.disabled = true; }
+      if (lock) { gt.textContent = '選填'; gt.disabled = true; }
       else if (gMax >= 3) { gt.textContent = '選填'; gt.disabled = true; }
-      else { gt.textContent = '選填 · 上限 ' + gMax + ' 年'; gt.disabled = false; }
+      else { gt.textContent = '選填'; gt.disabled = false; }
     }
   }
 
@@ -13932,6 +13965,8 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
 
 
   /* ---------- 啟動 ---------- */
+  const bdVersionLine = B('#bdVerLine');
+  if (bdVersionLine) bdVersionLine.textContent = VERSION_LINE_TEXT();
   syncIncomeUnitField();
   syncRateUI();
   loadBdCaps();
@@ -14557,7 +14592,7 @@ window.addEventListener('resize', () => {
     // 年限與成數的標籤固定顯示默認值；寬限期只標「選填」，
     // 可選上限仍由下方快捷鈕的反灰狀態與夾制邏輯把關
     const lab = Y('#ytTermMax');
-    if (lab) lab.textContent = '默認 ' + GL_DEFAULT_TERM + ' 年';
+    if (lab) lab.textContent = '默認 ' + getBadgeDefault('youth', 'term', GL_DEFAULT_TERM) + ' 年';
     const gt = Y('#ytGraceMax');
     if (gt) {
       const mg0 = Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1));
@@ -14565,9 +14600,9 @@ window.addEventListener('resize', () => {
       const pills = YA('#ytGracePills .qp').map((b) => +b.dataset.val);
       const maxPill = pills.length ? pills[pills.length - 1] : 5;
       if (raw(Y('#ytTerm')) === '') { gt.textContent = '選填'; gt.disabled = true; }
-      else if (mg0 <= 0) { gt.textContent = '選填 · 無寬限期'; gt.disabled = true; }
+      else if (mg0 <= 0) { gt.textContent = '選填'; gt.disabled = true; }
       else if (mg0 > maxPill) { gt.textContent = '選填'; gt.disabled = true; }
-      else { gt.textContent = '選填 · 上限 ' + mg0 + ' 年'; gt.disabled = false; }
+      else { gt.textContent = '選填'; gt.disabled = false; }
       alignCapLabels(lab, gt);
     }
     const hasTerm = raw(Y('#ytTerm')) !== '';
@@ -14586,12 +14621,16 @@ window.addEventListener('resize', () => {
 
   /* 點徽章＝把該欄位填成默認值（與一般貸款同一套操作） */
   Y('#ytTermMax')?.addEventListener('click', () => {
-    setCalcFieldStoredValue(Y('#ytTerm'), GL_DEFAULT_TERM);clearYouthIssue('#ytTerm');
+    setCalcFieldStoredValue(Y('#ytTerm'), getBadgeDefault('youth', 'term', GL_DEFAULT_TERM));clearYouthIssue('#ytTerm');
     onChange({target:Y('#ytTerm')});
   });
   Y('#ytRatioTag')?.addEventListener('click', () => {
-    setCalcFieldStoredValue(Y('#ytRatio'), GL_DEFAULT_RATIO);clearYouthIssue('#ytRatio');
+    setCalcFieldStoredValue(Y('#ytRatio'), getBadgeDefault('youth', 'ratio', GL_DEFAULT_RATIO));clearYouthIssue('#ytRatio');
     onChange();
+  });
+  Y('#ytGenRateTag')?.addEventListener('click', () => {
+    setCalcFieldStoredValue(Y('#ytGenRate'), getBadgeDefault('youth', 'rate', 2.5));clearYouthIssue('#ytGenRate');
+    onChange({target:Y('#ytGenRate')});
   });
   Y('#ytGraceMax')?.addEventListener('click', () => {
     const mg = Math.max(0, Math.min(5, Math.floor(num(Y('#ytTerm'))) - 1));
@@ -14751,6 +14790,7 @@ window.addEventListener('resize', () => {
       button.classList.toggle('active', selected); button.setAttribute('aria-pressed', String(selected));
     });
     Y('#ytGenRateSingle').classList.toggle('hidden', genRateType !== 'single');
+    if (Y('#ytGenRateTag')) Y('#ytGenRateTag').hidden = genRateType !== 'single';
     Y('#ytGenRateMulti').classList.toggle('hidden', genRateType !== 'multi');
     Y('#ytGenRateLabelMain').textContent = genRateType === 'multi'
       ? '多段式年利率'
@@ -16709,7 +16749,8 @@ window.addEventListener('resize', () => {
      那會把舊版清空後留下的合法快照直接覆蓋掉。
      改成語意判斷：目前畫面是不是「剛清空完、只有自動回填」的樣子。
      清空的結果是確定的：除持買比率外全部清空、基準帶回預設、五段依基準重算且
-     stepsTouched 全 false，身分／還款方式／資格答案沿用清空前的值（存在快照裡）。
+     stepsTouched 全 false，身分／還款方式／資格答案採指定清空選項；
+     同時辨識舊版沿用快照選項的清空框架，保護升級前的還原點。
      只要有一項對不上，就是使用者真的改過。 */
   function looksLikeFreshClear(snap) {
     if (!snap || typeof snap !== 'object') return false;
@@ -16723,19 +16764,28 @@ window.addEventListener('resize', () => {
     // 五段必須仍是自動推導，沒有任何一段被手動改過
     if (stepsTouched.some(Boolean)) return false;
     const autoRates=derivedSteps(loadBaseDefault());
-    if(STEP_IDS.some((id,i)=>raw(Y(id))!==String(autoRates[i])))return false;
-    // 持買比率沿用清空前的設定
-    const share = (sf['#ytShare'] === undefined || sf['#ytShare'] === '')
-      ? String(YT_SHARE_DEFAULT) : String(sf['#ytShare']);
+    // 依清空既有規則，超限自動階梯會留下錯誤證據並清空；仍是剛清空框架。
+    if(STEP_IDS.some((id,i)=>{
+      const text=String(autoRates[i]);
+      const expected=youthFieldValue(id,text,null).valid?text:'';
+      return raw(Y(id))!==expected;
+    }))return false;
+    // 持買比率沿用清空前設定；非法資料的留空占位不會自動改成100%。
+    const share = own(ytIssues,'#ytShare') ? String(sf['#ytShare'] ?? '')
+      : (sf['#ytShare'] === undefined || sf['#ytShare'] === '')
+        ? String(YT_SHARE_DEFAULT) : String(sf['#ytShare']);
     if (String(raw(Y('#ytShare'))) !== share) return false;
-    // 身分／還款方式／縣市／三個資格答案沿用清空前
-    if (snap.kind !== undefined && kind !== snap.kind) return false;
-    if (snap.method !== undefined && method !== snap.method) return false;
+    // 縣市仍沿用清空前；五項新清空選項本身不算使用者新資料。
     if (snap.region !== undefined && region !== snap.region) return false;
-    if (snap.noHome !== undefined && noHome !== snap.noHome) return false;
-    if (snap.neverUsed !== undefined && neverUsed !== snap.neverUsed) return false;
-    if (snap.selfUse !== undefined && selfUse !== snap.selfUse) return false;
-    return true;
+    const newClearChoices = kind === 'general' && method === 'amortize'
+      && noHome === false && neverUsed === false && selfUse === false;
+    // F 舊清空框架可能沒有可用 baseline，仍須保護它的原始快照。
+    const legacyClearChoices = (snap.kind === undefined || kind === snap.kind)
+      && (snap.method === undefined || method === snap.method)
+      && (snap.noHome === undefined || noHome === snap.noHome)
+      && (snap.neverUsed === undefined || neverUsed === snap.neverUsed)
+      && (snap.selfUse === undefined || selfUse === snap.selfUse);
+    return newClearChoices || legacyClearChoices;
   }
   function ytHasUserInput() {
     if (ytClearBaseline !== null) return ytStateFingerprint() !== ytClearBaseline;
@@ -16750,7 +16800,16 @@ window.addEventListener('resize', () => {
     // 已經有快照、而且清空後沒有再改過任何條件 → 這次清空沒有新東西可存，保留原快照
     if (!ytCleared || ytHasUserInput()) ytCleared = capture();
     persistCleared();
-    ytIssues=Object.fromEntries(Object.entries(ytIssues).filter(([key])=>['kind','method','region','noHome','neverUsed','selfUse','#ytShare'].includes(key)));
+    // 五項清空選項已明確重設；原錯誤證據完整保留在上方清空前快照。
+    ytIssues=Object.fromEntries(Object.entries(ytIssues).filter(([key])=>['region','#ytShare'].includes(key)));
+    kind = 'general'; method = 'amortize';
+    noHome = false; neverUsed = false; selfUse = false;
+    // 只更新這五組按鈕，避免額外觸發縣市選項正規化。
+    YA('[data-yt-kind]').forEach((b) => b.classList.toggle('active', b.dataset.ytKind === kind));
+    YA('[data-yt-method]').forEach((b) => b.classList.toggle('active', b.dataset.ytMethod === method));
+    YA('[data-yt-home]').forEach((b) => b.classList.toggle('active', (b.dataset.ytHome === '1') === noHome));
+    YA('[data-yt-used]').forEach((b) => b.classList.toggle('active', (b.dataset.ytUsed === '1') !== neverUsed));
+    YA('[data-yt-self]').forEach((b) => b.classList.toggle('active', (b.dataset.ytSelf === '1') === selfUse));
     ytShowComparisonRate=false;
     stepsTouched = [false, false, false, false, false];
     // 持買比率屬於「這次購屋的固定條件」而非試算數值，清空時保留使用者設定
@@ -16870,6 +16929,210 @@ window.addEventListener('resize', () => {
   if (vl) vl.textContent = VERSION_LINE_TEXT();
 })();
 
+/* 默認值只供徽章短按帶入，不作為計算缺值或清空後的補值。 */
+function getBadgeDefault(mode, key, fallback) {
+  return window.__loanDefaultBadges ? window.__loanDefaultBadges.get(mode, key) : fallback;
+}
+
+(() => {
+  const SPECS = [
+    ['general', 'ratio', 'glRatioMax', 80, 100, 0, '%', '一般貸款・貸款成數'],
+    ['general', 'term', 'glTermTag', 30, 60, 0, '年', '一般貸款・貸款年限'],
+    ['general', 'rate', 'glRateTag', 2.5, 16, 3, '%', '一般貸款・單一式年利率'],
+    ['youth', 'ratio', 'ytRatioTag', 80, 100, 0, '%', '新青安・貸款成數'],
+    ['youth', 'term', 'ytTermMax', 30, 40, 0, '年', '新青安・貸款年限'],
+    ['youth', 'rate', 'ytGenRateTag', 2.5, 16, 3, '%', '新青安・一般貸款年利率'],
+    ['burden', 'ratio', 'bdRatioTag', 80, 100, 0, '%', '個人評估・貸款成數'],
+    ['burden', 'term', 'bdTermTag', 30, 40, 0, '年', '個人評估・貸款年限'],
+    ['burden', 'dti', 'bdDtiTag', 50, 100, 4, '%', '個人評估・收支比'],
+    ['burden', 'rate', 'bdRateTag', 2.5, 16, 3, '%', '個人評估・年利率']
+  ].map(([mode, key, id, factory, max, decimals, unit, title]) =>
+    Object.freeze({ mode, key, id, factory, max, decimals, unit, title }));
+  const MODES = ['general', 'youth', 'burden'];
+  const storageKey = mode => 'mortgage_defaults_' + mode + '_v1';
+  const values = {};
+  const dlg = document.getElementById('loanDefaultDlg');
+  const fld = document.getElementById('loanDefaultValue');
+  const saveButton = document.getElementById('loanDefaultSave');
+  if (!dlg || !fld || !saveButton) return;
+
+  function validValue(spec, raw) {
+    if (typeof raw !== 'string' && typeof raw !== 'number') return null;
+    const text = String(raw).trim();
+    if (!/^\d+(?:\.\d+)?$/.test(text)) return null;
+    const value = Number(text);
+    const min = spec.key === 'rate' ? 0.01 : spec.decimals === 0 ? 1 : 0.0001;
+    if (!Number.isFinite(value) || value < min || value > spec.max) return null;
+    const normalized = calcDecimalAtPrecision(text, spec.decimals, false);
+    if (Number(normalized) !== value || !calcDecimalRoundtrips(normalized)) return null;
+    return normalized;
+  }
+  function readMode(mode) {
+    const raw = appStorage.getItem(storageKey(mode));
+    let saved;
+    try { saved = raw === null ? {} : JSON.parse(raw); } catch (_) { saved = {}; }
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
+    const result = {};
+    SPECS.filter(spec => spec.mode === mode).forEach(spec => {
+      result[spec.key] = validValue(spec, saved[spec.key]) ?? String(spec.factory);
+    });
+    return result;
+  }
+  MODES.forEach(mode => {
+    values[mode] = Object.fromEntries(SPECS.filter(spec => spec.mode === mode).map(spec => [spec.key, String(spec.factory)]));
+    try { values[mode] = readMode(mode); } catch (_) { /* 原保存警告要求重新載入，不能用預設寫回。 */ }
+  });
+  function refreshBadges() {
+    SPECS.forEach(spec => {
+      const button = document.getElementById(spec.id);
+      if (!button) return;
+      // 成數上限仍由原控制器判斷；此處只更新未受限時的默認標籤。
+      if (spec.key === 'ratio' && /^上限\s/.test(button.textContent)) return;
+      button.textContent = '默認 ' + values[spec.mode][spec.key] + ' ' + spec.unit;
+    });
+  }
+  window.__loanDefaultBadges = Object.freeze({
+    get(mode, key) { return Number(values[mode][key]); }
+  });
+
+  let selected = null, lastFocus = null, dlgSeq = 0;
+  function closeDlg() {
+    if (calcKeyboard.inputEl && dlg.contains(calcKeyboard.inputEl)) closeCalcKeyboard(false);
+    beginAppModalClose(dlg);
+    dlg.classList.remove('show');
+    const seq = ++dlgSeq;
+    setTimeout(() => { if (seq === dlgSeq) dlg.hidden = true; }, 160);
+    restoreFocusQuietly(lastFocus);
+    lastFocus = null;
+  }
+  function openDlg(spec) {
+    if (!dlg.hidden && dlg.dataset.modalClosing !== '1' && selected === spec) return;
+    if (calcKeyboard.inputEl) closeCalcKeyboard(true);
+    selected = spec;
+    try { values[spec.mode] = readMode(spec.mode); refreshBadges(); } catch (_) {}
+    fld.dataset.defaultKind = spec.key;
+    fld.dataset.defaultStrict = String(spec.decimals === 0);
+    fld.dataset.defaultUnit = spec.unit;
+    fld.dataset.calcInteger = String(spec.decimals === 0);
+    fld.dataset.calcMax = String(spec.max);
+    fld.dataset.calcHint = '此默認值上限為 ' + spec.max + ' ' + spec.unit;
+    document.getElementById('loanDefaultTitle').textContent = spec.title + '默認值';
+    document.getElementById('loanDefaultUnit').textContent = spec.unit;
+    fld.setAttribute('aria-label', spec.title + '默認值');
+    setCalcFieldStoredValue(fld, values[spec.mode][spec.key]);
+    lastFocus = document.activeElement;
+    const seq = ++dlgSeq;
+    dlg.hidden = false;
+    beginAppModalOpen(dlg, closeDlg);
+    requestAnimationFrame(() => {
+      if (seq === dlgSeq && !dlg.hidden && dlg.dataset.modalClosing !== '1') dlg.classList.add('show');
+    });
+    saveButton.focus({ preventScroll: true });
+  }
+  initCalcFields(dlg);
+  document.getElementById('loanDefaultCancel').addEventListener('click', closeDlg);
+  document.getElementById('loanDefaultReset').addEventListener('click', () => {
+    if (!selected) return;
+    setCalcFieldStoredValue(fld, selected.factory);
+  });
+  saveButton.addEventListener('click', () => {
+    if (!selected) return;
+    const normalized = validValue(selected, getCalcFieldRawString(fld));
+    if (normalized === null) {
+      const range = selected.key === 'rate' ? '0.01 ～ 16 %，最多 3 位小數'
+        : selected.decimals === 0 ? '1 ～ ' + selected.max + ' ' + selected.unit + '的整數'
+        : '大於 0 且不超過 ' + selected.max + ' %，最多 4 位小數';
+      showAppAlert('默認值請輸入' + range);
+      return;
+    }
+    let latest;
+    // 儲存前讀最新同模式偏好再合併，避免另一分頁剛存的其他欄位被舊整包蓋回。
+    try { latest = readMode(selected.mode); } catch (_) { return; }
+    latest[selected.key] = normalized;
+    let saved = false;
+    try { appStorage.setItem(storageKey(selected.mode), JSON.stringify(latest)); saved = true; }
+    catch (_) { /* 寫入失敗由原 appStorage 保留 pending 與重新儲存入口。 */ }
+    // 一般寫入錯誤時 appStorage.getItem 會讀到 pending；讀取失敗時停止修改偏好。
+    try {
+      if (appStorage.getItem(storageKey(selected.mode)) !== JSON.stringify(latest)) return;
+    } catch (_) { return; }
+    values[selected.mode] = latest;
+    refreshBadges();
+    closeDlg();
+    if (saved) showToast('已更新默認值');
+  });
+  dlg.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || dlg.hidden || document.querySelector('[data-calc-backdrop]') || e.target.tagName === 'BUTTON') return;
+    e.preventDefault(); saveButton.click();
+  });
+  let pressOnBackdrop = false;
+  dlg.addEventListener('pointerdown', e => { pressOnBackdrop = e.target === dlg; });
+  dlg.addEventListener('click', e => {
+    if (e.target === dlg && pressOnBackdrop) closeDlg();
+    pressOnBackdrop = false;
+  });
+  document.getElementById('loanDefaultCard').addEventListener('click', e => e.stopPropagation());
+
+  // 550ms 長按使用 Pointer Events。移動、捲動、取消及失焦都取消計時與後續短按。
+  // 在 document capture 吃掉手勢 click，包含浮層開啟後被重新指向背景的 click。
+  let press = null, suppressPointerClick = false;
+  function cancelPress() {
+    if (!press) return;
+    clearTimeout(press.timer);
+    suppressPointerClick = true;
+    press = null;
+  }
+  document.addEventListener('pointerdown', e => {
+    if (press && e.pointerId !== press.pointerId) cancelPress();
+    else if (!press) suppressPointerClick = false;
+  }, true);
+  document.addEventListener('pointermove', e => {
+    if (press && press.pointerId === e.pointerId
+      && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) cancelPress();
+  }, { capture: true, passive: true });
+  document.addEventListener('pointerup', e => {
+    if (!press || e.pointerId !== press.pointerId) return;
+    clearTimeout(press.timer);
+    press = null;
+  }, true);
+  document.addEventListener('pointercancel', cancelPress, true);
+  document.addEventListener('scroll', cancelPress, { capture: true, passive: true });
+  window.addEventListener('blur', cancelPress);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelPress(); });
+  document.addEventListener('click', e => {
+    if (!suppressPointerClick || e.detail === 0) return;
+    suppressPointerClick = false;
+    e.preventDefault(); e.stopImmediatePropagation();
+  }, true);
+  SPECS.forEach(spec => {
+    const button = document.getElementById(spec.id);
+    if (!button) return;
+    button.dataset.defaultBadge = spec.mode + '-' + spec.key;
+    button.title = '短按帶入；長按、右鍵或 Shift+F10 修改默認值';
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.addEventListener('pointerdown', e => {
+      if (!e.isPrimary || e.button !== 0 || button.disabled) return;
+      if (press) cancelPress();
+      const state = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, timer: 0 };
+      press = state;
+      state.timer = setTimeout(() => {
+        if (press !== state) return;
+        press = null;
+        suppressPointerClick = true;
+        openDlg(spec);
+      }, 550);
+    }, { passive: true });
+    button.addEventListener('contextmenu', e => {
+      e.preventDefault(); e.stopPropagation();
+      cancelPress(); suppressPointerClick = true; openDlg(spec);
+    });
+    button.addEventListener('keydown', e => {
+      if (e.key !== 'ContextMenu' && !(e.shiftKey && e.key === 'F10')) return;
+      e.preventDefault(); e.stopPropagation(); cancelPress(); openDlg(spec);
+    });
+  });
+  refreshBadges();
+})();
 </script>
 </body>
 </html>
