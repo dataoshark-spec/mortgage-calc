@@ -3596,6 +3596,11 @@ if ("serviceWorker" in navigator) {
     #modeGeneral .form-grid.gl-money-wide > .field:nth-child(-n+4) {
       grid-column: 1 / -1;
     }
+    /* 個人評估整元：手機摘要採單欄，完整保留萬元小數與長金額。 */
+    @media (max-width: 600px) {
+      #bdResults .summary-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+
   </style>
   <!-- 匯出函式庫改成本地同源，Service Worker 才能預快取，離線冷啟動也能匯出。
        版本與原本 CDN 完全相同：html2canvas 1.4.1、jsPDF 2.5.1。 -->
@@ -4837,7 +4842,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11E";
+const APP_VERSION = "2026.09.11F";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -7839,7 +7844,8 @@ function calcKeyboardDisplayExpr(expr) {
     if (typing[1].length <= dec) return s;
   }
   const head = calcKeyboard.exactHead;
-  const roundGeneralAmount = isGeneralWanAmountField(calcKeyboard.inputEl);
+  const roundGeneralAmount = isGeneralWanAmountField(calcKeyboard.inputEl)
+    || (calcKeyboard.inputEl && calcKeyboard.inputEl.id === 'bdDown');
   if (calcKeyboard.strictInteger) {
     const exact = head && head.text === s ? head.rat : calcEvalExprExact(s);
     if (exact && !ratIsInt(exact)) {
@@ -12174,6 +12180,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   let bdFlowSnapshot = null;
   const flowEscape = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const flowNumber = n => Number(n).toLocaleString('zh-TW', { maximumFractionDigits: 6 });
+  // 金額從同次結果的整元值格式化；萬元最多 4 位，尾零可省略。
+  const flowWan = yuan => fmtWan(yuan);
   const flowCell = (label, value, type = '', key = '') => '<div class="bd-flow-cell ' + type + '"><div class="bd-flow-label">' + flowEscape(label) + '</div><div class="bd-flow-value"' + (key ? ' data-flow-value="' + key + '"' : '') + '>' + flowEscape(value) + '</div></div>';
   const flowOp = text => '<span class="bd-flow-op">' + flowEscape(text) + '</span>';
   const flowLine = (...items) => '<div class="bd-flow-line">' + items.join('') + '</div>';
@@ -12186,7 +12194,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       : bdSchedule(res.capacity, res.term * 12, res.grace * 12);
     return { res, capacitySchedule, income: incomeYuan(), incomeMode, incomeUnit, incomeRaw: raw(B('#bdIncome')), debt: moneyYuan('#bdDebt'),
       willingGiven: has('#bdWilling'), willing: moneyYuan('#bdWilling'), help: moneyYuan('#bdHelp'),
-      dti: raw(B('#bdDti')), down: has('#bdDown') ? Math.round(num(B('#bdDown')) * 10000) : null,
+      dti: raw(B('#bdDti')), down: bdDownYuan(),
       wantedRatio: bdRatioWanted, configuredRatio: num(B('#bdRatio')), hhGrace: bdHhGraceCap(), luxGrace: bdLuxGraceCap(),
       rateType: bdRateType, method: bdMethod, rates: bdPeriodList(res.term * 12),
       segments: bdRateType === 'multi' ? bdCopy(bdSegs) : [] };
@@ -12296,10 +12304,10 @@ window.addEventListener('resize', scheduleFitPaymentTable);
         flowNote('概算使用未取整元的月付，畫面顯示至小數第 2 位；尚未套用整元與末期補差。正式能力仍由下方完整還款檢查確認。');
     }
     const peak = maxPaymentOf(s.capacitySchedule);
-    html += flowNote('依本次利率、年限、還款方式與寬限期，搜尋每一期都不超過月付預算的最大整萬元貸款。') +
-      flowLine(flowResult('月付條件下的貸款能力（萬元）', flowNumber(r.capacity / 10000), 'capacity')) +
+    html += flowNote('依本次利率、年限、還款方式與寬限期，搜尋每一期都不超過月付預算的最大整元貸款。') +
+      flowLine(flowResult('月付條件下的貸款能力（萬元）', flowWan(r.capacity), 'capacity')) +
       flowLine(flowCell('這筆貸款的全期最高月付（元）', flowNumber(peak), '', 'capacityPeakPayment'), flowOp('≤'), flowResult('每月預算（元）', flowNumber(r.pay), 'capacityPayLimit', true)) +
-      flowNote('上列最高月付取自 ' + flowNumber(r.capacity / 10000) + ' 萬元貸款的 ' + count + ' 期正式還款表，包含寬限、利率變動與最後一期。' +
+      flowNote('上列最高月付取自 ' + flowWan(r.capacity) + ' 萬元貸款的 ' + count + ' 期正式還款表，包含寬限、利率變動與最後一期。' +
         (r.downGiven ? '接著檢查可用自備款、成數與房價限制。' : '接著按成數與房價限制推估，並列出仍需準備的自備款。'));
     return html;
   }
@@ -12341,51 +12349,48 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     terms += '<p class="bd-flow-terms">' + flowEscape(rates) + '<br>' + (s.method === 'principal' ? '本金平均攤還' : '本息平均攤還') +
       (r.grace > 0 ? '；寬限期結束後，於剩餘 ' + (count - r.grace * 12) + ' 期償還本金。' : '。') + '</p>';
     if (r.hhCap !== null || s.hhGrace !== null) terms += flowNote('貸款戶數設定：' + (r.hhCap !== null ? '成數上限 ' + r.hhCap + '%' : '未另限成數') + '；' + (s.hhGrace !== null ? '寬限上限 ' + s.hhGrace + ' 年' : '未另限寬限期') + '。');
-    if (r.luxTh !== null) terms += flowNote('高價住宅門檻 ' + flowNumber(r.luxTh / 10000) + ' 萬元。達門檻的方案才套用高價限制；已分別檢查門檻上下的成數、寬限、自備款與月付條件，選出可行的最高房價。本次採用' + (r.luxBound ? '門檻以上' : '門檻以下') + '方案。');
+    if (r.luxTh !== null) terms += flowNote('高價住宅門檻 ' + flowWan(r.luxTh) + ' 萬元。達門檻的方案才套用高價限制；已分別檢查門檻上下的成數、寬限、自備款與月付條件，選出可行的最高房價。本次採用' + (r.luxBound ? '門檻以上' : '門檻以下') + '方案。');
     else terms += flowNote('高價住宅審查未啟用或未設定門檻，本次不另分高價房價區間。');
     html += flowGroup('③ 這次採用的貸款條件', terms);
     html += flowGroup('④ 每月 ' + flowEscape(flowNumber(r.pay)) + ' 元，可以貸多少', renderBdFlowCapacity(s));
-    const minLuxWan = r.luxTh === null ? null : Math.ceil(r.luxTh / 10000);
-    const maxPrice = !r.luxBound && minLuxWan !== null ? (minLuxWan - 1) * 10000 : Infinity;
-    const byPrice = Number.isFinite(maxPrice) ? Number(BigInt(maxPrice / 10000) * BigInt(r.ratioPct) / 100n) * 10000 : Infinity;
+    const maxPrice = !r.luxBound && r.luxTh !== null ? r.luxTh - 1 : Infinity;
+    const byPrice = Number.isFinite(maxPrice) ? Number(BigInt(maxPrice) * BigInt(r.ratioPct) / 100n) : Infinity;
     const reasons = [];
     let property = '';
     if (r.downGiven) {
-      const usable = Math.floor(s.down / 10000) * 10000;
+      const usable = s.down;
       const byDown = bdLoanByDown(usable, r.ratioPct);
-      property += usable !== s.down
-        ? flowLine(flowCell('填入自備款（萬元）', flowNumber(s.down / 10000)), flowOp('→'), flowResult('可用整萬元自備款', flowNumber(usable / 10000), 'usableDown', true))
-        : flowLine(flowResult('可用自備款（萬元）', flowNumber(usable / 10000), 'usableDown', true));
+      property += flowLine(flowResult('可用自備款（萬元）', flowWan(usable), 'usableDown', true));
       if (r.ratioPct < 100) property += '<p class="bd-flow-math">自備款可支持貸款 = 自備款 × 成數 ÷ (100% − 成數)</p>' +
-        flowLine(flowCell('自備款（萬元）', flowNumber(usable / 10000)), flowOp('×'), flowCell('成數 ÷ 自備比例', r.ratioPct + ' ÷ ' + (100 - r.ratioPct)), flowOp('→'), flowResult('自備款貸款上限（萬元）', flowNumber(byDown / 10000), 'byDown', true));
+        flowLine(flowCell('自備款（萬元）', flowWan(usable)), flowOp('×'), flowCell('成數 ÷ 自備比例', r.ratioPct + ' ÷ ' + (100 - r.ratioPct)), flowOp('→'), flowResult('自備款貸款上限（萬元）', flowWan(byDown), 'byDown', true));
       else property += flowNote('本次成數上限 100%，不以自備款反推貸款上限；仍檢查全期月付與房價區間。');
       const limit = Math.min(r.capacity, byDown, byPrice);
-      if (byDown < r.capacity) reasons.push('可用自備款按 ' + r.ratioPct + '% 成數，最多支持 ' + flowNumber(byDown / 10000) + ' 萬元貸款');
-      if (byPrice < r.capacity) reasons.push('門檻以下的房價上限，對應貸款額度 ' + flowNumber(byPrice / 10000) + ' 萬元');
-      if (r.loan < limit) reasons.push('在上述額度內重新核對每一期月付後，取可負擔的最大整萬元金額');
-      property += flowLine(flowCell('本次貸款（萬元）', flowNumber(r.loan / 10000), '', 'loan'), flowOp('+'), flowCell('可用自備款（萬元）', flowNumber(usable / 10000)), flowOp(Number.isFinite(maxPrice) && r.loan + usable > maxPrice ? '→' : '='), flowResult(priceLabel + '（萬元）', flowNumber(r.price / 10000), 'price'));
+      if (byDown < r.capacity) reasons.push('可用自備款按 ' + r.ratioPct + '% 成數，最多支持 ' + flowWan(byDown) + ' 萬元貸款');
+      if (byPrice < r.capacity) reasons.push('門檻以下的房價上限，對應貸款額度 ' + flowWan(byPrice) + ' 萬元');
+      if (r.loan < limit) reasons.push('在上述額度內重新核對每一期月付後，取可負擔的最大整元金額');
+      property += flowLine(flowCell('本次貸款（萬元）', flowWan(r.loan), '', 'loan'), flowOp('+'), flowCell('可用自備款（萬元）', flowWan(usable)), flowOp(Number.isFinite(maxPrice) && r.loan + usable > maxPrice ? '→' : '='), flowResult(priceLabel + '（萬元）', flowWan(r.price), 'price'));
     } else {
-      const basePriceWan = Number(BigInt(r.capacity / 10000) * 100n / BigInt(r.ratioPct));
-      const priceLimit = Number(BigInt(r.price / 10000) * BigInt(r.ratioPct) / 100n) * 10000;
-      property += flowNote('自備款未填，先由貸款能力與成數推估房價；下方需自備金額仍須另外準備。') +
-        flowLine(flowCell('貸款能力（萬元）', flowNumber(r.capacity / 10000)), flowOp('÷'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('整萬元推估房價', flowNumber(basePriceWan), 'priceBeforeZone', true)) +
-        flowLine(flowCell(priceLabel + '（萬元）', flowNumber(r.price / 10000), '', 'price'), flowOp('×'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('房價成數額度（萬元）', flowNumber(priceLimit / 10000), 'priceLimit', true)) +
-        flowLine(flowResult('本次貸款（萬元）', flowNumber(r.loan / 10000), 'loan'));
-      if (basePriceWan * 10000 > r.price) reasons.push('推估房價受本次門檻以下的房價上限限制');
-      if (priceLimit < r.capacity) reasons.push('房價採整萬元，再按 ' + r.ratioPct + '% 成數向下取整萬元，可貸額度為 ' + flowNumber(priceLimit / 10000) + ' 萬元');
-      if (r.loan < Math.min(r.capacity, priceLimit)) reasons.push('在此額度內重新核對全期月付後，取可負擔的最大整萬元金額');
+      const basePriceYuan = Number((BigInt(r.capacity) * 100n + BigInt(r.ratioPct) - 1n) / BigInt(r.ratioPct));
+      const priceLimit = Number(BigInt(r.price) * BigInt(r.ratioPct) / 100n);
+      property += flowNote('自備款未填，先由貸款能力除以成數，向上取整元推估房價，確保房價成數額度足以容納貸款；下方需自備金額仍須另外準備。') +
+        flowLine(flowCell('貸款能力（萬元）', flowWan(r.capacity)), flowOp('÷'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('推估房價（萬元）', flowWan(basePriceYuan), 'priceBeforeZone', true)) +
+        flowLine(flowCell(priceLabel + '（萬元）', flowWan(r.price), '', 'price'), flowOp('×'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('房價成數額度（萬元）', flowWan(priceLimit), 'priceLimit', true)) +
+        flowLine(flowResult('本次貸款（萬元）', flowWan(r.loan), 'loan'));
+      if (basePriceYuan > r.price) reasons.push('推估房價受本次門檻以下的房價上限限制');
+      if (priceLimit < r.capacity) reasons.push('房價按 ' + r.ratioPct + '% 成數向下取整元，可貸額度為 ' + flowWan(priceLimit) + ' 萬元');
+      if (r.loan < Math.min(r.capacity, priceLimit)) reasons.push('在此額度內重新核對全期月付後，取可負擔的最大整元金額');
     }
-    if (r.capacity !== r.loan) property += flowNote('月付能力為 ' + flowNumber(r.capacity / 10000) + ' 萬元，本次貸款為 ' + flowNumber(r.loan / 10000) + ' 萬元。原因：' + reasons.join('；') + '。');
+    if (r.capacity !== r.loan) property += flowNote('月付能力為 ' + flowWan(r.capacity) + ' 萬元，本次貸款為 ' + flowWan(r.loan) + ' 萬元。原因：' + reasons.join('；') + '。');
     else property += flowNote((r.downGiven ? '可用自備款、成數與房價' : '成數與房價') + '條件檢查後，本次貸款與前一步的月付能力相同。');
-    if (Number.isFinite(maxPrice)) property += flowNote('本次採門檻以下方案，房價最高 ' + flowNumber(maxPrice / 10000) + ' 萬元，對應成數額度 ' + flowNumber(byPrice / 10000) + ' 萬元；超過時取此房價上限。');
-    property += flowLine(flowCell(priceLabel + '（萬元）', flowNumber(r.price / 10000)), flowOp('−'), flowCell('本次貸款（萬元）', flowNumber(r.loan / 10000)), flowOp('='), flowResult('需自備（萬元）', flowNumber(r.needDown / 10000), 'needDown')) +
-      flowNote('貸款與房價採整萬元，並已核對全期月付。評估未包含稅費、裝潢及其他購屋成本，請另行預留。');
+    if (Number.isFinite(maxPrice)) property += flowNote('本次採門檻以下方案，房價最高 ' + flowWan(maxPrice) + ' 萬元，對應成數額度 ' + flowWan(byPrice) + ' 萬元；超過時取此房價上限。');
+    property += flowLine(flowCell(priceLabel + '（萬元）', flowWan(r.price)), flowOp('−'), flowCell('本次貸款（萬元）', flowWan(r.loan)), flowOp('='), flowResult('需自備（萬元）', flowWan(r.needDown), 'needDown')) +
+      flowNote('貸款、自備款與房價均保留到整元，萬元顯示最多 4 位小數，並已核對全期月付。評估未包含稅費、裝潢及其他購屋成本，請另行預留。');
     html += flowGroup(r.downGiven ? '⑤ 加上自備款，可以負擔多少房價' : '⑤ 自備款未填，推估房價與需備金額', property);
     html += flowGroup('⑥ 看看每一期怎麼還', '<p class="bd-flow-terms">選一個期數，看本次實際貸款的本金、利息與餘額；需要時可展開詳細算式。</p><div class="bd-flow-pick"><label for="bdFlowPeriod">查看期數</label><select id="bdFlowPeriod" aria-describedby="bdFlowPeriodStatus">' +
       r.sched.map((row, i) => '<option value="' + i + '"' + (i === Math.min(r.grace * 12, count - 1) ? ' selected' : '') + '>第 ' + row.period + ' 期' + '</option>').join('') + '</select></div><div class="bd-flow-period-status" id="bdFlowPeriodStatus" role="status" aria-live="polite" aria-atomic="true"></div><div id="bdFlowPeriodBody"></div>');
     html += flowGroup('⑦ 確認還款在預算內',
       flowLine(flowCell('本次貸款全期最高月付（元）', flowNumber(r.payAfter), '', 'peakPayment'), flowOp('≤'), flowResult('每月預算（元）', flowNumber(r.pay), 'payLimit', true)) +
-      flowLine(flowCell('全期本金合計（萬元）', flowNumber(r.sched.reduce((a, row) => a + row.principal, 0) / 10000)), flowOp('='), flowResult('本次貸款（萬元）', flowNumber(r.loan / 10000), 'principalSum', true)) +
+      flowLine(flowCell('全期本金合計（萬元）', flowWan(r.sched.reduce((a, row) => a + row.principal, 0))), flowOp('='), flowResult('本次貸款（萬元）', flowWan(r.loan), 'principalSum', true)) +
       flowLine(flowCell('全期利息合計（元）', flowNumber(r.sched.reduce((a, row) => a + row.interest, 0)), '', 'interestSum'), flowResult('最後本金餘額（元）', flowNumber(r.sched[count - 1].balance), 'endingBalance', true)));
     body.innerHTML = html + '</div>';
     renderBdFlowPeriod(s, Number(B('#bdFlowPeriod').value));
@@ -12440,6 +12445,12 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const value = ratFromDecStr(raw(B(sel))) || ratMake(0n, 1n);
     const scaled = value.n * (incomeUnit === 'wan' ? 10000n : 1n);
     return Number((2n * scaled + value.d) / (2n * value.d));
+  }
+  // 自備款以萬元輸入，沿用提交規則四捨五入到元，避免浮點乘法尾差。
+  function bdDownYuan() {
+    if (!has('#bdDown')) return null;
+    const value = ratFromDecStr(raw(B('#bdDown'))) || ratMake(0n, 1n);
+    return Number((2n * value.n * 10000n + value.d) / (2n * value.d));
   }
   function incomeYuan() { return moneyYuan('#bdIncome'); }
   function monthlyIncome() {
@@ -12531,17 +12542,25 @@ window.addEventListener('resize', scheduleFitPaymentTable);
 
   // 相同現金流的完整上限與自備款上限可交替查詢，保留少量完整鍵避免重複搜尋。
   const bdCapacityCache = new Map();
-  /* 本金以萬元為單位尋找最大可負擔值。尾期補差會造成鋸齒，不能假設
+  /* 本金以元為單位尋找最大可負擔值。尾期補差會造成鋸齒，不能假設
      「本金增加、最高月付一定增加」，也不能到固定60步就交回未收斂的估計。
      由高到低檢查區間；只有整個區間必定超額才排除，保留所有末期例外。 */
   function maxLoanFor(payCap, totalMonths, graceMonths, principalLimit = Infinity) {
-    if (!(payCap > 0) || totalMonths <= graceMonths) return 0;
+    if (!Number.isSafeInteger(payCap) || payCap <= 0
+        || !Number.isSafeInteger(totalMonths) || !Number.isSafeInteger(graceMonths)
+        || graceMonths < 0 || totalMonths <= graceMonths
+        || (principalLimit !== Infinity && (!Number.isSafeInteger(principalLimit) || principalLimit < 0))) return 0;
     const list = bdPeriodList(totalMonths);
     const key = JSON.stringify([payCap, totalMonths, graceMonths, bdMethod, list, principalLimit]);
     if (bdCapacityCache.has(key)) return bdCapacityCache.get(key);
     const repayMonths = totalMonths - graceMonths;
-    // 所有本金必須由非寬限期月付償還，故這是安全上界，並非近似推估。
-    const upper = Math.min(Math.ceil(payCap * repayMonths / 10000), Math.floor(principalLimit / 10000));
+    // Every yuan of principal must be repaid in the non-grace monthly payments.
+    // Formal inputs allow at most 99,999,999 yuan/month and 480 repayments.
+    const budgetUpper = BigInt(payCap) * BigInt(repayMonths);
+    const limitedUpper = principalLimit === Infinity || budgetUpper < BigInt(principalLimit)
+      ? budgetUpper : BigInt(principalLimit);
+    if (limitedUpper < 1n || limitedUpper > BigInt(Number.MAX_SAFE_INTEGER)) return 0;
+    const upper = Number(limitedUpper);
     let periodAnchor = graceMonths;
     const specs = list.map((item, period) => {
       const changed = period >= 1 && item.rate !== list[period - 1].rate;
@@ -12549,22 +12568,26 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       const rate = formatDecimal(item.rate / 12 / 100, 14);
       const n = totalMonths - periodAnchor;
       const factor = rate === 0 ? 1 / n : exactAnnuityFactor(rate, n);
-      return { rate, changed, factor };
+      return { rate, changed, factor, n };
     });
-    /* 以下只產生保守上下界。floor/ceil刻意比正式逐期取整更寬，
-       不用區間端點兩張排程推斷中間值，更不直接把上下界當成結果。 */
-    function impossible(lowWan, highWan) {
-      let lowBalance = lowWan * 10000, highBalance = highWan * 10000;
+    // The formal per-period principal is nondecreasing in the initial principal.
+    // This duplicates only the endpoint-bound expression, not the repayment core.
+    function principalAt(balance) {
+      let value = Math.ceil(balance / repayMonths);
+      if (value * (repayMonths - 1) > balance) value = Math.floor(balance / repayMonths);
+      return value;
+    }
+    function impossible(low, high) {
+      let lowBalance = low, highBalance = high;
       let lowAnchor = lowBalance, highAnchor = highBalance;
-      const lowPrincipal = Math.floor(lowBalance / repayMonths);
-      const highPrincipal = Math.ceil(highBalance / repayMonths);
+      const lowPrincipal = principalAt(lowBalance), highPrincipal = principalAt(highBalance);
       for (let period = 0; period < totalMonths; period++) {
-        const { rate, changed, factor } = specs[period];
-        if (changed) {
-          lowAnchor = lowBalance; highAnchor = highBalance;
-        }
-        const lowInterest = Math.floor(lowBalance * rate);
-        const highInterest = Math.ceil(highBalance * rate);
+        const { rate, changed, factor, n } = specs[period];
+        if (changed) { lowAnchor = lowBalance; highAnchor = highBalance; }
+        // Exact rounding is monotone in each nonnegative integer balance.
+        // It gives tighter conservative bounds than floor/ceil approximations.
+        const lowInterest = roundScheduleInterest(lowBalance, rate);
+        const highInterest = roundScheduleInterest(highBalance, rate);
         if (period < graceMonths) {
           if (lowInterest > payCap) return true;
           continue;
@@ -12575,8 +12598,12 @@ window.addEventListener('resize', scheduleFitPaymentTable);
           lowBalance = Math.max(0, lowBalance - highPrincipal);
           highBalance = Math.max(0, highBalance - lowPrincipal);
         } else {
-          const lowPayment = Math.floor(factor * lowAnchor);
-          const highPayment = Math.ceil(factor * highAnchor) + 1;
+          const lowPayment = rate === 0
+            ? Number((BigInt(lowAnchor) + BigInt(n) - 1n) / BigInt(n))
+            : ceilSchedulePayment(lowAnchor, factor);
+          const highPayment = rate === 0
+            ? Number((BigInt(highAnchor) + BigInt(n) - 1n) / BigInt(n))
+            : ceilSchedulePayment(highAnchor, factor);
           const minimum = Math.min(Math.max(lowPayment, lowInterest), lowBalance + lowInterest);
           if (minimum > payCap) return true;
           const nextLow = Math.min(lowBalance, Math.max(0, lowBalance + lowInterest - highPayment));
@@ -12588,51 +12615,46 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }
     function find(low, high) {
       if (low > high || impossible(low, high)) return 0;
-      if (low === high) return maxPaymentOf(bdSchedule(high * 10000, totalMonths, graceMonths)) <= payCap ? high : 0;
-      const middle = Math.floor((low + high) / 2);
+      if (low === high) return maxPaymentOf(bdSchedule(high, totalMonths, graceMonths)) <= payCap ? high : 0;
+      const middle = low + Math.floor((high - low) / 2);
       return find(middle + 1, high) || find(low, middle);
     }
-    const value = find(1, upper) * 10000;
+    const value = find(1, upper);
     bdCapacityCache.set(key, value);
     if (bdCapacityCache.size > 16) bdCapacityCache.delete(bdCapacityCache.keys().next().value);
     return value;
   }
 
-
   function bdLoanByDown(downYuan, ratioPct) {
     if (ratioPct >= 100) return Infinity;
     if (!(ratioPct > 0) || !(downYuan >= 0)) return 0;
-    const usableDown = Math.floor(downYuan / 10000) * 10000;
-    const numerator = BigInt(usableDown) * BigInt(ratioPct);
-    const denominator = BigInt(100 - ratioPct) * 10000n;
-    return Number(numerator / denominator) * 10000;
+    return Number(BigInt(downYuan) * BigInt(ratioPct) / BigInt(100 - ratioPct));
   }
 
-  /* 每一房價區間各自套成數、寬限與月付限制。本金的末期補差不單調，
-     所有本金上限仍交給完整搜尋；門檻邊界不直接截小既有本金。 */
+  /* Each region keeps its price objective, ratio cap, grace and full-schedule check.
+     All principal and price limits are yuan. Supplied down payment keeps every yuan. */
   function bdSolveAmounts(capacity, ratioPct, downYuan, pay, totalMonths, graceMonths,
-                          minPriceWan = 0, maxPriceWan = Infinity) {
-    if (!(ratioPct > 0) || ratioPct > 100 || maxPriceWan < minPriceWan) return null;
+                          minPriceYuan = 0, maxPriceYuan = Infinity) {
+    if (!(ratioPct > 0) || ratioPct > 100 || maxPriceYuan < minPriceYuan) return null;
     const ratio = BigInt(ratioPct);
-    const byPrice = Number.isFinite(maxPriceWan)
-      ? Number(BigInt(maxPriceWan) * ratio / 100n) * 10000 : Infinity;
+    const byPrice = Number.isFinite(maxPriceYuan)
+      ? Number(BigInt(maxPriceYuan) * ratio / 100n) : Infinity;
     let loan, price, downBound = false, priceBound = false;
     if (downYuan !== null) {
-      const usableDown = Math.floor(downYuan / 10000) * 10000;
-      const byDown = bdLoanByDown(usableDown, ratioPct);
+      const byDown = bdLoanByDown(downYuan, ratioPct);
       loan = maxLoanFor(pay, totalMonths, graceMonths, Math.min(capacity, byDown, byPrice));
-      price = Math.min(loan + usableDown, maxPriceWan * 10000);
+      price = Math.min(loan + downYuan, maxPriceYuan);
       downBound = byDown < capacity && byDown <= byPrice;
-      priceBound = Number.isFinite(maxPriceWan) && price === maxPriceWan * 10000 && loan + usableDown >= price;
+      priceBound = Number.isFinite(maxPriceYuan) && price === maxPriceYuan && loan + downYuan >= price;
     } else {
-      // 自備款未填：保留以貸款能力及採用成數推算房價、列出需備金額的模式。
-      const priceWan = Math.min(Number(BigInt(capacity / 10000) * 100n / ratio), maxPriceWan);
-      price = priceWan * 10000;
-      const limit = Number(BigInt(priceWan) * ratio / 100n) * 10000;
+      // The smallest whole-yuan price whose exact ratio cap supports capacity.
+      const capacityPrice = Number((BigInt(capacity) * 100n + ratio - 1n) / ratio);
+      price = Math.min(capacityPrice, maxPriceYuan);
+      const limit = Number(BigInt(price) * ratio / 100n);
       loan = maxLoanFor(pay, totalMonths, graceMonths, Math.min(capacity, limit));
-      priceBound = Number.isFinite(maxPriceWan) && priceWan === maxPriceWan;
+      priceBound = Number.isFinite(maxPriceYuan) && price === maxPriceYuan;
     }
-    if (!(loan > 0) || price < minPriceWan * 10000 || price < loan) return null;
+    if (!(loan > 0) || price < minPriceYuan || price < loan) return null;
     return { loan, price, downBound, priceBound };
   }
 
@@ -12651,7 +12673,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const hhGrace = bdHhGraceCap();
     const normalGrace = Math.min(requestedGrace, term - 1, hhGrace === null ? term - 1 : hhGrace);
     const threshold = bdLuxThreshold();
-    const minLuxWan = threshold === null ? null : Math.ceil(threshold / 10000);
+    const minLuxYuan = threshold === null ? null : Math.ceil(threshold);
     function zone(luxury) {
       const luxRatio = luxury ? bdLuxRatioCap() : null;
       const luxGrace = luxury ? bdLuxGraceCap() : null;
@@ -12659,11 +12681,11 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       const grace = luxGrace === null ? normalGrace : Math.min(normalGrace, luxGrace);
       const capacity = maxLoanFor(pay, totalMonths, grace * 12);
       const out = bdSolveAmounts(capacity, ratio, downYuan, pay, totalMonths, grace * 12,
-                                 luxury ? minLuxWan : 0,
-                                 !luxury && minLuxWan !== null ? minLuxWan - 1 : Infinity);
+                                 luxury ? minLuxYuan : 0,
+                                 !luxury && minLuxYuan !== null ? minLuxYuan - 1 : Infinity);
       return out && { ...out, capacity, grace, ratioPct: ratio, luxBound: luxury };
     }
-    const normal = zone(false), luxury = minLuxWan === null ? null : zone(true);
+    const normal = zone(false), luxury = minLuxYuan === null ? null : zone(true);
     if (!normal) return luxury;
     if (!luxury) return normal;
     return luxury.price > normal.price ? luxury : normal;
@@ -12681,7 +12703,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     if (!(term > requestedGrace)) return { err: 'grace' };
     if (!bdRatesValid()) return { err: 'rate' };
     const downGiven = has('#bdDown');
-    const D = downGiven ? Math.round(num(B('#bdDown')) * 10000) : null;
+    const D = bdDownYuan();
     const out = bdSolveRegions(pay, term, requestedGrace, bdRequestedRatio(), D);
     if (!out) return { err: 'pay' };
     const { loan, price, capacity, grace, ratioPct, downBound, priceBound, luxBound } = out;
@@ -12718,7 +12740,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
         : bdSegs.map((sg, k) => '第' + (k + 1) + '段 ' + (sg.rate || '—') + '%').join('、')],
       ['貸款年限', res.term + ' 年' + (res.grace > 0 ? '（含寬限期 ' + res.grace + ' 年）' : '（無寬限期）')],
       ['採用成數上限', res.ratioPct + ' %'],
-      ['自備款', res.downGiven ? wan(num(B('#bdDown')) * 10000) : '未填'],
+      ['自備款', res.downGiven ? wan(bdFlowSnapshot.down) : '未填'],
       ['還款方式', bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還']
     ];
     if (has('#bdWilling')) rows.splice(5, 0, ['願意負擔月付', yuan(moneyYuan('#bdWilling'))]);
@@ -12738,8 +12760,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
 /* Display-only diagnosis. Does not change result, inputs, solver or App state.
  * The injected maxLoanForFn must use the SAME current method/monthly rate path
  * as the synchronous compute() that produced result.
- * Minimum down payment is for the stated reference price (the first whole-wan
- * price at the threshold), not a new optimization across every higher price.
+ * Minimum down payment is for the stated reference price (the threshold
+ * itself, in integer yuan), not a new optimization across every higher price.
  */
 function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   const out = (status, fields) => Object.assign({ status }, fields || {});
@@ -12752,8 +12774,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   if (!whole(result.luxTh) || result.luxTh <= 0) {
     return out('unavailable', { reason: 'invalid_threshold' });
   }
-  const referencePriceWan = Math.ceil(result.luxTh / 10000);
-  const referencePriceYuan = referencePriceWan * 10000;
+  const referencePriceYuan = result.luxTh;
   if (!Number.isSafeInteger(referencePriceYuan)) {
     return out('unavailable', { reason: 'unsafe_reference_price' });
   }
@@ -12796,11 +12817,11 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   if (ratio <= 0) {
     return out('no_financed_reference_plan', Object.assign(terms, { reason: 'zero_ratio_cap' }));
   }
-  // Loan capacity and the threshold loan-to-value cap both use whole wan.
-  const principalLimitYuan = Number(BigInt(referencePriceWan) * BigInt(ratio) / 100n) * 10000;
-  if (principalLimitYuan < 10000) {
+  // Both capacity and the loan-to-value limit preserve integer yuan.
+  const principalLimitYuan = Number(BigInt(referencePriceYuan) * BigInt(ratio) / 100n);
+  if (principalLimitYuan < 1) {
     return out('no_financed_reference_plan', Object.assign(terms, {
-      reason: 'reference_ratio_allows_no_whole_wan_loan', principalLimitYuan
+      reason: 'reference_ratio_allows_no_positive_yuan_loan', principalLimitYuan
     }));
   }
   if (typeof maxLoanForFn !== 'function') {
@@ -12812,8 +12833,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   } catch (_) {
     return out('unavailable', Object.assign(terms, { reason: 'capacity_search_failed' }));
   }
-  if (!whole(affordableLoanAtReferenceYuan) || affordableLoanAtReferenceYuan % 10000 !== 0
-      || affordableLoanAtReferenceYuan > principalLimitYuan) {
+  if (!whole(affordableLoanAtReferenceYuan) || affordableLoanAtReferenceYuan > principalLimitYuan) {
     return out('unavailable', Object.assign(terms, { reason: 'invalid_capacity_result' }));
   }
   if (affordableLoanAtReferenceYuan === 0) {
@@ -12822,7 +12842,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     }));
   }
   const minimumDownAtReferenceYuan = referencePriceYuan - affordableLoanAtReferenceYuan;
-  const usableDownYuan = c.availableDownYuan === null ? null : Math.floor(c.availableDownYuan / 10000) * 10000;
+  const usableDownYuan = c.availableDownYuan;
   const shortfallYuan = usableDownYuan === null ? null : Math.max(0, minimumDownAtReferenceYuan - usableDownYuan);
   const values = Object.assign(terms, { principalLimitYuan, affordableLoanAtReferenceYuan,
     minimumDownAtReferenceYuan, availableDownInputYuan: c.availableDownYuan, usableDownYuan, shortfallYuan });
@@ -12867,7 +12887,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     }
     if (d.status === 'no_financed_reference_plan') {
       if (d.reason === 'zero_ratio_cap') return lead + '高價區的適用成數上限為 <em>0%</em>，沒有可試算的房貸金額。';
-      return lead + '依適用成數、寬限期及本次月付預算，無法取得至少 <em>1 萬元</em>的可負擔貸款。';
+      return lead + '依適用成數、寬限期及本次月付預算，無法取得至少 <em>1 元</em>的可負擔貸款。';
     }
     return '';
   }
