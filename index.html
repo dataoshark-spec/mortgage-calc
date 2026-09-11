@@ -3475,11 +3475,9 @@ if ("serviceWorker" in navigator) {
     }
     .yt-split-row:last-child { border-bottom: 0; }
     .yt-split-main { min-width: 0; }
-    /* 三列包在同一個 grid 裡並用 1fr 均分，任何一列說明較短（例如不符資格時
-       新青安只剩一行）也不會塌下去，高度一律看最高的那一列。
-       均分後多出來的空白要平均分配在文字上下，否則短的那一列文字會貼著上緣、
-       下方空一大塊，看起來反而更不齊。 */
-    .yt-split-rows { display: grid; grid-auto-rows: 1fr; }
+    /* 各列依說明內容決定高度，保留相同的上下內距。
+       不強制等高，避免較短的青安說明下方多出空白。 */
+    .yt-split-rows { display: grid; grid-auto-rows: auto; }
     .yt-split-rows > .yt-split-row { align-items: center; }
     /* 首列的小內距在等高排列下會讓文字上移，與其他兩列對不齊 */
     .yt-split .yt-split-rows > .yt-split-row:first-child { padding-top: 14px; }
@@ -3683,7 +3681,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
       <div class="field">
-        <label class="label-cap">貸款金額<span class="yt-opt-tag">整數元</span></label>
+        <label class="label-cap">貸款金額<span class="yt-opt-tag">免填</span></label>
         <div class="input-box readonly" title="依購屋總價與銀行鑑價取低，再按成數計算；不足 1 元部分不計入。">
           <input type="text" id="amount" readonly value="2,400" tabindex="-1" aria-readonly="true">
           <span class="unit">萬元</span>
@@ -4253,8 +4251,8 @@ if ("serviceWorker" in navigator) {
       </div>
         </div>
       </div>
-      <div id="ytSpecBlock"></div>
       <p class="note">※ 本試算結果、青安資格審核僅供參考，不構成任何貸款承諾或保證。實際貸款金額、利率、期數、寬限期、每月應繳金額、相關費用及其他貸款條件，均應以各金融機構最終核准結果及正式簽訂之貸款契約為準。本系統已盡力提供正確之試算結果，但因各銀行計息方式、四捨五入規則、作業流程、政策調整或其他因素可能產生差異，本系統對試算結果之誤差或因此衍生之任何損失，不負任何法律責任或賠償責任。</p>
+      <div id="ytSpecBlock"></div>
 
       <div class="export-section" id="ytExportSection">
         <div class="export-title">匯出與分享</div>
@@ -4909,7 +4907,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11J";
+const APP_VERSION = "2026.09.12A";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -9272,7 +9270,7 @@ const EXPORT_CAPTURE_HEIGHT_SLACK = 12;
 function getResultsExportHeight(el) {
   const rootRect = el.getBoundingClientRect();
   let maxBottom = 0;
-  const markers = el.querySelectorAll('.conditions-box, .summary-grid, .period-summary, .detail-section-head, .export-detail-head, .year-item, .note, .apr-footer-export');
+  const markers = el.querySelectorAll('.conditions-box, .summary-grid, .period-summary, .detail-section-head, .export-detail-head, .year-item, .note, #ytSpecBlock, .apr-footer-export');
   markers.forEach((node) => {
     const r = node.getBoundingClientRect();
     if (r.height <= 0) return;
@@ -9820,7 +9818,8 @@ async function buildExportCaptureNode(context) {
   if (!includeDetail) {
     detailSection?.remove();
   } else {
-    if (note && periodSummary) {
+    // 青安免責說明跟隨畫面，放在還款明細之後、貸款原則之前。
+    if (context.mode !== 'youth' && note && periodSummary) {
       periodSummary.insertAdjacentElement('afterend', note);
     }
     clone.querySelectorAll('.year-item').forEach((el) => el.classList.add('open'));
@@ -17253,6 +17252,88 @@ function getBadgeDefault(mode, key, fallback) {
     pressOnBackdrop = false;
   });
   document.getElementById('loanDefaultCard').addEventListener('click', e => e.stopPropagation());
+
+  // 十個默認設定共用：卡片左右滑即取消；鍵盤蓋層下仍只接管卡片非操作區。
+  const defaultCard = document.getElementById('loanDefaultCard');
+  let defaultSwipe = null;
+  function defaultSwipeIsCurrent(gesture) {
+    if (dlg.hidden || dlg.dataset.modalClosing === '1' || gesture.seq !== dlgSeq
+        || gesture.mode !== document.body.dataset.mode) return false;
+    const top = getTopAppModal();
+    return top === dlg || (top === calcKeyboard.backdropEl && calcKeyboard.inputEl === fld);
+  }
+  function defaultSwipeSurface(e) {
+    if (dlg.hidden || dlg.dataset.modalClosing === '1') return null;
+    const top = getTopAppModal();
+    const covered = top === calcKeyboard.backdropEl && calcKeyboard.inputEl === fld;
+    if (top !== dlg && !covered) return null;
+    if (covered && e.target !== calcKeyboard.backdropEl) return null;
+    const rect = defaultCard.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right
+        || e.clientY < rect.top || e.clientY > rect.bottom) return null;
+    const target = covered
+      ? document.elementsFromPoint(e.clientX, e.clientY).find(el => defaultCard.contains(el))
+      : e.target;
+    if (!(target instanceof Element) || !defaultCard.contains(target)
+        || target.closest('input, textarea, select, button, .input-box')) return null;
+    return { covered };
+  }
+  function moveDefaultSwipe(e, x, y) {
+    const gesture = defaultSwipe;
+    if (!gesture) return;
+    const dx = Math.abs(x - gesture.x), dy = Math.abs(y - gesture.y);
+    if (Math.max(dx, dy) > 10) gesture.moved = true;
+    if (dy >= 12 && dy >= dx) gesture.rejected = true;
+    if (!gesture.rejected && dx >= 12 && dx >= dy * 1.6) gesture.horizontal = true;
+    // 透明鍵盤蓋層不能把此卡片手勢傳給背景；一般直滑仍保留卡片原生內捲。
+    if (e.cancelable && gesture.moved && (gesture.covered || gesture.horizontal)) e.preventDefault();
+  }
+  document.addEventListener('pointerdown', e => {
+    if (defaultSwipe) {
+      defaultSwipe.rejected = true; defaultSwipe.moved = true;
+      e.stopPropagation();
+      return;
+    }
+    if (!e.isPrimary || e.button !== 0) return;
+    const surface = defaultSwipeSurface(e);
+    if (!surface) return;
+    defaultSwipe = { id: e.pointerId, x: e.clientX, y: e.clientY, seq: dlgSeq,
+      mode: document.body.dataset.mode, covered: surface.covered, moved: false, rejected: false, horizontal: false };
+    // 不讓同一次卡片拖移先被計算鍵盤當成「完成並關閉」；數字鍵與輸入框不走此分支。
+    e.stopPropagation();
+  }, true);
+  document.addEventListener('pointermove', e => {
+    if (defaultSwipe?.id === e.pointerId) moveDefaultSwipe(e, e.clientX, e.clientY);
+  }, { capture: true, passive: false });
+  document.addEventListener('touchmove', e => {
+    if (!defaultSwipe) return;
+    if (e.touches.length !== 1) {
+      defaultSwipe.rejected = true; defaultSwipe.moved = true;
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+    moveDefaultSwipe(e, e.touches[0].clientX, e.touches[0].clientY);
+  }, { capture: true, passive: false });
+  document.addEventListener('pointerup', e => {
+    const gesture = defaultSwipe;
+    if (!gesture || gesture.id !== e.pointerId) return;
+    defaultSwipe = null;
+    const dx = Math.abs(e.clientX - gesture.x), dy = Math.abs(e.clientY - gesture.y);
+    const dismiss = !gesture.rejected && defaultSwipeIsCurrent(gesture)
+      && dx >= 56 && dx >= dy * 1.6;
+    if (dismiss || gesture.moved) {
+      if (e.cancelable) e.preventDefault();
+      e.stopImmediatePropagation();
+      pressOnBackdrop = false;
+      suppressPointerClick = true;
+    }
+    if (dismiss) closeDlg();
+  }, true);
+  document.addEventListener('pointercancel', e => {
+    if (defaultSwipe?.id === e.pointerId) defaultSwipe = null;
+  }, true);
+  window.addEventListener('blur', () => { defaultSwipe = null; });
+  window.addEventListener('pagehide', () => { defaultSwipe = null; });
 
   // 550ms 長按使用 Pointer Events。移動、捲動、取消及失焦都取消計時與後續短按。
   // 在 document capture 吃掉手勢 click，包含浮層開啟後被重新指向背景的 click。
