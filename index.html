@@ -1908,12 +1908,6 @@ if ("serviceWorker" in navigator) {
       margin-bottom: 28px;
       padding: 8px 0 4px;
     }
-    /* 此附註是上方表格的註腳，靠右收在表格尾端；置中會在折行時看起來跑版，
-       靠左則在匯出時與表格左緣切齊、像是另起一段。靠右兩者都避開。 */
-    #ytPeriodNote .yt-note {
-      margin-top: 10px;
-      text-align: right;
-    }
     .period-title {
       display: flex;
       align-items: center;
@@ -3524,6 +3518,12 @@ if ("serviceWorker" in navigator) {
     #ytGeneralLoanBox:not(.conditions-box),
     #ytGeneralLoanBox:not(.conditions-box) > #ytGeneralLoanBody { display: contents; }
     #ytGeneralLoanToggle[hidden], #ytGeneralLoanBody[hidden], #ytGeneralNotice[hidden] { display: none !important; }
+    /* 不符資格的外框只留在收合標題，結果內容不受左右框線包圍。 */
+    #ytGeneralLoanBox.conditions-box { border: none; overflow: visible; }
+    #ytGeneralLoanBox.conditions-box > #ytGeneralLoanToggle {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+    }
     #ytGeneralLoanBox.conditions-box > #ytGeneralLoanBody { padding: 16px 0 0; }
     #ytGeneralNotice .yt-general-notice { margin: 0 12px 24px; }
     #ytDetailSeg { margin-top: 12px; }
@@ -3554,23 +3554,23 @@ if ("serviceWorker" in navigator) {
     .yt-split-row.c .yt-split-v { color: #55595E; }
     .yt-save-hd { text-align: center; }
     .yt-save-cap { font-size: 10.5px; color: #A07A2A; font-weight: 600; margin-bottom: 5px; }
-    .yt-save-how { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(138,98,24,.18); }
+    .yt-save-how { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(138,98,24,.12); }
     .yt-save-r { display: grid; grid-template-columns: 13px 1fr auto; align-items: baseline; column-gap: 6px; font-size: 11.5px; color: #8A6218; line-height: 1.8; }
     .yt-save-r i { font-style: normal; text-align: center; color: #B08A3A; font-weight: 700; }
     .yt-save-r em { font-style: normal; opacity: .72; margin-left: 5px; font-size: 10.5px; }
     .yt-save-r b { font-weight: 500; color: #7A5512; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .yt-save-r.sum { margin-top: 5px; padding-top: 6px; border-top: 1px solid rgba(138,98,24,.3); font-size: 13px; }
+    .yt-save-r.sum { margin-top: 5px; padding-top: 6px; border-top: 1px solid rgba(138,98,24,.18); font-size: 13px; }
     .yt-save-r.sum b { font-weight: 400; font-size: 15px; }
     /* 與 .yt-save-cap（小標題）同色，兩處若要調色須一併修改 */
     .yt-save-cmp b { font-weight: 700; color: #A07A2A; }
-    .yt-save-cmp { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(138,98,24,.18); font-size: 11px; color: #8A6218; line-height: 1.7; }
+    .yt-save-cmp { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(138,98,24,.12); font-size: 11px; color: #8A6218; line-height: 1.7; }
     /* 對照段落的小標題與第一句視為同一組，不留間距 */
     /* 通用規則 10.5px 會比本文 11px 還小，此處放大為 12px 作為標題層級 */
     .yt-save-cmp .yt-save-cap { margin-bottom: 0; font-size: 12px; }
     .yt-save-cmp p { margin: 0 0 6px; }
     .yt-save-cmp p:last-child { margin-bottom: 0; }
     .input-box input::placeholder { color: #b8b8b8; font-weight: 400; }
-    .yt-save { margin: 6px 0 16px; padding: 13px 14px 12px; border-radius: 12px; background: #FFF8E8; }
+    .yt-save { margin: 6px 0 16px; padding: 13px 14px 12px; border-radius: 12px; background: #F8F8F6; }
     .yt-save-l { font-size: 11.5px; color: #8A6218; font-weight: 600; }
     .yt-save-v { font-size: 25px; font-weight: 800; color: #7A5512; margin-top: 3px; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
 
@@ -4210,7 +4210,6 @@ if ("serviceWorker" in navigator) {
         </div>
         <div class="period-dots" id="ytPeriodDots"></div>
         <div class="payment-table" id="ytPeriodLines"></div>
-        <div id="ytPeriodNote"></div>
         <div class="apr-block" id="ytAprBlock">
           <div class="apr-footer apr-footer-screen">
             <span class="apr-label-wrap">
@@ -4910,7 +4909,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11I";
+const APP_VERSION = "2026.09.11J";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -15307,12 +15306,6 @@ window.addEventListener('resize', () => {
     // 期間表（可切換 合計／新青安／一般貸款）
     if (!(d.youthWan > 0 && d.genWan > 0)) periodSrc = 'all';
     renderPeriod();
-
-    const pn = [];
-    if (d.youthWan > 0) {
-      pn.push(`本表假設基準利率維持 ${num(Y('#ytBase'))}% 不變，調整時月付金會跟著變動。`);
-    }
-    Y('#ytPeriodNote').innerHTML = pn.map((t) => `<p class="yt-note">${t}</p>`).join('');
 
     if (typeof scheduleFitPaymentTable === 'function') scheduleFitPaymentTable();
     renderDetail();
