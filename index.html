@@ -3581,6 +3581,21 @@ if ("serviceWorker" in navigator) {
       .yt-opts.c1 .yt-opt small { font-size: 11px; }
     }
 
+    /* 一般貸款的金額保留到元：只在長數字放不下時增加欄寬。 */
+    #modeGeneral .input-box:has(> #price),
+    #modeGeneral .input-box:has(> #appraisal),
+    #modeGeneral .input-box:has(> #amount) { padding: 0; }
+    #modeGeneral .input-box > :is(#price, #appraisal, #amount) {
+      padding: 0 8px;
+      box-sizing: border-box;
+    }
+    #modeGeneral .input-box:has(> :is(#price, #appraisal, #amount)) > .unit {
+      padding-right: 8px;
+      margin-left: 4px;
+    }
+    #modeGeneral .form-grid.gl-money-wide > .field:nth-child(-n+4) {
+      grid-column: 1 / -1;
+    }
   </style>
   <!-- 匯出函式庫改成本地同源，Service Worker 才能預快取，離線冷啟動也能匯出。
        版本與原本 CDN 完全相同：html2canvas 1.4.1、jsPDF 2.5.1。 -->
@@ -3637,13 +3652,13 @@ if ("serviceWorker" in navigator) {
       <div class="field">
         <label>購屋總價</label>
         <div class="input-box">
-          <input type="text" id="price" class="calc-field" value="3000" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="price" class="calc-field" value="3000" readonly inputmode="none" autocomplete="off">
           <span class="unit">萬元</span>
         </div>
       </div>
       <div class="field">
-        <label class="label-cap">貸款金額<span class="yt-opt-tag">整數萬</span></label>
-        <div class="input-box readonly" title="依購屋總價與銀行鑑價取低，再按成數計算；未滿 1 萬元部分不計入。">
+        <label class="label-cap">貸款金額<span class="yt-opt-tag">整數元</span></label>
+        <div class="input-box readonly" title="依購屋總價與銀行鑑價取低，再按成數計算；不足 1 元部分不計入。">
           <input type="text" id="amount" readonly value="2,400" tabindex="-1" aria-readonly="true">
           <span class="unit">萬元</span>
         </div>
@@ -3658,7 +3673,7 @@ if ("serviceWorker" in navigator) {
       <div class="field">
         <label class="label-cap">銀行鑑價<span class="yt-opt-tag">選填</span></label>
         <div class="input-box">
-          <input type="text" id="appraisal" class="calc-field" value="" data-calc-integer="true" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="appraisal" class="calc-field" value="" readonly inputmode="none" autocomplete="off">
           <span class="unit">萬元</span>
         </div>
       </div>
@@ -4822,7 +4837,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11C";
+const APP_VERSION = "2026.09.11D";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5264,9 +5279,13 @@ function setRateSegmentEnd(index, rawTo) {
   rebuildRateSegmentsFromSplits(splits, rates, total);
 }
 let clearSnapshot = null;
-const FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v1';
+/* 小數萬元的新存檔獨立使用 v2；同源舊版仍寫 v1，不得蓋掉新版本的正式值。 */
+const FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v2';
 /* 「清空數值」前的原本數值：與試算數值分開存，關閉重開後「恢復數值」仍然有效 */
-const CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v1';
+const CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v2';
+const GENERAL_DECIMAL_MIGRATION_KEY = 'mortgage_decimal_migrated_v2';
+const LEGACY_FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v1';
+const LEGACY_CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v1';
 let showCumInterest = false;
 
 const FIELD_HINT_HTML = {
@@ -5853,14 +5872,40 @@ function persistFormState() {
   } catch (_) {}
 }
 
+/* 只在第一次使用 v2 時複製舊資料。所有必要讀取先完成，讀取失敗仍由
+   appStorage 暫停全頁寫回；寫入失敗仍保留 pending 與原本重試提示。
+   已存在的 v2（包括損壞資料與 null）一律優先，不回退到舊 v1。
+   null 是已確認沒有資料的墓碑；即使完成標記寫入失敗，也不讓舊版內容復活。 */
+function migrateGeneralDecimalStorage() {
+  let copies;
+  try {
+    if (appStorage.getItem(GENERAL_DECIMAL_MIGRATION_KEY) !== null) return;
+    const form = appStorage.getItem(FORM_STATE_STORAGE_KEY);
+    const snapshot = appStorage.getItem(CLEAR_SNAPSHOT_KEY);
+    copies = [];
+    if (form === null) copies.push([FORM_STATE_STORAGE_KEY,
+      appStorage.getItem(LEGACY_FORM_STATE_STORAGE_KEY) ?? 'null']);
+    if (snapshot === null) copies.push([CLEAR_SNAPSHOT_KEY,
+      appStorage.getItem(LEGACY_CLEAR_SNAPSHOT_KEY) ?? 'null']);
+  } catch (_) { return; }
+  let copied = true;
+  copies.forEach(([key, value]) => {
+    try { appStorage.setItem(key, value); } catch (_) { copied = false; }
+  });
+  // 有複製失敗時不宣告完成；下次只補缺少的 v2，絕不覆寫已成功的那份。
+  if (copied) {
+    try { appStorage.setItem(GENERAL_DECIMAL_MIGRATION_KEY, '1'); } catch (_) {}
+  }
+}
+
 function clearPersistedFormState() {
-  try { appStorage.removeItem(FORM_STATE_STORAGE_KEY); } catch (_) {}
+  try { appStorage.setItem(FORM_STATE_STORAGE_KEY, 'null'); } catch (_) {}
 }
 
 function persistClearSnapshot() {
   try {
     if (clearSnapshot) appStorage.setItem(CLEAR_SNAPSHOT_KEY, JSON.stringify(clearSnapshot));
-    else appStorage.removeItem(CLEAR_SNAPSHOT_KEY);
+    else appStorage.setItem(CLEAR_SNAPSHOT_KEY, 'null');
   } catch (_) {}
 }
 
@@ -5909,14 +5954,14 @@ function normalizeGeneralFormState(state) {
     return parsed.text;
   }
 
-  /* 購屋總價與銀行鑑價自 2026.09.04B 起是整數萬元欄位。舊版保存的 3123.45 這種
-     小數值不得四捨五入或截位後照樣顯示完成——那是拿另一筆條件冒充使用者的試算。
-     整格清空並由下方 out.repaired 接手，強制收起結果、按鈕回到「尚未計算」。 */
-  out.price = numField(state.price, { min: 1, max: PRICE_MAX_WAN, integer: true });
-  // 鑑價 0 一律視同未填；非 0 卻不合法（小數或超過上限）就是被系統改掉了，要標記
+  /* 購屋總價與銀行鑑價最多 4 位萬元小數（1 元）。先驗原文範圍再四捨五入，
+     畫面、raw 與保存只保留同一正式值；舊資料若超精度而被改值，仍由
+     decChanged / out.repaired 收起舊結果，不能沿用「已完成」。 */
+  out.price = numField(state.price, { min: 0.0001, max: PRICE_MAX_WAN, dec: MAX_AMOUNT_DECIMALS });
+  // 鑑價 0 一律視同未填；非 0 卻不合法（不足 1 元或超過上限）要保留修復標記。
   const apprRaw = str(state.appraisal);
-  out.appraisal = numField(state.appraisal, { min: 1, max: PRICE_MAX_WAN, integer: true, zeroIsBlank: true });
-  const apprDropped = apprRaw !== '' && !parseStoredNumeric(state.appraisal, { min: 1, max: PRICE_MAX_WAN, integer: true, zeroIsBlank: true }).ok;
+  out.appraisal = numField(state.appraisal, { min: 0.0001, max: PRICE_MAX_WAN, dec: MAX_AMOUNT_DECIMALS, zeroIsBlank: true });
+  const apprDropped = apprRaw !== '' && !parseStoredNumeric(state.appraisal, { min: 0.0001, max: PRICE_MAX_WAN, decimals: MAX_AMOUNT_DECIMALS, rounding: 'round', zeroIsBlank: true }).ok;
   /* 貸款成數是整數欄位。舊版接受 80.9 之後由 integer-only 的寫值路徑截成 80，
      等於系統自己改了貸款條件卻照樣顯示完成。非整數視為異常保存資料。 */
   out.ratio = numField(state.ratio, { min: 1, max: 100, integer: true });
@@ -6583,9 +6628,8 @@ function isRateInput(inputEl) {
   return YT_RATE_IDS.indexOf(inputEl.id) >= 0;
 }
 
-/* 一般貸款的購屋總價與銀行鑑價已改為整數萬元欄位（data-calc-integer），
-   由下面第一行直接回傳 0 位小數，不再需要 2 位小數的特例。
-   全域 MAX_AMOUNT_DECIMALS 仍維持 4：個人評估有自己的萬元政策。 */
+/* 金額最多 4 位萬元小數；成數、年限等明確宣告整數的欄位仍維持原規則。
+   個人評估的萬元截位與各模式利率精度由原本各自的政策處理。 */
 function getFieldMaxDecimals(inputEl) {
   if (!inputEl) return MAX_AMOUNT_DECIMALS;
   if (inputEl.dataset.calcInteger === 'true') return 0;
@@ -6593,11 +6637,12 @@ function getFieldMaxDecimals(inputEl) {
   return MAX_AMOUNT_DECIMALS;
 }
 
-/* 一般貸款的三個金額／成數欄位採「嚴格整數」：算式結果不是整數時不提交，
-   提示並清空欄位；不可沿用 integer-only 欄位既有的 Math.trunc()
-   ——那等於系統自己把 2279.79 改成 2279 之後照樣顯示「完成」。
-   僅限一般貸款這三格，新青安與個人評估的小數制度本次完全不動。 */
-const STRICT_INTEGER_FIELD_IDS = ['price', 'appraisal', 'ratio'];
+/* 一般貸款的貸款成數仍採嚴格整數，非整數算式不得截位後冒充原值。
+   總價與鑑價已允許 4 位萬元小數；新青安與個人評估的政策不變。 */
+const STRICT_INTEGER_FIELD_IDS = ['ratio'];
+function isGeneralWanAmountField(inputEl) {
+  return !!inputEl && (inputEl.id === 'price' || inputEl.id === 'appraisal');
+}
 function isStrictIntegerField(inputEl) {
   return !!inputEl && STRICT_INTEGER_FIELD_IDS.indexOf(inputEl.id) >= 0;
 }
@@ -6706,6 +6751,8 @@ function burdenFieldRangeHint(inputEl) {
 
 function clampFieldToast(inputEl, before, after) {
   if (before === after || before === '') return;
+  // 一般金額的合法 4 位四捨五入不是超限；拒絕後清空仍須說明上限。
+  if (isGeneralWanAmountField(inputEl) && after !== '') return;
   const id = inputEl.id;
   const burdenHint = after === '' ? burdenFieldRangeHint(inputEl) : '';
   if (burdenHint) {
@@ -7790,6 +7837,7 @@ function calcKeyboardDisplayExpr(expr) {
     if (typing[1].length <= dec) return s;
   }
   const head = calcKeyboard.exactHead;
+  const roundGeneralAmount = isGeneralWanAmountField(calcKeyboard.inputEl);
   if (calcKeyboard.strictInteger) {
     const exact = head && head.text === s ? head.rat : calcEvalExprExact(s);
     if (exact && !ratIsInt(exact)) {
@@ -7802,7 +7850,7 @@ function calcKeyboardDisplayExpr(expr) {
   }
   if (!calcKeyboard.strictInteger && head && head.text === s) {
     const dec = calcKeyboard.integerOnly ? 0 : calcKeyboard.maxDecimals;
-    const exactDisplay = calcExactAtPrecisionText(head.rat, dec, false);
+    const exactDisplay = calcExactAtPrecisionText(head.rat, dec, roundGeneralAmount);
     if (exactDisplay !== null) return exactDisplay;
   }
   const n = Number(s);
@@ -7812,7 +7860,7 @@ function calcKeyboardDisplayExpr(expr) {
   if (calcKeyboard.strictInteger && !Number.isInteger(n)) return s;
   const dec = calcKeyboard.integerOnly ? 0 : calcKeyboard.maxDecimals == null
     ? MAX_AMOUNT_DECIMALS : calcKeyboard.maxDecimals;
-  return calcDecimalAtPrecision(s, dec, false) ?? s;
+  return calcDecimalAtPrecision(s, dec, roundGeneralAmount) ?? s;
 }
 
 /* 編輯單一結果時，以畫面可見的數字為基礎；內部 expr 可能保留更多位數，
@@ -7828,6 +7876,7 @@ function calcUpdateDisplay() {
   const input = calcKeyboard.inputEl;
   if (!input) return;
   input.value = calcKeyboardDisplayExpr(calcKeyboard.expr);
+  if (isGeneralWanAmountField(input)) scheduleGeneralMoneyFit();
 }
 
 /* 正式提交的範圍與小數政策必須在有理數上完成，最後才轉 Number。
@@ -7912,9 +7961,8 @@ function calcCommitValue(rawExpr) {
       calcKeyboard.exprFull = null;
       return;
     }
-    /* 一般貸款的購屋總價／銀行鑑價／貸款成數：算式結果非整數就整筆不提交。
-       例如 3123 × 73% ＝ 2279.79，截成 2279 等於系統擅自改掉貸款條件。
-       提示並清空欄位與正式值，並明講欄位規則。 */
+    /* 一般貸款的貸款成數：算式結果非整數就整筆不提交，
+       提示並清空欄位與正式值；總價與鑑價依 4 位萬元小數政策提交。 */
     /* 判斷順序：有精確值就以「分母是不是 1」為準，浮點尾數完全不參與決策；
        算不出精確值才退回 Number.isInteger()。
        3123 × 73% 的精確值是 227979/100，分母不是 1，照樣退回並提示。 */
@@ -8655,7 +8703,7 @@ function openCalcKeyboard(inputEl, options) {
   calcKeyboard.prevValid = getCalcFieldRawString(inputEl);
   calcKeyboard.pristine = true;
   calcKeyboard.allowNegative = !!options.allowNegative;
-  /* 嚴格整數欄（price／appraisal／ratio）正式值仍只收整數，
+  /* 嚴格整數欄（一般貸款 ratio）正式值仍只收整數，
      但計算過程要能按小數點、輸入 0.6／0.73 這類運算元，
      所以不套 integer-mode（那會隱藏小數鍵並在中途截位）。
      整數限制改由提交時驗，見 calcCommitValue()。 */
@@ -8919,7 +8967,7 @@ function buildConditionsData() {
   syncGraceUnitFromDom();
   const graceVal = +$('#grace').value || 0;
   const graceText = graceVal === 0 ? '無' : `${graceVal} 年`;
-  const price = getCalcFieldNumeric($('#price'));
+  const priceYuan = getPriceYuan();
   const luxRow = luxCurrentRow();
   const luxHit = luxHitRow();
   const hasAppr = $('#appraisal') && getCalcFieldRawString($('#appraisal')) !== '';
@@ -8938,11 +8986,11 @@ function buildConditionsData() {
   const basic = [
     luxRow && ['高價住宅', luxText, { luxury: true, note: luxHit && luxLimitBits.length ? '（' + luxLimitBits.join('、') + '）' : '' }],
     hhCurrentRow() && ['貸款戶數', hhLabel()],
-    ['購屋總價', `${price.toLocaleString('zh-TW')} 萬元`],
-    hasAppr && ['銀行鑑價', `${apprWan.toLocaleString('zh-TW')} 萬元`],
-    hasAppr && apprWan > 0 && ['成數計算基礎', `${getLoanBasisWan().toLocaleString('zh-TW')} 萬元（取低）`],
+    ['購屋總價', `${fmtWan(priceYuan)} 萬元`],
+    hasAppr && ['銀行鑑價', `${fmtWan(getAppraisalYuan() ?? 0)} 萬元`],
+    hasAppr && apprWan > 0 && ['成數計算基礎', `${fmtWan(getLoanBasisYuan())} 萬元（取低）`],
     ['貸款成數', `${$('#ratio').value || 0} %`],
-    ['自備金額', `${roundWan(getSelfFundWan()).toLocaleString('zh-TW')} 萬元`],
+    ['自備金額', `${fmtWan(getSelfFundYuan())} 萬元`],
     ['貸款金額', `${fmtWan(getLoanYuan())} 萬元`],
     ['貸款年限', `${$('#term').value} 年`],
     ['寬限期', graceText],
@@ -9900,10 +9948,70 @@ const shareData = { title: context.title, text: context.text, files: [file] };
   }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
 }
 
+/* 僅調整一般貸款三個金額欄位的顯示，不讀寫正式數值。
+   字體至少 14px；不足時前四欄一起排成單欄，避免漏看小數尾數。 */
+let generalMoneyFitFrame = 0;
+function scheduleGeneralMoneyFit() {
+  if (generalMoneyFitFrame) return;
+  generalMoneyFitFrame = requestAnimationFrame(() => {
+    generalMoneyFitFrame = 0;
+    const fields = ['price', 'appraisal', 'amount'].map(id => document.getElementById(id));
+    const grid = fields[0]?.closest('.form-grid');
+    if (!grid || !grid.getBoundingClientRect().width) return;
+    const context = document.createElement('canvas').getContext('2d');
+    if (!context) return;
+    const wasWide = grid.classList.contains('gl-money-wide');
+    grid.classList.remove('gl-money-wide');
+    fields.forEach(field => field.style.removeProperty('font-size'));
+    const measure = field => {
+      const style = getComputedStyle(field);
+      context.font = style.font;
+      const size = parseFloat(style.fontSize);
+      const width = context.measureText(field.value).width;
+      const available = field.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 2;
+      return { size, width, available };
+    };
+    const minimum = 14;
+    if (fields.some(field => {
+      const m = measure(field);
+      return m.width > 0 && m.width * Math.min(1, minimum / m.size) > m.available;
+    })) grid.classList.add('gl-money-wide');
+    fields.forEach(field => {
+      const m = measure(field);
+      if (m.width > m.available && m.available > 0) {
+        field.style.fontSize = Math.max(minimum, Math.floor(m.size * m.available / m.width * 10) / 10) + 'px';
+      }
+      field.scrollLeft = 0;
+    });
+    if (wasWide !== grid.classList.contains('gl-money-wide') &&
+        isGeneralWanAmountField(calcKeyboard.inputEl) && calcKeyboard.backdropEl) {
+      scrollCalcTriggerIntoView(calcKeyboard.inputEl);
+    }
+  });
+}
+
+function initGeneralMoneyFit() {
+  const grid = document.getElementById('price')?.closest('.form-grid');
+  if (!grid) return;
+  if (typeof ResizeObserver === 'function') {
+    let lastWidth = -1;
+    new ResizeObserver(entries => {
+      const width = entries[0].contentRect.width;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      scheduleGeneralMoneyFit();
+    }).observe(grid);
+  }
+  window.addEventListener('resize', scheduleGeneralMoneyFit);
+  if (document.fonts) document.fonts.ready.then(scheduleGeneralMoneyFit);
+  scheduleGeneralMoneyFit();
+}
+
 /* 購屋總價或成數任一為空就沒有金額可言，顯示 0 會被當成「算出來是 0」 */
 function updateAmount() {
   const blank = getCalcFieldRawString($('#price')) === '' || getCalcFieldRawString($('#ratio')) === '';
   $('#amount').value = blank ? '' : fmtWan(getLoanYuan());
+  scheduleGeneralMoneyFit();
 }
 
 let calcPending = false;
@@ -9973,77 +10081,49 @@ function maybeRecalc() {
   autoRecalcGeneral();
 }
 
-/* 正式貸款本金（整數萬元）。與中國信託的輸入制度一致：試算的本金就是一個整數萬元。
-   basisWan × ratio 兩者都是安全整數，相乘仍是精確整數；先取 %100 的餘數再相減，
-   除以 100 時被除數必為 100 的倍數，完全避開浮點誤差，不必依賴 Math.floor 的邊界行為。
-   未滿 1 萬元的部分無條件捨去——四捨五入會讓實際成數略高於使用者設定的成數。 */
-function getLoanWan() {
-  const basis = getLoanBasisYuan();
-  if (basis === null) return 0;
-  const ratio = Number(getCalcFieldRawString($('#ratio')));
-  if (!Number.isInteger(ratio) || ratio < 1 || ratio > 100) return 0;
-  // 整數萬元欄位的正式值一定是 10000 的倍數；不是就代表資料異常，不猜、直接回 0
-  if (!Number.isSafeInteger(basis) || basis % 10000 !== 0) return 0;
-  const basisWan = basis / 10000;
-  const num = basisWan * ratio;
-  if (!Number.isSafeInteger(num)) return 0;
-  const wan = (num - (num % 100)) / 100;
-  return Number.isSafeInteger(wan) ? wan : 0;
-}
-
-/* 全 App 唯一的本金來源。月付、逐期明細、APR、試算條件、分享與四種匯出都走這裡，
-   不得再從購屋總價、鑑價或成數各自重算一次。 */
+/* 一般貸款的正式本金唯一來源（整數元）。總價／鑑價以十進位轉成元，
+   按成數乘除後才捨去不足 1 元；月付、明細、APR及輸出不得另算本金。 */
 function getLoanYuan() {
-  const yuan = getLoanWan() * 10000;
-  return Number.isSafeInteger(yuan) ? yuan : 0;
-}
-
-/* 送進還款排程前的最後把關。
-   兩個關鍵點：
-   1) basis % 10000 —— 舊版寫 % 100，那是「總價最多 2 位小數」時代的殘留。
-      整數萬元制度下基礎金額必為 10,000 元的倍數，用 % 100 等於根本沒擋住小數。
-   2) 本金必須「大於 0」，不能只檢查 Number.isSafeInteger()——0 也是安全整數，
-      會讓總價 1 萬×成數 1% 這種「捨去後為 0」的組合一路算到底，
-      畫面出現貸款總額 0 元、每月還款 0 元卻顯示「已自動計算完成」。 */
-function loanYuanIsSound() {
-  if (!integerWanFieldOk($('#price'), true)) return false;
-  if (!integerWanFieldOk($('#appraisal'), false)) return false;
+  if (!loanFieldsWellFormed()) return 0;
   const basis = getLoanBasisYuan();
-  if (basis === null || !Number.isSafeInteger(basis) || basis <= 0 || basis % 10000 !== 0) return false;
   const ratio = Number(getCalcFieldRawString($('#ratio')));
-  if (!Number.isInteger(ratio) || ratio < 1 || ratio > 100) return false;
-  const wan = getLoanWan();
-  if (!Number.isSafeInteger(wan) || wan < 1) return false;
-  const yuan = getLoanYuan();
-  return Number.isSafeInteger(yuan) && yuan > 0;
+  const yuan = Number(BigInt(basis) * BigInt(ratio) / 100n);
+  return Number.isSafeInteger(yuan) && yuan >= 0 ? yuan : 0;
 }
 
-/* 「欄位都合法、只是捨去後不滿 1 萬元」要跟「欄位本身有問題」分開講，
-   否則使用者看到「金額或成數不是有效數值」會以為自己打錯字。 */
+/* 僅作一般模式萬元數值相容入口；正式計算與格式化均以整元來源為準。 */
+function getLoanWan() {
+  return getLoanYuan() / 10000;
+}
+
+/* 合法欄位不代表可貸金額大於零；例如 1 元 × 80% 取整後為 0 元。 */
+function loanYuanIsSound() {
+  return loanFieldsWellFormed() && getLoanYuan() >= 1;
+}
+
+/* 分別驗總價與鑑價，不能因取低而讓較高的異常鑑價被忽略。 */
 function loanFieldsWellFormed() {
-  if (!integerWanFieldOk($('#price'), true)) return false;
-  if (!integerWanFieldOk($('#appraisal'), false)) return false;
+  if (!generalWanFieldOk($('#price'), true)) return false;
+  if (!generalWanFieldOk($('#appraisal'), false)) return false;
   const basis = getLoanBasisYuan();
-  if (basis === null || !Number.isSafeInteger(basis) || basis <= 0 || basis % 10000 !== 0) return false;
+  if (!Number.isSafeInteger(basis) || basis <= 0) return false;
   const ratio = Number(getCalcFieldRawString($('#ratio')));
   return Number.isInteger(ratio) && ratio >= 1 && ratio <= 100;
 }
 
-/* 單獨檢查一個整數萬元欄位。
-   鑑價非檢不可：貸款基礎是「取低」，鑑價 3000.5 萬遇上總價 3000 萬時
-   會因為取低而整個被略過，違法值就這樣混進來卻沒人發現。 */
-function integerWanFieldOk(el, required) {
+/* 一般總價／鑑價正式值最多 4 位萬元小數（1 元）。
+   先驗原文精度再換元，防止換算函式的截位掩蓋未正式提交的壞資料。 */
+function generalWanFieldOk(el, required) {
   if (!el) return !required;
   const s = getCalcFieldRawString(el);
   if (s === '') return !required;
-  const n = Number(s);
-  if (!Number.isFinite(n) || !Number.isInteger(n)) return false;
-  if (n === 0) return !required;          // 鑑價 0 視為未填
-  /* 上限也要在這裡擋。正常 input 事件與存檔正規化會夾限，但那些都能被繞過；
-     這是最後一道防線，不能假設前面一定有人擋過。鑑價即使因「取低」不影響
-     貸款基礎，本身超過上限就是非法欄位，不得放行。 */
-  return n > 0 && n <= PRICE_MAX_WAN;
+  if (!/^\d+(?:\.\d{0,4})?$/.test(s)) return false;
+  const yuan = wanStringToYuan(s);
+  if (!Number.isSafeInteger(yuan)) return false;
+  if (yuan === 0) return !required; // 鑑價 0 視同未填
+  return yuan >= 1 && yuan <= PRICE_MAX_WAN * 10000;
 }
+
 
 function isLoanFieldMissing(val) {
   const s = String(val ?? '').trim();
@@ -10133,11 +10213,10 @@ function getCalcValidationError() {
      寧可當成「還不能算」，也不要讓帶浮點尾數的本金流進每期計算。 */
   if (getCalcFieldRawString($('#price')) !== '' && getCalcFieldRawString($('#ratio')) !== ''
       && !loanYuanIsSound()) {
-    /* 欄位本身合法、只是按成數捨去後不滿 1 萬元 → 講清楚是金額太小，
-       不要用「不是有效數值」誤導使用者以為打錯字。兩種情況都一律擋下不試算。 */
+    /* 欄位合法但按成數取整後不足 1 元時，明確指出本金太小。 */
     return loanFieldsWellFormed()
       ? { labels: ['購屋總價', '貸款成數'], firstEl: $('#price'),
-          message: '貸款金額未滿 1 萬元，無法試算' }
+          message: '貸款金額不足 1 元，無法試算' }
       : { labels: ['購屋總價', '貸款成數'], firstEl: $('#price'),
           message: '金額或成數不是有效數值，請重新確認' };
   }
@@ -10178,13 +10257,13 @@ function getCalcValidationError() {
   return { el: firstEl, html: buildCalcMissingAlertHtml(labels) };
 }
 
+function getSelfFundYuan() {
+  if (!generalWanFieldOk($('#price'), true)) return 0;
+  return getPriceYuan() - getLoanYuan();
+}
+
 function getSelfFundWan() {
-  /* 自備款是「買價減掉銀行借的錢」；鑑價低於買價時差額同樣要自己補，故以購屋總價為基準。
-     購屋總價與正式本金都已是整數萬元，相減必為整數萬元。Math.round 只是防呆，
-     正常路徑下不會改變任何數字，畫面不再出現 854.0000 這種假精度。 */
-  const p = getPriceYuan();
-  if (p === null) return 0;
-  return Math.round((p - getLoanYuan()) / 10000);
+  return getSelfFundYuan() / 10000;
 }
 
 // 浮點相減會留下 599.9999999999999 這種尾數，統一四捨五入到 4 位再輸出
@@ -11339,10 +11418,10 @@ function generalCalcAlertIssues() {
     else if (value !== '' && !valid(value)) issues.push({ key: id, kind: 'invalid', label,
       details: [reason || '數值不符合欄位要求，請重新確認。'] });
   };
-  field('#price', '購屋總價', true, () => integerWanFieldOk($('#price'), true));
+  field('#price', '購屋總價', true, () => generalWanFieldOk($('#price'), true));
   field('#ratio', '貸款成數', true, value => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 100);
   field('#term', '貸款年限', true, value => !isLoanFieldMissing(value));
-  field('#appraisal', '銀行鑑價', false, () => integerWanFieldOk($('#appraisal'), false));
+  field('#appraisal', '銀行鑑價', false, () => generalWanFieldOk($('#appraisal'), false));
   const rates = rateType === 'single' ? [{ key: '#rate', label: '年利率', value: getCalcFieldRawString($('#rate')) }]
     : rateSegments.map((row, i) => ({ key: 'rate-' + i, label: rateSegments.length > 1 ? `第 ${i + 1} 段年利率` : '年利率', value: String(row.rate ?? '') }));
   rates.forEach(({ key, label, value }) => {
@@ -11355,8 +11434,8 @@ function generalCalcAlertIssues() {
   if (violation) issues.push({ key: violation.field, kind: 'invalid', label: violation.field === '#ratio' ? '貸款成數' : '寬限期', details: [violation.message] });
   if (getCalcFieldRawString($('#price')) !== '' && getCalcFieldRawString($('#ratio')) !== ''
       && !loanYuanIsSound() && loanFieldsWellFormed()) {
-    issues.push({ key: 'loan-amount', kind: 'invalid', label: '貸款金額未滿 1 萬元，無法試算',
-      details: ['請調整購屋總價或貸款成數。'] });
+    issues.push({ key: 'loan-amount', kind: 'invalid', label: '貸款金額不足 1 元，無法試算',
+      details: ['貸款金額取整後為 0 元。', '請調整購屋總價或貸款成數。'] });
   }
   return issues;
 }
@@ -11902,9 +11981,11 @@ $('#conditionsToggle').addEventListener('click', () => {
 
 applyLuxCaps();
 bindCapBadgeFill();
+initGeneralMoneyFit();
 updateAmount();
 initCalcFields();
 initTotalAmountToggle();
+migrateGeneralDecimalStorage();
 clearSnapshot = loadClearSnapshot();
 const persistedFormState = loadPersistedFormState();
 // 空狀態也要套用：那是使用者按過「清空數值」的結果，不是「沒有保存內容」
