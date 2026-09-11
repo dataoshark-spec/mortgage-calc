@@ -266,6 +266,7 @@ if ("serviceWorker" in navigator) {
          失去選取的那顆仍沿用上面的 0.15s 淡出，動畫沒有被整個拿掉。 */
       transition: none;
     }
+    .ver-switch, .ver-switch .ver-btn { touch-action: pan-y pinch-zoom; }
     .ver-btn:active { transform: scale(0.98); }
     .mode-panel { display: block; }
     .mode-panel[hidden] { display: none !important; }
@@ -2004,7 +2005,7 @@ if ("serviceWorker" in navigator) {
       row-gap: 2px;
       align-content: center;
       justify-content: center;
-      padding: 6px 2px;
+      padding: 4px 2px;
       line-height: 1.2;
     }
     .payment-row .period-mid.two i {
@@ -2032,8 +2033,7 @@ if ("serviceWorker" in navigator) {
       font-weight: 400;
       opacity: .72;
     }
-    /* 切換三種模式時列高一致：以雙行利率（合計）為基準，僅限新青安期間表 */
-    #ytPeriodLines .payment-row > div { min-height: 54px; }
+    /* 三模式使用共同列高與內距；內容較多時由內容自然撐高。 */
     /* 期數欄可承載第二行小標（例：最後一期） */
     #ytPeriodLines .payment-row .period-range,
     #periodLines .payment-row .period-range,
@@ -4822,7 +4822,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11B";
+const APP_VERSION = "2026.09.11C";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -10525,22 +10525,15 @@ function periodGroupLabel(group) {
   // 年顯示保留「開始遞減的年份」，完整適用期數列在下方。
   return genPeriodLabel(group.start, periodUnitPref === 'year' ? group.end : periodGroupDisplayEnd(group));
 }
-function periodGroupTag(group, lastSettlement = false, includeYearFinalSettlement = false) {
+function periodGroupTag(group, lastSettlement = false) {
   const pad = n => String(n).padStart(3, '0');
   let tag = '';
-  if (group.endpoint) {
-    if (periodUnitPref === 'year') {
-      const end = periodGroupDisplayEnd(group);
-      tag = pad(group.start) + '期' + (group.start === end ? '' : '～' + pad(end) + '期');
-    }
-  } else if (periodUnitPref === 'year' && (group.start % 12 !== 1 || group.end % 12 !== 0)) {
-    // 年中換率、尾期結清及單一期仍補上期數，讓同年不同金額可對回原逐期結果。
-    tag = pad(group.start) + '期' + (group.start === group.end ? '' : '～' + pad(group.end) + '期');
+  if (periodUnitPref === 'year') {
+    // 每列年度下都列實際適用期數；本金遞減首列仍沿用既有展示範圍。
+    const end = periodGroupDisplayEnd(group);
+    tag = pad(group.start) + '期' + (group.start === end ? '' : '～' + pad(end) + '期');
   }
-  // 一般模式明確啟用年檢視的全案末期標示；其餘模式保留既有呈現。
-  if (lastSettlement && (includeYearFinalSettlement || !(periodUnitPref === 'year' && group.note === '最後金額'))) {
-    tag += (tag ? ' · ' : '') + '最後一期';
-  }
+  if (lastSettlement) tag += (tag ? ' · ' : '') + '最後一期';
   return tag ? '<span class="pr-tag">' + tag + '</span>' : '';
 }
 function paymentNote(group) {
@@ -10700,7 +10693,7 @@ function renderPeriodLines() {
   const h0 = { year: '年度', period: '期數', month: '月數' }[periodUnitPref] || '期數';
   const rowsHtml = gr.map((l, i) => {
     const amountText = l.paymentDisplay + ' 元' + paymentNote(l);
-    const tailTag = periodGroupTag(l, i === gr.length - 1 && l.start === l.end, true);
+    const tailTag = periodGroupTag(l, i === gr.length - 1 && l.start === l.end);
     return `<div class="payment-row">
       <div class="period-range"><span>${periodGroupLabel(l)}</span>${tailTag}</div>
       <div class="period-mid">${l.rateText}</div>
@@ -13907,6 +13900,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   window.__syncRestoreBtn = function (mode) { syncRestoreBtn(mode); };
 
   const modeScroll = Object.create(null);
+  let modeRestoreSequence = 0;
   function currentScrollY() {
     return window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
   }
@@ -13916,7 +13910,9 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   }
   function restoreModeScroll(mode) {
     const target = modeScroll[mode] || 0;
+    const sequence = modeRestoreSequence;
     const jump = () => {
+      if (sequence !== modeRestoreSequence || document.body.dataset.mode !== mode) return;
       try { window.scrollTo({ top: target, left: 0, behavior: 'auto' }); }
       catch (e) { window.scrollTo(0, target); }
     };
@@ -13927,6 +13923,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
 
   function applyMode(mode, opts) {
     if (!panels.general) return;
+    modeRestoreSequence++;
     const prevMode = document.body.dataset.mode;
     if (prevMode && prevMode !== mode) modeScroll[prevMode] = currentScrollY();
     document.body.dataset.mode = mode;
@@ -13968,6 +13965,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
 
   btns.forEach((btn) => {
     btn.addEventListener('click', () => {
+      modeRestoreSequence++;
       const now = Date.now();
       const wasActive = btn.classList.contains('active');
       const dbl = (btn === _verLastBtn) && (now - _verLastClk < VER_DBL_MS);
@@ -13993,6 +13991,97 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
       applyMode(btn.dataset.mode);
     });
   });
+
+  /* 在上方模式列內拖過按鈕即時切換；點擊仍由原 click 處理。 */
+  function bindModeDrag() {
+    const bar = document.querySelector('.ver-switch');
+    if (!bar || !window.PointerEvent) return;
+    const pointers = new Set(), blockedPointers = new Set();
+    let drag = null, clickGuardUntil = 0;
+    function resetDoubleClick() {
+      _verLastClk = 0; _verLastBtn = null; _verWasActive = false;
+    }
+    function finishDrag(blockClick) {
+      const g = drag;
+      drag = null;
+      if (blockClick || g?.moved) {
+        clickGuardUntil = Date.now() + 650;
+        pointers.forEach(id => blockedPointers.add(id));
+        resetDoubleClick();
+      }
+      if (g) {
+        try { if (bar.hasPointerCapture(g.id)) bar.releasePointerCapture(g.id); } catch (_) {}
+      }
+    }
+    document.addEventListener('pointerdown', e => {
+      blockedPointers.delete(e.pointerId);
+      pointers.add(e.pointerId);
+      if (pointers.size !== 1) { finishDrag(true); return; }
+      const button = e.target instanceof Element ? e.target.closest('.ver-btn[data-mode]') : null;
+      if (!button || !bar.contains(button)) return;
+      // 新的按壓是獨立操作，不被前一次滑動的補點擊防護擋住。
+      clickGuardUntil = 0;
+      if (!e.isPrimary || e.button !== 0 || document.hidden) return;
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false, horizontal: false, mode: document.body.dataset.mode };
+    }, true);
+    document.addEventListener('pointermove', e => {
+      const g = drag;
+      if (!g || e.pointerId !== g.id) return;
+      if (document.hidden || pointers.size !== 1 || document.body.dataset.mode !== g.mode
+          || (e.pointerType === 'mouse' && !(e.buttons & 1))) { finishDrag(true); return; }
+      const dx = Math.abs(e.clientX - g.x), dy = Math.abs(e.clientY - g.y);
+      if (!g.horizontal) {
+        if (Math.max(dx, dy) < 8) return;
+        g.moved = true;
+        if (dy >= 8 && dy >= dx) { finishDrag(true); return; }
+        if (dx < dy * 1.4) return;
+        g.horizontal = true;
+        resetDoubleClick();
+        try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+      const r = bar.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+        finishDrag(true); return;
+      }
+      if (e.cancelable) e.preventDefault();
+      const button = Array.from(btns).find(btn => {
+        const b = btn.getBoundingClientRect();
+        return !btn.disabled && e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
+      });
+      if (!button || button.dataset.mode === g.mode) return;
+      g.mode = button.dataset.mode;
+      applyMode(g.mode);
+    }, { passive: false, capture: true });
+    document.addEventListener('pointerup', e => {
+      pointers.delete(e.pointerId);
+      if (blockedPointers.delete(e.pointerId)) clickGuardUntil = Date.now() + 650;
+      if (drag?.id === e.pointerId) finishDrag(false);
+    }, true);
+    document.addEventListener('pointercancel', e => {
+      pointers.delete(e.pointerId);
+      if (blockedPointers.delete(e.pointerId)) clickGuardUntil = Date.now() + 650;
+      if (drag?.id === e.pointerId) finishDrag(true);
+    }, true);
+    bar.addEventListener('lostpointercapture', e => {
+      // 觸控由按鈕的隱含捕捉移交至列時，也會冒泡 lostpointercapture。
+      if (e.target === bar && drag?.id === e.pointerId && !bar.hasPointerCapture(e.pointerId)) finishDrag(true);
+    });
+    bar.addEventListener('click', e => {
+      if (e.detail !== 0 && Date.now() < clickGuardUntil) {
+        e.preventDefault(); e.stopImmediatePropagation();
+      }
+    }, true);
+    // 已判定橫向拖移後，同時取消原生觸控手勢，避免快速滑動吃掉下一次點擊。
+    bar.addEventListener('touchmove', e => {
+      if (drag?.horizontal && e.cancelable) e.preventDefault();
+    }, { passive: false });
+    function cancelModeDrag() { finishDrag(true); pointers.clear(); }
+    window.addEventListener('blur', cancelModeDrag);
+    window.addEventListener('resize', cancelModeDrag);
+    document.addEventListener('visibilitychange', cancelModeDrag);
+    window.addEventListener('pagehide', cancelModeDrag);
+  }
+  bindModeDrag();
 
   let saved = 'general';
   try {
@@ -14926,6 +15015,10 @@ window.addEventListener('resize', () => {
     // 各模式的資料來源、利率序列、欄位標題
     const yRates = d.youthWan > 0 ? youthRates(d.n, d.st) : d.gRates;
     const gRates = d.gRates;
+    // 與本次試算條件相同：每筆貸款依完整有效利率組統一精度，各頁保持一致。
+    const ratePrecision = Object.fromEntries(youthConditionRateGroups(d).map(group => [group.kind, group.precision]));
+    const youthPrecision = ratePrecision.youth ?? 0;
+    const generalPrecision = ratePrecision.general ?? 0;
     // 合計按兩筆利率的聯集切段，不能只靠月付金額是否剛好改變。
     const combinedRates = both ? yRates.map((rate, i) => rate + '|' + gRates[i]) : yRates;
     const conf = {
@@ -14945,8 +15038,8 @@ window.addEventListener('resize', () => {
         const note = paymentNote(g);
         // 合計模式下兩筆貸款利率並存，加標籤避免被誤讀成相加
         const rateCell = (src === 'all' && both)
-          ? `<div class="period-mid two"><i>青安</i><b>${yRates[g.s - 1]}%</b><i>一般</i><b>${gRates[g.s - 1]}%</b></div>`
-          : `<div class="period-mid">${g.rate}%</div>`;
+          ? `<div class="period-mid two"><i>青安</i><b>${formatRateDisplay(yRates[g.s - 1], youthPrecision)}</b><i>一般</i><b>${formatRateDisplay(gRates[g.s - 1], generalPrecision)}</b></div>`
+          : `<div class="period-mid">${formatRateDisplay(g.rate, src === 'general' || d.youthWan <= 0 ? generalPrecision : youthPrecision)}</div>`;
         // 尾期本金會結清餘額，金額與前一段不同而單獨成列；標註避免年模式下看似重複
         const tailTag = periodGroupTag(g, gi === gr.length - 1 && g.s === g.e);
         return `<div class="payment-row"><div class="period-range"><span>${periodGroupLabel(g)}</span>${tailTag}</div>${rateCell}<div class="period-amount"><span class="amount-val">${yuan(g.pay) === '0' ? '0' : amt} 元${note}</span></div></div>`;
