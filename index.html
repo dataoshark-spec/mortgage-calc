@@ -4837,7 +4837,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.11D";
+const APP_VERSION = "2026.09.11E";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5919,7 +5919,9 @@ function loadClearSnapshot() {
     const state = normalizeGeneralFormState(saved);
     if (!state) return null;
     // 全空數字仍可承載還款方式或多段記憶；不能因正規化後空白而丟掉使用者的恢復點。
-    appStorage.setItem(CLEAR_SNAPSHOT_KEY, JSON.stringify(state));
+    // 讀取與驗證成功的恢復點仍可供本頁使用；寫回失敗由既有提示與 pending 重試處理。
+    // 不把寫回失敗誤當成沒有快照，也不在重試時重新載入已被使用者消耗的恢復點。
+    try { appStorage.setItem(CLEAR_SNAPSHOT_KEY, JSON.stringify(state)); } catch (_) {}
     return state;
   } catch (_) {
     return null;
