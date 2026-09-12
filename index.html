@@ -3210,6 +3210,8 @@ if ("serviceWorker" in navigator) {
     .bd-mini:active { transform: scale(0.94); }
     .bd-mini.on { background: var(--teal-light); color: var(--teal); }
     .export-capture .bd-mini { pointer-events: none; }
+    #bdResults .bd-summary-toggle { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    #bdResults .bd-summary-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
     #bdResults .summary-grid { margin-bottom: 16px; }
     #bdResults .summary-item .value { font-size: 1.18rem; }
     .gl-note em { font-style: normal; font-weight: 600; color: var(--teal-dark); }
@@ -4568,19 +4570,19 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="summary-grid">
-      <div class="summary-item">
+      <div class="summary-item bd-summary-toggle" role="button" tabindex="0" aria-pressed="false">
         <div class="label" id="bdResPriceLabel">預估可買總價</div>
         <div class="value" id="bdResPrice">—</div>
       </div>
-      <div class="summary-item">
+      <div class="summary-item bd-summary-toggle" role="button" tabindex="0" aria-pressed="false">
         <div class="label">預估可貸金額</div>
         <div class="value" id="bdResLoan">—</div>
       </div>
-      <div class="summary-item">
+      <div class="summary-item bd-summary-toggle" role="button" tabindex="0" aria-pressed="false">
         <div class="label">所需自備頭款</div>
         <div class="value" id="bdResDown">—</div>
       </div>
-      <div class="summary-item">
+      <div class="summary-item bd-summary-toggle" role="button" tabindex="0" aria-pressed="false">
         <div class="label">預估每月房貸</div>
         <div class="value" id="bdResPay">—</div>
       </div>
@@ -5008,7 +5010,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12O";
+const APP_VERSION = "2026.09.12P";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -13535,12 +13537,14 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }
     box.innerHTML = rows.map(renderCondItem).join('');
     const flow = bdFlowSnapshot;
+    const precision = getRateDisplayPrecision(flow.rateType === 'single'
+      ? [getCalcFieldRawString(B('#bdRate'))] : flow.segments.map(seg => seg.rate));
     const prominent = flow.rateType === 'single' || flow.segments.length === 1;
     const rateRows = prominent
-      ? [['年利率', formatRatePct(flow.rates[0].rate) + ' %']]
+      ? [['年利率', formatRatePct(flow.rates[0].rate, precision) + ' %']]
       : flow.segments.map(seg => [
           '第 ' + fmtPeriod(seg.from) + ' ~ ' + fmtPeriod(seg.to || res.term * 12) + ' 個月 年利率',
-          formatRatePct(seg.rate) + ' %']);
+          formatRatePct(seg.rate, precision) + ' %']);
     B('#bdConditionsRates').classList.remove('hidden');
     B('#bdConditionsRates').classList.toggle('single-rate', prominent);
     B('#bdConditionsRatesGrid').innerHTML = rateRows.map(renderRateCondItem).join('');
@@ -13634,6 +13638,50 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }).join('');
   }
 
+  /* 個評摘要顯示偏好：獨立於輸入與清空快照，不參與試算。 */
+  const BD_SUMMARY_DECIMALS_KEY = 'mortgage-burden-summary-decimals-v1';
+  let bdSummaryDecimals = false;
+  function loadBdSummaryDecimals() {
+    try { bdSummaryDecimals = appStorage.getItem(BD_SUMMARY_DECIMALS_KEY) === 'on'; } catch (_) {}
+  }
+  function syncBdSummaryToggle() {
+    document.querySelectorAll('#bdResults .bd-summary-toggle').forEach(item => {
+      item.setAttribute('aria-pressed', String(bdSummaryDecimals));
+      item.setAttribute('aria-label', item.querySelector('.label').textContent.trim() + '，' +
+        item.querySelector('.value').textContent.trim() + '，前三項萬單位顯示小數');
+      item.title = bdSummaryDecimals ? '點一下隱藏萬單位小數' : '點一下顯示萬單位小數';
+    });
+  }
+  function renderBdSummaryAmounts() {
+    const res = bdFlowSnapshot?.res;
+    if (!res) return;
+    [['#bdResPrice', res.price], ['#bdResLoan', res.loan], ['#bdResDown', res.needDown]].forEach(([id, amount]) => {
+      // 只裁掉顯示字串的小數；原始整元結果留在同次計算快照。
+      const text = fmtWan(amount);
+      B(id).textContent = (bdSummaryDecimals ? text : text.split('.')[0]) + ' 萬';
+    });
+  }
+  function toggleBdSummaryDecimals() {
+    if (!hasBdFlowResult()) return;
+    bdSummaryDecimals = !bdSummaryDecimals;
+    try { appStorage.setItem(BD_SUMMARY_DECIMALS_KEY, bdSummaryDecimals ? 'on' : 'off'); } catch (_) {}
+    renderBdSummaryAmounts();
+    syncBdSummaryToggle();
+  }
+  function initBdSummaryToggle() {
+    loadBdSummaryDecimals();
+    syncBdSummaryToggle();
+    document.querySelectorAll('#bdResults .bd-summary-toggle').forEach(item => {
+      item.addEventListener('click', toggleBdSummaryDecimals);
+      item.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          if (!event.repeat) toggleBdSummaryDecimals();
+        }
+      });
+    });
+  }
+
   function render() {
     const res = compute();
     if (res.err) return res;
@@ -13641,10 +13689,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     bdFlowSnapshot.graceGiven = has('#bdGrace');
     // 以同次計算結果產生條件與明細。
     B('#bdResPriceLabel').textContent = '預估可買總價';
-    B('#bdResLoan').textContent = wan(res.loan);
-    B('#bdResPrice').textContent = wan(res.price);
-    B('#bdResDown').textContent = wan(res.needDown);
+    renderBdSummaryAmounts();
     B('#bdResPay').textContent = yuan(res.payAfter);
+    syncBdSummaryToggle();
     renderConditions(res);
     bdGroups = groupPeriods(res.sched, res.grace * 12, res.term * 12);
     renderPeriodBlock();
@@ -14314,6 +14361,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
 
 
   /* ---------- 啟動 ---------- */
+  initBdSummaryToggle();
   const bdVersionLine = B('#bdVerLine');
   if (bdVersionLine) bdVersionLine.textContent = VERSION_LINE_TEXT();
   syncIncomeUnitField();
