@@ -5002,7 +5002,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12H";
+const APP_VERSION = "2026.09.12I";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -6116,7 +6116,7 @@ function glSyncAmountModeUi() {
   $('#glLoanModeToggle').hidden = !loan;
   $('#glPriceModeTag').hidden = !loan;
   $('#glLoanModeTag').hidden = loan;
-  $('#glPriceLabelText').textContent = loan && glAmountEstimate ? '推估總價' : '購屋總價';
+  $('#glPriceLabelText').textContent = '購屋總價';
   $('#modeGeneral').dataset.amountMode = glAmountMode;
   $('#amount').closest('.input-box').title = loan ? '' : '依購屋總價與銀行鑑價取低，再按成數計算；不足 1 元部分不計入。';
   $('#price').closest('.input-box').title = loan ? '依目前貸款金額與成數確認總價；修改金額、成數或鑑價後重新推估。' : '';
@@ -9452,7 +9452,7 @@ function buildConditionsData() {
   const basic = [
     luxRow && ['高價住宅', luxText, { luxury: true, note: luxHit && luxLimitBits.length ? '（' + luxLimitBits.join('、') + '）' : '' }],
     hhCurrentRow() && ['貸款戶數', hhLabel()],
-    [glAmountMode === 'loan' && glAmountEstimate ? '推估總價' : '購屋總價', `${fmtWan(priceYuan)} 萬元`],
+    ['購屋總價', `${fmtWan(priceYuan)} 萬元`],
     hasAppr && ['銀行鑑價', `${fmtWan(getAppraisalYuan() ?? 0)} 萬元`],
     hasAppr && apprWan > 0 && ['成數計算基礎', `${fmtWan(getLoanBasisYuan())} 萬元（取低）`],
     ['貸款成數', `${$('#ratio').value || 0} %`],
@@ -14817,12 +14817,12 @@ window.addEventListener('resize', () => {
     Y('#ytLoanModeTag').hidden = loan;
     Y('#ytPriceModeToggle').hidden = loan;
     Y('#ytLoanModeToggle').hidden = !loan;
-    Y('#ytPriceModeTitle').textContent = loan && ytAmountEstimate ? '推估總價' : '購屋總價';
+    Y('#ytPriceModeTitle').textContent = '購屋總價';
     priceEl.closest('.input-box').title = loan ? (ytAmountEstimate ? '依貸款金額與成數推估' : '沿用原購屋總價') : '';
     loanEl.closest('.input-box').title = loan ? '' : '依購屋總價、銀行鑑價與貸款成數自動計算';
     const problem = youthAmountInputProblem(), note = Y('#ytAmountModeNote');
-    note.hidden = !problem && !(loan && ytAmountEstimate);
-    note.textContent = problem ? problem.label : loan && ytAmountEstimate ? '推估總價用於本次資格與自備款試算。' : '';
+    note.hidden = !problem;
+    note.textContent = problem ? problem.label : '';
     note.classList.toggle('is-error', !!problem);
     if (typeof scheduleYouthAmountModeFit === 'function') scheduleYouthAmountModeFit();
   }
@@ -15344,7 +15344,7 @@ window.addEventListener('resize', () => {
     Y('#ytConditionsGrid').innerHTML = [
       ['貸款身分', CAP_NAME[kind] + '（' + wan(CAP[kind]) + ' 萬）'],
       yrActive() && ['購屋縣市', yrName()],
-      [d.priceEstimated ? '購屋總價（推估）' : '購屋總價', wanTxt(d.price) + ' 萬元'],
+      ['購屋總價', wanTxt(d.price) + ' 萬元'],
       hasAppr && ['銀行鑑價', wanTxt(d.appr) + ' 萬元'],
       hasAppr && ['成數計算基礎', wanTxt(d.basis) + ' 萬元（取低）'],
       ['貸款成數', d.ratio + ' %'],
@@ -17221,7 +17221,7 @@ window.addEventListener('resize', () => {
     if (yrActive()) L.push('購屋縣市：' + yrName());
     L.push('申貸年齡：' + Math.floor(num(Y('#ytAge'))) + ' 歲');
     L.push('本人年所得：' + wanTxt(num(Y('#ytIncome'))) + ' 萬元');
-    L.push((d.priceEstimated ? '購屋總價（推估）：' : '購屋總價：') + wanTxt(d.price) + ' 萬元');
+    L.push('購屋總價：' + wanTxt(d.price) + ' 萬元');
     if (raw(Y('#ytAppraisal')) !== '' && d.appr > 0) {
       L.push('銀行鑑價：' + wanTxt(d.appr) + ' 萬元');
       L.push('成數計算基礎：' + wanTxt(d.basis) + ' 萬元（取低）');
