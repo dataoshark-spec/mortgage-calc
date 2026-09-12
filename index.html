@@ -411,6 +411,7 @@ if ("serviceWorker" in navigator) {
     }
     /* 點擊熱區往外撐開，但右側不外擴以免與連結重疊 */
     .hero-lock::after { content: ''; position: absolute; top: -9px; bottom: -9px; left: -10px; right: 0; }
+    .hero-lock[hidden] { display: none !important; }
     .hero-lock svg { width: 17px; height: 17px; display: block; }
     .hero-lock .lk-shut { display: none; }
     .hero-lock[aria-pressed="true"] { opacity: 1; }
@@ -700,15 +701,7 @@ if ("serviceWorker" in navigator) {
     #ytSpecSheet .spec-hit { background: #BEEBDA; }
     #cbSpecSheet .spec-hit { background: #FFE9A8; }
 
-    /* 個人評估：正式欄位與同次結果的條件對照。 */
-    #bdAppliedConditions[hidden] { display: none !important; }
-    #bdAppliedConditions { margin: 16px 0 22px; padding: 14px 12px; background: #F2F6FA; border: 1px solid #CAD9E8; border-radius: 12px; color: #1D4B76; }
-    .bd-applied-title { display: block; font-size: 14px; margin-bottom: 10px; }
-    .bd-applied-head, .bd-applied-row { display: grid; grid-template-columns: 42px minmax(0,1fr) 14px minmax(0,1.2fr); gap: 6px; align-items: center; }
-    .bd-applied-head { color: #536A80; font-size: 11px; padding-bottom: 5px; }
-    .bd-applied-row { font-size: 13px; line-height: 1.6; padding: 6px 0; border-top: 1px solid #DCE6EF; }
-    .bd-applied-row span, .bd-applied-row strong { overflow-wrap: anywhere; }
-    #bdAppliedConditions p { font-size: 12px; line-height: 1.8; margin: 9px 0 0; overflow-wrap: anywhere; }
+    /* 個人評估結果說明 */
     .bd-result-note-line { display: block; margin: 7px 0; }
     #bdFlowSheet .bd-flow-more { margin: 10px 0; border: 1px solid #DCE6EF; border-radius: 8px; padding: 8px 10px; }
     #bdFlowSheet .bd-flow-more summary { color: #1D4B76; cursor: pointer; font-size: 12px; line-height: 1.8; }
@@ -4396,17 +4389,7 @@ if ("serviceWorker" in navigator) {
   <div class="main-panel">
     <div class="card">
 
-      <div class="section gl-region-sec" id="bdRegionSec">
-        <div class="label-cap">高價住宅<button type="button" class="yt-gear-btn" id="bdRegionSetBtn" title="設定高價住宅門檻與上限" aria-label="設定高價住宅門檻與上限" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="bdRegionOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="bdRegionOff" aria-pressed="true">啟用中</button></div>
-        <div class="yt-opts c3" id="bdRegionOpts"></div>
-      </div>
-
-      <div class="section gl-hh-sec" id="bdHhSec">
-        <div class="label-cap">貸款戶數<button type="button" class="yt-gear-btn" id="bdHhSetBtn" title="設定貸款戶數限制" aria-label="設定貸款戶數限制" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><span class="badge-lock" data-badge-lock="bdHhOff" aria-hidden="true"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><button type="button" class="gl-region-off" id="bdHhOff" aria-pressed="true">啟用中</button></div>
-        <div class="yt-opts c2" id="bdHhOpts"></div>
-      </div>
-      <p class="gl-note" id="bdLuxNote" hidden></p>
-      <div id="bdAppliedConditions" hidden></div>
+      <!-- 個人評估直接使用個人財務條件。 -->
 
       <div class="form-grid">
         <div class="field">
@@ -5012,7 +4995,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12D";
+const APP_VERSION = "2026.09.12F";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5660,20 +5643,18 @@ function applyOpticalCenter(toast) {
    徽章一點就翻轉審查開關，改完只有徽章文字變，容易誤觸又不易察覺。
    鎖住後徽章不可點；齒輪不受影響（開視窗＋按儲存兩道手續，不會不小心完成）。
    一般貸款與新青安各自一把鎖，狀態獨立保存。 */
-const BADGE_LOCK_KEY = { general: 'mortgage_badge_lock_general_v1', youth: 'mortgage_badge_lock_youth_v1',
-                         burden: 'mortgage_badge_lock_burden_v1' };
-/* 兩個齒輪視窗由一般貸款與個人評估共用，這個旗標記住這次開的是誰的設定 */
-let capDlgOwner = 'general';
-const BADGE_LOCK_IDS = { general: ['glRegionOff', 'glHhOff'], youth: ['ytRegionOff'],
-                         burden: ['bdRegionOff', 'bdHhOff'] };
+const BADGE_LOCK_KEY = { general: 'mortgage_badge_lock_general_v1', youth: 'mortgage_badge_lock_youth_v1' };
+const BADGE_LOCK_IDS = { general: ['glRegionOff', 'glHhOff'], youth: ['ytRegionOff'] };
 function currentLockMode() {
   const m = document.body.dataset.mode;
   return m === 'youth' ? 'youth' : m === 'burden' ? 'burden' : 'general';
 }
 function loadBadgeLock(mode) {
+  if (!BADGE_LOCK_KEY[mode]) return false;
   try { return appStorage.getItem(BADGE_LOCK_KEY[mode]) === '1'; } catch (_) { return false; }
 }
 function saveBadgeLock(mode, v) {
+  if (!BADGE_LOCK_KEY[mode]) return;
   try { appStorage.setItem(BADGE_LOCK_KEY[mode], v ? '1' : '0'); } catch (_) {}
 }
 function isBadgeLocked() { return loadBadgeLock(currentLockMode()); }
@@ -5682,11 +5663,12 @@ function syncBadgeLock() {
   const locked = loadBadgeLock(mode);
   const btn = $('#heroLock');
   if (btn) {
+    btn.hidden = mode === 'burden';
     btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
     btn.title = locked ? '已鎖定審查開關，點一下解除' : '鎖定本模式的審查開關';
   }
   // 三顆徽章旁的鎖頭都跟著當前模式的狀態走
-  ['general', 'youth', 'burden'].forEach((m) => {
+  ['general', 'youth'].forEach((m) => {
     const on = loadBadgeLock(m);
     BADGE_LOCK_IDS[m].forEach((id) => {
       const el = document.querySelector('[data-badge-lock="' + id + '"]');
@@ -5708,6 +5690,7 @@ function badgeLockBlocked() {
   if (!btn) return;
   btn.addEventListener('click', () => {
     const mode = currentLockMode();
+    if (!BADGE_LOCK_KEY[mode]) return;
     const next = !loadBadgeLock(mode);
     saveBadgeLock(mode, next);
     syncBadgeLock();
@@ -7102,9 +7085,7 @@ function getBdGraceMaxValue() {
   const el = document.getElementById('bdTerm');
   const t = el ? Number(getCalcFieldRawString(el)) : NaN;
   let max = (!Number.isFinite(t) || t <= 1) ? 0 : Math.min(5, Math.trunc(t) - 1);
-  // 貸款戶數若限制了寬限期（多數是「無寬限期」），與年限取嚴
-  const hc = (typeof window.__bdHhGraceCap === 'function') ? window.__bdHhGraceCap() : null;
-  if (hc !== null) max = Math.min(max, hc);
+  // 個人評估僅依貸款年限與最多 5 年限制寬限期。
   return max;
 }
 
@@ -11679,10 +11660,9 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     }
     return null;
   }
-  function openDlg(owner) {
-    capDlgOwner = owner === 'burden' ? 'burden' : 'general';
-    fill(capDlgOwner === 'burden' ? window.__bdGetHhRows() : hhRows);
-    editedFields = []; resetRows = false; openedIssues = capDlgOwner === 'burden' ? window.__bdGetHhIssues() : hhRowIssues;
+  function openDlg() {
+    fill(hhRows);
+    editedFields = []; resetRows = false; openedIssues = hhRowIssues;
     for (let i = 0; i < 4; i++) for (const [field, el] of Object.entries({ ratio: rEl(i), grace: gEl(i) })) {
       if (el) { if (hasStoredCapIssue(openedIssues, i, [field])) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
     }
@@ -11708,8 +11688,7 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     lastFocus = null;
   }
 
-  $('#glHhSetBtn') && $('#glHhSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg('general'); });
-  window.__bdOpenHhDlg = () => openDlg('burden');
+  $('#glHhSetBtn') && $('#glHhSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
   $('#glHhSetCancel') && $('#glHhSetCancel').addEventListener('click', closeDlg);
   $('#glHhSetReset') && $('#glHhSetReset').addEventListener('click', () => {
     fill(cloneHhRows(HH_DEFAULT_ROWS));
@@ -11727,19 +11706,14 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
       showAppAlert(bad.msg, () => { if (bad.el && bad.el.focus) bad.el.focus({ preventScroll: true }); });
       return;
     }
-    let householdOn;
-    if (capDlgOwner === 'burden') {
-      householdOn = window.__bdSetHhRows(rows, edits).on;
-    } else {
-      householdOn = hhOn;
-      hhRows = rows;
-      hhRowIssues = remainingIssues;
-      saveHhRows(hhRows);
-      // 存檔後由下方「已套用…」那則提示交代結果，這裡不再多跳一則上限提示
-      applyLuxCaps();
-      updateAmount();
-      maybeRecalc();
-    }
+    const householdOn = hhOn;
+    hhRows = rows;
+    hhRowIssues = remainingIssues;
+    saveHhRows(hhRows);
+    // 存檔後由下方「已套用…」那則提示交代結果，這裡不再多跳一則上限提示
+    applyLuxCaps();
+    updateAmount();
+    maybeRecalc();
     closeDlg();
     showToast('', { html: toastLines(
       tOk('已套用') + ' ' + tOk(HH_LABELS.length + '組'),
@@ -12395,8 +12369,8 @@ $('#conditionsToggle').addEventListener('click', () => {
   }
 
   function openDlg() {
-    fill(capDlgOwner === 'burden' ? window.__bdGetLuxRows() : luxRows);
-    editedFields = []; resetRows = false; openedIssues = capDlgOwner === 'burden' ? window.__bdGetLuxIssues() : luxRowIssues;
+    fill(luxRows);
+    editedFields = []; resetRows = false; openedIssues = luxRowIssues;
     for (let i = 0; i < 3; i++) for (const [field, el] of Object.entries({ name: nameEl(i), amount: amtEl(i), ratio: ratioEl(i), grace: graceEl(i) })) {
       if (el) { if (hasStoredCapIssue(openedIssues, i, [field])) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
     }
@@ -12424,8 +12398,7 @@ $('#conditionsToggle').addEventListener('click', () => {
     lastFocus = null;
   }
 
-  $('#glRegionSetBtn') && $('#glRegionSetBtn').addEventListener('click', (e) => { e.preventDefault(); capDlgOwner = 'general'; openDlg(); });
-  window.__bdOpenLuxDlg = () => { capDlgOwner = 'burden'; openDlg(); };
+  $('#glRegionSetBtn') && $('#glRegionSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
   $('#glRegionSetCancel') && $('#glRegionSetCancel').addEventListener('click', closeDlg);
   $('#glRegionSetReset') && $('#glRegionSetReset').addEventListener('click', () => {
     fill(cloneLuxRows(LUX_DEFAULT_ROWS));
@@ -12444,24 +12417,18 @@ $('#conditionsToggle').addEventListener('click', () => {
       return;
     }
     let n, regionOn;
-    if (capDlgOwner === 'burden') {
-      const r = window.__bdSetLuxRows(rows, edits);
-      n = r.count; regionOn = r.on;
-      closeDlg();
-    } else {
-      luxRows = rows;
-      luxRowIssues = remainingIssues;
-      saveLuxRows(luxRows);
-      n = luxValidIndexes().length;
-      syncLuxSelection();
-      saveLuxSel(luxSel);
-      // 同上：存檔結果交給下方「已套用…」那則提示
-      applyLuxCaps();
-      updateAmount();
-      maybeRecalc();
-      closeDlg();
-      regionOn = luxOn && n >= 1;
-    }
+    luxRows = rows;
+    luxRowIssues = remainingIssues;
+    saveLuxRows(luxRows);
+    n = luxValidIndexes().length;
+    syncLuxSelection();
+    saveLuxSel(luxSel);
+    // 同上：存檔結果交給下方「已套用…」那則提示
+    applyLuxCaps();
+    updateAmount();
+    maybeRecalc();
+    closeDlg();
+    regionOn = luxOn && n >= 1;
     // 一組都沒填時設定確實存了，但沒有門檻可比對，故第三行顯示未啟用
     showToast('', { html: toastLines(
       n === 0 ? tNo('無任何填入') + ' 已套用' : tOk('已套用') + ' ' + tOk(n + '個'),
@@ -12803,11 +12770,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     if (!valid) return text;
     if (r.requestedGrace !== r.grace) text += flowLine(flowCell('設定寬限期', r.requestedGrace + ' 年'), flowOp('→'), flowResult('本次採用', r.grace + ' 年', 'grace', true));
     if (s.configuredRatio !== r.ratioPct) text += flowLine(flowCell('設定成數', s.configuredRatio + '%'), flowOp('→'), flowResult('成數上限', r.ratioPct + '%', 'ratio', true));
-    const limits = [];
-    if (r.hhCap !== null) limits.push('成數最高 ' + r.hhCap + '%');
-    if (s.hhGrace !== null) limits.push('寬限最長 ' + s.hhGrace + ' 年');
-    if (limits.length) text += flowNote('戶數限制：' + limits.join('、') + '。');
-    if (r.luxTh !== null) text += flowNote('門檻 ' + flowWan(r.luxTh) + ' 萬；本次採' + (r.luxBound ? '達門檻' : '門檻以下') + '方案。');
+    // 依輸入成數及寬限期呈現。
     return text;
   }
   function bdFlowBudget(s, valid) {
@@ -12916,9 +12879,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   }
   function syncBdFlowEntry() {
     const valid = hasBdFlowResult();
-    const applied = B('#bdAppliedConditions');
-    applied.hidden = !valid || !applied.innerHTML;
-    if (!valid) applied.innerHTML = '';
+    // 結果直接採用個人評估欄位。
     const visible = document.body.dataset.mode === 'burden';
     B('#bdFlowBtn').hidden = !visible;
     B('#bdFlowSep').hidden = !visible;
@@ -12955,7 +12916,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
         html += flowLine(flowCell('可用自備款（萬）', flowWan(usable)), flowOp('×'), flowCell('成數 ÷ 自備比例', r.ratioPct + ' ÷ ' + (100 - r.ratioPct)), flowOp('→'), flowResult('自備款貸款上限（萬）', flowWan(byDown), 'byDown', true));
         reasons.push('自備款最多支持 ' + flowWan(byDown) + ' 萬貸款');
       }
-      if (r.ratioPct === 100) html += flowNote('成數上限 100%，貸款依月付能力與房價限制。');
+      if (r.ratioPct === 100) html += flowNote('成數上限 100%，貸款依月付能力計算。');
       const limit = Math.min(r.capacity, byDown, byPrice);
       if (byPrice < r.capacity) reasons.push('房價上限對應貸款額度 ' + flowWan(byPrice) + ' 萬');
       if (r.loan < limit) reasons.push('核對各期月付後，本次可貸 ' + flowWan(r.loan) + ' 萬');
@@ -13408,140 +13369,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     B('#bdAprBlock').classList.toggle('hidden', !bdShouldShowApr());
   }
 
-/* Display-only diagnosis. Does not change result, inputs, solver or App state.
- * The injected maxLoanForFn must use the SAME current method/monthly rate path
- * as the synchronous compute() that produced result.
- * Minimum down payment is for the stated reference price (the threshold
- * itself, in integer yuan), not a new optimization across every higher price.
- */
-function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
-  const out = (status, fields) => Object.assign({ status }, fields || {});
-  const whole = n => Number.isSafeInteger(n) && n >= 0;
-  const cap = n => n === null || whole(n);
-  if (!result || typeof result !== 'object' || result.err) {
-    return out('unavailable', { reason: 'no_valid_result' });
-  }
-  if (result.luxTh === null) return out('not_applicable', { reason: 'no_threshold' });
-  if (!whole(result.luxTh) || result.luxTh <= 0) {
-    return out('unavailable', { reason: 'invalid_threshold' });
-  }
-  const referencePriceYuan = result.luxTh;
-  if (!Number.isSafeInteger(referencePriceYuan)) {
-    return out('unavailable', { reason: 'unsafe_reference_price' });
-  }
-  const base = { thresholdYuan: result.luxTh, referencePriceYuan,
-    minimumScope: 'this_reference_price_only' };
-  if (result.luxBound === true) {
-    // The selected result is authoritative. Do not recompute or imply a
-    // shortfall in a plan that compute() already accepted in the high zone.
-    if (!whole(result.ratioPct) || result.ratioPct < 1 || result.ratioPct > 100 || !whole(result.grace)) {
-      return out('unavailable', Object.assign(base, { reason: 'invalid_selected_terms' }));
-    }
-    return out('selected_luxury', Object.assign(base, {
-      appliedRatioPct: result.ratioPct, appliedGraceYears: result.grace
-    }));
-  }
-  if (result.priceBound !== true) {
-    return out('not_applicable', Object.assign(base, { reason: 'not_normal_price_boundary' }));
-  }
-  const c = conditions;
-  if (!c || !whole(c.requestedRatioPct) || c.requestedRatioPct < 1 || c.requestedRatioPct > 100
-      || !cap(c.hhRatioCap) || c.hhRatioCap > 100 || !cap(c.luxRatioCap) || c.luxRatioCap > 100
-      || !cap(c.hhGraceCap) || !cap(c.luxGraceCap)
-      || !whole(result.term) || result.term < 1 || !whole(result.requestedGrace)
-      || result.requestedGrace >= result.term || !Number.isSafeInteger(result.term * 12)) {
-    return out('unavailable', Object.assign(base, { reason: 'invalid_conditions' }));
-  }
-  if (!whole(result.pay) || result.pay <= 0) {
-    return out('unavailable', Object.assign(base, { reason: 'no_positive_payment_capacity' }));
-  }
-  if (c.availableDownYuan !== null && !whole(c.availableDownYuan)) {
-    return out('unavailable', Object.assign(base, { reason: 'invalid_available_down' }));
-  }
-  const ratio = Math.min(c.requestedRatioPct, c.hhRatioCap === null ? 100 : c.hhRatioCap,
-    c.luxRatioCap === null ? 100 : c.luxRatioCap);
-  const grace = Math.min(result.requestedGrace, result.term - 1,
-    c.hhGraceCap === null ? result.term - 1 : c.hhGraceCap,
-    c.luxGraceCap === null ? result.term - 1 : c.luxGraceCap);
-  const terms = Object.assign(base, { appliedRatioPct: ratio, appliedGraceYears: grace,
-    payCapYuan: result.pay, totalMonths: result.term * 12, graceMonths: grace * 12 });
-  if (ratio <= 0) {
-    return out('no_financed_reference_plan', Object.assign(terms, { reason: 'zero_ratio_cap' }));
-  }
-  // Both capacity and the loan-to-value limit preserve integer yuan.
-  const principalLimitYuan = Number(BigInt(referencePriceYuan) * BigInt(ratio) / 100n);
-  if (principalLimitYuan < 1) {
-    return out('no_financed_reference_plan', Object.assign(terms, {
-      reason: 'reference_ratio_allows_no_positive_yuan_loan', principalLimitYuan
-    }));
-  }
-  if (typeof maxLoanForFn !== 'function') {
-    return out('unavailable', Object.assign(terms, { reason: 'missing_capacity_function' }));
-  }
-  let affordableLoanAtReferenceYuan;
-  try {
-    affordableLoanAtReferenceYuan = maxLoanForFn(result.pay, result.term * 12, grace * 12, principalLimitYuan);
-  } catch (_) {
-    return out('unavailable', Object.assign(terms, { reason: 'capacity_search_failed' }));
-  }
-  if (!whole(affordableLoanAtReferenceYuan) || affordableLoanAtReferenceYuan > principalLimitYuan) {
-    return out('unavailable', Object.assign(terms, { reason: 'invalid_capacity_result' }));
-  }
-  if (affordableLoanAtReferenceYuan === 0) {
-    return out('no_financed_reference_plan', Object.assign(terms, {
-      reason: 'no_affordable_positive_loan_at_reference', principalLimitYuan
-    }));
-  }
-  const minimumDownAtReferenceYuan = referencePriceYuan - affordableLoanAtReferenceYuan;
-  const usableDownYuan = c.availableDownYuan;
-  const shortfallYuan = usableDownYuan === null ? null : Math.max(0, minimumDownAtReferenceYuan - usableDownYuan);
-  const values = Object.assign(terms, { principalLimitYuan, affordableLoanAtReferenceYuan,
-    minimumDownAtReferenceYuan, availableDownInputYuan: c.availableDownYuan, usableDownYuan, shortfallYuan });
-  if (usableDownYuan === null) return out('reference_down_unknown', values);
-  if (shortfallYuan > 0) return out('reference_down_shortfall', values);
-  // Do not falsely describe insufficient funds if the fixed-price reference
-  // is affordable but the original selected result was the normal boundary.
-  return out('reference_down_sufficient', values);
-}
-
-  function renderBdAppliedConditions(snapshot) {
-    const box = B('#bdAppliedConditions'), r = snapshot.res;
-    if (!r.luxBound && !r.priceBound && snapshot.configuredRatio === r.ratioPct && r.requestedGrace === r.grace) {
-      box.innerHTML = ''; return;
-    }
-    const graceText = value => value > 0 ? value + ' 年' : '無寬限期';
-    const configuredGrace = snapshot.graceGiven ? graceText(r.requestedGrace) : '未填（按無寬限期）';
-    const line = (label, from, to) => '<div class="bd-applied-row"><span>' + label + '</span><span>' +
-      flowEscape(from) + '</span><span aria-hidden="true">→</span><strong>' + flowEscape(to) + '</strong></div>';
-    box.innerHTML = '<strong class="bd-applied-title">本次評估採用條件</strong>' +
-      '<div class="bd-applied-head"><span></span><span>欄位設定</span><span></span><span>本次採用</span></div>' +
-      line('成數', snapshot.configuredRatio + '%', '上限 ' + r.ratioPct + '%') +
-      line('寬限期', configuredGrace, graceText(r.grace)) +
-      '<p>' + (r.luxBound
-        ? '推估房價已達高價住宅門檻，已合併高價住宅與貸款戶數的適用限制。高價審查保留欄位設定；結果與明細依本次採用條件計算。'
-        : '本次採用門檻以下方案，依欄位設定與貸款戶數限制計算。未採用高價住宅條件的原因請看評估結果。') + '</p>';
-  }
-
-  function bdReferenceNotice(d) {
-    if (!d) return '';
-    const money = n => wan(n), g = n => n > 0 ? '寬限期 ' + n + ' 年' : '無寬限期';
-    const lead = d.referencePriceYuan
-      ? '以門檻總價 <em>' + money(d.referencePriceYuan) + '</em> 試算，' : '';
-    if (['reference_down_shortfall', 'reference_down_unknown', 'reference_down_sufficient'].includes(d.status)) {
-      let text = lead + '採成數上限 <em>' + d.appliedRatioPct + '%</em>、' + g(d.appliedGraceYears) +
-        '，並按本次月付預算檢查，至少需自備 <em>' + money(d.minimumDownAtReferenceYuan) + '</em>。';
-      if (d.status === 'reference_down_shortfall') text += '目前可用自備款 <em>' + money(d.usableDownYuan) +
-        '</em>，尚差 <em>' + money(d.shortfallYuan) + '</em>。';
-      else if (d.status === 'reference_down_unknown') text += '尚未填入實有自備款，請確認是否能準備這筆金額。';
-      else text += '這是門檻總價的參考試算；本次購屋方案仍以上方結果為準。';
-      return text;
-    }
-    if (d.status === 'no_financed_reference_plan') {
-      if (d.reason === 'zero_ratio_cap') return lead + '高價區的適用成數上限為 <em>0%</em>，沒有可試算的房貸金額。';
-      return lead + '依適用成數、寬限期及本次月付預算，無法取得至少 <em>1 元</em>的可負擔貸款。';
-    }
-    return '';
-  }
+  /* 個人評估結果沿用輸入條件與原還款明細。 */
 
   function renderNote(res) {
     const el = B('#bdResNote');
@@ -13553,15 +13381,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
         '寬限期結束後，每月 <em>' + rangeText(res.repayPayments) + '</em>。本金在剩下的 ' +
         (res.term - res.grace) + ' 年內償還，各期金額請看還款明細。');
     }
-    if (res.luxBound) {
-      lines.push('推估房價已達<em>高價住宅門檻</em>（' + wan(res.luxTh) +
-        '），本次已合併適用限制，採用成數上限 <em>' + res.ratioPct + '%</em>、' +
-        (res.grace > 0 ? '寬限期 <em>' + res.grace + ' 年</em>。' : '<em>無寬限期</em>。'));
-    } else if (res.priceBound) {
-      lines.push('本次最高推估房價 <em>' + wan(res.price) + '</em>，採用<em>門檻以下方案</em>。已分別評估門檻上下的條件，並非一律不能超過 ' + wan(res.luxTh) + '。');
-      const reference = bdReferenceNotice(bdFlowSnapshot.luxuryDiagnostic);
-      if (reference) lines.push(reference);
-    }
+    // 不套用住宅門檻與貸款戶數。
     if (!res.downGiven) {
       lines.push('<em>自備款尚未填入</em>：房價依月付能力與成數推估，需準備上方所列自備款；尚未確認你持有這筆資金。');
     } else if (res.downBound && !res.priceBound) {
@@ -13573,7 +13393,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
       lines.push('以<em>全期最高月付</em>（' + yuan(res.payAfter) + '）不超過可負擔月付為準，包含寬限期、利率變動與最後一期。');
     }
     lines.push('本評估以<em>' + (bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還') +
-      '</em>估算，依目前啟用的高價住宅與貸款戶數設定套用上限，未包含稅費、裝潢與其他購屋成本。');
+      '</em>估算，未包含稅費、裝潢與其他購屋成本。');
     el.innerHTML = lines.map(line => '<span class="bd-result-note-line">※ ' + line + '</span>').join('');
     el.hidden = false;
   }
@@ -13656,11 +13476,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     if (res.err) return res;
     bdFlowSnapshot = captureBdFlow(res);
     bdFlowSnapshot.graceGiven = has('#bdGrace');
-    bdFlowSnapshot.luxuryDiagnostic = bdLuxuryDiagnostics(res, {
-      requestedRatioPct: bdRequestedRatio(), hhRatioCap: bdHhRatioCap(), hhGraceCap: bdHhGraceCap(),
-      luxRatioCap: bdLuxRatioCap(), luxGraceCap: bdLuxGraceCap(), availableDownYuan: bdFlowSnapshot.down
-    }, maxLoanFor);
-    renderBdAppliedConditions(bdFlowSnapshot);
+    // 以同次計算結果產生條件與明細。
     B('#bdResPriceLabel').textContent = res.downGiven ? '可買房屋總價' : '推估房屋總價';
     B('#bdResLoan').textContent = wan(res.loan);
     B('#bdResPrice').textContent = wan(res.price);
@@ -13677,7 +13493,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   }
 
   const ERR_MSG = {
-    stored: '保存資料需修正，請確認標示的欄位與限制設定。',
+    stored: '保存資料需修正，請確認標示的欄位。',
     pay: '以目前的收入與負債，估不出可負擔的房貸金額。請確認收入、既有負債月付與收支比的設定。',
     dti: '收支比需大於 0%。',
     ratio: '預估貸款成數需大於 0%。',
@@ -13736,8 +13552,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
         label: fieldLabels[p] || enumLabels[p] || (segment ? '多段利率第 ' + (Number(segment[1]) + 1) + ' 段' : '多段利率'),
         details: ['保存資料需修正，請重新確認。'] });
     });
-    const cap = bdCapsProblem();
-    if (cap) cap.labels.forEach(label => issues.push({ key: 'cap-' + label, kind: 'invalid', label }));
+    // 僅列出實際輸入資料的錯誤。
     REQUIRED.forEach(([sel, label]) => {
       if (sel === '#bdRate' && bdRateType === 'multi') return;
       const value = raw(B(sel));
@@ -14023,196 +13838,27 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     });
   }
 
-  /* ---------- 高價住宅／貸款戶數審查（設定與另外兩個模式各自獨立） ---------- */
-  const K_LUX_ROWS = 'mortgage_bd_lux_rows_v1', K_LUX_SEL = 'mortgage_bd_lux_sel_v1',
-        K_LUX_ON = 'mortgage_bd_lux_on_v1', K_HH_ROWS = 'mortgage_bd_hh_rows_v1',
-        K_HH_SEL = 'mortgage_bd_hh_sel_v1', K_HH_ON = 'mortgage_bd_hh_on_v1';
-
-  let bdLuxRows = cloneLuxRows(LUX_DEFAULT_ROWS);
-  let bdHhRows = cloneHhRows(HH_DEFAULT_ROWS);
-  let bdLuxSel = 0, bdHhSel = 0, bdLuxOn = true, bdHhOn = true;
-
+  /* 個人評估不套用住宅／戶數審查；保留財務與欄位同步入口相容。 */
   const jset = (k, v) => { try { appStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   const jget = (k) => { try { const v = appStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
 
-  let bdLuxIssues = [], bdHhIssues = [];
-  let bdLuxOnIssue = null, bdHhOnIssue = null, bdLuxSelIssue = null, bdHhSelIssue = null;
-  function bdReadSetting(key) {
-    let rawValue;
-    try { rawValue = appStorage.getItem(key); }
-    catch (_) { return { present: true, value: null, raw: { readError: true }, parseError: true }; }
-    if (rawValue === null) return { present: false, value: undefined, raw: rawValue, parseError: false };
-    try { return { present: true, value: JSON.parse(rawValue), raw: rawValue, parseError: false }; }
-    catch (_) { return { present: true, value: null, raw: rawValue, parseError: true }; }
-  }
-  function bdCapsProblem() {
-    const problem = (kind, label) => ({ el: B(kind === 'hh' ? '#bdHhSetBtn' : '#bdRegionSetBtn'), labels: [label + '（保存設定需修正）'] });
-    if (bdHhOnIssue) return problem('hh', '貸款戶數啟用狀態');
-    if (bdHhOn) {
-      if (bdHhSelIssue) return problem('hh', '貸款戶數選項');
-      if (hasStoredCapIssue(bdHhIssues, bdHhSel, ['ratio','grace'])) return problem('hh', '貸款戶數');
-    }
-    if (bdLuxOnIssue) return problem('lux', '高價住宅啟用狀態');
-    if (bdLuxOn) {
-      if (bdLuxSelIssue) return problem('lux', '高價住宅縣市選項');
-      // 反推需先知道完整搜尋域。壞條件下算出的低房價不能證明較高區域無關。
-      const row = bdLuxRows[bdLuxSel];
-      if (hasStoredCapIssue(bdLuxIssues, bdLuxSel, ['name'])) return problem('lux', '高價住宅');
-      if (row && row.name !== '' && hasStoredCapIssue(bdLuxIssues, bdLuxSel, ['amount','ratio','grace'])) return problem('lux', '高價住宅');
-    }
-    return null;
-  }
-  function bdSaveCapRows(kind) {
-    const hh = kind === 'hh';
-    jset(hh ? K_HH_ROWS : K_LUX_ROWS, serializeStoredCapRows(hh ? bdHhRows : bdLuxRows, hh ? bdHhIssues : bdLuxIssues));
-  }
-  window.__bdGetLuxIssues = () => bdCopy(bdLuxIssues);
-  window.__bdGetHhIssues = () => bdCopy(bdHhIssues);
+  function bdCapsProblem() { return null; }
+  function bdHhRatioCap() { return null; }
+  function bdHhGraceCap() { return null; }
+  function bdLuxThreshold() { return null; }
+  function bdLuxRatioCap() { return null; }
+  function bdLuxGraceCap() { return null; }
+  function bdCapRatio() { return null; }
+  function bdCapGrace() { return null; }
 
-  function bdLuxValidIndexes() {
-    const out = [];
-    bdLuxRows.forEach((r, i) => {
-      if (String(r.name ?? '').trim() !== '' && luxNum(r.amount) > 0) out.push(i);
-    });
-    return out;
-  }
-  function syncBdLuxSel() {
-    if (bdLuxSelIssue || hasStoredCapIssue(bdLuxIssues, bdLuxSel)) return;
-    const idx = bdLuxValidIndexes();
-    if (!idx.length) { bdLuxSel = 0; return; }
-    if (idx.indexOf(bdLuxSel) < 0) bdLuxSel = idx[0];
-  }
-  function bdLuxActiveRow() {
-    if (!bdLuxOn || bdLuxOnIssue || bdLuxSelIssue || hasStoredCapIssue(bdLuxIssues, bdLuxSel)) return null;
-    const idx = bdLuxValidIndexes();
-    if (!idx.length) return null;
-    syncBdLuxSel();
-    return bdLuxRows[bdLuxSel] || null;
-  }
-  /* 高價住宅門檻（元）；沒有啟用或沒設定就回 null */
-  function bdLuxThreshold() {
-    const r = bdLuxActiveRow();
-    if (!r) return null;
-    const n = luxNum(r.amount);
-    return n > 0 ? n * 10000 : null;
-  }
-  function bdLuxRatioCap() {
-    const r = bdLuxActiveRow();
-    if (!r || r.ratio === '') return null;
-    const n = luxNum(r.ratio);
-    return Number.isFinite(n) ? n : null;
-  }
-  /* 貸款戶數與房價無關，直接當成成數欄位的上限（與一般貸款同樣會清掉超限的值） */
-  function bdHhRatioCap() {
-    if (!bdHhOn || bdHhOnIssue || bdHhSelIssue || hasStoredCapIssue(bdHhIssues, bdHhSel, ['ratio'])) return null;
-    const r = bdHhRows[bdHhSel];
-    if (!r || r.ratio === '') return null;
-    const n = luxNum(r.ratio);
-    return Number.isFinite(n) ? n : null;
-  }
-  function bdHhGraceCap() {
-    if (!bdHhOn || bdHhOnIssue || bdHhSelIssue || hasStoredCapIssue(bdHhIssues, bdHhSel, ['grace'])) return null;
-    const r = bdHhRows[bdHhSel];
-    if (!r || r.grace === '') return null;
-    const n = luxNum(r.grace);
-    return Number.isFinite(n) ? n : null;
-  }
-  window.__bdHhGraceCap = bdHhGraceCap;
-
-  function renderBdLuxOpts() {
-    const box = B('#bdRegionOpts'), off = B('#bdRegionOff'), sec = B('#bdRegionSec');
-    if (!box) return;
-    const idx = bdLuxValidIndexes();
-    const ready = idx.length >= 1;
-    const on = ready && bdLuxOn;
-    if (off) {
-      off.textContent = on ? '啟用中' : '未啟用';
-      off.setAttribute('aria-pressed', on ? 'true' : 'false');
-      off.title = ready ? (on ? '點擊暫時關閉高價住宅門檻' : '點擊重新套用高價住宅門檻')
-                        : '請先於齒輪內設定至少 1 組高價住宅';
-    }
-    if (sec) sec.classList.toggle('is-off', !on);
-    box.classList.toggle('c3', idx.length >= 3);
-    box.classList.toggle('c2', idx.length === 2);
-    if (!on) { box.innerHTML = ''; return; }
-    syncBdLuxSel();
-    box.innerHTML = idx.map((i) => {
-      const r = bdLuxRows[i];
-      return '<button type="button" class="yt-opt' + (i === bdLuxSel ? ' active' : '') +
-        '" data-bd-region="' + i + '"><b>' + escapeAlertHtml(r.name) + '</b><small>' +
-        luxNum(r.amount).toLocaleString('zh-TW') + ' 萬</small></button>';
-    }).join('');
-  }
-  function renderBdHhOpts() {
-    const box = B('#bdHhOpts'), off = B('#bdHhOff'), sec = B('#bdHhSec');
-    if (off) {
-      off.textContent = bdHhOn ? '啟用中' : '未啟用';
-      off.setAttribute('aria-pressed', bdHhOn ? 'true' : 'false');
-      off.title = bdHhOn ? '點擊暫時關閉貸款戶數限制' : '點擊重新套用貸款戶數限制';
-    }
-    if (sec) sec.classList.toggle('is-off', !bdHhOn);
-    if (!box) return;
-    if (!bdHhOn) { box.innerHTML = ''; return; }
-    box.innerHTML = HH_LABELS.map((label, i) => {
-      const r = bdHhRows[i] || { ratio: '', grace: '' };
-      const bits = [r.ratio === '' ? '成數不限' : '成數 ' + r.ratio + '%'];
-      if (r.grace === '0') bits.push('無寬限期');
-      else if (r.grace !== '') bits.push('寬限 ' + r.grace + ' 年');
-      return '<button type="button" class="yt-opt' + (i === bdHhSel ? ' active' : '') +
-        '" data-bd-hh="' + i + '"><b>' + escapeAlertHtml(label) + '</b><small>' +
-        bits.join('・') + '</small></button>';
-    }).join('');
-  }
-
-  /* 與一般貸款同一套寫法：判定依據與真正咬住的上限值上主題色，其餘維持內文色 */
-  function renderBdLuxNote() {
-    const el = B('#bdLuxNote');
-    if (!el) return;
-    const invalid = bdCapsProblem();
-    if (invalid) { el.hidden = false; el.textContent = '※ ' + invalid.labels.join('、'); return; }
-    const capText = (ratio, grace) => {
-      const parts = [];
-      if (ratio !== null) parts.push('貸款成數上限 <em>' + ratio + '%</em>');
-      if (grace !== null) parts.push(grace === 0 ? '<em>無寬限期</em>' : '寬限期上限 <em>' + grace + ' 年</em>');
-      return parts.length ? parts.join('、') : '<em>無上限</em>';
-    };
-    const items = [];
-    const row = bdLuxActiveRow();
-    if (row) {
-      items.push('可買總價達 <em>' + escapeAlertHtml(row.name) + ' ' +
-        luxNum(row.amount).toLocaleString('zh-TW') + ' 萬 高價住宅門檻</em> 時，' +
-        capText(bdLuxRatioCap(), bdLuxGraceCap()));
-    }
-    if (bdHhOn && bdHhRows[bdHhSel]) {
-      items.push('<em>' + escapeAlertHtml(HH_LABELS[bdHhSel]) + '</em>，' +
-        capText(bdHhRatioCap(), bdHhGraceCap()));
-    }
-    if (!items.length) { el.hidden = true; el.innerHTML = ''; return; }
-    el.hidden = false;
-    el.innerHTML = '※ ' + items.join('；') +
-      (items.length > 1 ? '。兩項限制同時適用時，從嚴認定。' : '。');
-  }
-
-  function bdLuxGraceCap() {
-    const r = bdLuxActiveRow();
-    if (!r || r.grace === '') return null;
-    const n = luxNum(r.grace);
-    return Number.isFinite(n) ? n : null;
-  }
-
-  /* 主欄位只套與房價無關的戶數上限；高價限制由分區求解套用，
-     不再把低於門檻的可行方案一併壓低，也不隨估算結果來回改欄位。 */
-  function bdCapRatio() { return bdHhRatioCap(); }
-  function bdCapGrace() { return bdHhGraceCap(); }
-  /* 寬限期可選上限：貸款年限減 1 年，與審查上限取嚴 */
+  /* 保留貸款年限、最多 5 年與既有欄位同步規則。 */
   function bdGraceMaxSelectable() {
     const byTerm = getBdGraceMaxValue();
     const byCap = bdCapGrace();
     return byCap === null ? byTerm : Math.min(byTerm, byCap);
   }
 
-  /* 上限收緊時把成數壓到上限（不是清空）——使用者已經選了戶數，
-     直接告訴他能貸多少，比留一格空白有用。本來就低於上限的值不動。 */
+  /* 依原 wanted 還原成數；不重造已清空的寬限期。 */
   function enforceBdHhCap() {
     let changed = false;
     const cap = bdCapRatio(), rEl = B('#bdRatio');
@@ -14231,7 +13877,7 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
     return changed;
   }
 
-  /* 徽章顯示上限並可點選填入；上限 0 年時寬限期整格反灰鎖住（比照一般貸款） */
+  /* 默認徽章與自然年限造成的寬限鎖定、快捷限制維持原樣。 */
   function syncBdCapBadges() {
     const cap = bdCapRatio();
     const rb = B('#bdRatioTag');
@@ -14261,97 +13907,10 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   }
 
   function applyBdCaps(opts) {
-    renderBdLuxOpts();
-    renderBdHhOpts();
     const changed = enforceBdHhCap();
     syncBdCapBadges();
-    renderBdLuxNote();
     if (!(opts && opts.quiet)) { persist(); markStale(); }
     return changed;
-  }
-
-  /* 給共用齒輪視窗呼叫的存取點 */
-  window.__bdGetLuxRows = () => cloneLuxRows(bdLuxRows);
-  window.__bdGetHhRows = () => cloneHhRows(bdHhRows);
-  window.__bdSetLuxRows = (rows, editedFields) => {
-    const remaining = clearStoredCapIssues(bdLuxIssues, editedFields);
-    const next = normalizeStoredCapRows(serializeStoredCapRows(rows, remaining), { kind: 'lux' });
-    bdLuxRows = next.rows; bdLuxIssues = next.issues; bdSaveCapRows('lux');
-    syncBdLuxSel(); if (!bdLuxSelIssue) jset(K_LUX_SEL, bdLuxSel);
-    applyBdCaps();
-    const count = bdLuxValidIndexes().length;
-    return { count, on: !bdLuxOnIssue && bdLuxOn && count >= 1 };
-  };
-  window.__bdSetHhRows = (rows, editedFields) => {
-    const remaining = clearStoredCapIssues(bdHhIssues, editedFields);
-    const next = normalizeStoredCapRows(serializeStoredCapRows(rows, remaining), { kind: 'hh' });
-    bdHhRows = next.rows; bdHhIssues = next.issues; bdSaveCapRows('hh');
-    applyBdCaps();
-    return { on: !bdHhOnIssue && bdHhOn };
-  };
-
-  B('#bdRegionSetBtn').addEventListener('click', (e) => {
-    e.preventDefault();
-    if (typeof window.__bdOpenLuxDlg === 'function') window.__bdOpenLuxDlg();
-  });
-  B('#bdHhSetBtn').addEventListener('click', (e) => {
-    e.preventDefault();
-    if (typeof window.__bdOpenHhDlg === 'function') window.__bdOpenHhDlg();
-  });
-  B('#bdRegionOpts').addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-bd-region]');
-    if (!btn) return;
-    const i = +btn.dataset.bdRegion;
-    if (!Number.isInteger(i) || (i === bdLuxSel && !bdLuxSelIssue)) return;
-    bdLuxSelIssue = null; bdLuxSel = i; jset(K_LUX_SEL, bdLuxSel);
-    applyBdCaps();
-  });
-  B('#bdHhOpts').addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-bd-hh]');
-    if (!btn) return;
-    const i = +btn.dataset.bdHh;
-    if (!Number.isInteger(i) || (i === bdHhSel && !bdHhSelIssue)) return;
-    bdHhSelIssue = null; bdHhSel = i; jset(K_HH_SEL, bdHhSel);
-    applyBdCaps();
-  });
-  B('#bdRegionOff').addEventListener('click', () => {
-    if (badgeLockBlocked()) return;
-    if (!bdLuxOnIssue && !bdLuxOn && !bdLuxValidIndexes().length) {
-      showToast('', { hint: true, hintHtml: hintLines('請先於「高價住宅」', '齒輪內設定 ' + tEm('至少1組'), '（高價住宅門檻設定）') });
-      return;
-    }
-    bdLuxOn = bdLuxOnIssue ? false : !bdLuxOn; bdLuxOnIssue = null; jset(K_LUX_ON, bdLuxOn);
-    applyBdCaps();
-    showToast('', { html: luxSwitchToastHtml(bdLuxOn) });
-  });
-  B('#bdHhOff').addEventListener('click', () => {
-    if (badgeLockBlocked()) return;
-    bdHhOn = bdHhOnIssue ? false : !bdHhOn; bdHhOnIssue = null; jset(K_HH_ON, bdHhOn);
-    applyBdCaps();
-    showToast('', { html: toastLines((bdHhOn ? tOk('已啟用') : tNo('已關閉')) + ' 貸款戶數審查') });
-  });
-
-  function loadBdCaps() {
-    const lr = bdReadSetting(K_LUX_ROWS), hr = bdReadSetting(K_HH_ROWS);
-    const lux = normalizeStoredCapRows(lr.value, { ...lr, kind: 'lux' });
-    const hh = normalizeStoredCapRows(hr.value, { ...hr, kind: 'hh' });
-    bdLuxRows = lux.rows; bdLuxIssues = lux.issues;
-    bdHhRows = hh.rows; bdHhIssues = hh.issues;
-    const loadSelected = (key, max) => {
-      const read = bdReadSetting(key);
-      if (!read.present) return { value: 0, issue: null };
-      const parsed = parseStoredNumeric(read.value, { allowBlank: false, allowMissing: false, min: 0, max, integer: true });
-      const fullText = typeof read.value !== 'string' || read.value === read.value.trim();
-      return !read.parseError && parsed.ok && fullText ? { value: parsed.number, issue: null }
-        : { value: 0, issue: { reason: read.parseError ? 'json' : parsed.reason, raw: read.raw } };
-    };
-    const ls = loadSelected(K_LUX_SEL, 2), hs = loadSelected(K_HH_SEL, 3);
-    bdLuxSel = ls.value; bdLuxSelIssue = ls.issue; bdHhSel = hs.value; bdHhSelIssue = hs.issue;
-    const lo = bdReadSetting(K_LUX_ON), ho = bdReadSetting(K_HH_ON);
-    bdLuxOnIssue = lo.present && (lo.parseError || typeof lo.value !== 'boolean') ? { reason: 'boolean', raw: lo.raw } : null;
-    bdHhOnIssue = ho.present && (ho.parseError || typeof ho.value !== 'boolean') ? { reason: 'boolean', raw: ho.raw } : null;
-    bdLuxOn = !lo.present || lo.value === true; bdHhOn = !ho.present || ho.value === true;
-    syncBdLuxSel(); bdSaveCapRows('lux'); bdSaveCapRows('hh');
   }
 
   /* ---------- 多段式利率 ---------- */
@@ -14597,7 +14156,6 @@ function bdLuxuryDiagnostics(result, conditions, maxLoanForFn) {
   if (bdVersionLine) bdVersionLine.textContent = VERSION_LINE_TEXT();
   syncIncomeUnitField();
   syncRateUI();
-  loadBdCaps();
   try { const c = appStorage.getItem(CLEAR_STORE); if (c) bdCleared = JSON.parse(c) || null; } catch (e) {}
   try {
     const v = appStorage.getItem(STORE);
@@ -15330,6 +14888,7 @@ window.addEventListener('resize', () => {
       if (typeof scheduleFitPaymentTable === 'function') scheduleFitPaymentTable();
       if (typeof window.__applyDesktopScale === 'function') window.__applyDesktopScale();
     }
+    try { if (navigator.vibrate) navigator.vibrate(10); } catch (_) {}
   }
 
   function updateYtAmount() {
