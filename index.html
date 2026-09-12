@@ -3716,9 +3716,15 @@ if ("serviceWorker" in navigator) {
 #bdFlowSheet .spec-sheet-scroll { padding: 4px 16px calc(20px + var(--safe-bottom)); scrollbar-color: #7d91a3 #142332; }
 #bdFlowSheet .bd-flow-wrap { max-width: 720px; }
 #bdFlowSheet .bd-text-flow { font-size: 13px; line-height: 1.75; color: #e0e9f2; }
-#bdFlowSheet .bd-t-section { padding: 10px 0; border-bottom: 1px solid #344555; }
-#bdFlowSheet .bd-t-section:last-child { border-bottom: 0; }
-#bdFlowSheet .bd-t-heading { display: flex; gap: 6px; padding: 4px 7px; margin: 0 0 6px; border-radius: 3px; background: #39352d; color: #d6e0e8; font-size: 13px; font-weight: 500; line-height: 1.6; }
+#bdFlowSheet .bd-t-section { padding: 10px; margin: 8px 0 0; border: 1px solid #344958; border-radius: 10px; background: #1d2d3b; }
+#bdFlowSheet .bd-t-heading { margin: 0 0 6px; padding: 0; font-size: 13px; font-weight: 500; line-height: 1.6; }
+#bdFlowSheet .bd-t-toggle { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 36px; padding: 6px 7px; border: 0; border-radius: 3px; background: #39352d; color: #d6e0e8; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#bdFlowSheet .bd-t-toggle:focus-visible { outline: 2px solid #f2c46b; outline-offset: 3px; }
+#bdFlowSheet .bd-t-title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+#bdFlowSheet .bd-t-chevron { flex: 0 0 auto; width: 6px; height: 6px; margin: -3px 3px 0 5px; border-right: 1px solid #a7b8c9; border-bottom: 1px solid #a7b8c9; transform: rotate(45deg); }
+#bdFlowSheet .bd-t-toggle[aria-expanded="false"] .bd-t-chevron { margin-top: 0; transform: rotate(-45deg); }
+#bdFlowSheet .bd-t-section.is-collapsed .bd-t-heading { margin-bottom: 0; }
+#bdFlowSheet .bd-t-content[hidden] { display: none !important; }
 #bdFlowSheet .bd-t-number { flex: 0 0 auto; }
 #bdFlowSheet .bd-t-line { margin: 0; overflow-wrap: anywhere; }
 #bdFlowSheet .bd-t-value { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -5010,7 +5016,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12P";
+const APP_VERSION = "2026.09.12Q";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -12997,10 +13003,50 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       bdTextValue(value, key, amount ? 'yuan' : unit) + (numeric && unit ? ' ' + flowEscape(unit) : '') +
       (label ? '<span class="bd-t-label">（' + flowEscape(label) + '）</span>' : '') + alternative + tail + '</div>';
   }
+  /* 公式流程收合偏好只控制顯示，獨立於試算輸入及清空快照。 */
+  const BD_FLOW_COLLAPSED_KEY = 'mortgage-burden-flow-collapsed-v1';
+  let bdFlowCollapsed = Object.create(null);
+  function loadBdFlowCollapsed() {
+    bdFlowCollapsed = Object.create(null);
+    try {
+      const saved = JSON.parse(appStorage.getItem(BD_FLOW_COLLAPSED_KEY));
+      if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return;
+      for (let step = 1; step <= 10; step++) {
+        if (Object.prototype.hasOwnProperty.call(saved, step) && typeof saved[step] === 'boolean') {
+          bdFlowCollapsed[step] = saved[step];
+        }
+      }
+    } catch (_) {}
+  }
+  function toggleBdFlowSection(button) {
+    const step = button.dataset.bdFlowToggle;
+    if (!/^(?:[1-9]|10)$/.test(step)) return;
+    const section = button.closest('.bd-t-section');
+    const content = section?.querySelector('.bd-t-content');
+    if (!section || !content) return;
+    const collapsed = bdFlowCollapsed[step] !== true;
+    bdFlowCollapsed[step] = collapsed;
+    section.classList.toggle('is-collapsed', collapsed);
+    button.setAttribute('aria-expanded', String(!collapsed));
+    content.hidden = collapsed;
+    try { appStorage.setItem(BD_FLOW_COLLAPSED_KEY, JSON.stringify(bdFlowCollapsed)); } catch (_) {}
+  }
+  function initBdFlowSections() {
+    loadBdFlowCollapsed();
+    B('#bdFlowBody').addEventListener('click', event => {
+      const button = event.target.closest('button[data-bd-flow-toggle]');
+      if (button && event.currentTarget.contains(button)) toggleBdFlowSection(button);
+    });
+  }
+
   function bdTextSection(number, title, html) {
-    return '<section class="bd-t-section" data-flow-step="' + number + '"><h3 class="bd-t-heading">' +
+    const collapsed = bdFlowCollapsed[number] === true;
+    const contentId = 'bdFlowStepBody' + number;
+    return '<section class="bd-t-section' + (collapsed ? ' is-collapsed' : '') + '" data-flow-step="' + number + '"><h3 class="bd-t-heading">' +
+      '<button type="button" class="bd-t-toggle" data-bd-flow-toggle="' + number + '" aria-expanded="' + !collapsed + '" aria-controls="' + contentId + '">' +
       '<span class="bd-t-number">' + ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'][number - 1] + '</span>' +
-      '<span>' + flowEscape(title) + '</span></h3>' + html + '</section>';
+      '<span class="bd-t-title">' + flowEscape(title) + '</span><span class="bd-t-chevron" aria-hidden="true"></span></button></h3>' +
+      '<div class="bd-t-content" id="' + contentId + '"' + (collapsed ? ' hidden' : '') + '>' + html + '</div></section>';
   }
   function bdTextRates(s, valid) {
     if (s.rateType === 'single') {
@@ -14361,6 +14407,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
 
 
   /* ---------- 啟動 ---------- */
+  initBdFlowSections();
   initBdSummaryToggle();
   const bdVersionLine = B('#bdVerLine');
   if (bdVersionLine) bdVersionLine.textContent = VERSION_LINE_TEXT();
