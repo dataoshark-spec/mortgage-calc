@@ -762,6 +762,46 @@ if ("serviceWorker" in navigator) {
     .bd-flow-status-label { color: var(--muted); margin-right: 2px; }
     .bd-flow-status-tag { background: var(--teal-light); border: 1px solid #CAD9E8; border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
 
+    /* C：個人評估五步公式；算子與運算項同組，完整結果另列。 */
+    #bdFlowSheet .bd-flow-intro { line-height: 1.6; margin-bottom: 12px; }
+    #bdFlowSheet .bd-flow-card { padding: 16px 12px 2px; }
+    #bdFlowSheet .bd-flow-group { margin-bottom: 14px; }
+    #bdFlowSheet .bd-flow-group + .bd-flow-group { padding-top: 14px; }
+    #bdFlowSheet .bd-flow-title { font-size: 14px; letter-spacing: .2px; margin-bottom: 8px; }
+    #bdFlowSheet .bd-flow-line { display: block; padding: 4px 0; }
+    #bdFlowSheet .bd-flow-expression { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    #bdFlowSheet .bd-flow-term { display: flex; align-items: center; gap: 5px; flex: 1 1 calc((100% - 12px) / 3); min-width: min-content; }
+    #bdFlowSheet .bd-flow-term:only-child { flex-basis: 100%; }
+    #bdFlowSheet .bd-flow-cell { min-width: 0; padding: 4px 2px; }
+    #bdFlowSheet .bd-flow-label { font-size: 11px; line-height: 1.45; margin-bottom: 3px; }
+    #bdFlowSheet .bd-flow-value { font-size: 15px; line-height: 1.5; white-space: nowrap; }
+    #bdFlowSheet .bd-flow-op { flex: 0 0 auto; min-width: 14px; font-size: 14px; line-height: 1.5; white-space: nowrap; }
+    #bdFlowSheet .bd-flow-answer { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+    #bdFlowSheet .bd-flow-answer > .bd-flow-result { flex: 1 1 0; padding: 7px 8px; box-shadow: none; }
+    #bdFlowSheet .bd-flow-stacked .bd-flow-expression { flex-direction: column; align-items: stretch; }
+    #bdFlowSheet .bd-flow-stacked .bd-flow-term { flex: 1 1 auto; width: 100%; }
+    #bdFlowSheet .bd-flow-note { background: none; padding: 0; margin: 6px 0; border-radius: 0; line-height: 1.7; }
+    #bdFlowSheet .bd-flow-conditions { display: flex; flex-wrap: wrap; gap: 5px 16px; color: var(--text); font-size: 13px; line-height: 1.7; }
+    #bdFlowSheet .bd-flow-condition { max-width: 100%; overflow-wrap: anywhere; }
+    #bdFlowSheet .bd-flow-rate-list { width: 100%; color: #536A80; font-size: 12px; line-height: 1.7; margin-top: 3px; overflow-wrap: anywhere; }
+    #bdFlowSheet .bd-flow-rate { display: block; }
+    #bdFlowSheet .bd-flow-pick { margin: 10px 0; gap: 8px; }
+    #bdFlowSheet .bd-flow-pick label { flex: 0 0 auto; }
+    #bdFlowSheet .bd-flow-period-status { margin: 0 0 8px; }
+    #bdFlowSheet .bd-flow-more { margin: 8px 0 0; padding: 7px 9px; }
+    #bdFlowSheet .bd-flow-more summary { font-size: 13px; line-height: 1.7; }
+    #bdFlowSheet .bd-flow-more .bd-flow-math { line-height: 1.7; }
+    #bdFlowSheet #bdFlowStatus { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0 0 10px; }
+    #bdFlowSheet .bd-flow-footer { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 10px 2px 0; overflow-wrap: anywhere; }
+    #bdFlowSheet .bd-flow-placeholder { font-variant-numeric: tabular-nums; }
+    @media(max-width:480px) {
+      #bdFlowSheet .bd-flow-term { flex-basis: calc((100% - 6px) / 2); }
+      #bdFlowSheet .bd-flow-term:only-child { flex-basis: 100%; }
+    }
+    @media(max-width:360px) {
+      #bdFlowSheet .bd-flow-value { font-size: 14px; }
+    }
+
     .clear-btn {
       background: var(--teal);
       color: #fff;
@@ -4950,7 +4990,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12B";
+const APP_VERSION = "2026.09.12C";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -12359,15 +12399,112 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   /* 公式頁只保存 render() 同次結果與條件；不另訂一套評估或提交規則。 */
   let bdFlowSnapshot = null;
   const flowEscape = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const flowNumber = n => Number(n).toLocaleString('zh-TW', { maximumFractionDigits: 6 });
-  // 金額從同次結果的整元值格式化；萬元最多 4 位，尾零可省略。
-  const flowWan = yuan => fmtWan(yuan);
-  const flowCell = (label, value, type = '', key = '') => '<div class="bd-flow-cell ' + type + '"><div class="bd-flow-label">' + flowEscape(label) + '</div><div class="bd-flow-value"' + (key ? ' data-flow-value="' + key + '"' : '') + '>' + flowEscape(value) + '</div></div>';
+  const flowNumber = n => n === null || n === undefined ? '—' : Number(n).toLocaleString('zh-TW', { maximumFractionDigits: 6 });
+  const flowWan = yuan => yuan === null || yuan === undefined ? '—' : fmtWan(yuan);
+  const flowCell = (label, value, type = '', key = '') => '<div class="bd-flow-cell ' + type + (value === '—' ? ' bd-flow-placeholder' : '') + '"><div class="bd-flow-label">' + flowEscape(label) + '</div><div class="bd-flow-value"' + (key ? ' data-flow-value="' + key + '"' : '') + '>' + flowEscape(value) + '</div></div>';
   const flowOp = text => '<span class="bd-flow-op">' + flowEscape(text) + '</span>';
-  const flowLine = (...items) => '<div class="bd-flow-line">' + items.join('') + '</div>';
-  const flowNote = text => '<p class="bd-flow-note">' + flowEscape(text) + '</p>';
-  const flowGroup = (title, body) => '<section class="bd-flow-group"><h3 class="bd-flow-title">' + title + '</h3>' + body + '</section>';
+  function flowLine(...items) {
+    const terms = [], answers = [];
+    let op = '';
+    items.forEach(item => {
+      if (item.startsWith('<span class="bd-flow-op"')) { op += item; return; }
+      if (item.startsWith('<div class="bd-flow-cell bd-flow-result')) {
+        answers.push('<div class="bd-flow-answer" data-flow-role="answer">' + op + item + '</div>');
+      } else terms.push('<div class="bd-flow-term" data-flow-role="term">' + op + item + '</div>');
+      op = '';
+    });
+    return '<div class="bd-flow-line" data-flow-role="line">' +
+      (terms.length ? '<div class="bd-flow-expression" data-flow-role="expression">' + terms.join('') + '</div>' : '') + answers.join('') + '</div>';
+  }
+  const flowNote = text => text ? '<p class="bd-flow-note">' + flowEscape(text) + '</p>' : '';
+  const flowGroup = (title, body, step) => '<section class="bd-flow-group" data-flow-step="' + step + '"><h3 class="bd-flow-title">' + flowEscape(title) + '</h3>' + body + '</section>';
   const flowResult = (label, value, key, soft = false) => flowCell(label, value, 'bd-flow-result' + (soft ? ' bd-flow-soft' : ''), key);
+  const flowCondition = text => '<span class="bd-flow-condition">' + flowEscape(text) + '</span>';
+  const flowStatus = valid => '<p id="bdFlowStatus" class="bd-flow-status" role="status" aria-live="polite">' + (valid ? '本次結果' : '待試算') + '</p>';
+  const flowFooter = () => '<p class="bd-flow-footer">尚未含稅費、裝潢等購屋成本。</p>';
+
+  /* 模板只讀已確認欄位；鍵盤預覽沒有 calcRaw 時視為未知。 */
+  function bdFlowCommitted(sel) {
+    const el = B(sel);
+    if (!el || bdStoredIssues.some(issue => issue.path === sel)) return null;
+    const text = (calcKeyboard.inputEl === el ? String(el.dataset.calcRaw ?? '') : raw(el)).trim();
+    if (!/^\d+(?:\.\d+)?$/.test(text)) return null;
+    const value = Number(text);
+    const maximum = resolveFieldMax(el);
+    if (!Number.isFinite(value) || value < 0 || (maximum !== null && value > maximum)) return null;
+    return { text, value };
+  }
+  function bdFlowInputMoney(sel) {
+    if (sel !== '#bdDown' && bdStoredIssues.some(issue => issue.path === 'incomeUnit')) return null;
+    if (!bdFlowCommitted(sel)) return null;
+    return sel === '#bdDown' ? bdDownYuan() : moneyYuan(sel);
+  }
+  function bdFlowTemplateInputs() {
+    const value = sel => bdFlowCommitted(sel)?.value ?? null;
+    const incomeModeKnown = !bdStoredIssues.some(issue => issue.path === 'incomeMode');
+    return { income: incomeModeKnown ? bdFlowInputMoney('#bdIncome') : null, debt: bdFlowInputMoney('#bdDebt'),
+      willing: bdFlowInputMoney('#bdWilling'), help: bdFlowInputMoney('#bdHelp'),
+      down: bdFlowInputMoney('#bdDown'), dti: value('#bdDti'), ratio: value('#bdRatio'),
+      term: value('#bdTerm'), grace: value('#bdGrace'), rate: value('#bdRate'),
+      willingGiven: bdFlowCommitted('#bdWilling') !== null, downGiven: bdFlowCommitted('#bdDown') !== null,
+      incomeMode: incomeModeKnown ? incomeMode : null, method: bdStoredIssues.some(issue => issue.path === 'bdMethod') ? null : bdMethod,
+      rateType: bdStoredIssues.some(issue => issue.path === 'bdRateType') ? null : bdRateType };
+  }
+  function bdFlowRateText(s, valid) {
+    if (s.rateType === 'single') return '<div class="bd-flow-rate-list"><span class="bd-flow-rate">年利率 ' +
+      flowEscape(flowNumber(valid ? s.rates[0].rate : s.rate)) + '%</span></div>';
+    if (s.rateType !== 'multi') return '<div class="bd-flow-rate-list"><span class="bd-flow-rate">利率方式 —</span></div>';
+    const segments = valid ? s.segments : bdSegs;
+    const brokenRows = !valid && bdStoredIssues.some(issue => issue.path === 'bdSegs.$rows');
+    return '<div class="bd-flow-rate-list">' + (brokenRows ? '<span class="bd-flow-rate">多段利率 —</span>' : segments.map((sg, i) => {
+      const known = key => valid || !bdStoredIssues.some(issue => issue.path === 'bdSegs.' + i + '.' + key);
+      const from = known('from') && Number(sg.from) > 0 ? sg.from : '—';
+      const to = !known('to') ? '—' : Number(sg.to) > 0 ? sg.to : Number(sg.to) === 0 ? '末' : '—';
+      const rate = known('rate') && String(sg.rate).trim() !== '' && Number.isFinite(Number(sg.rate)) ? flowNumber(Number(sg.rate)) : '—';
+      return '<span class="bd-flow-rate">' + flowEscape('第 ' + from + '～' + to + ' 期：' + rate + '%') + '</span>';
+    }).join('')) + '</div>';
+  }
+  function bdFlowTerms(s, valid) {
+    const r = valid ? s.res : null;
+    const term = valid ? r.term + ' 年（' + r.sched.length + ' 期）' : flowNumber(s.term) + ' 年';
+    const method = s.method === 'principal' ? '本金平均攤還' : s.method === 'amortize' ? '本息平均攤還' : '還款方式 —';
+    const grace = valid ? r.grace : s.grace;
+    let text = '<div class="bd-flow-conditions">' + flowCondition(term) + flowCondition(method) +
+      flowCondition(grace === null ? '寬限期 —' : grace > 0 ? '寬限期 ' + grace + ' 年' : '無寬限期') +
+      flowCondition((valid ? '成數上限 ' : '設定成數 ') + flowNumber(valid ? r.ratioPct : s.ratio) + '%') + '</div>' + bdFlowRateText(s, valid);
+    if (!valid) return text;
+    if (r.requestedGrace !== r.grace) text += flowLine(flowCell('設定寬限期', r.requestedGrace + ' 年'), flowOp('→'), flowResult('本次採用', r.grace + ' 年', 'grace', true));
+    if (s.configuredRatio !== r.ratioPct) text += flowLine(flowCell('設定成數', s.configuredRatio + '%'), flowOp('→'), flowResult('成數上限', r.ratioPct + '%', 'ratio', true));
+    const limits = [];
+    if (r.hhCap !== null) limits.push('成數最高 ' + r.hhCap + '%');
+    if (s.hhGrace !== null) limits.push('寬限最長 ' + s.hhGrace + ' 年');
+    if (limits.length) text += flowNote('戶數限制：' + limits.join('、') + '。');
+    if (r.luxTh !== null) text += flowNote('門檻 ' + flowWan(r.luxTh) + ' 萬；本次採' + (r.luxBound ? '達門檻' : '門檻以下') + '方案。');
+    return text;
+  }
+  function bdFlowBudget(s, valid) {
+    const r = valid ? s.res : null, annual = s.incomeMode === 'year';
+    const monthly = valid ? annual ? s.income / 12 : s.income : annual ? null : s.income;
+    let html = annual ? flowLine(flowCell('年收入（元）', flowNumber(s.income)), flowOp('÷'), flowCell('月份', '12'),
+      flowOp(valid && !Number.isInteger(monthly) ? '≈' : '→'), flowResult('月收入（元）', flowNumber(monthly), 'monthlyIncome', true)) : '';
+    const parts = [flowCell('月收入（元）', (valid && !Number.isInteger(monthly) ? '約 ' : '') + flowNumber(monthly), '', annual ? '' : 'monthlyIncome'),
+      flowOp('×'), flowCell('收支比', flowNumber(valid ? Number(s.dti) : s.dti) + '%')];
+    if (s.debt !== null && s.debt > 0) parts.push(flowOp('−'), flowCell('負債月付（元）', flowNumber(s.debt)));
+    if (s.willingGiven) {
+      parts.push(flowOp('→'), flowResult('月付上限（元）', valid ? flowNumber(r.ceiling) : '—', 'ceiling', true));
+      html += flowLine(...parts);
+      const willingParts = [flowCell('願付月付（元）', flowNumber(s.willing))];
+      if (s.help !== null && s.help > 0) willingParts.push(flowOp('+'), flowCell('協助月付（元）', flowNumber(s.help)));
+      willingParts.push(flowOp('與'), flowCell('月付上限（元）', valid ? flowNumber(r.ceiling) : '—'), flowOp('取低'),
+        flowResult('本次月付預算（元）', valid ? flowNumber(r.pay) : '—', 'pay'));
+      html += flowLine(...willingParts);
+    } else {
+      parts.push(flowOp('→'), flowResult('本次月付預算（元）', valid ? flowNumber(r.pay) : '—', 'pay'));
+      html += flowLine(...parts);
+      if (s.help !== null && s.help > 0) html += flowNote('未填願付金額，協助月付未計入。');
+    }
+    return html;
+  }
   function captureBdFlow(res) {
     // 與正式結果同時固定能力本金的明細，開啟公式頁時不再讀取可變的輸入狀態。
     const capacitySchedule = res.capacity === res.loan ? res.sched
@@ -12379,15 +12516,14 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       rateType: bdRateType, method: bdMethod, rates: bdPeriodList(res.term * 12),
       segments: bdRateType === 'multi' ? bdCopy(bdSegs) : [] };
   }
-
-  /* 長數字維持完整一行；只有放不下的算式改直排，不縮小整頁或截斷金額。 */
+  /* 只標記需要整組換行的算式；算子與數值的排列由公式專用 CSS 負責。 */
   function fitBdFlowRows() {
     const sheet = B('#bdFlowSheet');
     if (!sheet || sheet.hidden) return;
     const rows = [...sheet.querySelectorAll('.bd-flow-line')];
     rows.forEach(row => row.classList.remove('bd-flow-stacked'));
-    const wide = rows.filter(row => [...row.querySelectorAll('.bd-flow-value')].some(value => value.scrollWidth > value.clientWidth + 1));
-    wide.forEach(row => row.classList.add('bd-flow-stacked'));
+    rows.filter(row => [...row.querySelectorAll('.bd-flow-value')].some(value => value.scrollWidth > value.clientWidth + 1))
+      .forEach(row => row.classList.add('bd-flow-stacked'));
   }
 
   function renderBdFlowPeriod(snapshot, index) {
@@ -12397,21 +12533,21 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const opening = index ? r.sched[index - 1].balance : r.loan;
     const rate = formatDecimal(snapshot.rates[index].rate / 12 / 100, 14);
     const graceMonths = r.grace * 12;
-    let formula = '', periodNote = '';
+    let formula = '', periodNote = '', rounding = '月利率取小數第 14 位，利息四捨五入至元。';
     if (index < graceMonths) {
-      periodNote = '這一期在寬限期內，只繳利息，不償還本金。';
-      formula = flowLine(flowCell('寬限期內不還本金', '只繳利息'), flowOp('→'), flowResult('當期本金（元）', '0', 'principalBasis', true));
+      periodNote = '本期只繳利息。';
+      formula = flowLine(flowCell('寬限期', '只繳利息'), flowOp('→'), flowResult('當期本金（元）', '0', 'principalBasis', true));
     } else if (index === count - 1) {
-      periodNote = '最後一期償還全部剩餘本金，再加當期利息；先前整元計算的尾差在這一期結清。';
+      periodNote = '本期結清剩餘本金。';
+      rounding += '末期結清本金餘額與整元尾差。';
       formula = flowLine(flowCell('剩餘本金（元）', flowNumber(opening)), flowOp('='), flowResult('當期本金（元）', flowNumber(row.principal), 'principalBasis', true));
     } else if (snapshot.method === 'principal') {
       const n = count - graceMonths;
       let base = Math.ceil(r.loan / n);
       const adjusted = base * (n - 1) > r.loan;
       if (adjusted) base = Math.floor(r.loan / n);
-      periodNote = '本金平均攤還：每期償還基準本金，再加上當期利息；最後一期補足剩餘本金。';
-      formula = flowLine(flowCell('原始貸款（元）', flowNumber(r.loan)), flowOp('÷'), flowCell('還本期數', n), flowOp('→'), flowResult('每期基準本金（元）', flowNumber(base), 'basePrincipal', true)) +
-        flowNote(adjusted ? '這組金額若每期本金進位，會在最後一期前超付，因此改向下取整，餘數留给末期。' : '每期基準本金無條件進位至整元；實際還本不超過剩餘本金。');
+      formula = flowLine(flowCell('貸款本金（元）', flowNumber(r.loan)), flowOp('÷'), flowCell('還本期數', n), flowOp('→'), flowResult('每期基準本金（元）', flowNumber(base), 'basePrincipal', true));
+      rounding += adjusted ? '基準本金改向下取整，避免提前還超；餘額留至末期。' : '基準本金進位至元，末期結清剩餘本金。';
     } else {
       let anchorBalance = r.loan, anchorPeriod = graceMonths;
       for (let k = 1; k <= index; k++) {
@@ -12423,30 +12559,26 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       const n = count - anchorPeriod;
       const factor = rate === 0 ? 1 / n : exactAnnuityFactor(rate, n);
       const base = rate === 0 ? Math.ceil(anchorBalance / n) : ceilSchedulePayment(anchorBalance, factor);
-      periodNote = '本息平均攤還：本段月付先扣除當期利息，其餘償還本金；利率改變時依當時餘額與剩餘期數重算。';
       formula = (rate === 0
-        ? '<p class="bd-flow-math">年利率 0%：本段基準月付 = 本段起算本金 ÷ 剩餘還本期數。</p>'
-        : '<p class="bd-flow-math">本息平均攤還：月付係數 = r × (1 + r)<sup>n</sup> ÷ [(1 + r)<sup>n</sup> − 1]</p>') +
-        flowLine(flowResult('本段月付係數', String(factor), 'factor', true)) +
-        flowLine(flowCell('本段起算本金（元）', flowNumber(anchorBalance)), flowOp('×'), flowCell('上列月付係數', '係數'), flowOp('→'), flowResult('本段基準月付（元）', flowNumber(base), 'basePayment', true)) +
-        flowNote(rate === 0
-          ? '剩餘還本期數為 ' + n + ' 期，基準月付直接以本金除以期數後無條件進位至整元。'
-          : 'r 為月利率，n 為本段起算時的剩餘還本期數（本段 n = ' + n + '）。成長倍數與係數各四捨五入至小數第 14 位，月付無條件進位至整元；實際還本介於 0 與剩餘本金之間。') +
+        ? '<p class="bd-flow-math">0% 利率：基準月付＝本段本金÷剩餘還本期數。</p>'
+        : '<p class="bd-flow-math">月付係數＝r × (1 + r)<sup>n</sup> ÷ [(1 + r)<sup>n</sup> − 1]</p>') +
+        flowLine(flowResult('月付係數', String(factor), 'factor', true)) +
+        flowLine(flowCell('本段本金（元）', flowNumber(anchorBalance)), flowOp('×'), flowCell('月付係數', '係數'), flowOp('→'), flowResult('基準月付（元）', flowNumber(base), 'basePayment', true)) +
         flowLine(flowCell('基準月付（元）', flowNumber(base)), flowOp('−'), flowCell('當期利息（元）', flowNumber(row.interest)), flowOp('→'), flowResult('當期本金（元）', flowNumber(row.principal), 'principalBasis', true));
+      rounding += 'r 為月利率，n 為剩餘還本期數（本段 ' + n + ' 期）。' +
+        (rate === 0 ? '' : '成長倍數及係數取小數第 14 位。') +
+        '基準月付進位至元，還本不超過餘額，末期結清。';
     }
-    const visible = flowLine(flowCell('當期本金（元）', flowNumber(row.principal), '', 'principal'), flowOp('+'), flowCell('當期利息（元）', flowNumber(row.interest), '', 'interest'), flowOp('='), flowResult('當期月付（元）', flowNumber(row.payment), 'payment')) +
+    const visible = flowLine(flowCell('當期本金（元）', flowNumber(row.principal), '', 'principal'), flowOp('+'), flowCell('利息（元）', flowNumber(row.interest), '', 'interest'), flowOp('='), flowResult('當期月付（元）', flowNumber(row.payment), 'payment')) +
       flowLine(flowCell('期初本金（元）', flowNumber(opening)), flowOp('−'), flowCell('當期本金（元）', flowNumber(row.principal)), flowOp('='), flowResult('期末餘額（元）', flowNumber(row.balance), 'balance', true)) + flowNote(periodNote);
-    const details = flowLine(flowCell('當期年利率（%）', flowNumber(snapshot.rates[index].rate)), flowOp('÷'), flowCell('12 × 100', '1,200'), flowOp('→'), flowCell('月利率', 'r')) +
-      flowLine(flowResult('月利率 r（取小數第 14 位）', String(rate), 'monthlyRate', true)) +
-      flowLine(flowCell('期初本金（元）', flowNumber(opening)), flowOp('×'), flowCell('月利率', 'r'), flowOp('→'), flowResult('當期利息（元）', flowNumber(row.interest), 'interestBasis', true)) +
-      flowNote('月利率先四捨五入至小數第 14 位，利息再四捨五入至整元。箭頭表示依取整規則計算。') + formula;
+    const details = flowLine(flowCell('當期年利率（%）', flowNumber(snapshot.rates[index].rate)), flowOp('÷'), flowCell('12 × 100', '1,200'), flowOp('→'), flowResult('月利率 r', String(rate), 'monthlyRate', true)) +
+      flowLine(flowCell('期初本金（元）', flowNumber(opening)), flowOp('×'), flowCell('月利率', 'r'), flowOp('→'), flowResult('當期利息（元）', flowNumber(row.interest), 'interestBasis', true)) + formula + flowNote(rounding);
     const flags = [];
     if (index < graceMonths) flags.push('寬限期');
     if (index === count - 1) flags.push('最後一期');
     if (index === r.sched.findIndex(item => item.payment === r.payAfter)) flags.push('最高月付');
-    B('#bdFlowPeriodStatus').innerHTML = '<span class="bd-flow-status-label">本期狀態</span>' +
-      (flags.length ? flags : ['一般還款']).map(flag => '<span class="bd-flow-status-tag">' + flowEscape(flag) + '</span>').join('');
-    B('#bdFlowPeriodBody').innerHTML = visible + '<details id="bdFlowMore" class="bd-flow-more"' + (keepDetailsOpen ? ' open' : '') + '><summary class="bd-flow-math">查看利息與還本的詳細算式</summary>' + details + '</details>';
+    B('#bdFlowPeriodStatus').innerHTML = flags.map(flag => '<span class="bd-flow-status-tag">' + flowEscape(flag) + '</span>').join('');
+    B('#bdFlowPeriodBody').innerHTML = visible + '<details id="bdFlowMore" class="bd-flow-more"' + (keepDetailsOpen ? ' open' : '') + '><summary class="bd-flow-math">詳細算式</summary>' + details + '</details>';
     B('#bdFlowMore').addEventListener('toggle', fitBdFlowRows);
     fitBdFlowRows();
   }
@@ -12459,11 +12591,12 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const applied = B('#bdAppliedConditions');
     applied.hidden = !valid || !applied.innerHTML;
     if (!valid) applied.innerHTML = '';
-    const visible = document.body.dataset.mode === 'burden' && valid;
+    const visible = document.body.dataset.mode === 'burden';
     B('#bdFlowBtn').hidden = !visible;
     B('#bdFlowSep').hidden = !visible;
-    if (!valid && B('#bdFlowBody').innerHTML) B('#bdFlowBody').innerHTML = '';
+    if (!valid && B('#bdFlowBody').dataset.flowState === 'result') renderBdFlowTemplate();
     if (!visible && !bdFlowSheet.hidden) closeBdFlow();
+    else if (!bdFlowSheet.hidden && bdFlowSheet.dataset.modalClosing !== '1') renderBdFlow();
   }
 
   function renderBdFlowCapacity(s) {
@@ -12475,105 +12608,91 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       const perMillion = factor * 1000000;
       const approximateWan = r.pay / factor / 10000;
       const short = value => value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      html += '<p class="bd-flow-terms">' + (rate === 0
-        ? '先看概算：0% 利率將本金分 ' + count + ' 期償還。'
-        : '先看概算：' + flowEscape(r.term + ' 年、' + flowNumber(s.rates[0].rate) + '%、本息平均攤還。')) + '</p>' +
-        flowLine(flowCell('每貸 100 萬元的概算月付（元）', '約 ' + short(perMillion), '', 'estimatePerMillion')) +
-        flowLine(flowCell('每月預算（元）', flowNumber(r.pay)), flowOp('÷'), flowCell('上列概算月付', short(perMillion)), flowOp('×'), flowCell('貸款基準', '100 萬元')) +
-        flowLine(flowResult('概算貸款（萬元）', '約 ' + short(approximateWan), 'capacityEstimate', true)) +
-        flowNote('概算使用未取整元的月付，畫面顯示至小數第 2 位；尚未套用整元與末期補差。正式能力仍由下方完整還款檢查確認。');
+      html += flowLine(flowCell('每月預算（元）', flowNumber(r.pay)), flowOp('÷'), flowCell('每 100 萬概算月付（元）', '約 ' + short(perMillion), '', 'estimatePerMillion'), flowOp('×'), flowCell('貸款基準', '100 萬'),
+        flowOp('≈'), flowResult('概算（萬）', '約 ' + short(approximateWan), 'capacityEstimate', true));
     }
-    const peak = maxPaymentOf(s.capacitySchedule);
-    html += flowNote('依本次利率、年限、還款方式與寬限期，搜尋每一期都不超過月付預算的最大整元貸款。') +
-      flowLine(flowResult('月付條件下的貸款能力（萬元）', flowWan(r.capacity), 'capacity')) +
-      flowLine(flowCell('這筆貸款的全期最高月付（元）', flowNumber(peak), '', 'capacityPeakPayment'), flowOp('≤'), flowResult('每月預算（元）', flowNumber(r.pay), 'capacityPayLimit', true)) +
-      flowNote('上列最高月付取自 ' + flowWan(r.capacity) + ' 萬元貸款的 ' + count + ' 期正式還款表，包含寬限、利率變動與最後一期。' +
-        (r.downGiven ? '接著檢查可用自備款、成數與房價限制。' : '接著按成數與房價限制推估，並列出仍需準備的自備款。'));
+    html += flowLine(flowResult('月付可貸額度（萬）', flowWan(r.capacity), 'capacity')) +
+      flowNote('以各期月付不超過預算為準。');
     return html;
   }
-
-  function renderBdFlow() {
-    const body = B('#bdFlowBody');
-    if (!hasBdFlowResult()) { body.innerHTML = ''; return false; }
-    const s = bdFlowSnapshot, r = s.res, count = r.sched.length;
-    const monthly = s.incomeMode === 'year' ? s.income / 12 : s.income;
-    const monthlyText = (Number.isInteger(monthly) ? '' : '約 ') + flowNumber(monthly);
-    const ratioText = flowNumber(Number(s.dti)) + '%';
-    const priceLabel = r.downGiven ? '可負擔房價' : '推估房價';
-    let html = '<p class="bd-flow-intro">依本次採用的方案，從每月預算說明到' + priceLabel + '。' +
-      (r.downGiven ? '' : '自備款未填，仍須準備下方列出的需自備金額。') + '深藍色是這一步的結果。</p><div class="bd-flow-card">';
-    let income = s.incomeMode === 'year'
-      ? flowLine(flowCell('年收入（元）', flowNumber(s.income)), flowOp('÷'), flowCell('每年月份', '12'), flowOp(Number.isInteger(monthly) ? '=' : '≈'), flowResult('月收入（元）', flowNumber(monthly), 'monthlyIncome', true))
-      : '';
-    income += flowLine(flowCell('月收入（元）', monthlyText, '', s.incomeMode === 'month' ? 'monthlyIncome' : ''), flowOp('×'), flowCell('收支比', ratioText), flowOp('−'), flowCell('負債月付（元）', flowNumber(s.debt))) +
-      flowLine(flowResult('收支比月付上限（元）', flowNumber(r.ceiling), 'ceiling')) +
-      flowNote(s.incomeMode === 'year'
-        ? '收入、收支比與年收入除以 12 合併計算，扣除負債後才向下取整元，最低為 0；不拿畫面的月收入約數代替原值。'
-        : '扣除負債後，月付上限向下取整元，最低為 0。');
-    html += flowGroup('① 每月可以負擔多少', income);
-    const willing = s.willingGiven
-      ? flowLine(flowCell('願意負擔（元）', flowNumber(s.willing)), flowOp('+'), flowCell('他人協助（元）', flowNumber(s.help)), flowOp('='), flowResult('合計意願月付（元）', flowNumber(s.willing + s.help), 'willingTotal', true)) +
-        flowLine(flowCell('收支比上限（元）', flowNumber(r.ceiling)), flowOp('與'), flowCell('合計意願月付（元）', flowNumber(s.willing + s.help)), flowOp('取低'), flowResult('本次月付預算（元）', flowNumber(r.pay), 'pay'))
-      : flowLine(flowResult('本次月付預算（元）', flowNumber(r.pay), 'pay')) +
-        flowNote('未填「願意負擔月付」，直接採用收支比上限；他人協助不另外加計。填 0 與未填不同。');
-    html += flowGroup('② 本次採用的月付預算', willing);
-    const rates = s.rateType === 'single' ? '單一利率 ' + flowNumber(s.rates[0].rate) + '%'
-      : s.segments.map(sg => '第 ' + sg.from + '～' + (sg.to || count) + ' 期：' + flowNumber(sg.rate) + '%').join('；');
-    let terms = flowLine(flowResult('貸款年限', r.term + ' 年（' + count + ' 期）', 'totalMonths', true));
-    terms += r.requestedGrace !== r.grace
-      ? flowLine(flowCell('欄位設定寬限期', r.requestedGrace + ' 年'), flowOp('→'), flowResult('本次寬限期', r.grace + ' 年', 'grace', true))
-      : flowLine(flowResult('本次寬限期', r.grace > 0 ? r.grace + ' 年' : '無寬限期', 'grace', true));
-    terms += s.configuredRatio !== r.ratioPct
-      ? flowLine(flowCell('欄位設定成數', s.configuredRatio + '%'), flowOp('→'), flowResult('本次成數上限', r.ratioPct + '%', 'ratio', true))
-      : flowLine(flowResult('本次成數上限', r.ratioPct + '%', 'ratio', true));
-    terms += '<p class="bd-flow-terms">' + flowEscape(rates) + '<br>' + (s.method === 'principal' ? '本金平均攤還' : '本息平均攤還') +
-      (r.grace > 0 ? '；寬限期結束後，於剩餘 ' + (count - r.grace * 12) + ' 期償還本金。' : '。') + '</p>';
-    if (r.hhCap !== null || s.hhGrace !== null) terms += flowNote('貸款戶數設定：' + (r.hhCap !== null ? '成數上限 ' + r.hhCap + '%' : '未另限成數') + '；' + (s.hhGrace !== null ? '寬限上限 ' + s.hhGrace + ' 年' : '未另限寬限期') + '。');
-    if (r.luxTh !== null) terms += flowNote('高價住宅門檻 ' + flowWan(r.luxTh) + ' 萬元。達門檻的方案才套用高價限制；已分別檢查門檻上下的成數、寬限、自備款與月付條件，選出可行的最高房價。本次採用' + (r.luxBound ? '門檻以上' : '門檻以下') + '方案。');
-    else terms += flowNote('高價住宅審查未啟用或未設定門檻，本次不另分高價房價區間。');
-    html += flowGroup('③ 這次採用的貸款條件', terms);
-    html += flowGroup('④ 每月 ' + flowEscape(flowNumber(r.pay)) + ' 元，可以貸多少', renderBdFlowCapacity(s));
+  function bdFlowProperty(s) {
+    const r = s.res;
     const maxPrice = !r.luxBound && r.luxTh !== null ? r.luxTh - 1 : Infinity;
     const byPrice = Number.isFinite(maxPrice) ? Number(BigInt(maxPrice) * BigInt(r.ratioPct) / 100n) : Infinity;
+    let html = '';
     const reasons = [];
-    let property = '';
     if (r.downGiven) {
-      const usable = s.down;
-      const byDown = bdLoanByDown(usable, r.ratioPct);
-      property += flowLine(flowResult('可用自備款（萬元）', flowWan(usable), 'usableDown', true));
-      if (r.ratioPct < 100) property += '<p class="bd-flow-math">自備款可支持貸款 = 自備款 × 成數 ÷ (100% − 成數)</p>' +
-        flowLine(flowCell('自備款（萬元）', flowWan(usable)), flowOp('×'), flowCell('成數 ÷ 自備比例', r.ratioPct + ' ÷ ' + (100 - r.ratioPct)), flowOp('→'), flowResult('自備款貸款上限（萬元）', flowWan(byDown), 'byDown', true));
-      else property += flowNote('本次成數上限 100%，不以自備款反推貸款上限；仍檢查全期月付與房價區間。');
+      const usable = s.down, byDown = bdLoanByDown(usable, r.ratioPct);
+      if (r.ratioPct < 100 && byDown < r.capacity) {
+        html += flowLine(flowCell('可用自備款（萬）', flowWan(usable)), flowOp('×'), flowCell('成數 ÷ 自備比例', r.ratioPct + ' ÷ ' + (100 - r.ratioPct)), flowOp('→'), flowResult('自備款貸款上限（萬）', flowWan(byDown), 'byDown', true));
+        reasons.push('自備款最多支持 ' + flowWan(byDown) + ' 萬貸款');
+      }
+      if (r.ratioPct === 100) html += flowNote('成數上限 100%，貸款依月付能力與房價限制。');
       const limit = Math.min(r.capacity, byDown, byPrice);
-      if (byDown < r.capacity) reasons.push('可用自備款按 ' + r.ratioPct + '% 成數，最多支持 ' + flowWan(byDown) + ' 萬元貸款');
-      if (byPrice < r.capacity) reasons.push('門檻以下的房價上限，對應貸款額度 ' + flowWan(byPrice) + ' 萬元');
-      if (r.loan < limit) reasons.push('在上述額度內重新核對每一期月付後，取可負擔的最大整元金額');
-      property += flowLine(flowCell('本次貸款（萬元）', flowWan(r.loan), '', 'loan'), flowOp('+'), flowCell('可用自備款（萬元）', flowWan(usable)), flowOp(Number.isFinite(maxPrice) && r.loan + usable > maxPrice ? '→' : '='), flowResult(priceLabel + '（萬元）', flowWan(r.price), 'price'));
+      if (byPrice < r.capacity) reasons.push('房價上限對應貸款額度 ' + flowWan(byPrice) + ' 萬');
+      if (r.loan < limit) reasons.push('核對各期月付後，本次可貸 ' + flowWan(r.loan) + ' 萬');
+      html += flowLine(flowCell('本次貸款（萬）', flowWan(r.loan), '', 'loan'), flowOp('+'), flowCell('可用自備款（萬）', flowWan(usable), '', 'usableDown'),
+        flowOp(Number.isFinite(maxPrice) && r.loan + usable > maxPrice ? '→' : '='), flowResult('可負擔房價（萬）', flowWan(r.price), 'price'));
     } else {
       const basePriceYuan = Number((BigInt(r.capacity) * 100n + BigInt(r.ratioPct) - 1n) / BigInt(r.ratioPct));
       const priceLimit = Number(BigInt(r.price) * BigInt(r.ratioPct) / 100n);
-      property += flowNote('自備款未填，先由貸款能力除以成數，向上取整元推估房價，確保房價成數額度足以容納貸款；下方需自備金額仍須另外準備。') +
-        flowLine(flowCell('貸款能力（萬元）', flowWan(r.capacity)), flowOp('÷'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('推估房價（萬元）', flowWan(basePriceYuan), 'priceBeforeZone', true)) +
-        flowLine(flowCell(priceLabel + '（萬元）', flowWan(r.price), '', 'price'), flowOp('×'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'), flowResult('房價成數額度（萬元）', flowWan(priceLimit), 'priceLimit', true)) +
-        flowLine(flowResult('本次貸款（萬元）', flowWan(r.loan), 'loan'));
-      if (basePriceYuan > r.price) reasons.push('推估房價受本次門檻以下的房價上限限制');
-      if (priceLimit < r.capacity) reasons.push('房價按 ' + r.ratioPct + '% 成數向下取整元，可貸額度為 ' + flowWan(priceLimit) + ' 萬元');
-      if (r.loan < Math.min(r.capacity, priceLimit)) reasons.push('在此額度內重新核對全期月付後，取可負擔的最大整元金額');
+      html += flowLine(flowCell('月付可貸額度（萬）', flowWan(r.capacity)), flowOp('÷'), flowCell('成數上限', r.ratioPct + '%'), flowOp('→'),
+        flowResult(basePriceYuan === r.price ? '推估房價（萬）' : '限制前推估房價（萬）', flowWan(basePriceYuan), basePriceYuan === r.price ? 'price' : 'priceBeforeZone'));
+      if (basePriceYuan !== r.price) html += flowLine(flowResult('本次推估房價（萬）', flowWan(r.price), 'price'));
+      if (priceLimit < r.capacity) reasons.push('房價按 ' + r.ratioPct + '% 成數，可貸上限 ' + flowWan(priceLimit) + ' 萬');
+      if (r.loan < Math.min(r.capacity, priceLimit)) reasons.push('核對各期月付後，本次可貸 ' + flowWan(r.loan) + ' 萬');
+      html += flowLine(flowResult('本次貸款（萬）', flowWan(r.loan), 'loan', true));
+      html += flowNote('自備款未填，仍需準備下列金額。');
     }
-    if (r.capacity !== r.loan) property += flowNote('月付能力為 ' + flowWan(r.capacity) + ' 萬元，本次貸款為 ' + flowWan(r.loan) + ' 萬元。原因：' + reasons.join('；') + '。');
-    else property += flowNote((r.downGiven ? '可用自備款、成數與房價' : '成數與房價') + '條件檢查後，本次貸款與前一步的月付能力相同。');
-    if (Number.isFinite(maxPrice)) property += flowNote('本次採門檻以下方案，房價最高 ' + flowWan(maxPrice) + ' 萬元，對應成數額度 ' + flowWan(byPrice) + ' 萬元；超過時取此房價上限。');
-    property += flowLine(flowCell(priceLabel + '（萬元）', flowWan(r.price)), flowOp('−'), flowCell('本次貸款（萬元）', flowWan(r.loan)), flowOp('='), flowResult('需自備（萬元）', flowWan(r.needDown), 'needDown')) +
-      flowNote('貸款、自備款與房價均保留到整元，萬元顯示最多 4 位小數，並已核對全期月付。評估未包含稅費、裝潢及其他購屋成本，請另行預留。');
-    html += flowGroup(r.downGiven ? '⑤ 加上自備款，可以負擔多少房價' : '⑤ 自備款未填，推估房價與需備金額', property);
-    html += flowGroup('⑥ 看看每一期怎麼還', '<p class="bd-flow-terms">選一個期數，看本次實際貸款的本金、利息與餘額；需要時可展開詳細算式。</p><div class="bd-flow-pick"><label for="bdFlowPeriod">查看期數</label><select id="bdFlowPeriod" aria-describedby="bdFlowPeriodStatus">' +
-      r.sched.map((row, i) => '<option value="' + i + '"' + (i === Math.min(r.grace * 12, count - 1) ? ' selected' : '') + '>第 ' + row.period + ' 期' + '</option>').join('') + '</select></div><div class="bd-flow-period-status" id="bdFlowPeriodStatus" role="status" aria-live="polite" aria-atomic="true"></div><div id="bdFlowPeriodBody"></div>');
-    html += flowGroup('⑦ 確認還款在預算內',
-      flowLine(flowCell('本次貸款全期最高月付（元）', flowNumber(r.payAfter), '', 'peakPayment'), flowOp('≤'), flowResult('每月預算（元）', flowNumber(r.pay), 'payLimit', true)) +
-      flowLine(flowCell('全期本金合計（萬元）', flowWan(r.sched.reduce((a, row) => a + row.principal, 0))), flowOp('='), flowResult('本次貸款（萬元）', flowWan(r.loan), 'principalSum', true)) +
-      flowLine(flowCell('全期利息合計（元）', flowNumber(r.sched.reduce((a, row) => a + row.interest, 0)), '', 'interestSum'), flowResult('最後本金餘額（元）', flowNumber(r.sched[count - 1].balance), 'endingBalance', true)));
-    body.innerHTML = html + '</div>';
+    if (Number.isFinite(maxPrice) && r.priceBound) reasons.push('本次採門檻以下方案，房價上限 ' + flowWan(maxPrice) + ' 萬');
+    if (reasons.length && (r.capacity !== r.loan || r.priceBound)) html += flowNote(reasons.join('；') + '。');
+    html += flowLine(flowCell('房價（萬）', flowWan(r.price)), flowOp('−'), flowCell('本次貸款（萬）', flowWan(r.loan)), flowOp('='), flowResult('需自備（萬）', flowWan(r.needDown), 'needDown')) +
+      flowLine(flowCell('本次貸款最高月付（元）', flowNumber(r.payAfter), '', 'peakPayment'), flowOp('≤'), flowCell('月付預算（元）', flowNumber(r.pay), '', 'payLimit'));
+    return html;
+  }
+  function bdFlowPeriodShell(r) {
+    const options = r ? r.sched.map((row, i) => '<option value="' + i + '"' + (i === Math.min(r.grace * 12, r.sched.length - 1) ? ' selected' : '') + '>第 ' + row.period + ' 期</option>').join('') : '<option value="">待試算</option>';
+    return '<div class="bd-flow-pick"><label for="bdFlowPeriod">查看期數</label><select id="bdFlowPeriod" aria-describedby="bdFlowPeriodStatus"' + (r ? '' : ' disabled') + '>' + options + '</select></div><div class="bd-flow-period-status" id="bdFlowPeriodStatus" role="status" aria-live="polite" aria-atomic="true"></div><div id="bdFlowPeriodBody"></div>';
+  }
+  function bdFlowTemplatePeriod(s) {
+    const visible = flowLine(flowCell('當期本金（元）', '—', '', 'principal'), flowOp('+'), flowCell('利息（元）', '—', '', 'interest'), flowOp('='), flowResult('當期月付（元）', '—', 'payment')) +
+      flowLine(flowCell('期初本金（元）', '—'), flowOp('−'), flowCell('當期本金（元）', '—'), flowOp('='), flowResult('期末餘額（元）', '—', 'balance', true));
+    const details = '<p class="bd-flow-math">月利率 r＝年利率÷12÷100；利息＝期初本金×r。</p>' +
+      (s.method === 'principal' ? '<p class="bd-flow-math">基準本金＝貸款本金÷還本期數。</p>' :
+        s.method === 'amortize' ? '<p class="bd-flow-math">非零利率月付係數＝r × (1 + r)<sup>n</sup> ÷ [(1 + r)<sup>n</sup> − 1]；n 為剩餘還本期數。0% 時按本金÷期數。</p>' : '') +
+      '<p class="bd-flow-math">寬限期只繳利息；利率換段依適用方式計算，末期結清餘額。</p>';
+    B('#bdFlowPeriodBody').innerHTML = visible + '<details id="bdFlowMore" class="bd-flow-more"><summary class="bd-flow-math">詳細算式</summary>' + details + '</details>';
+    B('#bdFlowMore').addEventListener('toggle', fitBdFlowRows);
+  }
+  function renderBdFlowTemplate() {
+    const s = bdFlowTemplateInputs(), body = B('#bdFlowBody');
+    body.dataset.flowState = 'template';
+    let capacity = flowLine(flowCell('月付預算（元）', '—'), flowOp('→'), flowResult('月付可貸額度（萬）', '—', 'capacity')) + flowNote('以各期月付不超過預算為準。');
+    let property = s.downGiven
+      ? flowLine(flowCell('本次貸款（萬）', '—', '', 'loan'), flowOp('+'), flowCell('可用自備款（萬）', flowWan(s.down), '', 'usableDown'), flowOp('→'), flowResult('可負擔房價（萬）', '—', 'price'))
+      : flowLine(flowCell('月付可貸額度（萬）', '—'), flowOp('÷'), flowCell('設定成數', flowNumber(s.ratio) + '%'), flowOp('→'), flowResult('推估房價（萬）', '—', 'price')) + flowLine(flowResult('本次貸款（萬）', '—', 'loan', true));
+    property += flowLine(flowCell('房價（萬）', '—'), flowOp('−'), flowCell('本次貸款（萬）', '—'), flowOp('='), flowResult('需自備（萬）', '—', 'needDown'));
+    body.innerHTML = flowStatus(false) + '<div class="bd-flow-card">' + flowGroup('① 月付預算', bdFlowBudget(s, false), 1) +
+      flowGroup('② 貸款條件', bdFlowTerms(s, false), 2) + flowGroup('③ 可以貸多少', capacity, 3) +
+      flowGroup('④ 房價與自備款', property, 4) + flowGroup('⑤ 每期怎麼還', bdFlowPeriodShell(null), 5) + '</div>' + flowFooter();
+    bdFlowTemplatePeriod(s);
+    fitBdFlowRows();
+    return true;
+  }
+  function renderBdFlow() {
+    if (!hasBdFlowResult()) return renderBdFlowTemplate();
+    const body = B('#bdFlowBody'), s = bdFlowSnapshot, r = s.res;
+    const preserveReading = !bdFlowSheet.hidden && bdFlowSheet.dataset.modalClosing !== '1';
+    const previousSelect = preserveReading ? B('#bdFlowPeriod') : null;
+    const previousPeriod = previousSelect && !previousSelect.disabled ? Number(previousSelect.value) : null;
+    const detailsOpen = preserveReading && !!B('#bdFlowMore')?.open;
+    body.dataset.flowState = 'result';
+    body.innerHTML = flowStatus(true) + '<div class="bd-flow-card">' + flowGroup('① 月付預算', bdFlowBudget(s, true), 1) +
+      flowGroup('② 貸款條件', bdFlowTerms(s, true), 2) + flowGroup('③ 可以貸多少', renderBdFlowCapacity(s), 3) +
+      flowGroup('④ 房價與自備款', bdFlowProperty(s), 4) + flowGroup('⑤ 每期怎麼還', bdFlowPeriodShell(r), 5) + '</div>' + flowFooter();
+    if (Number.isInteger(previousPeriod) && previousPeriod >= 0 && previousPeriod < r.sched.length) B('#bdFlowPeriod').value = String(previousPeriod);
     renderBdFlowPeriod(s, Number(B('#bdFlowPeriod').value));
+    if (detailsOpen) B('#bdFlowMore').open = true;
     B('#bdFlowPeriod').addEventListener('change', e => renderBdFlowPeriod(s, Number(e.target.value)));
     return true;
   }
