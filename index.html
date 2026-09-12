@@ -3705,26 +3705,6 @@ if ("serviceWorker" in navigator) {
 
     /* 三模式完整名稱換行時，螢幕上的利率數字與百分號仍保持一行。 */
     .apr-footer-screen .apr-val { white-space: nowrap; flex-shrink: 0; }
-
-    /* D：金額輸入切換只套用一般／青安的四個主金額欄位。 */
-    :is(#glPriceModeToggle, #glLoanModeToggle, #ytPriceModeToggle, #ytLoanModeToggle,
-        #glPriceModeTag, #glLoanModeTag, #ytPriceModeTag, #ytLoanModeTag,
-        #glAmountModeNote, #ytAmountModeNote)[hidden] { display: none !important; }
-    .amount-mode-toggle { user-select: none; -webkit-user-select: none; touch-action: manipulation; }
-    .amount-mode-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
-    :is(#modeGeneral, #modeYouth) .input-box.readonly:has(> :is(#price, #amount, #ytPrice, #ytAmount)) {
-      background: var(--input-bg); border-color: #e6e6e6; cursor: default;
-    }
-    :is(#price, #amount, #ytPrice, #ytAmount):disabled {
-      opacity: 1; -webkit-text-fill-color: #777; color: #777; cursor: default;
-    }
-    :is(#glAmountModeNote, #ytAmountModeNote) {
-      color: #986b20; font-size: 12px; line-height: 1.7; margin: 10px 0 0; overflow-wrap: anywhere;
-    }
-    #modeYouth .input-box:has(> :is(#ytPrice, #ytAmount, #ytAppraisal)) { padding: 0; }
-    #modeYouth .input-box > :is(#ytPrice, #ytAmount, #ytAppraisal) { padding: 0 8px; box-sizing: border-box; }
-    #modeYouth .input-box:has(> :is(#ytPrice, #ytAmount, #ytAppraisal)) > .unit { padding-right: 8px; margin-left: 4px; }
-    #modeYouth .form-grid.yt-money-wide > .field:nth-child(-n+4) { grid-column: 1 / -1; }
 </style>
   <!-- 匯出函式庫改成本地同源，Service Worker 才能預快取，離線冷啟動也能匯出。
        版本與原本 CDN 完全相同：html2canvas 1.4.1、jsPDF 2.5.1。 -->
@@ -3779,16 +3759,16 @@ if ("serviceWorker" in navigator) {
     </div>
     <div class="form-grid">
       <div class="field">
-        <label class="label-cap"><span id="glPriceLabelText">購屋總價</span><button type="button" class="yt-cap-max amount-mode-toggle" id="glPriceModeToggle" aria-label="切換為貸款金額輸入">切換</button><span class="yt-opt-tag" id="glPriceModeTag" hidden>免填</span></label>
+        <label>購屋總價</label>
         <div class="input-box">
           <input type="text" id="price" class="calc-field" value="3000" readonly inputmode="none" autocomplete="off">
           <span class="unit">萬元</span>
         </div>
       </div>
       <div class="field">
-        <label class="label-cap">貸款金額<button type="button" class="yt-cap-max amount-mode-toggle" id="glLoanModeToggle" aria-label="切換為購屋總價輸入" hidden>切換</button><span class="yt-opt-tag" id="glLoanModeTag">免填</span></label>
+        <label class="label-cap">貸款金額<span class="yt-opt-tag">免填</span></label>
         <div class="input-box readonly" title="依購屋總價與銀行鑑價取低，再按成數計算；不足 1 元部分不計入。">
-          <input type="text" id="amount" class="calc-field" readonly disabled value="2,400" tabindex="-1" aria-readonly="true" inputmode="none" autocomplete="off">
+          <input type="text" id="amount" readonly value="2,400" tabindex="-1" aria-readonly="true">
           <span class="unit">萬元</span>
         </div>
       </div>
@@ -3832,7 +3812,6 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
     </div>
-    <p class="gl-note" id="glAmountModeNote" role="status" hidden></p>
     <p class="gl-note" id="glLuxNote" hidden></p>
 
     <div class="section">
@@ -4081,16 +4060,16 @@ if ("serviceWorker" in navigator) {
       </div>
       <div class="form-grid">
         <div class="field">
-          <label><span id="ytPriceModeTitle">購屋總價</span><button type="button" class="yt-cap-max amount-mode-toggle" id="ytPriceModeToggle" title="切換為貸款金額輸入">切換</button><span class="yt-opt-tag" id="ytPriceModeTag" hidden>免填</span></label>
+          <label>購屋總價</label>
           <div class="input-box">
             <input type="text" id="ytPrice" class="calc-field" value="2000" readonly inputmode="none" autocomplete="off">
             <span class="unit">萬元</span>
           </div>
         </div>
         <div class="field">
-          <label>貸款金額<button type="button" class="yt-cap-max amount-mode-toggle" id="ytLoanModeToggle" title="切換為購屋總價輸入" hidden>切換</button><span class="yt-opt-tag" id="ytLoanModeTag">免填</span></label>
-          <div class="input-box readonly" title="依購屋總價、銀行鑑價與貸款成數自動計算">
-            <input type="text" id="ytAmount" class="calc-field" readonly disabled value="1600" data-calc-max="9999999" tabindex="-1" aria-readonly="true" inputmode="none" autocomplete="off">
+          <label>貸款金額<span class="yt-opt-tag">免填</span></label>
+          <div class="input-box readonly" title="依購屋總價與貸款成數自動計算">
+            <input type="text" id="ytAmount" readonly value="1,600" tabindex="-1" aria-readonly="true">
             <span class="unit">萬元</span>
           </div>
         </div>
@@ -4134,7 +4113,6 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
       </div>
-      <p class="yt-note" id="ytAmountModeNote" role="status" hidden></p>
       <p class="yt-note">貸款成數最高 8 成、年限最長 40 年、寬限期最長 5 年且含於年限內。 <em>實際核貸金額依銀行鑑價為準</em> ，鑑價通常低於成交價；鑑價留白時以買賣總價計算。</p>
       <div class="section">
         <label class="label-with-info">還款方式<button type="button" class="apr-info-btn" data-method-info aria-label="兩種還款方式差異說明">
@@ -5002,7 +4980,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12I";
+const APP_VERSION = "2026.09.12J";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5143,6 +5121,181 @@ const appStorage = (() => {
     hasFailure() { return readBlocked || pending.size > 0; }
   });
 })();
+
+/* J：只在新保存世代首次使用時，將 D–I 的金額輸入狀態轉成 C 的總價輸入結構。
+   舊鍵完全不寫回。整組來源讀取成功後才寫入；存在的新鍵（包含 null／壞資料）優先。
+   以下整元反推僅供一次性舊資料轉換，不參與 App 的本金、利息或攤還計算。 */
+const PriceOnlyMigration = (() => {
+  const marker = 'loan_price_only_migrated_20260912J';
+  const keys = Object.freeze({
+    general: 'mortgage_form_state_v4', generalClear: 'mortgage_clear_snapshot_v4',
+    youth: 'youth_form_state_v3', youthClear: 'youth_clear_snapshot_v3',
+    youthBaseline: 'youth_clear_baseline_v3', youthDirty: 'youth_dirty_since_clear_v3'
+  });
+  const maxYuan = 99999990000n;
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const plain = o => !!o && typeof o === 'object' && !Array.isArray(o);
+  const scalar = v => typeof v === 'string' || typeof v === 'number';
+  const empty = v => v === undefined || (typeof v === 'string' && v.trim() === '');
+
+  /* 僅接受可精確表示整元的原文；不先用浮點數乘 10,000，也不量化壞資料。
+     已保存的合法科學記法仍可處理；巨大字串／指數在建立 BigInt 前先拒絕。 */
+  function moneyYuan(v) {
+    if (!scalar(v)) return null;
+    const s = String(v).trim();
+    if (s.length > 128) return null;
+    const m = /^\+?(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?$/i.exec(s);
+    if (!m || !(m[1] || m[2])) return null;
+    const fraction = m[2] || '', exponent = Number(m[3] || 0);
+    if (!Number.isInteger(exponent) || Math.abs(exponent) > 128) return null;
+    const digits = BigInt((m[1] || '0') + fraction);
+    const scale = fraction.length - exponent - 4;
+    const factor = 10n ** BigInt(Math.abs(scale));
+    if (scale > 0 && digits % factor !== 0n) return null;
+    const yuan = scale > 0 ? digits / factor : digits * factor;
+    return yuan >= 1n && yuan <= maxYuan ? yuan : null;
+  }
+  function ratioInteger(v) {
+    const scaled = moneyYuan(v);
+    return scaled !== null && scaled % 10000n === 0n && scaled <= 1000000n ? scaled / 10000n : null;
+  }
+  function yuanText(yuan) {
+    const fraction = String(yuan % 10000n).padStart(4, '0').replace(/0+$/, '');
+    return String(yuan / 10000n) + (fraction ? '.' + fraction : '');
+  }
+  function inversePrice(loanRaw, ratioRaw) {
+    const loan = moneyYuan(loanRaw), ratio = ratioInteger(ratioRaw);
+    if (loan === null || ratio === null) return null;
+    const price = (loan * 100n + ratio - 1n) / ratio;
+    return price <= maxYuan && price * ratio / 100n === loan ? yuanText(price) : null;
+  }
+  function samePrincipal(priceRaw, appraisalRaw, ratioRaw, loanRaw) {
+    const price = moneyYuan(priceRaw), ratio = ratioInteger(ratioRaw), loan = moneyYuan(loanRaw);
+    if (price === null || ratio === null || loan === null) return false;
+    let appraisal = 0n;
+    if (!empty(appraisalRaw)) {
+      const zero = scalar(appraisalRaw) && /^\+?(?:0+(?:\.0*)?|\.0+)(?:e[+-]?\d+)?$/i.test(String(appraisalRaw).trim());
+      if (!zero) {
+        appraisal = moneyYuan(appraisalRaw);
+        if (appraisal === null) return false;
+      }
+    }
+    const basis = appraisal > 0n && appraisal < price ? appraisal : price;
+    return basis * ratio / 100n === loan;
+  }
+  function decoded(raw) {
+    try { return JSON.parse(raw); } catch (_) { return null; }
+  }
+  function clearGeneralCompletion(out) {
+    out.resultsVisible = false;
+    out.resultsAutoHidden = false;
+  }
+  function clearYouthCompletion(out) {
+    out.resultsVisible = false;
+    out.autoHidden = false;
+  }
+  function convertGeneralPriceState(raw) {
+    const out = decoded(raw);
+    if (!plain(out)) return raw;
+    if (out.amountMode === 'loan') {
+      if (out.amountEstimate === true) {
+        out.price = inversePrice(out.loanAmount, out.ratio) ?? '';
+      } else if (own(out, 'priceEntryRaw')) {
+        // 單純切換：原價可能較鑑價高，或比最小逆推價多一元，必須保留原文。
+        out.price = out.priceEntryRaw;
+      }
+      if ((own(out, 'amountEstimate') && typeof out.amountEstimate !== 'boolean')
+          || !samePrincipal(out.price, out.appraisal, out.ratio, out.loanAmount)) clearGeneralCompletion(out);
+    } else if (own(out, 'amountMode') && out.amountMode !== 'price') {
+      clearGeneralCompletion(out);
+    }
+    for (const key of ['amountMode', 'amountEstimate', 'loanAmount', 'priceEntryRaw', 'loanCapPrice']) delete out[key];
+    return JSON.stringify(out);
+  }
+  function convertYouthPriceState(raw) {
+    const out = decoded(raw);
+    if (!plain(out)) return raw;
+    const fields = plain(out.f) ? out.f : null;
+    if (out.amountMode === 'loan') {
+      if (fields && out.amountEstimate === true) {
+        fields['#ytPrice'] = inversePrice(fields['#ytAmount'], fields['#ytRatio']) ?? '';
+      }
+      if (!fields || (own(out, 'amountEstimate') && typeof out.amountEstimate !== 'boolean')
+          || !samePrincipal(fields['#ytPrice'], fields['#ytAppraisal'], fields['#ytRatio'], fields['#ytAmount'])) clearYouthCompletion(out);
+    } else if (own(out, 'amountMode') && out.amountMode !== 'price') {
+      clearYouthCompletion(out);
+    }
+    if (plain(out.invalid)) {
+      // 已移除的輸入元件不能留下無從修正的提示；原始證據仍完整保留在舊鍵。
+      for (const key of ['#ytAmount', 'amountMode', 'amountEstimate']) {
+        if (own(out.invalid, key)) { delete out.invalid[key]; clearYouthCompletion(out); }
+      }
+      if (!Object.keys(out.invalid).length) delete out.invalid;
+    }
+    if (fields) delete fields['#ytAmount'];
+    delete out.amountMode; delete out.amountEstimate;
+    return JSON.stringify(out);
+  }
+  function convertYouthPriceBaseline(raw) {
+    const out = decoded(raw);
+    if (!plain(out)) return raw;
+    // 貸款模式／非空貸款本來就不是合法的清空基準，不可刪欄後把它洗成合法基準。
+    if ((own(out, 'amountMode') && out.amountMode !== 'price')
+        || (own(out, 'amountEstimate') && out.amountEstimate !== false)
+        || (plain(out.f) && own(out.f, '#ytAmount') && out.f['#ytAmount'] !== '')) return 'null';
+    if (plain(out.f)) delete out.f['#ytAmount'];
+    delete out.amountMode; delete out.amountEstimate;
+    return JSON.stringify(out);
+  }
+  function migrate(storage) {
+    const copies = [];
+    try {
+      if (storage.getItem(marker) === '1') return { complete: true, written: 0 };
+      // 只讀必要的舊來源；來源已存在的 null／空字串／壞 JSON 都是權威資料。
+      // 整組讀取放在此階段，任一 getItem 失敗時不會開始部分複製。
+      const cache = new Map();
+      const read = key => { if (!cache.has(key)) cache.set(key, storage.getItem(key)); return cache.get(key); };
+      function generalSource(stem) {
+        const recent = read(stem + '_v3');
+        if (recent !== null) return recent;
+        if (read('mortgage_amount_mode_migrated_v3') !== null) return 'null';
+        const prior = read(stem + '_v2');
+        if (prior !== null) return prior;
+        if (read('mortgage_decimal_migrated_v2') !== null) return 'null';
+        return read(stem + '_v1') ?? 'null';
+      }
+      function youthSource(stem, blank) {
+        const recent = read(stem + '_v2');
+        if (recent !== null) return recent;
+        if (read('youth_amount_input_migrated_v2') === '1') return blank;
+        return read(stem + '_v1') ?? blank;
+      }
+      const jobs = [
+        [keys.general, () => generalSource('mortgage_form_state'), convertGeneralPriceState],
+        [keys.generalClear, () => generalSource('mortgage_clear_snapshot'), convertGeneralPriceState],
+        [keys.youth, () => youthSource('youth_form_state', 'null'), convertYouthPriceState],
+        [keys.youthClear, () => youthSource('youth_clear_snapshot', 'null'), convertYouthPriceState],
+        [keys.youthBaseline, () => youthSource('youth_clear_baseline', 'null'), convertYouthPriceBaseline],
+        [keys.youthDirty, () => youthSource('youth_dirty_since_clear', '0'), raw => raw]
+      ];
+      for (const [target, source, convert] of jobs) {
+        if (read(target) === null) copies.push([target, convert(source())]);
+      }
+    } catch (_) { return { complete: false, written: 0, reason: 'read' }; }
+    let complete = true, written = 0;
+    for (const [key, value] of copies) {
+      try { storage.setItem(key, value); written++; } catch (_) { complete = false; }
+    }
+    if (complete) {
+      try { storage.setItem(marker, '1'); } catch (_) { complete = false; }
+    }
+    return { complete, written, reason: complete ? null : 'write' };
+  }
+  return Object.freeze({ marker, keys, migrate, convertGeneralPriceState, convertYouthPriceState, convertYouthPriceBaseline });
+})();
+function migratePriceOnlyStorage(storage = appStorage) { return PriceOnlyMigration.migrate(storage); }
+
+migratePriceOnlyStorage(appStorage);
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -5445,9 +5598,9 @@ function setRateSegmentEnd(index, rawTo) {
 }
 let clearSnapshot = null;
 /* 小數萬元的新存檔獨立使用 v2；同源舊版仍寫 v1，不得蓋掉新版本的正式值。 */
-const FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v3';
+const FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v4';
 /* 「清空數值」前的原本數值：與試算數值分開存，關閉重開後「恢復數值」仍然有效 */
-const CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v3';
+const CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v4';
 const GENERAL_DECIMAL_MIGRATION_KEY = 'mortgage_decimal_migrated_v2';
 const LEGACY_FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v1';
 const LEGACY_CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v1';
@@ -6001,224 +6154,9 @@ function syncTermPillsFromInput() {
   });
 }
 
-/* 一般貸款金額輸入方向；本金仍由原 getLoanYuan() 唯一產生。 */
-let glAmountMode = 'price';
-let glAmountEstimate = false;
-let glPriceEntryRaw = '';
-let glLoanCapPrice = '';
-let glAmountWatch = null;
-
-function glCommittedAmountRaw(el) {
-  if (!el) return '';
-  if (typeof calcKeyboard !== 'undefined' && calcKeyboard.inputEl === el && calcKeyboard.backdropEl) {
-    return el.dataset.calcRaw === undefined ? '' : String(el.dataset.calcRaw);
-  }
-  return getCalcFieldRawString(el);
-}
-
-function glMoneyTextYuan(text) {
-  const raw = String(text ?? '');
-  if (!/^\d+(?:\.\d{0,4})?$/.test(raw)) return null;
-  const yuan = wanStringToYuan(raw);
-  return Number.isSafeInteger(yuan) && yuan >= 1 && yuan <= PRICE_MAX_WAN * 10000 ? yuan : null;
-}
-
-function glYuanInputText(yuan) {
-  if (!Number.isSafeInteger(yuan) || yuan < 1) return '';
-  const y = BigInt(yuan), fraction = String(y % 10000n).padStart(4, '0').replace(/0+$/, '');
-  return String(y / 10000n) + (fraction ? '.' + fraction : '');
-}
-
-function glAmountTuple() {
-  return [glCommittedAmountRaw($('#amount')), glCommittedAmountRaw($('#ratio')), glCommittedAmountRaw($('#appraisal'))];
-}
-
-function glInversePriceYuan(loanYuan, ratio) {
-  if (!Number.isSafeInteger(loanYuan) || loanYuan < 1 || !Number.isInteger(ratio) || ratio < 1 || ratio > 100) return null;
-  const loan = BigInt(loanYuan), r = BigInt(ratio), price = (loan * 100n + r - 1n) / r;
-  if (price > BigInt(PRICE_MAX_WAN) * 10000n || price * r / 100n !== loan) return null;
-  const result = Number(price);
-  return Number.isSafeInteger(result) ? result : null;
-}
-
-function glLoanCapReferenceYuan() {
-  if (glAmountMode !== 'loan') return 0;
-  if (!glAmountEstimate) return glMoneyTextYuan(glPriceEntryRaw) ?? 0;
-  if (glMoneyTextYuan(glCommittedAmountRaw($('#amount'))) === null) return 0;
-  return glMoneyTextYuan(glLoanCapPrice) ?? 0;
-}
-
-function glSyncLoanPrice() {
-  if (glAmountMode !== 'loan') return;
-  const tuple = glAmountTuple(), loan = glMoneyTextYuan(tuple[0]);
-  const ratio = tuple[1] === '' ? NaN : Number(tuple[1]);
-  const inverse = glInversePriceYuan(loan, ratio);
-  let price = null;
-  if (inverse !== null) price = glAmountEstimate ? inverse : glMoneyTextYuan(glPriceEntryRaw);
-  if (price !== null) {
-    const raw = glYuanInputText(price);
-    setCalcFieldStoredValue($('#price'), raw);
-    glLoanCapPrice = raw;
-    if (glAmountEstimate) glPriceEntryRaw = raw;
-  } else {
-    clearCalcField($('#price'));
-    if (loan === null && glAmountEstimate) glLoanCapPrice = '';
-    if (glAmountEstimate) glPriceEntryRaw = '';
-  }
-  glAmountWatch = tuple;
-}
-
-function glAmountInputChanged() {
-  if (glAmountMode !== 'loan') return;
-  const tuple = glAmountTuple();
-  if (!glAmountWatch || tuple.some((value, i) => value !== glAmountWatch[i])) {
-    glAmountEstimate = true;
-    glPriceEntryRaw = '';
-  }
-  glSyncLoanPrice();
-}
-
-function glLoanModeIssue() {
-  if (glAmountMode !== 'loan') return null;
-  const issue = (field, label, message, missing) => ({ field, label, message, missing: !!missing });
-  const rawLoan = glCommittedAmountRaw($('#amount')), rawRatio = glCommittedAmountRaw($('#ratio'));
-  if (rawLoan === '') return issue('#amount', '貸款金額', '請輸入貸款金額', true);
-  const loan = glMoneyTextYuan(rawLoan);
-  if (loan === null) return issue('#amount', '貸款金額', '貸款金額請輸入 1 元以上、上限以內的整元金額。');
-  if (rawRatio === '') return issue('#ratio', '貸款成數', '請輸入貸款成數', true);
-  const ratio = Number(rawRatio);
-  if (!Number.isInteger(ratio) || ratio < 1 || ratio > 100) return issue('#ratio', '貸款成數', '貸款成數請輸入 1～100 的整數。');
-  if (glInversePriceYuan(loan, ratio) === null) return issue('#amount', '推估總價', '反推總價超過 9,999,999 萬，請調整貸款金額或成數。');
-  const price = glMoneyTextYuan(getCalcFieldRawString($('#price')));
-  if (price === null) return issue('#amount', '推估總價', '目前無法確認總價，請調整貸款金額或成數。');
-  const rawAppraisal = glCommittedAmountRaw($('#appraisal'));
-  const appraisal = rawAppraisal === '' || Number(rawAppraisal) === 0 ? null : glMoneyTextYuan(rawAppraisal);
-  if (rawAppraisal !== '' && Number(rawAppraisal) !== 0 && appraisal === null) return issue('#appraisal', '銀行鑑價', '銀行鑑價不是有效金額，請重新確認。');
-  const basis = appraisal === null ? price : Math.min(price, appraisal);
-  const calculated = BigInt(basis) * BigInt(ratio) / 100n;
-  if (calculated < BigInt(loan) && appraisal !== null && appraisal < price) {
-    return issue('#appraisal', '銀行鑑價', '銀行鑑價不足以支持目前貸款金額，請調整鑑價、貸款金額或成數。');
-  }
-  if (calculated !== BigInt(loan)) return issue('#amount', '貸款金額', '目前總價與成數無法對應此貸款金額，請重新確認。');
-  return null;
-}
-
-function glSyncAmountModeUi() {
-  const loan = glAmountMode === 'loan';
-  for (const [id, inactive] of [['price', loan], ['amount', !loan]]) {
-    const el = $('#' + id);
-    el.disabled = inactive;
-    el.setAttribute('aria-readonly', inactive ? 'true' : 'false');
-    if (inactive) el.setAttribute('tabindex', '-1'); else el.removeAttribute('tabindex');
-    el.closest('.input-box').classList.toggle('readonly', inactive);
-  }
-  $('#glPriceModeToggle').hidden = loan;
-  $('#glLoanModeToggle').hidden = !loan;
-  $('#glPriceModeTag').hidden = !loan;
-  $('#glLoanModeTag').hidden = loan;
-  $('#glPriceLabelText').textContent = '購屋總價';
-  $('#modeGeneral').dataset.amountMode = glAmountMode;
-  $('#amount').closest('.input-box').title = loan ? '' : '依購屋總價與銀行鑑價取低，再按成數計算；不足 1 元部分不計入。';
-  $('#price').closest('.input-box').title = loan ? '依目前貸款金額與成數確認總價；修改金額、成數或鑑價後重新推估。' : '';
-  const note = $('#glAmountModeNote'), problem = loan ? glLoanModeIssue() : null;
-  note.textContent = problem && !problem.missing ? problem.message : '';
-  note.hidden = !note.textContent;
-}
-
-function glSetAmountMode(next) {
-  if ((next !== 'price' && next !== 'loan') || next === glAmountMode || calcKeyboard.backdropEl) return;
-  if (next === 'loan') {
-    const principal = getLoanYuan();
-    glAmountEstimate = false;
-    glPriceEntryRaw = getCalcFieldRawString($('#price'));
-    glLoanCapPrice = glPriceEntryRaw;
-    setCalcFieldStoredValue($('#amount'), principal >= 1 ? glYuanInputText(principal) : '');
-    glAmountMode = 'loan';
-    glAmountWatch = glAmountTuple();
-    glSyncLoanPrice();
-  } else {
-    const price = glAmountEstimate ? getCalcFieldRawString($('#price')) : glPriceEntryRaw;
-    glAmountMode = 'price';
-    setCalcFieldStoredValue($('#price'), price);
-    glLoanCapPrice = '';
-    glAmountWatch = null;
-    clearCalcField($('#amount'));
-  }
-  glSyncAmountModeUi();
-  applyCapsWithFlash();
-  syncLastPriceRaw();
-  updateAmount();
-  maybeRecalc();
-  try { if (navigator.vibrate) navigator.vibrate(10); } catch (_) {}
-}
-
-function glApplyAmountState(state) {
-  glAmountMode = state.amountMode === 'loan' ? 'loan' : 'price';
-  glAmountEstimate = state.amountEstimate === true;
-  glPriceEntryRaw = state.priceEntryRaw === undefined ? state.price || '' : state.priceEntryRaw;
-  glLoanCapPrice = state.loanCapPrice || '';
-  if (glAmountMode === 'loan') setCalcFieldStoredValue($('#amount'), state.loanAmount || '');
-  else clearCalcField($('#amount'));
-  glAmountWatch = glAmountTuple();
-  glSyncLoanPrice();
-  glSyncAmountModeUi();
-}
-
-function glClearAmountState() {
-  glAmountMode = 'price';
-  glAmountEstimate = false;
-  glPriceEntryRaw = '';
-  glLoanCapPrice = '';
-  glAmountWatch = null;
-  clearCalcField($('#amount'));
-  glSyncAmountModeUi();
-}
-
-function initGlAmountMode() {
-  $('#glPriceModeToggle').addEventListener('click', () => glSetAmountMode('loan'));
-  $('#glLoanModeToggle').addEventListener('click', () => glSetAmountMode('price'));
-  $('#amount').addEventListener('input', () => {
-    if (glAmountMode !== 'loan') return;
-    const el = $('#amount'), clamped = applyFieldClamp(el, el.value);
-    if (el.value !== clamped) el.value = clamped;
-    glAmountInputChanged();
-    applyCapsWithFlash();
-    updateAmount();
-    maybeRecalc();
-  });
-  glSyncAmountModeUi();
-}
-
-/* v3 與旧頁 v2 分開；先讀齊再複製，存在的空墓碑或壞資料也不回退。 */
-function migrateGeneralAmountModeStorage() {
-  const marker = 'mortgage_amount_mode_migrated_v3';
-  let copies;
-  try {
-    if (appStorage.getItem(marker) !== null) return;
-    const targetForm = appStorage.getItem(FORM_STATE_STORAGE_KEY);
-    const targetSnapshot = appStorage.getItem(CLEAR_SNAPSHOT_KEY);
-    const oldForm = appStorage.getItem('mortgage_form_state_v2');
-    const oldSnapshot = appStorage.getItem('mortgage_clear_snapshot_v2');
-    const oldMigrated = appStorage.getItem(GENERAL_DECIMAL_MIGRATION_KEY);
-    const legacyForm = oldForm === null && oldMigrated === null ? appStorage.getItem(LEGACY_FORM_STATE_STORAGE_KEY) : null;
-    const legacySnapshot = oldSnapshot === null && oldMigrated === null ? appStorage.getItem(LEGACY_CLEAR_SNAPSHOT_KEY) : null;
-    copies = [];
-    if (targetForm === null) copies.push([FORM_STATE_STORAGE_KEY, oldForm ?? legacyForm ?? 'null']);
-    if (targetSnapshot === null) copies.push([CLEAR_SNAPSHOT_KEY, oldSnapshot ?? legacySnapshot ?? 'null']);
-  } catch (_) { return; }
-  let copied = true;
-  copies.forEach(([key, value]) => { try { appStorage.setItem(key, value); } catch (_) { copied = false; } });
-  if (copied) { try { appStorage.setItem(marker, '1'); } catch (_) {} }
-}
-
 function captureFormState() {
   return {
     price: getCalcFieldRawString($('#price')),
-    amountMode: glAmountMode,
-    loanAmount: glAmountMode === 'loan' ? glCommittedAmountRaw($('#amount')) : '',
-    priceEntryRaw: glAmountMode === 'loan' ? glPriceEntryRaw : getCalcFieldRawString($('#price')),
-    amountEstimate: glAmountEstimate,
-    loanCapPrice: glAmountMode === 'loan' ? glLoanCapPrice : '',
     appraisal: getCalcFieldRawString($('#appraisal')),
     ratio: getCalcFieldRawString($('#ratio')),
     term: getCalcFieldRawString($('#term')),
@@ -6295,7 +6233,7 @@ function loadClearSnapshot() {
     if (!raw) return null;
     const saved = JSON.parse(raw);
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)
-        || !['price','ratio','term','grace','rate','appraisal','method','rateType','amountMode','loanAmount'].some(k => Object.prototype.hasOwnProperty.call(saved,k))) return null;
+        || !['price','ratio','term','grace','rate','appraisal','method','rateType'].some(k => Object.prototype.hasOwnProperty.call(saved,k))) return null;
     const state = normalizeGeneralFormState(saved);
     if (!state) return null;
     // 全空數字仍可承載還款方式或多段記憶；不能因正規化後空白而丟掉使用者的恢復點。
@@ -6340,17 +6278,6 @@ function normalizeGeneralFormState(state) {
      畫面、raw 與保存只保留同一正式值；舊資料若超精度而被改值，仍由
      decChanged / out.repaired 收起舊結果，不能沿用「已完成」。 */
   out.price = numField(state.price, { min: 0.0001, max: PRICE_MAX_WAN, dec: MAX_AMOUNT_DECIMALS });
-  out.amountMode = state.amountMode === 'loan' ? 'loan' : 'price';
-  if (state.amountMode !== undefined && state.amountMode !== 'price' && state.amountMode !== 'loan') invalidNumericType = true;
-  out.loanAmount = numField(state.loanAmount, { min: 0.0001, max: PRICE_MAX_WAN, dec: MAX_AMOUNT_DECIMALS });
-  out.priceEntryRaw = numField(state.priceEntryRaw === undefined ? state.price : state.priceEntryRaw,
-    { min: 0.0001, max: PRICE_MAX_WAN, dec: MAX_AMOUNT_DECIMALS });
-  out.loanCapPrice = numField(state.loanCapPrice, { min: 0.0001, max: PRICE_MAX_WAN, dec: MAX_AMOUNT_DECIMALS });
-  out.amountEstimate = state.amountEstimate === true;
-  if (state.amountEstimate !== undefined && typeof state.amountEstimate !== 'boolean') invalidNumericType = true;
-  if (str(state.loanAmount) !== '' && out.loanAmount === '' || str(state.priceEntryRaw) !== '' && out.priceEntryRaw === ''
-      || str(state.loanCapPrice) !== '' && out.loanCapPrice === '') invalidNumericType = true;
-  if (out.amountMode === 'price') { out.loanAmount = ''; out.loanCapPrice = ''; out.priceEntryRaw = out.price; }
   // 鑑價 0 一律視同未填；非 0 卻不合法（不足 1 元或超過上限）要保留修復標記。
   const apprRaw = str(state.appraisal);
   out.appraisal = numField(state.appraisal, { min: 0.0001, max: PRICE_MAX_WAN, dec: MAX_AMOUNT_DECIMALS, zeroIsBlank: true });
@@ -6471,7 +6398,7 @@ function normalizeGeneralFormState(state) {
 
   /* 只有在必填欄位齊全、利率資料合法時才允許直接恢復結果。
      其餘一律收起，讓按鈕回到「尚未計算」，不製造假完成。 */
-  const complete = (out.amountMode === 'loan' ? out.loanAmount !== '' : out.price !== '') && out.ratio !== '' && out.term !== ''
+  const complete = out.price !== '' && out.ratio !== '' && out.term !== ''
     && (out.rateType === 'single' ? out.rate !== '' : out.rateSegments.length >= 1);
   out.resultsMustHide = !!out.repaired;
   /* 嚴格比對 true。舊版用 !!state.resultsVisible，字串 "false" 會被當成 true。 */
@@ -6540,7 +6467,6 @@ function applyFormState(state) {
   /* 記錄「套用資料的過程中，有沒有欄位被目前的上限改掉」。
      舊版只看資料本身合不合法，於是「寬限期被 cap 清空」之後仍會重開結果，
      等於系統改了貸款條件卻直接給出新答案。 */
-  glApplyAmountState(state);
   const capsChanged = applyLuxCaps();
   const sanitized = sanitizeGeneralInputsAgainstCurrentCaps();
   const touchedByCaps = capsChanged || sanitized;
@@ -6570,8 +6496,7 @@ function applyFormState(state) {
 
 function formHasContent(state) {
   state = state || captureFormState();
-  return (state.amountMode === 'loan' ? (state.loanAmount || '') !== '' || (state.priceEntryRaw || '') !== '' : state.price !== '')
-    || state.ratio !== '' || state.term !== '' ||
+  return state.price !== '' || state.ratio !== '' || state.term !== '' ||
     state.grace !== '' || state.rate !== '' || (state.appraisal || '') !== ''
     || state.method !== 'amortize' || state.rateType !== 'single'
     || normalizeGeneralMultiRateMemory(state.lastValidMultiRateSegments) !== null;
@@ -6590,7 +6515,6 @@ function enterClearedState(opts) {
   if (hadContent) clearSnapshot = captureFormState();
   persistClearSnapshot();
 
-  glClearAmountState();
   clearCalcField($('#price'));
   clearCalcField($('#appraisal'));
   clearCalcField($('#ratio'));
@@ -6847,7 +6771,7 @@ function getLoanBasisYuan() {
   return a !== null ? Math.min(p, a) : p;
 }
 function getLuxBasisYuan() {
-  const p = getPriceYuan() ?? glLoanCapReferenceYuan(), a = getAppraisalYuan() ?? 0;
+  const p = getPriceYuan() ?? 0, a = getAppraisalYuan() ?? 0;
   return Math.max(p, a);
 }
 
@@ -7038,10 +6962,7 @@ function getFieldMaxDecimals(inputEl) {
    總價與鑑價已允許 4 位萬元小數；新青安與個人評估的政策不變。 */
 const STRICT_INTEGER_FIELD_IDS = ['ratio'];
 function isGeneralWanAmountField(inputEl) {
-  return !!inputEl && (inputEl.id === 'price' || inputEl.id === 'appraisal' || inputEl.id === 'amount');
-}
-function isLoanPrincipalField(inputEl) {
-  return !!inputEl && (inputEl.id === 'amount' || inputEl.id === 'ytAmount');
+  return !!inputEl && (inputEl.id === 'price' || inputEl.id === 'appraisal');
 }
 function isStrictIntegerField(inputEl) {
   return !!inputEl && (STRICT_INTEGER_FIELD_IDS.indexOf(inputEl.id) >= 0
@@ -7072,7 +6993,7 @@ function getDeclaredFieldMax(inputEl) {
 
 function resolveFieldMax(inputEl) {
   const id = inputEl.id;
-  if (id === 'price' || id === 'appraisal' || isLoanPrincipalField(inputEl)) return PRICE_MAX_WAN;
+  if (id === 'price' || id === 'appraisal') return PRICE_MAX_WAN;
   if (id === 'ratio') return getRatioMaxValue();
   if (id === 'term') return TERM_MAX_YEARS;
   if (id === 'grace') return getGraceMaxValue();
@@ -7152,15 +7073,14 @@ function burdenFieldRangeHint(inputEl) {
 function clampFieldToast(inputEl, before, after) {
   if (before === after || before === '') return;
   // 一般金額的合法 4 位四捨五入不是超限；拒絕後清空仍須說明上限。
-  if ((isGeneralWanAmountField(inputEl) || isLoanPrincipalField(inputEl)) && after !== '') return;
+  if (isGeneralWanAmountField(inputEl) && after !== '') return;
   const id = inputEl.id;
   const burdenHint = after === '' ? burdenFieldRangeHint(inputEl) : '';
   if (burdenHint) {
     showToast('', { hint: true, hintHtml: burdenHint });
     return;
   }
-  if (isLoanPrincipalField(inputEl)) showToast('', { hint: true, hintHtml: hintLines('貸款金額上限為', tEm('9,999,999 萬元')) });
-  else if (id === 'price' || id === 'appraisal' || id === 'ytPrice' || id === 'ytAppraisal') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.price });
+  if (id === 'price' || id === 'appraisal' || id === 'ytPrice' || id === 'ytAppraisal') showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.price });
   else if (id === 'ytAge') showToast('', { hint: true, hintHtml: YT_HINT_HTML.age });
   else if (id === 'ytRatio') showToast('', { hint: true, hintHtml: YT_HINT_HTML.ratio });
   else if (id === 'ytShare' || id === 'ytShareSetVal') showToast('', { hint: true, hintHtml: YT_HINT_HTML.share });
@@ -8242,7 +8162,7 @@ function calcKeyboardDisplayExpr(expr) {
     if (typing[1].length <= dec) return s;
   }
   const head = calcKeyboard.exactHead;
-  const roundGeneralAmount = isGeneralWanAmountField(calcKeyboard.inputEl) || isLoanPrincipalField(calcKeyboard.inputEl)
+  const roundGeneralAmount = isGeneralWanAmountField(calcKeyboard.inputEl)
     || (calcKeyboard.inputEl && calcKeyboard.inputEl.id === 'bdDown');
   if (calcKeyboard.strictInteger) {
     const exact = head && head.text === s ? head.rat : calcEvalExprExact(s);
@@ -9127,7 +9047,6 @@ function unbindCalcKeyboardViewportScroll() {
 }
 
 function openCalcKeyboard(inputEl, options) {
-  if (inputEl && ['price', 'amount', 'ytPrice', 'ytAmount'].includes(inputEl.id) && inputEl.disabled) return;
   options = options || {};
   hideToast($('#toast'));
   if (inputEl?.id === 'grace' && isTermMissing()) {
@@ -10462,55 +10381,6 @@ function scheduleGeneralMoneyFit() {
   });
 }
 
-/* 僅量測金額顯示，不能改寫 value、raw 或試算資料。 */
-let youthAmountModeFitFrame = 0;
-function scheduleYouthAmountModeFit() {
-  if (youthAmountModeFitFrame) return;
-  youthAmountModeFitFrame = requestAnimationFrame(() => {
-    youthAmountModeFitFrame = 0;
-    const fields = ['ytPrice', 'ytAmount', 'ytAppraisal'].map(id => document.getElementById(id));
-    const grid = fields[0]?.closest('.form-grid');
-    if (!grid || !grid.getBoundingClientRect().width) return;
-    const context = document.createElement('canvas').getContext('2d');
-    if (!context) return;
-    grid.classList.remove('yt-money-wide');
-    fields.forEach(field => field.style.removeProperty('font-size'));
-    const measure = field => {
-      const style = getComputedStyle(field);
-      context.font = style.font;
-      return { size: parseFloat(style.fontSize), width: context.measureText(field.value).width,
-        available: field.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 2 };
-    };
-    if (fields.some(field => {
-      const m = measure(field);
-      return m.width > 0 && m.width * Math.min(1, 14 / m.size) > m.available;
-    })) grid.classList.add('yt-money-wide');
-    fields.forEach(field => {
-      const m = measure(field);
-      if (m.width > m.available && m.available > 0) field.style.fontSize = Math.max(14, Math.floor(m.size * m.available / m.width * 10) / 10) + 'px';
-      field.scrollLeft = 0;
-    });
-  });
-}
-function initYouthAmountModeFit() {
-  const grid = document.getElementById('ytPrice')?.closest('.form-grid');
-  if (!grid) return;
-  if (typeof ResizeObserver === 'function') {
-    let width = -1;
-    new ResizeObserver(entries => {
-      const next = entries[0].contentRect.width;
-      if (next === width) return;
-      width = next;
-      scheduleYouthAmountModeFit();
-    }).observe(grid);
-  }
-  grid.addEventListener('input', scheduleYouthAmountModeFit);
-  grid.addEventListener('change', scheduleYouthAmountModeFit);
-  window.addEventListener('resize', scheduleYouthAmountModeFit);
-  if (document.fonts) document.fonts.ready.then(scheduleYouthAmountModeFit);
-  scheduleYouthAmountModeFit();
-}
-
 function initGeneralMoneyFit() {
   const grid = document.getElementById('price')?.closest('.form-grid');
   if (!grid) return;
@@ -10530,13 +10400,6 @@ function initGeneralMoneyFit() {
 
 /* 購屋總價或成數任一為空就沒有金額可言，顯示 0 會被當成「算出來是 0」 */
 function updateAmount() {
-  if (glAmountMode === 'loan') {
-    glSyncLoanPrice();
-    glSyncAmountModeUi();
-    scheduleGeneralMoneyFit();
-    return;
-  }
-  glSyncAmountModeUi();
   const blank = getCalcFieldRawString($('#price')) === '' || getCalcFieldRawString($('#ratio')) === '';
   $('#amount').value = blank ? '' : fmtWan(getLoanYuan());
   scheduleGeneralMoneyFit();
@@ -10550,7 +10413,7 @@ let calcSynced = false;
 let resultsAutoHidden = false;
 
 function formIsCalcEmpty() {
-  return getCalcFieldRawString($(glAmountMode === 'loan' ? '#amount' : '#price')) === '' && getCalcFieldRawString($('#ratio')) === '' &&
+  return getCalcFieldRawString($('#price')) === '' && getCalcFieldRawString($('#ratio')) === '' &&
     getCalcFieldRawString($('#term')) === '' && getCalcFieldRawString($('#rate')) === '';
 }
 
@@ -10631,7 +10494,6 @@ function loanYuanIsSound() {
 
 /* 分別驗總價與鑑價，不能因取低而讓較高的異常鑑價被忽略。 */
 function loanFieldsWellFormed() {
-  if (glAmountMode === 'loan' && glLoanModeIssue()) return false;
   if (!generalWanFieldOk($('#price'), true)) return false;
   if (!generalWanFieldOk($('#appraisal'), false)) return false;
   const basis = getLoanBasisYuan();
@@ -10735,14 +10597,12 @@ function getGeneralCapValidationError() {
 function getCalcValidationError() {
   const storedCapError = getGeneralCapValidationError();
   if (storedCapError) return storedCapError;
-  const amountIssue = glLoanModeIssue();
-  if (amountIssue && !amountIssue.missing) return { labels: [amountIssue.label], firstEl: $(amountIssue.field), el: $(amountIssue.field), message: amountIssue.message };
   const labels = [];
   let firstEl = null;
 
   /* 本金必須是安全整數才准進入還款排程。不是的話屬程式或資料錯誤，
      寧可當成「還不能算」，也不要讓帶浮點尾數的本金流進每期計算。 */
-  if (glAmountMode === 'price' && getCalcFieldRawString($('#price')) !== '' && getCalcFieldRawString($('#ratio')) !== ''
+  if (getCalcFieldRawString($('#price')) !== '' && getCalcFieldRawString($('#ratio')) !== ''
       && !loanYuanIsSound()) {
     /* 欄位合法但按成數取整後不足 1 元時，明確指出本金太小。 */
     return loanFieldsWellFormed()
@@ -10752,10 +10612,9 @@ function getCalcValidationError() {
           message: '金額或成數不是有效數值，請重新確認' };
   }
 
-  const sourceAmount = $(glAmountMode === 'loan' ? '#amount' : '#price');
-  if (isLoanFieldMissing(getCalcFieldRawString(sourceAmount))) {
-    labels.push(glAmountMode === 'loan' ? '貸款金額' : '購屋總價');
-    if (!firstEl) firstEl = sourceAmount;
+  if (isLoanFieldMissing(getCalcFieldRawString($('#price')))) {
+    labels.push('購屋總價');
+    if (!firstEl) firstEl = $('#price');
   }
   if (isLoanFieldMissing(getCalcFieldRawString($('#ratio')))) {
     labels.push('貸款成數');
@@ -11524,9 +11383,7 @@ function renderRateRows() {
 let lastPriceRaw = getCalcFieldRawString($('#price'));
 function syncLastPriceRaw() { lastPriceRaw = getCalcFieldRawString($('#price')); }
 $('#price').addEventListener('input', () => {
-  if (glAmountMode === 'loan') return;
   const now = getCalcFieldRawString($('#price'));
-  if (now !== lastPriceRaw) glAmountEstimate = false;
   if (now !== lastPriceRaw) {
     lastPriceRaw = now;
     const ap = $('#appraisal');
@@ -11546,7 +11403,6 @@ $('#appraisal').addEventListener('input', () => {
     showToast('', { hint: true, multiline: true,
       hintHtml: hintLines('銀行鑑價請輸入大於 0 的金額', '0 已視為未填') });
   }
-  glAmountInputChanged();
   applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
@@ -11779,8 +11635,6 @@ $('#ratio').addEventListener('input', () => {
   const el = $('#ratio');
   const clamped = applyFieldClamp(el, el.value);
   if (el.value !== clamped) el.value = clamped;
-  glAmountInputChanged();
-  if (glAmountMode === 'loan') applyCapsWithFlash();
   updateAmount();
   maybeRecalc();
 });
@@ -11948,12 +11802,7 @@ function generalCalcAlertIssues() {
     else if (value !== '' && !valid(value)) issues.push({ key: id, kind: 'invalid', label,
       details: [reason || '數值不符合欄位要求，請重新確認。'] });
   };
-  if (glAmountMode === 'loan') field('#amount', '貸款金額', true, () => glMoneyTextYuan(glCommittedAmountRaw($('#amount'))) !== null);
-  else field('#price', '購屋總價', true, () => generalWanFieldOk($('#price'), true));
-  const amountIssue = glLoanModeIssue();
-  if (amountIssue && !amountIssue.missing && !issues.some(item => item.key === amountIssue.field)) {
-    issues.push({ key: amountIssue.field, kind: 'invalid', label: amountIssue.label, details: [amountIssue.message] });
-  }
+  field('#price', '購屋總價', true, () => generalWanFieldOk($('#price'), true));
   field('#ratio', '貸款成數', true, value => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 100);
   field('#term', '貸款年限', true, value => !isLoanFieldMissing(value));
   field('#appraisal', '銀行鑑價', false, () => generalWanFieldOk($('#appraisal'), false));
@@ -11967,7 +11816,7 @@ function generalCalcAlertIssues() {
   if (cap) issues.push({ key: 'cap-setting', kind: 'invalid', label: cap.labels[0], details: [cap.message] });
   const violation = getCapViolationError();
   if (violation) issues.push({ key: violation.field, kind: 'invalid', label: violation.field === '#ratio' ? '貸款成數' : '寬限期', details: [violation.message] });
-  if (glAmountMode === 'price' && getCalcFieldRawString($('#price')) !== '' && getCalcFieldRawString($('#ratio')) !== ''
+  if (getCalcFieldRawString($('#price')) !== '' && getCalcFieldRawString($('#ratio')) !== ''
       && !loanYuanIsSound() && loanFieldsWellFormed()) {
     issues.push({ key: 'loan-amount', kind: 'invalid', label: '貸款金額不足 1 元，無法試算',
       details: ['貸款金額取整後為 0 元。', '請調整購屋總價或貸款成數。'] });
@@ -12509,13 +12358,10 @@ $('#conditionsToggle').addEventListener('click', () => {
 
 applyLuxCaps();
 bindCapBadgeFill();
-initGlAmountMode();
 initGeneralMoneyFit();
-initYouthAmountModeFit();
 updateAmount();
 initCalcFields();
 initTotalAmountToggle();
-migrateGeneralAmountModeStorage();
 clearSnapshot = loadClearSnapshot();
 const persistedFormState = loadPersistedFormState();
 // 空狀態也要套用：那是使用者按過「清空數值」的結果，不是「沒有保存內容」
@@ -14441,36 +14287,11 @@ window.addEventListener('resize', () => {
      一律高於青安 3.0 的總價上限（3,500／2,500／2,000 萬），本面板永遠不可能同時成立，
      只會在「不符資格」時多疊一則不相干的警告。該判斷已移至一般貸款面板，可自行設定門檻。 */
   const APPLY_FROM = '2026-08-01', APPLY_TO = '2029-07-31', DRAW_TO = '2029-10-31';
-  const STORE = 'youth_form_state_v2';
+  const STORE = 'youth_form_state_v3';
   let ytIssues = {};
   let ytShowComparisonRate = false;
   /* 「清空數值」前的原本數值，與試算數值分開存 */
-  const CLEAR_STORE = 'youth_clear_snapshot_v2';
-  /* D：僅讀舊版，寫入與清空墓碑只屬新版；先讀齊再寫，避免讀錯時部分遷移。 */
-  function migrateYouthAmountStorage() {
-    const marker = 'youth_amount_input_migrated_v2';
-    const pairs = [
-      ['youth_form_state_v2', 'youth_form_state_v1', 'null'],
-      ['youth_clear_snapshot_v2', 'youth_clear_snapshot_v1', 'null'],
-      ['youth_clear_baseline_v2', 'youth_clear_baseline_v1', 'null'],
-      ['youth_dirty_since_clear_v2', 'youth_dirty_since_clear_v1', '0']
-    ];
-    let copies;
-    try {
-      if (appStorage.getItem(marker) === '1') return;
-      copies = pairs.map(([next, old, empty]) => {
-        const present = appStorage.getItem(next);
-        return present === null ? [next, appStorage.getItem(old) ?? empty] : null;
-      }).filter(Boolean);
-    } catch (_) { return; }
-    let complete = true;
-    for (const [key, value] of copies) {
-      try { appStorage.setItem(key, value); } catch (_) { complete = false; }
-    }
-    if (complete) { try { appStorage.setItem(marker, '1'); } catch (_) {} }
-  }
-  migrateYouthAmountStorage();
-
+  const CLEAR_STORE = 'youth_clear_snapshot_v3';
   /* 預設基準利率：清空數值後自動帶回的值。1.72% 為財政部公告之基準利率
      （中華郵政 2 年期定期儲金額度未達 500 萬元機動利率，113.3.27 起）。 */
   const BASE_DEFAULT_KEY = 'youth_base_default_v1';
@@ -14624,7 +14445,6 @@ window.addEventListener('resize', () => {
   let ytAutoHidden = false;
   let periodSrc = 'all';
   let last = null, ytCleared = null;
-  let ytAmountMode = 'price', ytAmountEstimate = false, ytAmountObserved = null;
 
   const wan = (n) => Math.round(n).toLocaleString('zh-TW');
   const yuan = (n) => Math.round(n).toLocaleString('zh-TW');
@@ -14744,141 +14564,16 @@ window.addEventListener('resize', () => {
   // 年限只夾法定上限 40 年；「申貸年齡加計核貸年限不得逾 80」屬資格條件，交由資格審查判定
   function maxTerm() { return 40; }
   /* 貸款金額＝認定價格（買賣價與鑑價取低）× 成數，與一般貸款同一套顯示規則 */
-  /* D：金額輸入來源只整理正式欄位；青安貸款組成與資格函式維持原文。 */
-  function youthAmountRaw(id) {
-    const el = Y(id);
-    if (!el) return '';
-    if (calcKeyboard.inputEl === el && calcKeyboard.backdropEl) return String(el.dataset.calcRaw ?? '').trim();
-    return String(el.dataset.calcRaw ?? raw(el)).trim();
-  }
-  function youthAmountNumber(id, empty = null) {
-    const text = youthAmountRaw(id);
-    if (text === '') return empty;
-    const n = Number(text);
-    return Number.isFinite(n) ? n : null;
-  }
-  function youthAmountObservedValues() {
-    return { price: youthAmountRaw('#ytPrice'), loan: youthAmountRaw('#ytAmount'),
-      ratio: youthAmountRaw('#ytRatio'), appr: youthAmountRaw('#ytAppraisal') };
-  }
-  function youthAmountFingerprintState() {
-    const empty = youthAmountRaw('#ytPrice') === '' && youthAmountRaw('#ytAmount') === '';
-    return { amountMode: empty ? 'price' : ytAmountMode, amountEstimate: empty ? false : ytAmountEstimate };
-  }
-  function noteYouthAmountEdit(target) {
-    if (!target || !ytAmountObserved) return;
-    const field = ({ ytPrice: 'price', ytAmount: 'loan', ytRatio: 'ratio', ytAppraisal: 'appr' })[target.id];
-    if (!field || youthAmountRaw('#' + target.id) === ytAmountObserved[field]) return;
-    if (ytAmountMode === 'loan' && field !== 'price') ytAmountEstimate = true;
-    if (ytAmountMode === 'price' && field === 'price') ytAmountEstimate = false;
-  }
-  function youthLoanInputYuan() {
-    const text = youthAmountRaw('#ytAmount');
-    const parsed = youthFieldValue('#ytAmount', text, null);
-    if (!parsed.valid || parsed.text === '') return null;
-    const value = ratFromDecStr(parsed.text);
-    if (!value || value.n <= 0n) return null;
-    const scaled = value.n * 10000n;
-    if (scaled % value.d !== 0n) return null;
-    const yuan = Number(scaled / value.d);
-    return Number.isSafeInteger(yuan) && yuan > 0 ? yuan : null;
-  }
-  function youthAmountInputProblem() {
-    if (ytAmountMode !== 'loan') return null;
-    const loan = youthLoanInputYuan(), ratio = youthAmountNumber('#ytRatio'), appr = youthAmountNumber('#ytAppraisal', 0);
-    if (loan === null || ratio === null || !Number.isInteger(ratio) || ratio < 1 || ratio > YT_RATIO_MAX || appr === null) return null;
-    const priceYuan = (BigInt(loan) * 100n + BigInt(ratio) - 1n) / BigInt(ratio);
-    if (priceYuan > BigInt(PRICE_MAX_WAN) * 10000n) return {
-      el: Y('#ytAmount'), label: '推估總價超過可輸入上限，請調整貸款金額或成數' };
-    if (appr > 0) {
-      const appraisal = ratFromDecStr(String(appr));
-      const supported = appraisal.n * BigInt(ratio) * 100n / appraisal.d;
-      if (BigInt(loan) > supported) return {
-        el: Y('#ytAppraisal'), label: '銀行鑑價不足以支持此貸款金額，請調整鑑價、貸款金額或成數' };
-    }
-    const price = youthAmountNumber('#ytPrice');
-    if (price === null || price <= 0) return {
-      el: Y('#ytAmount'), label: '原購屋總價不完整，請切回補填，或修改貸款金額重新推估' };
-    const split = loanSplitOf({ price, appr, ratio, share: YT_SHARE_DEFAULT, pass: false, kind });
-    if (split.totalYuan !== loan) return {
-      el: Y('#ytAmount'), label: '貸款金額與購屋總價不一致，請重新確認貸款金額' };
-    return null;
-  }
-  function syncYouthAmountModeUI() {
-    const loan = ytAmountMode === 'loan';
-    const priceEl = Y('#ytPrice'), loanEl = Y('#ytAmount');
-    for (const [el, disabled] of [[priceEl, loan], [loanEl, !loan]]) {
-      el.disabled = disabled;
-      el.setAttribute('aria-readonly', String(disabled));
-      el.tabIndex = disabled ? -1 : 0;
-      el.closest('.input-box').classList.toggle('readonly', disabled);
-    }
-    Y('#ytPriceModeTag').hidden = !loan;
-    Y('#ytLoanModeTag').hidden = loan;
-    Y('#ytPriceModeToggle').hidden = loan;
-    Y('#ytLoanModeToggle').hidden = !loan;
-    Y('#ytPriceModeTitle').textContent = '購屋總價';
-    priceEl.closest('.input-box').title = loan ? (ytAmountEstimate ? '依貸款金額與成數推估' : '沿用原購屋總價') : '';
-    loanEl.closest('.input-box').title = loan ? '' : '依購屋總價、銀行鑑價與貸款成數自動計算';
-    const problem = youthAmountInputProblem(), note = Y('#ytAmountModeNote');
-    note.hidden = !problem;
-    note.textContent = problem ? problem.label : '';
-    note.classList.toggle('is-error', !!problem);
-    if (typeof scheduleYouthAmountModeFit === 'function') scheduleYouthAmountModeFit();
-  }
-  function setYouthAmountMode(next) {
-    if (next !== 'price' && next !== 'loan') return;
-    if (calcKeyboard.inputEl && Y('#modeYouth').contains(calcKeyboard.inputEl)) closeCalcKeyboard(true);
-    if (ytAmountMode === next && !ytIssues.amountMode && !ytIssues.amountEstimate) return;
-    const previousGeneralView = ytGeneralLoanExpanded && last && !last.pass && !ytStale && Y('#ytResults').classList.contains('show')
-      ? JSON.stringify(last, (key, value) => key === 'priceEstimated' ? undefined : value) : null;
-    updateYtAmount();
-    if (ytAmountMode === 'price' && next === 'loan') ytAmountEstimate = false;
-    ytAmountMode = next;
-    clearYouthIssue('amountMode'); clearYouthIssue('amountEstimate');
-    updateYtAmount();
-    persist(); markStale();
-    if (previousGeneralView && last && !last.pass && !ytStale && Y('#ytResults').classList.contains('show')
-        && JSON.stringify(last, (key, value) => key === 'priceEstimated' ? undefined : value) === previousGeneralView) {
-      ytGeneralLoanExpanded = true;
-      syncYouthGeneralLoanView();
-      if (typeof scheduleFitPaymentTable === 'function') scheduleFitPaymentTable();
-      if (typeof window.__applyDesktopScale === 'function') window.__applyDesktopScale();
-    }
-    try { if (navigator.vibrate) navigator.vibrate(10); } catch (_) {}
-  }
-
   function updateYtAmount() {
     const el = Y('#ytAmount');
     if (!el) return;
-    if (ytAmountMode === 'loan') {
-      const loan = youthLoanInputYuan(), ratio = youthAmountNumber('#ytRatio');
-      if (ytAmountEstimate) {
-        if (loan === null || !Number.isInteger(ratio) || ratio < 1 || ratio > YT_RATIO_MAX) clearCalcField(Y('#ytPrice'));
-        else {
-          const priceYuan = (BigInt(loan) * 100n + BigInt(ratio) - 1n) / BigInt(ratio);
-          if (priceYuan > BigInt(PRICE_MAX_WAN) * 10000n) clearCalcField(Y('#ytPrice'));
-          else {
-            setCalcFieldStoredValue(Y('#ytPrice'), ratToDecStr(ratMake(priceYuan, 10000n), 4));
-            clearYouthIssue('#ytPrice');
-          }
-        }
-      }
-    } else {
-      if (youthAmountRaw('#ytPrice') === '' || youthAmountRaw('#ytRatio') === '') clearCalcField(el);
-      else {
-        const price = youthAmountNumber('#ytPrice', 0) ?? 0;
-        const appr = youthAmountNumber('#ytAppraisal', 0) ?? 0;
-        const ratio = youthAmountNumber('#ytRatio', 0) ?? 0;
-        const sp = loanSplitOf({ price, appr, ratio, share: YT_SHARE_DEFAULT, pass: false, kind });
-        if (Number.isFinite(sp.totalYuan)) {
-          setCalcFieldStoredValue(el, ratToDecStr(ratMake(BigInt(sp.totalYuan), 10000n), 4));
-          el.value = fmtWan(sp.totalYuan);
-        } else clearCalcField(el);
-      }
-    }
-    ytAmountObserved = youthAmountObservedValues();
-    syncYouthAmountModeUI();
+    if (raw(Y('#ytPrice')) === '' || raw(Y('#ytRatio')) === '') { el.value = ''; return; }
+    const price = num(Y('#ytPrice'));
+    const appr = raw(Y('#ytAppraisal')) !== '' ? num(Y('#ytAppraisal')) : 0;
+    const ratio = num(Y('#ytRatio'));
+    // 此處只預覽總貸款，不依賴資格欄位是否填齊；正式金額仍由共用組成入口取整。
+    const sp = loanSplitOf({ price, appr, ratio, share: YT_SHARE_DEFAULT, pass: false, kind });
+    el.value = Number.isFinite(sp.totalYuan) ? fmtWan(sp.totalYuan) : '';
   }
 
   function clampInputs() {
@@ -15334,7 +15029,6 @@ window.addEventListener('resize', () => {
   });
   function render() {
     const d = compute();
-    d.priceEstimated = ytAmountEstimate;
     last = d;
     syncYouthGeneralLoanView();
 
@@ -15848,9 +15542,9 @@ window.addEventListener('resize', () => {
   renderSpec();
 
   /* ---------- 狀態保存 ---------- */
-  const FIELDS = ['#ytAge', '#ytIncome', '#ytPrice', '#ytAmount', '#ytAppraisal', '#ytRatio', '#ytTerm', '#ytGrace', '#ytBase', '#ytShare', '#ytGenRate'].concat(STEP_IDS);
-  const FIELD_LABELS = { '#ytAge':'年齡', '#ytIncome':'本人年所得', '#ytPrice':'購屋總價', '#ytAmount':'貸款金額', '#ytAppraisal':'銀行鑑價', '#ytRatio':'貸款成數', '#ytTerm':'貸款年限', '#ytGrace':'寬限期', '#ytBase':'基準利率', '#ytShare':'持買比率', '#ytGenRate':'一般貸款年利率', '#ytR1':'第1段利率', '#ytR2':'第2段利率', '#ytR3':'第3段利率', '#ytR4':'第4段利率', '#ytR5':'第5段利率' };
-  const OPTION_LABELS = {amountMode:'金額輸入方式',amountEstimate:'推估總價狀態',kind:'貸款身分',method:'還款方式',region:'購屋縣市',noHome:'無自有住宅資格',neverUsed:'青安使用紀錄',selfUse:'自住用途',stepsTouched:'手動階梯設定',genRateType:'一般貸款利率方式',genSegments:'一般貸款多段利率','$state':'儲存資料','$fields':'試算欄位'};
+  const FIELDS = ['#ytAge', '#ytIncome', '#ytPrice', '#ytAppraisal', '#ytRatio', '#ytTerm', '#ytGrace', '#ytBase', '#ytShare', '#ytGenRate'].concat(STEP_IDS);
+  const FIELD_LABELS = { '#ytAge':'年齡', '#ytIncome':'本人年所得', '#ytPrice':'購屋總價', '#ytAppraisal':'銀行鑑價', '#ytRatio':'貸款成數', '#ytTerm':'貸款年限', '#ytGrace':'寬限期', '#ytBase':'基準利率', '#ytShare':'持買比率', '#ytGenRate':'一般貸款年利率', '#ytR1':'第1段利率', '#ytR2':'第2段利率', '#ytR3':'第3段利率', '#ytR4':'第4段利率', '#ytR5':'第5段利率' };
+  const OPTION_LABELS = {kind:'貸款身分',method:'還款方式',region:'購屋縣市',noHome:'無自有住宅資格',neverUsed:'青安使用紀錄',selfUse:'自住用途',stepsTouched:'手動階梯設定',genRateType:'一般貸款利率方式',genSegments:'一般貸款多段利率','$state':'儲存資料','$fields':'試算欄位'};
   function own(o,k) { return Object.prototype.hasOwnProperty.call(o,k); }
   function plain(o) { return !!o && typeof o === 'object' && !Array.isArray(o); }
   function storedDecimal(s) {
@@ -15883,16 +15577,16 @@ window.addEventListener('resize', () => {
     if (p.empty) return {valid:true,text:''};
     const n=p.n, rate=id==='#ytBase'||id==='#ytGenRate'||STEP_IDS.includes(id);
     const integer=['#ytAge','#ytRatio','#ytTerm','#ytGrace','#ytShare'].includes(id);
-    const max=id==='#ytAge'?YT_AGE_MAX:id==='#ytRatio'?YT_RATIO_MAX:id==='#ytTerm'?YT_TERM_MAX:id==='#ytGrace'?YT_GRACE_MAX:id==='#ytShare'?100:['#ytPrice','#ytAmount','#ytAppraisal'].includes(id)?PRICE_MAX_WAN:rate?RATE_MAX:Infinity;
+    const max=id==='#ytAge'?YT_AGE_MAX:id==='#ytRatio'?YT_RATIO_MAX:id==='#ytTerm'?YT_TERM_MAX:id==='#ytGrace'?YT_GRACE_MAX:id==='#ytShare'?100:['#ytPrice','#ytAppraisal'].includes(id)?PRICE_MAX_WAN:rate?RATE_MAX:Infinity;
     const min=rate?RATE_MIN:['#ytRatio','#ytTerm','#ytShare'].includes(id)?1:0;
-    if (storedCompare(p,min)<0||(Number.isFinite(max)&&storedCompare(p,max)>0)||(integer&&!p.dec.integer)||(['#ytPrice','#ytAmount'].includes(id)&&storedCompare(p,0)<=0)) return {valid:false};
+    if (storedCompare(p,min)<0||(Number.isFinite(max)&&storedCompare(p,max)>0)||(integer&&!p.dec.integer)||(id==='#ytPrice'&&storedCompare(p,0)<=0)) return {valid:false};
     if(id==='#ytGrace'&&Number.isFinite(term)&&term>=1&&n>Math.min(YT_GRACE_MAX,term-1))return {valid:false};
     if(id==='#ytAppraisal'&&n===0)return {valid:true,text:''};
     // 保存資料維持原有截位政策，先用原文字截位；不可先 Number(v) 再假裝原值仍完整。
-    const text=calcDecimalAtPrecision(v,integer?0:rate?MAX_RATE_DECIMALS:MAX_AMOUNT_DECIMALS,id==='#ytAmount');
+    const text=calcDecimalAtPrecision(v,integer?0:rate?MAX_RATE_DECIMALS:MAX_AMOUNT_DECIMALS,false);
     if(text===null||!calcDecimalRoundtrips(text))return {valid:false};
     const value=Number(text);
-    if(['#ytPrice','#ytAmount'].includes(id)&&value<=0)return {valid:false};
+    if(id==='#ytPrice'&&value<=0)return {valid:false};
     if(id==='#ytAppraisal'&&value===0)return {valid:true,text:''};
     return {valid:true,text};
   }
@@ -15931,15 +15625,6 @@ window.addEventListener('resize', () => {
     if(plain(src.invalid)){for(const [k,v] of Object.entries(src.invalid))if(own(FIELD_LABELS,k)||own(OPTION_LABELS,k))bad[k]=plain(v)?v:{original:v};}
     else if(own(src,'invalid'))bad.$state={original:src.invalid};
     const out={kind:'general',region:2,method:'amortize',noHome:true,neverUsed:true,selfUse:true,stepsTouched:[false,false,false,false,false],genRateType:'single',genSegments:[],resultsVisible:src.resultsVisible===true,autoHidden:src.autoHidden===true,f:{}};
-    out.amountMode = 'price'; out.amountEstimate = false;
-    if (own(src,'amountMode')) {
-      if (src.amountMode === 'price' || src.amountMode === 'loan') out.amountMode = src.amountMode;
-      else if (!own(bad,'amountMode')) bad.amountMode = {original:src.amountMode};
-    }
-    if (own(src,'amountEstimate')) {
-      if (typeof src.amountEstimate === 'boolean') out.amountEstimate = src.amountEstimate;
-      else if (!own(bad,'amountEstimate')) bad.amountEstimate = {original:src.amountEstimate};
-    }
     for(const key of ['kind','method','noHome','neverUsed','selfUse','region']){
       if(!own(src,key))continue;
       const v=src[key];let ok=false,val=v;
@@ -15962,9 +15647,6 @@ window.addEventListener('resize', () => {
     if(own(src,'f')&&!plain(src.f))bad.$fields={original:src.f};
     const tp=youthFieldValue('#ytTerm',f['#ytTerm'],null);
     for(const id of FIELDS){
-      if ((id === '#ytAmount' && out.amountMode === 'price') || (id === '#ytPrice' && out.amountMode === 'loan' && out.amountEstimate)) {
-        out.f[id] = ''; delete bad[id]; continue;
-      }
       if(!own(f,id)){out.f[id]=id==='#ytShare'?String(YT_SHARE_DEFAULT):'';continue;}
       const p=youthFieldValue(id,f[id],tp.valid&&tp.text!==''?Number(tp.text):null);
       if(p.valid)out.f[id]=p.text;else {out.f[id]='';bad[id]={original:f[id]};}
@@ -15995,7 +15677,7 @@ window.addEventListener('resize', () => {
     return out;
   }
   function capture() {
-    const o = { amountMode: ytAmountMode, amountEstimate: ytAmountEstimate, kind, region, method, noHome, neverUsed, selfUse, stepsTouched: stepsTouched.slice(),
+    const o = { kind, region, method, noHome, neverUsed, selfUse, stepsTouched: stepsTouched.slice(),
                 genRateType, genSegments: genSegments.map(row => ({ from: row.from, to: row.to, rate: row.rate })),
                 resultsVisible: !!Y('#ytResults') && Y('#ytResults').classList.contains('show'),
                 autoHidden: ytAutoHidden, f: {} };
@@ -16007,7 +15689,6 @@ window.addEventListener('resize', () => {
     const o=normalizeYouthState(input);
     ytIssues=o.invalid||{};
     ({kind,region,method,noHome,neverUsed,selfUse}=o);
-    ytAmountMode=o.amountMode;ytAmountEstimate=o.amountEstimate;ytAmountObserved=null;
     stepsTouched=o.stepsTouched.slice();
     genRateType=o.genRateType;
     genSegments=o.genSegments.map(row => ({ from: row.from, to: row.to, rate: row.rate }));
@@ -16065,7 +15746,7 @@ window.addEventListener('resize', () => {
 
   /* ---------- 按鈕狀態 ---------- */
   function ytFormEmpty() {
-    return raw(Y(ytAmountMode === 'loan' ? '#ytAmount' : '#ytPrice')) === '' && raw(Y('#ytTerm')) === '' &&
+    return raw(Y('#ytPrice')) === '' && raw(Y('#ytTerm')) === '' &&
            raw(Y('#ytRatio')) === '' && raw(Y('#ytAge')) === '';
   }
   function updateYtButton() {
@@ -16122,7 +15803,6 @@ window.addEventListener('resize', () => {
     const t = e && e.target;
     if(t && FIELDS.includes('#'+t.id))clearYouthIssue('#'+t.id);
     if (t && t === Y('#ytAppraisal')) normalizeApprZero();
-    noteYouthAmountEdit(t);
     if (t && t === Y('#ytBase')) {
       const nowRaw = raw(Y('#ytBase'));
       /* 舊版只要 target 是 ytBase 就強制 syncSteps(true)，沒有比對正式值。
@@ -16183,8 +15863,6 @@ window.addEventListener('resize', () => {
 
   /* ---------- 綁定 ---------- */
   initCalcFields(Y('#modeYouth'));
-  Y('#ytPriceModeToggle').addEventListener('click', () => setYouthAmountMode('loan'));
-  Y('#ytLoanModeToggle').addEventListener('click', () => setYouthAmountMode('price'));
   FIELDS.forEach((id) => {
     const el = Y(id);
     if (!el) return;
@@ -16762,8 +16440,7 @@ window.addEventListener('resize', () => {
      但不建立排程、不產生結果；任何一項還不能判定就回 null，
      交給基本必填的檢查去提示，不在這裡自己編一組預設值。 */
   function loanSplitPreview() {
-    updateYtAmount();
-    if (youthAmountInputProblem() || !eligibilityInputsReady()) return null;
+    if (!eligibilityInputsReady()) return null;
     const price = strictNum('#ytPrice'), ratio = strictNum('#ytRatio');
     const share = shareValue(), appr = apprValue();
     if (price === null || ratio === null || share === null || appr === null) return null;
@@ -16776,7 +16453,6 @@ window.addEventListener('resize', () => {
     return sp;
   }
   function eligibilityInputsReady() {
-    if (ytAmountMode === 'loan' && youthLoanInputYuan() === null) return false;
     return ['#ytAge', '#ytIncome', '#ytPrice', '#ytRatio'].every(
       (id) => raw(Y(id)) !== '' && strictNum(id) !== null);
   }
@@ -16800,9 +16476,6 @@ window.addEventListener('resize', () => {
   function ytMissingFields() {
     const labels = [];
     let firstEl = null;
-    updateYtAmount();
-    const amountProblem = youthAmountInputProblem();
-    if (amountProblem) { labels.push(amountProblem.label); firstEl = amountProblem.el; }
     const proposedSplit = loanSplitPreview();
     const useGeneral = !!proposedSplit && proposedSplit.genWan > 0;
     // 金額以元呈現；總額雖為正、但尚不足可呈現的一元時，先請使用者調整輸入。
@@ -16815,7 +16488,6 @@ window.addEventListener('resize', () => {
     const usedRates=rateReq.map(([id])=>id).concat(useYouth?STEP_IDS.slice(0,visibleStepCount()).concat(STEP_IDS[4]):[]);
     const allRateIds=['#ytBase','#ytGenRate'].concat(STEP_IDS);
     for(const key of Object.keys(ytIssues)){
-      if (key === (ytAmountMode === 'loan' ? '#ytPrice' : '#ytAmount')) continue;
       if (key === 'genRateType' && !useGeneral) continue;
       if (key === 'genSegments' && (!useGeneral || genRateType !== 'multi')) continue;
       if(allRateIds.includes(key)&&!usedRates.includes(key))continue;
@@ -16824,11 +16496,11 @@ window.addEventListener('resize', () => {
       if(!firstEl)firstEl=key==='genRateType'?Y('#ytGenRateType'):key==='genSegments'?(Y('#ytGenR0')||Y('#ytGenRateType')):key==='#ytShare'?Y('#ytShareTag'):key==='region'?Y('#ytRegionSetBtn'):key.startsWith('#')?Y(key):Y('#ytDataNotice');
     }
     if(yrInvalidRequired()){labels.push('購屋縣市設定（請開齒輪修正）');if(!firstEl)firstEl=Y('#ytRegionSetBtn');}
-    for(const id of FIELDS.filter(id=>!allRateIds.includes(id)&&id!==(ytAmountMode==='loan'?'#ytPrice':'#ytAmount'))){
+    for(const id of FIELDS.filter(id=>!allRateIds.includes(id))){
       const v=raw(Y(id));const valid=youthFieldValue(id,v,strictNum('#ytTerm'));
       if(v!==''&&!valid.valid){labels.push(FIELD_LABELS[id]);if(!firstEl)firstEl=Y(id);}
     }
-    const checkList = REQUIRED.map(([id,label]) => id === '#ytPrice' && ytAmountMode === 'loan' ? ['#ytAmount','貸款金額'] : [id,label]).concat(rateReq);
+    const checkList = REQUIRED.concat(rateReq);
     checkList.forEach(([sel, lab]) => {
       if (raw(Y(sel)) === '') { labels.push(lab); if (!firstEl) firstEl = Y(sel); }
     });
@@ -16997,13 +16669,13 @@ window.addEventListener('resize', () => {
      會把空白表當成新資料覆蓋第一份快照，恢復就拿不回原本的 1500。
      存的是清空當下的指紋，不是「載入時的現況」——
      否則「改新資料 → 重開 → 再清空」又會漏存那份新資料。 */
-  const CLEAR_BASE_KEY = 'youth_clear_baseline_v2';
+  const CLEAR_BASE_KEY = 'youth_clear_baseline_v3';
   /* 「清空之後使用者到底有沒有真的改過條件」不能只靠與現況比對推論。
      齒輪套用預設基準 3 時會同時改預設值與主欄，兩邊都變 3，
      用「主欄是否等於目前預設」判斷就會誤判成自動回填。
      改成明確記錄：任何一次會寫回主存檔的使用者操作都打旗標，
      清空／恢復時歸零。旗標持久化，跨重開仍有效。 */
-  const CLEAR_DIRTY_KEY = 'youth_dirty_since_clear_v2';
+  const CLEAR_DIRTY_KEY = 'youth_dirty_since_clear_v3';
   let ytDirtySinceClear = false;
   try { ytDirtySinceClear = appStorage.getItem(CLEAR_DIRTY_KEY) === '1'; } catch (e) {}
   let ytSuppressDirty = 0;
@@ -17038,17 +16710,14 @@ window.addEventListener('resize', () => {
       if (o.method !== 'amortize' && o.method !== 'principal') return null;
       if (typeof o.noHome !== 'boolean' || typeof o.neverUsed !== 'boolean'
           || typeof o.selfUse !== 'boolean') return null;
-      if (own(o,'amountMode') && o.amountMode !== 'price') return null;
-      if (own(o,'amountEstimate') && o.amountEstimate !== false) return null;
       // f 必須涵蓋全部欄位且都是字串，缺一個就不是可信的指紋
       for (const id of FIELDS) {
-        if (id === '#ytAmount' && !own(o.f,id)) continue;
         if (typeof o.f[id] !== 'string') return null;
       }
       // 清空基準不會包含使用者填寫的總價等條件；內容非空就不能拿來壓過真實新資料。
       const autoFields=['#ytShare','#ytBase'].concat(STEP_IDS);
-      if(FIELDS.some(id=>!autoFields.includes(id)&&(o.f[id]??'')!==''))return null;
-      const f={};FIELDS.forEach(id=>{f[id]=o.f[id]??'';});
+      if(FIELDS.some(id=>!autoFields.includes(id)&&o.f[id]!==''))return null;
+      const f={};FIELDS.forEach(id=>{f[id]=o.f[id];});
       // 指紋的自動數字也必須可由清空產生，abc／NaN／負數不可當作新輸入的依據。
       for (const id of autoFields) {
         const v=f[id];
@@ -17071,7 +16740,7 @@ window.addEventListener('resize', () => {
       // E指紋缺新欄時補清空預設；F指紋只能接受真正可由清空產生的single/[]。
       if (own(o,'genRateType') && o.genRateType !== 'single') return null;
       if (own(o,'genSegments') && (!Array.isArray(o.genSegments) || o.genSegments.length !== 0)) return null;
-      return JSON.stringify({f,amountMode:'price',amountEstimate:false,kind:o.kind,method:o.method,region:o.region,noHome:o.noHome,neverUsed:o.neverUsed,selfUse:o.selfUse,genRateType:'single',genSegments:[]});
+      return JSON.stringify({f,kind:o.kind,method:o.method,region:o.region,noHome:o.noHome,neverUsed:o.neverUsed,selfUse:o.selfUse,genRateType:'single',genSegments:[]});
     } catch (e) { return null; }
   }
   let ytClearBaseline = null;
@@ -17088,7 +16757,7 @@ window.addEventListener('resize', () => {
     FIELDS.forEach((id) => { f[id] = raw(Y(id)); });
     /* 不只數字欄位：身分別、還款方式與三個資格答案也是「試算條件」，
        只改身分不填數字，再清空一次也必須保住這次的變更。 */
-    return JSON.stringify({ f, ...youthAmountFingerprintState(), kind, method, region, noHome, neverUsed, selfUse, genRateType, genSegments: genSegments.map(row => ({ from: row.from, to: row.to, rate: row.rate })) });
+    return JSON.stringify({ f, kind, method, region, noHome, neverUsed, selfUse, genRateType, genSegments: genSegments.map(row => ({ from: row.from, to: row.to, rate: row.rate })) });
   }
   /* 沒有可用 baseline 時（舊版升級、key 遺失或內容損壞）不能一律當成有新資料——
      那會把舊版清空後留下的合法快照直接覆蓋掉。
@@ -17098,8 +16767,6 @@ window.addEventListener('resize', () => {
      同時辨識舊版沿用快照選項的清空框架，保護升級前的還原點。
      只要有一項對不上，就是使用者真的改過。 */
   function looksLikeFreshClear(snap) {
-    const amountFingerprint = youthAmountFingerprintState();
-    if (amountFingerprint.amountMode !== 'price' || amountFingerprint.amountEstimate) return false;
     if (!snap || typeof snap !== 'object') return false;
     if (genRateType !== 'single' || !Array.isArray(genSegments) || genSegments.length !== 0) return false;
     const sf = (snap.f && typeof snap.f === 'object' && !Array.isArray(snap.f)) ? snap.f : {};
@@ -17152,7 +16819,6 @@ window.addEventListener('resize', () => {
     // 五項清空選項已明確重設；原錯誤證據完整保留在上方清空前快照。
     ytIssues=Object.fromEntries(Object.entries(ytIssues).filter(([key])=>['region','#ytShare'].includes(key)));
     kind = 'general'; method = 'amortize';
-    ytAmountMode='price';ytAmountEstimate=false;ytAmountObserved=null;
     noHome = false; neverUsed = false; selfUse = false;
     // 只更新這五組按鈕，避免額外觸發縣市選項正規化。
     YA('[data-yt-kind]').forEach((b) => b.classList.toggle('active', b.dataset.ytKind === kind));
