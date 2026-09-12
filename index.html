@@ -380,6 +380,7 @@ if ("serviceWorker" in navigator) {
       pointer-events: none;
     }
     .app-hero-row {
+      min-height: 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -708,11 +709,16 @@ if ("serviceWorker" in navigator) {
     #bdFlowSheet .bd-flow-more summary:focus-visible { outline: 2px solid #2E6DA4; outline-offset: 3px; }
     /* 個人評估公式流程：沿用說明頁外殼，算式格參考房地合一 N。 */
     #bdFlowBtn[hidden], #bdFlowSep[hidden] { display: none !important; }
-    body[data-mode="burden"] .hero-links { margin-left: auto; }
-    body[data-mode="burden"] .hero-links .spec-btn { padding-left: 10px; padding-right: 10px; gap: 4px; }
-    body[data-mode="burden"] .hero-links .spec-btn:last-child { padding-right: 0; }
+    /* 預留恢復按鈕出現時的標題高度，切換模式不推動下方連結。 */
+    @media(max-width:384px) {
+      .app-hero-row { min-height: 60px; }
+    }
+    /* 三模式共用靠右定位及尺寸；公式流程僅向左延伸。 */
+    .hero-links { margin-left: auto; }
+    .hero-links .spec-btn { padding-left: 10px; padding-right: 10px; gap: 4px; }
+    .hero-links .spec-btn:last-child { padding-right: 0; }
     @media(max-width:360px) {
-      body[data-mode="burden"] .hero-links .spec-btn { padding-left: 7px; padding-right: 7px; font-size: 12px; letter-spacing: 0; }
+      .hero-links .spec-btn { padding-left: 7px; padding-right: 7px; font-size: 12px; letter-spacing: 0; }
     }
     #bdFlowSheet { --teal: #2E6DA4; --teal-dark: #1D4B76; --teal-light: #E6EFF8; }
     #bdFlowSheet .spec-sheet-scroll { padding: 14px 12px calc(28px + var(--safe-bottom)); }
@@ -4996,7 +5002,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12G";
+const APP_VERSION = "2026.09.12H";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
