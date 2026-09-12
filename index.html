@@ -3705,30 +3705,30 @@ if ("serviceWorker" in navigator) {
 
     /* 三模式完整名稱換行時，螢幕上的利率數字與百分號仍保持一行。 */
     .apr-footer-screen .apr-val { white-space: nowrap; flex-shrink: 0; }
-/* Only Personal Assessment's formula dialog uses the selected neutral dark palette. */
-#bdFlowSheet { background: #242526; color: #e7e7df; color-scheme: dark; --teal: #d6dfe2; --teal-dark: #303234; --teal-light: #303234; }
-#bdFlowSheet .spec-sheet-head { background: #303234; color: #e7e7df; box-shadow: none; border-bottom: 1px solid #424647; }
+/* Only Personal Assessment's formula dialog uses the selected blue-gray palette. */
+#bdFlowSheet { background: #142332; color: #e0e9f2; color-scheme: dark; --teal: #a2cffa; --teal-dark: #1b4668; --teal-light: #2d353d; }
+#bdFlowSheet .spec-sheet-head { background: #1b4668; color: #f6fbff; box-shadow: none; border-bottom: 1px solid #344555; }
 #bdFlowSheet .spec-sheet-bar h2 { font-size: 15px; font-weight: 500; }
-#bdFlowSheet .spec-sheet-close { color: #e7e7df; border-color: #74797c; background: #ffffff08; }
+#bdFlowSheet .spec-sheet-close { color: #f6fbff; border-color: #809bad; background: #ffffff08; }
 #bdFlowSheet .spec-sheet-close:focus-visible { outline: 2px solid #f2c46b; outline-offset: 3px; }
-#bdFlowSheet .spec-sheet-scroll { padding: 4px 16px calc(20px + var(--safe-bottom)); scrollbar-color: #777b7d #242526; }
+#bdFlowSheet .spec-sheet-scroll { padding: 4px 16px calc(20px + var(--safe-bottom)); scrollbar-color: #7d91a3 #142332; }
 #bdFlowSheet .bd-flow-wrap { max-width: 720px; }
-#bdFlowSheet .bd-text-flow { font-size: 14px; line-height: 1.75; color: #e7e7df; }
-#bdFlowSheet .bd-t-section { padding: 10px 0; border-bottom: 1px solid #424647; }
+#bdFlowSheet .bd-text-flow { font-size: 14px; line-height: 1.75; color: #e0e9f2; }
+#bdFlowSheet .bd-t-section { padding: 10px 0; border-bottom: 1px solid #344555; }
 #bdFlowSheet .bd-t-section:last-child { border-bottom: 0; }
-#bdFlowSheet .bd-t-heading { display: flex; gap: 6px; padding: 4px 7px; margin: 0 0 6px; border-radius: 3px; background: #303234; color: #dce5de; font-size: 13px; font-weight: 500; line-height: 1.6; }
+#bdFlowSheet .bd-t-heading { display: flex; gap: 6px; padding: 4px 7px; margin: 0 0 6px; border-radius: 3px; background: #2d353d; color: #d6e0e8; font-size: 13px; font-weight: 500; line-height: 1.6; }
 #bdFlowSheet .bd-t-number { flex: 0 0 auto; }
 #bdFlowSheet .bd-t-line { margin: 0; overflow-wrap: anywhere; }
 #bdFlowSheet .bd-t-value { font-variant-numeric: tabular-nums; white-space: nowrap; }
-#bdFlowSheet .bd-t-label { color: #b5beb7; font-size: 12px; }
+#bdFlowSheet .bd-t-label { color: #a7b8c9; font-size: 12px; }
 #bdFlowSheet .bd-t-answer { margin: 2px 0 0; color: #f2c46b; overflow-wrap: anywhere; line-height: 1.65; }
 #bdFlowSheet .bd-t-answer > .bd-t-value { font-weight: 600; }
 #bdFlowSheet .bd-t-symbol { font-size: 13px; }
-#bdFlowSheet .bd-t-alt { color: #b5beb7; font-size: 12px; white-space: nowrap; }
-#bdFlowSheet .bd-t-note { color: #b5beb7; font-size: 12px; line-height: 1.7; margin-top: 3px; overflow-wrap: anywhere; }
+#bdFlowSheet .bd-t-alt { color: #a7b8c9; font-size: 12px; white-space: nowrap; }
+#bdFlowSheet .bd-t-note { color: #a7b8c9; font-size: 12px; line-height: 1.7; margin-top: 3px; overflow-wrap: anywhere; }
 #bdFlowSheet .bd-t-math { line-height: 1.8; }
 #bdFlowSheet .bd-t-rate-row { padding: 4px 0; }
-#bdFlowSheet .bd-t-rate-row + .bd-t-rate-row { border-top: 1px solid #383d3c; }
+#bdFlowSheet .bd-t-rate-row + .bd-t-rate-row { border-top: 1px solid #344555; }
 @media (max-width: 350px) {
   #bdFlowSheet .spec-sheet-scroll { padding-left: 12px; padding-right: 12px; }
 }
@@ -5007,7 +5007,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12L";
+const APP_VERSION = "2026.09.12M";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
