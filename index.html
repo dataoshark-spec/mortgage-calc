@@ -708,6 +708,7 @@ if ("serviceWorker" in navigator) {
     #bdFlowSheet .bd-flow-more summary:focus-visible { outline: 2px solid #2E6DA4; outline-offset: 3px; }
     /* 個人評估公式流程：沿用說明頁外殼，算式格參考房地合一 N。 */
     #bdFlowBtn[hidden], #bdFlowSep[hidden] { display: none !important; }
+    body[data-mode="burden"] .hero-links { margin-left: auto; }
     body[data-mode="burden"] .hero-links .spec-btn { padding-left: 10px; padding-right: 10px; gap: 4px; }
     body[data-mode="burden"] .hero-links .spec-btn:last-child { padding-right: 0; }
     @media(max-width:360px) {
@@ -3685,10 +3686,12 @@ if ("serviceWorker" in navigator) {
     #modeGeneral .form-grid.gl-money-wide > .field:nth-child(-n+4) {
       grid-column: 1 / -1;
     }
-    /* 個人評估整元：手機摘要採單欄，完整保留萬元小數與長金額。 */
-    @media (max-width: 600px) {
-      #bdResults .summary-grid { grid-template-columns: minmax(0, 1fr); }
-    }
+
+    /* 個評四卡固定兩排兩欄；長金額完整換行，不改金額精度。 */
+    #bdResults .summary-grid, .export-capture[data-export-mode="burden"] .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+    #bdResults .summary-item, .export-capture[data-export-mode="burden"] .summary-item { min-width: 0; min-height: 86px; padding: 14px 8px; display: flex; flex-direction: column; justify-content: center; }
+    #bdResults .summary-item .label, .export-capture[data-export-mode="burden"] .summary-item .label { font-size: 0.82rem; line-height: 1.4; }
+    #bdResults .summary-item .value, .export-capture[data-export-mode="burden"] .summary-item .value { font-size: clamp(1rem, 4.8vw, 1.18rem); line-height: 1.3; overflow-wrap: anywhere; }
 
   
     /* I：基準利率視窗比照持買比率外觀；保留原 yt-set 鍵盤顯示條件。 */
@@ -3742,7 +3745,7 @@ if ("serviceWorker" in navigator) {
       <div class="hero-metrics">
         <button type="button" class="hero-lock" id="heroLock" aria-pressed="false" title="鎖定本模式的審查開關"><svg class="lk-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg><svg class="lk-shut" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
         <div class="hero-links">
-          <button type="button" class="spec-btn" id="bdFlowBtn" title="查看本次個人評估公式流程" aria-haspopup="dialog" hidden>公式流程<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
+          <button type="button" class="spec-btn" id="bdFlowBtn" title="公式流程" aria-haspopup="dialog" hidden>公式流程<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
           <span class="hero-links-sep" id="bdFlowSep" aria-hidden="true" hidden></span>
           <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢新青安3.0問答集與貸款原則" aria-haspopup="dialog">青安相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
           <span class="hero-links-sep" aria-hidden="true"></span>
@@ -4554,15 +4557,15 @@ if ("serviceWorker" in navigator) {
 
     <div class="summary-grid">
       <div class="summary-item">
-        <div class="label">預估貸款金額</div>
-        <div class="value" id="bdResLoan">—</div>
-      </div>
-      <div class="summary-item">
-        <div class="label" id="bdResPriceLabel">可買房屋總價</div>
+        <div class="label" id="bdResPriceLabel">預估可買總價</div>
         <div class="value" id="bdResPrice">—</div>
       </div>
       <div class="summary-item">
-        <div class="label">需自備款</div>
+        <div class="label">預估可貸金額</div>
+        <div class="value" id="bdResLoan">—</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">所需自備頭款</div>
         <div class="value" id="bdResDown">—</div>
       </div>
       <div class="summary-item">
@@ -4570,8 +4573,6 @@ if ("serviceWorker" in navigator) {
         <div class="value" id="bdResPay">—</div>
       </div>
     </div>
-
-    <p class="gl-note" id="bdResNote"></p>
 
     <div class="period-summary">
       <div class="period-title period-title-dashed">
@@ -4995,7 +4996,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12F";
+const APP_VERSION = "2026.09.12G";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -12953,37 +12954,15 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     B('#bdFlowPeriodBody').innerHTML = visible + '<details id="bdFlowMore" class="bd-flow-more"><summary class="bd-flow-math">詳細算式</summary>' + details + '</details>';
     B('#bdFlowMore').addEventListener('toggle', fitBdFlowRows);
   }
+  /* 公式流程內容待重新設計；保留入口與原視窗操作。 */
   function renderBdFlowTemplate() {
-    const s = bdFlowTemplateInputs(), body = B('#bdFlowBody');
-    body.dataset.flowState = 'template';
-    let capacity = flowLine(flowCell('月付預算（元）', '—'), flowOp('→'), flowResult('月付可貸額度（萬）', '—', 'capacity')) + flowNote('以各期月付不超過預算為準。');
-    let property = s.downGiven
-      ? flowLine(flowCell('本次貸款（萬）', '—', '', 'loan'), flowOp('+'), flowCell('可用自備款（萬）', flowWan(s.down), '', 'usableDown'), flowOp('→'), flowResult('可負擔房價（萬）', '—', 'price'))
-      : flowLine(flowCell('月付可貸額度（萬）', '—'), flowOp('÷'), flowCell('設定成數', flowNumber(s.ratio) + '%'), flowOp('→'), flowResult('推估房價（萬）', '—', 'price')) + flowLine(flowResult('本次貸款（萬）', '—', 'loan', true));
-    property += flowLine(flowCell('房價（萬）', '—'), flowOp('−'), flowCell('本次貸款（萬）', '—'), flowOp('='), flowResult('需自備（萬）', '—', 'needDown'));
-    body.innerHTML = flowStatus(false) + '<div class="bd-flow-card">' + flowGroup('① 月付預算', bdFlowBudget(s, false), 1) +
-      flowGroup('② 貸款條件', bdFlowTerms(s, false), 2) + flowGroup('③ 可以貸多少', capacity, 3) +
-      flowGroup('④ 房價與自備款', property, 4) + flowGroup('⑤ 每期怎麼還', bdFlowPeriodShell(null), 5) + '</div>' + flowFooter();
-    bdFlowTemplatePeriod(s);
-    fitBdFlowRows();
+    const body = B('#bdFlowBody');
+    body.dataset.flowState = 'empty';
+    body.replaceChildren();
     return true;
   }
   function renderBdFlow() {
-    if (!hasBdFlowResult()) return renderBdFlowTemplate();
-    const body = B('#bdFlowBody'), s = bdFlowSnapshot, r = s.res;
-    const preserveReading = !bdFlowSheet.hidden && bdFlowSheet.dataset.modalClosing !== '1';
-    const previousSelect = preserveReading ? B('#bdFlowPeriod') : null;
-    const previousPeriod = previousSelect && !previousSelect.disabled ? Number(previousSelect.value) : null;
-    const detailsOpen = preserveReading && !!B('#bdFlowMore')?.open;
-    body.dataset.flowState = 'result';
-    body.innerHTML = flowStatus(true) + '<div class="bd-flow-card">' + flowGroup('① 月付預算', bdFlowBudget(s, true), 1) +
-      flowGroup('② 貸款條件', bdFlowTerms(s, true), 2) + flowGroup('③ 可以貸多少', renderBdFlowCapacity(s), 3) +
-      flowGroup('④ 房價與自備款', bdFlowProperty(s), 4) + flowGroup('⑤ 每期怎麼還', bdFlowPeriodShell(r), 5) + '</div>' + flowFooter();
-    if (Number.isInteger(previousPeriod) && previousPeriod >= 0 && previousPeriod < r.sched.length) B('#bdFlowPeriod').value = String(previousPeriod);
-    renderBdFlowPeriod(s, Number(B('#bdFlowPeriod').value));
-    if (detailsOpen) B('#bdFlowMore').open = true;
-    B('#bdFlowPeriod').addEventListener('change', e => renderBdFlowPeriod(s, Number(e.target.value)));
-    return true;
+    return renderBdFlowTemplate();
   }
 
   const bdFlowSheet = B('#bdFlowSheet');
@@ -13369,34 +13348,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     B('#bdAprBlock').classList.toggle('hidden', !bdShouldShowApr());
   }
 
-  /* 個人評估結果沿用輸入條件與原還款明細。 */
-
-  function renderNote(res) {
-    const el = B('#bdResNote');
-    if (!el) return;
-    const lines = [];
-    const rangeText = range => range.min === range.max ? yuan(range.min) : yuan(range.min) + '～' + yuan(range.max);
-    if (res.grace > 0) {
-      lines.push('寬限期內只繳利息，每月 <em>' + rangeText(res.gracePayments) + '</em>；' +
-        '寬限期結束後，每月 <em>' + rangeText(res.repayPayments) + '</em>。本金在剩下的 ' +
-        (res.term - res.grace) + ' 年內償還，各期金額請看還款明細。');
-    }
-    // 不套用住宅門檻與貸款戶數。
-    if (!res.downGiven) {
-      lines.push('<em>自備款尚未填入</em>：房價依月付能力與成數推估，需準備上方所列自備款；尚未確認你持有這筆資金。');
-    } else if (res.downBound && !res.priceBound) {
-      lines.push('目前主要受<em>自備款</em>限制：已依可用自備款與成數上限，計算可負擔的房價。');
-    } else {
-      lines.push('本次已同時檢查<em>可用自備款、成數上限與全期月付</em>，實際需自備金額列於上方。');
-    }
-    if (bdMethod === 'principal' || bdRateType === 'multi') {
-      lines.push('以<em>全期最高月付</em>（' + yuan(res.payAfter) + '）不超過可負擔月付為準，包含寬限期、利率變動與最後一期。');
-    }
-    lines.push('本評估以<em>' + (bdMethod === 'principal' ? '本金平均攤還' : '本息平均攤還') +
-      '</em>估算，未包含稅費、裝潢與其他購屋成本。');
-    el.innerHTML = lines.map(line => '<span class="bd-result-note-line">※ ' + line + '</span>').join('');
-    el.hidden = false;
-  }
+  /* 結果摘要不再附加解釋段落。 */
 
   /* 每月還款：把連續同金額的期數併成一列，寬限期結束與利率換段一定切開。
      與一般貸款的 groupPeriodSummary 同一套邏輯，只是利率改讀本面板的設定。 */
@@ -13477,13 +13429,12 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     bdFlowSnapshot = captureBdFlow(res);
     bdFlowSnapshot.graceGiven = has('#bdGrace');
     // 以同次計算結果產生條件與明細。
-    B('#bdResPriceLabel').textContent = res.downGiven ? '可買房屋總價' : '推估房屋總價';
+    B('#bdResPriceLabel').textContent = '預估可買總價';
     B('#bdResLoan').textContent = wan(res.loan);
     B('#bdResPrice').textContent = wan(res.price);
     B('#bdResDown').textContent = wan(res.needDown);
     B('#bdResPay').textContent = yuan(res.payAfter);
     renderConditions(res);
-    renderNote(res);
     bdGroups = groupPeriods(res.sched, res.grace * 12, res.term * 12);
     renderPeriodBlock();
     renderDetail(res.sched);
@@ -13791,9 +13742,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       return (l ? l.textContent.trim() : '') + '：' + (v ? v.textContent.trim() : '');
     });
     const lines = ['個人購屋能力評估結果', '', '【評估條件】', ...cond, '',
-      '預估貸款金額：' + (B('#bdResLoan')?.textContent || '—'),
-      (B('#bdResPriceLabel')?.textContent || '推估房屋總價') + '：' + (B('#bdResPrice')?.textContent || '—'),
-      '需自備款：' + (B('#bdResDown')?.textContent || '—'),
+      (B('#bdResPriceLabel')?.textContent || '預估可買總價') + '：' + (B('#bdResPrice')?.textContent || '—'),
+      '預估可貸金額：' + (B('#bdResLoan')?.textContent || '—'),
+      '所需自備頭款：' + (B('#bdResDown')?.textContent || '—'),
       '預估每月房貸：' + (B('#bdResPay')?.textContent || '—')];
     return lines.join('\n');
   };
@@ -14141,8 +14092,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       (row.querySelector('.cond-rate-value')?.textContent || '').trim());
     const val = sel => (B(sel)?.textContent || '').trim();
     const lines = ['個人購屋能力評估結果', '', '【評估條件】', ...cond, ...rates, '',
-      '預估貸款金額：' + val('#bdResLoan'), val('#bdResPriceLabel') + '：' + val('#bdResPrice'),
-      '需自備款：' + val('#bdResDown'), '預估每月房貸：' + val('#bdResPay'),
+      val('#bdResPriceLabel') + '：' + val('#bdResPrice'), '預估可貸金額：' + val('#bdResLoan'),
+      '所需自備頭款：' + val('#bdResDown'), '預估每月房貸：' + val('#bdResPay'),
       '', '【每月還款】', ...periodShareLines(B('#bdPeriodLines'))];
     if (!B('#bdAprBlock').classList.contains('hidden')) {
       lines.push('換算年利率（全案合計）：' + val('#bdResApr'), APR_EXPORT_NOTE);
