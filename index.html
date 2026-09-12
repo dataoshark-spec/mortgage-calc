@@ -3705,6 +3705,33 @@ if ("serviceWorker" in navigator) {
 
     /* 三模式完整名稱換行時，螢幕上的利率數字與百分號仍保持一行。 */
     .apr-footer-screen .apr-val { white-space: nowrap; flex-shrink: 0; }
+/* Only Personal Assessment's formula dialog uses the selected neutral dark palette. */
+#bdFlowSheet { background: #242526; color: #e7e7df; color-scheme: dark; --teal: #d6dfe2; --teal-dark: #303234; --teal-light: #303234; }
+#bdFlowSheet .spec-sheet-head { background: #303234; color: #e7e7df; box-shadow: none; border-bottom: 1px solid #424647; }
+#bdFlowSheet .spec-sheet-bar h2 { font-size: 15px; font-weight: 500; }
+#bdFlowSheet .spec-sheet-close { color: #e7e7df; border-color: #74797c; background: #ffffff08; }
+#bdFlowSheet .spec-sheet-close:focus-visible { outline: 2px solid #f2c46b; outline-offset: 3px; }
+#bdFlowSheet .spec-sheet-scroll { padding: 4px 16px calc(20px + var(--safe-bottom)); scrollbar-color: #777b7d #242526; }
+#bdFlowSheet .bd-flow-wrap { max-width: 720px; }
+#bdFlowSheet .bd-text-flow { font-size: 14px; line-height: 1.75; color: #e7e7df; }
+#bdFlowSheet .bd-t-section { padding: 10px 0; border-bottom: 1px solid #424647; }
+#bdFlowSheet .bd-t-section:last-child { border-bottom: 0; }
+#bdFlowSheet .bd-t-heading { display: flex; gap: 6px; padding: 4px 7px; margin: 0 0 6px; border-radius: 3px; background: #303234; color: #dce5de; font-size: 13px; font-weight: 500; line-height: 1.6; }
+#bdFlowSheet .bd-t-number { flex: 0 0 auto; }
+#bdFlowSheet .bd-t-line { margin: 0; overflow-wrap: anywhere; }
+#bdFlowSheet .bd-t-value { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#bdFlowSheet .bd-t-label { color: #b5beb7; font-size: 12px; }
+#bdFlowSheet .bd-t-answer { margin: 2px 0 0; color: #f2c46b; overflow-wrap: anywhere; line-height: 1.65; }
+#bdFlowSheet .bd-t-answer > .bd-t-value { font-weight: 600; }
+#bdFlowSheet .bd-t-symbol { font-size: 13px; }
+#bdFlowSheet .bd-t-alt { color: #b5beb7; font-size: 12px; white-space: nowrap; }
+#bdFlowSheet .bd-t-note { color: #b5beb7; font-size: 12px; line-height: 1.7; margin-top: 3px; overflow-wrap: anywhere; }
+#bdFlowSheet .bd-t-math { line-height: 1.8; }
+#bdFlowSheet .bd-t-rate-row { padding: 4px 0; }
+#bdFlowSheet .bd-t-rate-row + .bd-t-rate-row { border-top: 1px solid #383d3c; }
+@media (max-width: 350px) {
+  #bdFlowSheet .spec-sheet-scroll { padding-left: 12px; padding-right: 12px; }
+}
 </style>
   <!-- 匯出函式庫改成本地同源，Service Worker 才能預快取，離線冷啟動也能匯出。
        版本與原本 CDN 完全相同：html2canvas 1.4.1、jsPDF 2.5.1。 -->
@@ -4980,7 +5007,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12J";
+const APP_VERSION = "2026.09.12L";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -12806,15 +12833,319 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     B('#bdFlowPeriodBody').innerHTML = visible + '<details id="bdFlowMore" class="bd-flow-more"><summary class="bd-flow-math">詳細算式</summary>' + details + '</details>';
     B('#bdFlowMore').addEventListener('toggle', fitBdFlowRows);
   }
-  /* 公式流程內容待重新設計；保留入口與原視窗操作。 */
+  /* Display-only flow: official amounts always come from the current result snapshot. */
+  function bdVisualRow(...items) {
+    let operator = '';
+    return '<div class="bd-v-row">' + items.map(item => {
+      if (item.startsWith('<span class="bd-flow-op"')) { operator += item; return ''; }
+      const answer = item.startsWith('<div class="bd-flow-cell bd-flow-result');
+      const part = '<div class="bd-v-item' + (answer ? ' bd-v-answer' : '') + '">' + operator + item + '</div>';
+      operator = '';
+      return part;
+    }).join('') + '</div>';
+  }
+  function bdVisualSection(number, title, content) {
+    return '<section class="bd-v-section" data-flow-step="' + number + '"><h3 class="bd-v-title">' +
+      ['①','②','③','④','⑤','⑥'][number - 1] + ' ' + flowEscape(title) + '</h3>' + content + '</section>';
+  }
+  function bdVisualField(sel, optionalZero = false) {
+    const el = B(sel);
+    if (!el || calcKeyboard.inputEl === el || bdStoredIssues.some(issue => issue.path === sel)) return null;
+    const text = (calcKeyboard.inputEl === el ? String(el.dataset.calcRaw ?? '') : raw(el)).trim();
+    if (text === '') return optionalZero ? 0 : null;
+    const committed = bdFlowCommitted(sel);
+    if (!committed || !parseStoredNumeric(committed.text, bdFieldRule(sel, incomeUnit)).ok) return null;
+    return committed.value;
+  }
+  function bdVisualPartial() {
+    const state = bdFlowTemplateInputs();
+    const money = (sel, zero = false) => {
+      if (sel !== '#bdDown' && bdStoredIssues.some(issue => issue.path === 'incomeUnit')) return null;
+      if (bdVisualField(sel, zero) === null) return null;
+      return sel === '#bdDown' ? bdDownYuan() : moneyYuan(sel);
+    };
+    const s = { ...state, income: state.incomeMode === null ? null : money('#bdIncome'),
+      debt: money('#bdDebt', true), willing: money('#bdWilling'), help: money('#bdHelp', true), down: money('#bdDown'),
+      dti: bdVisualField('#bdDti'), ratio: bdVisualField('#bdRatio'), term: bdVisualField('#bdTerm'),
+      grace: bdVisualField('#bdGrace', true), rate: bdVisualField('#bdRate') };
+    const el = B('#bdWilling');
+    const willingRaw = (calcKeyboard.inputEl === el ? String(el.dataset.calcRaw ?? '') : raw(el)).trim();
+    s.willingBlank = calcKeyboard.inputEl !== el && willingRaw === '' && !bdStoredIssues.some(issue => issue.path === '#bdWilling');
+    s.ceiling = s.income !== null && s.dti !== null && s.debt !== null ? dtiCeiling() : null;
+    s.personalPay = s.willing !== null && s.help !== null ? s.willing + s.help : null;
+    s.pay = s.ceiling !== null && (s.willingBlank || s.personalPay !== null) ? usedMonthlyPay() : null;
+    return s;
+  }
+  function bdVisualStages(s, valid) {
+    const rows = [];
+    if (valid) {
+      s.rates.forEach((item, i) => {
+        const grace = i < s.res.grace * 12;
+        const last = rows[rows.length - 1];
+        if (last && last.rate === item.rate && last.grace === grace) {
+          last.to = i + 1;
+          last.peak = Math.max(last.peak, s.capacitySchedule[i].payment);
+        } else rows.push({ from: i + 1, to: i + 1, rate: item.rate, grace, peak: s.capacitySchedule[i].payment });
+      });
+    } else if (!bdStoredIssues.some(issue => issue.path === 'bdSegs.$rows')) {
+      bdSegs.forEach((seg, i) => {
+        const known = key => !bdStoredIssues.some(issue => issue.path === 'bdSegs.' + i + '.' + key);
+        rows.push({ from: known('from') && seg.from > 0 ? seg.from : null,
+          to: known('to') ? seg.to > 0 ? seg.to : s.term !== null ? s.term * 12 : '末' : null,
+          rate: known('rate') && bdRateValueValid(String(seg.rate)) ? Number(seg.rate) : null, peak: null });
+      });
+    }
+    if (!rows.length) rows.push({ from: null, to: null, rate: null, peak: null });
+    return '<div class="bd-v-stage-list">' + rows.map(row => '<div class="bd-v-stage">' +
+      flowCell(row.grace ? '寬限期' : '期數', (row.from ?? '—') + '～' + (row.to ?? '—')) +
+      flowCell('年利率', row.rate === null ? '—' : flowNumber(row.rate) + '%') +
+      flowCell('最高月付（元）', flowNumber(row.peak)) + '</div>').join('') + '</div>';
+  }
+  function bdVisualCapacity(s, valid) {
+    const r = valid ? s.res : null;
+    const term = valid ? r.term : s.term, grace = valid ? r.grace : s.grace;
+    const n = term !== null && grace !== null && term > grace ? (term - grace) * 12 : null;
+    const pay = valid ? r.pay : s.pay;
+    const method = s.method === 'principal' ? '本金平均攤還' : s.method === 'amortize' ? '本息平均攤還' : '還款方式 —';
+    let html = '<p class="bd-v-subtitle">' + method + '</p>' + bdVisualRow(
+      flowOp('（'), flowCell('貸款年限（年）', flowNumber(term)), flowOp('−'), flowCell('寬限期（年）', flowNumber(grace)),
+      flowOp('）×'), flowCell('每年期數', '12'), flowOp('＝'), flowResult('攤還期數 n', flowNumber(n), 'repayMonths', true));
+    if (s.rateType === 'single') {
+      const annualRate = valid ? s.rates[0].rate : s.rate;
+      const rate = annualRate === null ? null : annualRate / 1200;
+      html += bdVisualRow(flowCell('年利率', annualRate === null ? '—' : flowNumber(annualRate) + '%'), flowOp('÷ 12 →'),
+        flowCell('月利率 r（小數）', rate === null ? '—' : '≈ ' + rate.toLocaleString('en-US', { maximumFractionDigits: 10, useGrouping: false }), '', 'monthlyRate'));
+      // This analytic estimate explains the inverse relationship only. It is never fed to the solver or result cards.
+      const factor = rate !== null && n !== null ? s.method === 'principal' ? 1 / n + rate
+        : s.method === 'amortize' ? rate === 0 ? 1 / n : rate / -Math.expm1(-n * Math.log1p(rate)) : null : null;
+      const estimate = factor > 0 && pay !== null ? pay / factor : null;
+      const formula = s.method === 'principal'
+        ? '<span class="bd-v-frac"><span>1</span><span>n</span></span><span>＋ r</span>'
+        : '<span class="bd-v-frac"><span>1 − (1 ＋ r)<sup>−n</sup></span><span>r</span></span>';
+      if (s.method !== null) html += '<div class="bd-v-math"><span>採用月付</span><span>' +
+        (s.method === 'principal' ? '÷〔' : '×') + '</span>' + formula + (s.method === 'principal' ? '<span>〕</span>' : '') + '</div>';
+      html += bdVisualRow(flowCell('採用月付（元）', flowNumber(pay)), flowOp('→'),
+        flowResult('概算可貸（萬）', estimate === null || !Number.isFinite(estimate) ? '—' : '≈ ' + flowWan(estimate), 'capacityEstimate', true));
+    } else if (s.rateType === 'multi') {
+      html += '<p class="bd-v-subtitle">依各段利率逐期反推</p>' + bdVisualStages(s, valid);
+      html += s.method === 'principal'
+        ? '<div class="bd-v-math">每期月付＝當期本金＋期初餘額 × 月利率</div>'
+        : s.method === 'amortize' ? '<div class="bd-v-math"><span>本段月付概算＝本段起始本金 ×</span><span class="bd-v-frac"><span>r</span><span>1 − (1 ＋ r)<sup>−n</sup></span></span></div><p class="bd-v-check">r 為本段月利率，n 為剩餘攤還期數；寬限期只繳利息。</p>'
+        : '<div class="bd-v-math">還款方式 —</div>';
+    }
+    html += '<p class="bd-v-subtitle">逐期整元核對</p>';
+    let peak = null, peakIndex = -1;
+    if (valid) {
+      peakIndex = s.capacitySchedule.reduce((best, row, index, rows) => row.payment > rows[best].payment ? index : best, 0);
+      peak = s.capacitySchedule[peakIndex];
+    }
+    if (s.rateType === 'multi') html += bdVisualRow(
+      flowCell(peak ? '第 ' + peak.period + ' 期本金（元）' : '最高月付期本金（元）', flowNumber(peak?.principal)), flowOp('＋'),
+      flowCell('當期利息（元）', flowNumber(peak?.interest)), flowOp('＝'),
+      flowResult('最高月付（元）', flowNumber(peak?.payment), 'capacityPeakBreakdown', true));
+    html += bdVisualRow(flowCell('全期最高月付（元）', flowNumber(peak?.payment), '', 'capacityPeak'), flowOp('≤'),
+      flowCell('採用月付（元）', flowNumber(pay)), flowOp('→'),
+      flowResult('月付可貸上限（萬）', valid ? flowWan(r.capacity) : '—', 'capacity'));
+    return html;
+  }
+  function bdVisualLoan(s, valid) {
+    const r = valid ? s.res : null, ratio = valid ? r.ratioPct : s.ratio;
+    const down = s.down, downBlank = valid ? !r.downGiven : calcKeyboard.inputEl !== B('#bdDown') && raw(B('#bdDown')).trim() === '' &&
+      !bdStoredIssues.some(issue => issue.path === '#bdDown');
+    const byDown = down !== null && ratio !== null ? bdLoanByDown(down, ratio) : null;
+    let html = '';
+    if (ratio === 100) html += bdVisualRow(flowCell('成數上限', '100%'), flowOp('→'),
+      flowCell('自備款貸款上限', '不受此項限制', '', 'byDown'));
+    else html += bdVisualRow(flowCell('自備款（萬）', flowWan(down)), flowOp('×'),
+      flowCell('成數上限', ratio === null ? '—' : ratio + '%'), flowOp('÷'),
+      flowCell('自備比例', ratio === null ? '—' : (100 - ratio) + '%'), flowOp('→'),
+      flowResult('自備款貸款上限（萬）', byDown === null ? '—' : flowWan(byDown), 'byDown', true));
+    const noDownBound = downBlank || ratio === 100;
+    const limit = valid ? Math.min(r.capacity, r.downGiven ? bdLoanByDown(s.down, r.ratioPct) : Infinity) : null;
+    if (!noDownBound) html += bdVisualRow(flowCell('月付可貸上限（萬）', valid ? flowWan(r.capacity) : '—'), flowOp('與'),
+      flowCell('自備款貸款上限（萬）', byDown === null ? '—' : flowWan(byDown)), flowOp('取小 →'),
+      flowResult('貸款上限（萬）', flowWan(limit), 'loanLimit', true));
+    if (downBlank && ratio !== 100) html += '<p class="bd-v-check">自備款未填，先依月付能力評估。</p>';
+    html += bdVisualRow(flowCell(noDownBound ? '月付可貸上限（萬）' : '貸款上限（萬）', flowWan(limit)), flowOp('核對 →'),
+      flowResult('預估可貸金額（萬）', valid ? flowWan(r.loan) : '—', 'loan'));
+    return html;
+  }
+  /* Text presentation only. Final amounts come from the existing same-run snapshot. */
+  function bdTextValue(value, key = '', unit = '') {
+    const shown = value === null || value === undefined || (typeof value === 'number' && !Number.isFinite(value))
+      ? '—' : typeof value === 'number' ? flowNumber(value) : String(value);
+    return '<span class="bd-t-value"' + (key ? ' data-flow-value="' + key + '" data-flow-unit="' + unit + '"' : '') + '>' + flowEscape(shown) + '</span>';
+  }
+  function bdTextTerm(label, value, key = '', suffix = '') {
+    return bdTextValue(value, key) + (value !== null && suffix ? flowEscape(suffix) : '') +
+      '<span class="bd-t-label">（' + flowEscape(label) + '）</span>';
+  }
+  function bdTextLine(html, extra = '') {
+    return '<div class="bd-t-line' + (extra ? ' ' + extra : '') + '">' + html + '</div>';
+  }
+  function bdTextNote(html) {
+    return '<div class="bd-t-note">' + html + '</div>';
+  }
+  function bdTextAnswer(label, value, key, unit = '元', symbol = '＝', amount = true) {
+    const numeric = typeof value === 'number' && Number.isFinite(value);
+    const alternative = amount && numeric && Math.abs(value) >= 10000
+      ? '<span class="bd-t-alt"> ≈ ' + flowEscape((value / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 2 })) + ' 萬</span>' : '';
+    return '<div class="bd-t-answer"><span class="bd-t-symbol">' + flowEscape(symbol) + ' </span>' +
+      bdTextValue(value, key, amount ? 'yuan' : unit) + (numeric && unit ? ' ' + flowEscape(unit) : '') +
+      '<span class="bd-t-label">（' + flowEscape(label) + '）</span>' + alternative + '</div>';
+  }
+  function bdTextSection(number, title, html) {
+    return '<section class="bd-t-section" data-flow-step="' + number + '"><h3 class="bd-t-heading">' +
+      '<span class="bd-t-number">' + ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'][number - 1] + '</span>' +
+      '<span>' + flowEscape(title) + '</span></h3>' + html + '</section>';
+  }
+  function bdTextRates(s, valid) {
+    if (s.rateType === 'single') {
+      const rate = valid ? s.rates[0].rate : s.rate;
+      const month = rate === null ? null : rate / 12;
+      const decimal = rate === null ? null : (rate / 1200).toLocaleString('en-US', { maximumFractionDigits: 10, useGrouping: false });
+      return bdTextLine(bdTextTerm('年利率', rate, '', '%') + ' ÷ 12') +
+        bdTextAnswer('月利率', month === null ? null : month.toLocaleString('en-US', { maximumFractionDigits: 7, useGrouping: false }) + '%', 'monthlyRatePercent', '', '≈', false) +
+        bdTextNote('r ≈ ' + bdTextValue(decimal, 'monthlyRate', 'decimal') + '；計算保留完整精度。');
+    }
+    if (s.rateType !== 'multi') return bdTextLine('年利率 — ÷ 12') + bdTextAnswer('月利率', null, 'monthlyRatePercent', '', '≈', false);
+    const rows = [];
+    if (valid) {
+      s.rates.forEach((item, i) => {
+        const last = rows[rows.length - 1];
+        if (last && last.rate === item.rate) last.to = i + 1;
+        else rows.push({ from: i + 1, to: i + 1, rate: item.rate });
+      });
+    } else if (!bdStoredIssues.some(issue => issue.path === 'bdSegs.$rows')) {
+      bdSegs.forEach((seg, i) => {
+        const known = field => !bdStoredIssues.some(issue => issue.path === 'bdSegs.' + i + '.' + field);
+        rows.push({ from: known('from') && seg.from > 0 ? seg.from : null,
+          to: known('to') ? seg.to > 0 ? seg.to : s.term !== null ? s.term * 12 : '末' : null,
+          rate: known('rate') && bdRateValueValid(String(seg.rate)) ? Number(seg.rate) : null });
+      });
+    }
+    if (!rows.length) rows.push({ from: null, to: null, rate: null });
+    return rows.map(row => {
+      const decimal = row.rate === null ? '—' : (row.rate / 1200).toLocaleString('en-US', { maximumFractionDigits: 10, useGrouping: false });
+      const month = row.rate === null ? '—' : (row.rate / 12).toLocaleString('en-US', { maximumFractionDigits: 7, useGrouping: false }) + '%';
+      return '<div class="bd-t-rate-row"><span class="bd-t-label">第 ' + flowEscape(row.from ?? '—') + '～' + flowEscape(row.to ?? '—') + ' 期</span>' +
+        bdTextLine(bdTextValue(row.rate) + (row.rate === null ? '' : '%') + ' ÷ 12 ≈ ' + flowEscape(month)) +
+        bdTextNote('r ≈ ' + flowEscape(decimal)) + '</div>';
+    }).join('');
+  }
+  function bdTextCapacity(s, valid, n, pay) {
+    const r = valid ? s.res : null;
+    const methodKnown = s.method === 'amortize' || s.method === 'principal';
+    let html = '';
+    if (s.rateType === 'single') {
+      const annual = valid ? s.rates[0].rate : s.rate;
+      const rate = annual === null ? null : annual / 1200;
+      // This estimate is explanatory only and never enters the loan solver.
+      const factor = rate !== null && n !== null && methodKnown
+        ? s.method === 'principal' ? 1 / n + rate : rate === 0 ? 1 / n : rate / -Math.expm1(-n * Math.log1p(rate)) : null;
+      const estimate = factor > 0 && pay !== null ? pay / factor : null;
+      const exponent = n === null ? 'n' : flowNumber(n);
+      html += bdTextLine(bdTextTerm('有效月付上限', pay));
+      html += methodKnown ? bdTextLine(s.method === 'principal'
+        ? '÷〔1 ÷ ' + exponent + ' ＋ r〕'
+        : '×〔1 −（1 ＋ r）^（−' + exponent + '）〕÷ r', 'bd-t-math')
+        : bdTextLine('還款方式 —');
+      html += bdTextAnswer('公式概算', estimate === null || !Number.isFinite(estimate) ? null : Math.round(estimate), 'capacityEstimate', '元', '≈');
+    } else if (s.rateType === 'multi') {
+      html += bdTextLine(s.method === 'principal'
+        ? '每期月付＝本期本金＋期初餘額 × r'
+        : s.method === 'amortize' ? '本段月付概算＝本段起始本金 × r ÷〔1 −（1 ＋ r）^（−n）〕'
+        : '還款方式 —', 'bd-t-math');
+      html += bdTextNote('依各段利率試算；r 為本段月利率，n 為剩餘攤還期數。');
+    } else html += bdTextLine('利率計算方式 —');
+    if ((valid ? r.grace : s.grace) > 0) html += bdTextNote('寬限期內只繳利息。');
+    let peak = null;
+    if (valid && s.capacitySchedule.length) peak = s.capacitySchedule.reduce((best, row) => row.payment > best.payment ? row : best);
+    if (s.rateType === 'multi') {
+      html += bdTextLine(bdTextTerm('最高月付期本金', peak?.principal ?? null) + ' ＋ ' + bdTextTerm('當期利息', peak?.interest ?? null) +
+        ' ＝ ' + bdTextValue(peak?.payment ?? null, 'capacityPeakBreakdown', 'yuan'));
+    }
+    html += bdTextNote('核對全期最高月付 ' + bdTextValue(peak?.payment ?? null, 'capacityPeak', 'yuan') + ' 元 ≤ 月付上限 ' + bdTextValue(pay) + ' 元');
+    html += bdTextAnswer('月付可貸上限', valid ? r.capacity : null, 'capacity', '元', '核對後＝');
+    if (methodKnown) html += bdTextNote(s.method === 'principal' ? '本金平均攤還' : '本息平均攤還');
+    return html;
+  }
+  function bdTextContent(valid) {
+    const s = valid ? bdFlowSnapshot : bdVisualPartial(), r = valid ? s.res : null;
+    const ceiling = valid ? r.ceiling : s.ceiling, pay = valid ? r.pay : s.pay;
+    const willingBlank = valid ? !s.willingGiven : s.willingBlank;
+    const personalPay = valid ? s.willingGiven ? s.willing + s.help : null : s.personalPay;
+    const term = valid ? r.term : s.term, grace = valid ? r.grace : s.grace;
+    const n = term !== null && grace !== null && term > grace ? (term - grace) * 12 : null;
+    const ratio = valid ? r.ratioPct : s.ratio;
+    const downBlank = valid ? !r.downGiven : calcKeyboard.inputEl !== B('#bdDown') && raw(B('#bdDown')).trim() === '' && !bdStoredIssues.some(issue => issue.path === '#bdDown');
+    const byDown = s.down !== null && ratio !== null ? bdLoanByDown(s.down, ratio) : null;
+    const sections = [];
+    let income = bdTextTerm(s.incomeMode === 'year' ? '年收入' : '月收入', s.income, 'income');
+    if (s.incomeMode === 'year') income += ' ÷ 12';
+    income += ' × ' + bdTextTerm('收支比', s.dti === null ? null : Number(s.dti), '', '%') + ' − ' + bdTextTerm('既有負債月付', s.debt);
+    // Exact remainder selects the explanatory symbol only; ceiling remains the original result.
+    let clipped = false, rounded = false;
+    if (s.income !== null && s.dti !== null && s.debt !== null) {
+      const fraction = ratFromDecStr(String(s.dti));
+      if (fraction) {
+        const denominator = fraction.d * 100n * (s.incomeMode === 'year' ? 12n : 1n);
+        const numerator = BigInt(s.income) * fraction.n - BigInt(s.debt) * denominator;
+        clipped = numerator < 0n;
+        rounded = numerator > 0n && numerator % denominator !== 0n;
+      }
+    }
+    sections.push(bdTextSection(1, '計算收入條件允許的月付上限', bdTextLine(income) +
+      bdTextAnswer('收入條件月付上限', ceiling, 'ceiling', '元', clipped ? '最低以 0 計 →' : rounded ? '取整元 →' : '＝')));
+    sections.push(bdTextSection(2, '計算個人願意負擔的月付上限', bdTextLine(bdTextTerm('願意負擔月付', willingBlank ? null : s.willing) +
+      ' ＋ ' + bdTextTerm('他人協助月付', s.help)) + bdTextAnswer(willingBlank ? '個人月付上限・未設定' : '個人月付上限', personalPay, 'personalPay')));
+    const budget = willingBlank ? bdTextLine('沿用收入條件月付上限 ' + bdTextValue(ceiling))
+      : bdTextLine('取小值〔' + bdTextTerm('收入條件月付上限', ceiling) + '，' + bdTextTerm('個人月付上限', personalPay) + '〕');
+    sections.push(bdTextSection(3, '決定本次採用的月付上限', budget + bdTextAnswer('有效月付上限', pay, 'pay')));
+    sections.push(bdTextSection(4, '計算寬限期結束後的攤還期數', bdTextLine('〔' + bdTextTerm('貸款年限', term, '', ' 年') +
+      ' − ' + bdTextTerm('寬限期', grace, '', ' 年') + '〕× 12') + bdTextAnswer('本金攤還期數', n, 'repayMonths', '期', '＝', false)));
+    sections.push(bdTextSection(5, s.rateType === 'multi' ? '計算各段月利率' : '計算月利率', bdTextRates(s, valid)));
+    sections.push(bdTextSection(6, '由月付上限反推貸款能力', bdTextCapacity(s, valid, n, pay)));
+    let downHtml;
+    if (ratio === 100) downHtml = bdTextLine('貸款成數上限 100%') + bdTextAnswer('自備款可支持的貸款上限', '不受此項限制', 'byDown', '', '→', false);
+    else if (downBlank) downHtml = bdTextLine('自備款未填，先依月付能力評估。') + bdTextAnswer('自備款可支持的貸款上限', null, 'byDown');
+    else downHtml = bdTextLine(bdTextTerm('自備款', s.down) + ' × ' + bdTextTerm('貸款成數上限', ratio, '', '%') +
+      ' ÷〔1 − ' + bdTextTerm('貸款成數上限', ratio, '', '%') + '〕') + bdTextAnswer('自備款可支持的貸款上限', byDown, 'byDown', '元', '取整後＝');
+    sections.push(bdTextSection(7, '計算自備款能支持的貸款上限', downHtml));
+    const noDownBound = downBlank || ratio === 100;
+    const limit = valid ? Math.min(r.capacity, r.downGiven ? bdLoanByDown(s.down, r.ratioPct) : Infinity) : null;
+    let loanHtml = noDownBound ? bdTextLine(bdTextTerm('月付可貸上限', valid ? r.capacity : null, 'loanLimit'))
+      : bdTextLine('取小值〔' + bdTextTerm('月付可貸上限', valid ? r.capacity : null) + '，' + bdTextTerm('自備款可支持的貸款上限', byDown) + '〕') +
+        bdTextAnswer('貸款上限', limit, 'loanLimit');
+    loanHtml += bdTextNote('核對本次最高月付 ' + bdTextValue(valid ? r.payAfter : null, 'peakPayment', 'yuan') + ' 元 ≤ 月付上限 ' + bdTextValue(pay, 'payLimit', 'yuan') + ' 元');
+    loanHtml += bdTextAnswer('預估可貸金額', valid ? r.loan : null, 'loan', '元', '核對後＝');
+    sections.push(bdTextSection(8, '決定預估可貸金額', loanHtml));
+    // The existing no-down solver derives price from capacity, then rechecks final loan.
+    const property = downBlank ? bdTextLine(bdTextTerm('月付可貸上限', valid ? r.capacity : null) + ' ÷ ' + bdTextTerm('貸款成數上限', ratio, '', '%'))
+      : bdTextLine(bdTextTerm('預估可貸金額', valid ? r.loan : null) + ' ＋ ' + bdTextTerm('自備款', s.down));
+    sections.push(bdTextSection(9, '計算預估可買總價', property + bdTextAnswer('預估可買總價', valid ? r.price : null, 'price', '元', downBlank ? '整元推估 →' : '＝')));
+    const actualRatio = valid ? r.loan / r.price * 100 : null;
+    sections.push(bdTextSection(10, '確認實際貸款成數', bdTextLine(bdTextTerm('預估可貸金額', valid ? r.loan : null) +
+      ' ÷ ' + bdTextTerm('預估可買總價', valid ? r.price : null) + ' × 100%') +
+      bdTextAnswer('實際貸款成數', actualRatio === null ? null : actualRatio.toFixed(2) + '%', 'actualRatio', '', '≈', false) +
+      bdTextNote(valid ? '未超過設定的 ' + flowEscape(r.ratioPct) + '% 上限。' : '確認未超過設定成數上限。')));
+    return '<div class="bd-text-flow">' + sections.join('') + '</div>';
+  }
+  function bdVisualContent(valid) {
+    return bdTextContent(valid);
+  }
   function renderBdFlowTemplate() {
     const body = B('#bdFlowBody');
-    body.dataset.flowState = 'empty';
-    body.replaceChildren();
+    body.dataset.flowState = 'template';
+    body.innerHTML = bdVisualContent(false);
     return true;
   }
   function renderBdFlow() {
-    return renderBdFlowTemplate();
+    if (!hasBdFlowResult()) return renderBdFlowTemplate();
+    const body = B('#bdFlowBody');
+    body.dataset.flowState = 'result';
+    body.innerHTML = bdVisualContent(true);
+    return true;
   }
 
   const bdFlowSheet = B('#bdFlowSheet');
