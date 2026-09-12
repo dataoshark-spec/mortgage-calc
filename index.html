@@ -3713,19 +3713,20 @@ if ("serviceWorker" in navigator) {
 #bdFlowSheet .spec-sheet-close:focus-visible { outline: 2px solid #f2c46b; outline-offset: 3px; }
 #bdFlowSheet .spec-sheet-scroll { padding: 4px 16px calc(20px + var(--safe-bottom)); scrollbar-color: #7d91a3 #142332; }
 #bdFlowSheet .bd-flow-wrap { max-width: 720px; }
-#bdFlowSheet .bd-text-flow { font-size: 14px; line-height: 1.75; color: #e0e9f2; }
+#bdFlowSheet .bd-text-flow { font-size: 13px; line-height: 1.75; color: #e0e9f2; }
 #bdFlowSheet .bd-t-section { padding: 10px 0; border-bottom: 1px solid #344555; }
 #bdFlowSheet .bd-t-section:last-child { border-bottom: 0; }
-#bdFlowSheet .bd-t-heading { display: flex; gap: 6px; padding: 4px 7px; margin: 0 0 6px; border-radius: 3px; background: #2d353d; color: #d6e0e8; font-size: 13px; font-weight: 500; line-height: 1.6; }
+#bdFlowSheet .bd-t-heading { display: flex; gap: 6px; padding: 4px 7px; margin: 0 0 6px; border-radius: 3px; background: #39352d; color: #d6e0e8; font-size: 13px; font-weight: 500; line-height: 1.6; }
 #bdFlowSheet .bd-t-number { flex: 0 0 auto; }
 #bdFlowSheet .bd-t-line { margin: 0; overflow-wrap: anywhere; }
 #bdFlowSheet .bd-t-value { font-variant-numeric: tabular-nums; white-space: nowrap; }
 #bdFlowSheet .bd-t-label { color: #a7b8c9; font-size: 12px; }
-#bdFlowSheet .bd-t-answer { margin: 2px 0 0; color: #f2c46b; overflow-wrap: anywhere; line-height: 1.65; }
+#bdFlowSheet .bd-t-answer { margin: 2px 0 0; color: #f2c46b; font-size: 14px; overflow-wrap: anywhere; line-height: 1.65; }
 #bdFlowSheet .bd-t-answer > .bd-t-value { font-weight: 600; }
 #bdFlowSheet .bd-t-symbol { font-size: 13px; }
 #bdFlowSheet .bd-t-alt { color: #a7b8c9; font-size: 12px; white-space: nowrap; }
 #bdFlowSheet .bd-t-note { color: #a7b8c9; font-size: 12px; line-height: 1.7; margin-top: 3px; overflow-wrap: anywhere; }
+#bdFlowSheet .bd-t-tail { color: #a7b8c9; font-size: 12px; margin-left: 4px; overflow-wrap: anywhere; }
 #bdFlowSheet .bd-t-math { line-height: 1.8; }
 #bdFlowSheet .bd-t-rate-row { padding: 4px 0; }
 #bdFlowSheet .bd-t-rate-row + .bd-t-rate-row { border-top: 1px solid #344555; }
@@ -5007,7 +5008,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12M";
+const APP_VERSION = "2026.09.12O";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -12986,13 +12987,13 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   function bdTextNote(html) {
     return '<div class="bd-t-note">' + html + '</div>';
   }
-  function bdTextAnswer(label, value, key, unit = '元', symbol = '＝', amount = true) {
+  function bdTextAnswer(label, value, key, unit = '元', symbol = '＝', amount = true, tail = '') {
     const numeric = typeof value === 'number' && Number.isFinite(value);
     const alternative = amount && numeric && Math.abs(value) >= 10000
       ? '<span class="bd-t-alt"> ≈ ' + flowEscape((value / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 2 })) + ' 萬</span>' : '';
     return '<div class="bd-t-answer"><span class="bd-t-symbol">' + flowEscape(symbol) + ' </span>' +
       bdTextValue(value, key, amount ? 'yuan' : unit) + (numeric && unit ? ' ' + flowEscape(unit) : '') +
-      '<span class="bd-t-label">（' + flowEscape(label) + '）</span>' + alternative + '</div>';
+      (label ? '<span class="bd-t-label">（' + flowEscape(label) + '）</span>' : '') + alternative + tail + '</div>';
   }
   function bdTextSection(number, title, html) {
     return '<section class="bd-t-section" data-flow-step="' + number + '"><h3 class="bd-t-heading">' +
@@ -13033,10 +13034,31 @@ window.addEventListener('resize', scheduleFitPaymentTable);
         bdTextNote('r ≈ ' + flowEscape(decimal)) + '</div>';
     }).join('');
   }
+  function bdTextAdjustment(s, candidate, adopted, pay, key) {
+    if (!Number.isSafeInteger(candidate) || candidate < 1 || !Number.isSafeInteger(adopted)
+        || adopted < 1 || candidate === adopted || !(pay > 0)) return '';
+    // Explanatory probe only: reuse unchanged repayment math and the same-run snapshot.
+    // Never replace the official result/schedule or read current editable fields here.
+    const rows = s.method === 'principal'
+      ? calAvgPrincipalOnly(candidate, s.res.term * 12, s.rates, s.res.grace * 12)
+      : calAvgWithInterests(candidate, s.res.term * 12, s.rates, s.res.grace * 12);
+    const peak = rows.reduce((best, row) => !best || row.payment > best.payment ? row : best, null);
+    const difference = candidate - adopted;
+    let reason;
+    if (difference > 0 && peak && peak.payment > pay) {
+      const when = peak.period === rows.length ? '最後一期' : '第 ' + flowNumber(peak.period) + ' 期';
+      reason = (key === 'capacity' ? '以概算金額試算，' : '以上限金額試算，') + when + '需 ' + bdTextValue(peak.payment, key + 'ProbePeak', 'yuan') +
+        ' 元，超過月付上限 ' + bdTextValue(pay) + ' 元，因此少貸 ' + bdTextValue(difference) + ' 元。';
+    } else {
+      reason = '依每期整元試算，可貸金額' + (difference > 0 ? '減少 ' : '增加 ') +
+        bdTextValue(Math.abs(difference)) + ' 元。';
+    }
+    return '<div class="bd-t-note" data-flow-reason="' + flowEscape(key) + '">' + reason + '</div>';
+  }
   function bdTextCapacity(s, valid, n, pay) {
     const r = valid ? s.res : null;
     const methodKnown = s.method === 'amortize' || s.method === 'principal';
-    let html = '';
+    let html = '', roundedEstimate = null;
     if (s.rateType === 'single') {
       const annual = valid ? s.rates[0].rate : s.rate;
       const rate = annual === null ? null : annual / 1200;
@@ -13050,24 +13072,27 @@ window.addEventListener('resize', scheduleFitPaymentTable);
         ? '÷〔1 ÷ ' + exponent + ' ＋ r〕'
         : '×〔1 −（1 ＋ r）^（−' + exponent + '）〕÷ r', 'bd-t-math')
         : bdTextLine('還款方式 —');
-      html += bdTextAnswer('公式概算', estimate === null || !Number.isFinite(estimate) ? null : Math.round(estimate), 'capacityEstimate', '元', '≈');
+      roundedEstimate = estimate === null || !Number.isFinite(estimate) ? null : Math.round(estimate);
+      if (roundedEstimate !== null && (!valid || roundedEstimate !== r.capacity)) {
+        html += bdTextAnswer('公式概算', roundedEstimate, 'capacityEstimate', '元', '≈');
+        if (valid) html += bdTextAdjustment(s, roundedEstimate, r.capacity, pay, 'capacity');
+      }
     } else if (s.rateType === 'multi') {
       html += bdTextLine(s.method === 'principal'
         ? '每期月付＝本期本金＋期初餘額 × r'
         : s.method === 'amortize' ? '本段月付概算＝本段起始本金 × r ÷〔1 −（1 ＋ r）^（−n）〕'
         : '還款方式 —', 'bd-t-math');
-      html += bdTextNote('依各段利率試算；r 為本段月利率，n 為剩餘攤還期數。');
+      html += bdTextNote('r＝本段月利率；n＝剩餘攤還期數。');
     } else html += bdTextLine('利率計算方式 —');
-    if ((valid ? r.grace : s.grace) > 0) html += bdTextNote('寬限期內只繳利息。');
     let peak = null;
     if (valid && s.capacitySchedule.length) peak = s.capacitySchedule.reduce((best, row) => row.payment > best.payment ? row : best);
     if (s.rateType === 'multi') {
       html += bdTextLine(bdTextTerm('最高月付期本金', peak?.principal ?? null) + ' ＋ ' + bdTextTerm('當期利息', peak?.interest ?? null) +
         ' ＝ ' + bdTextValue(peak?.payment ?? null, 'capacityPeakBreakdown', 'yuan'));
     }
-    html += bdTextNote('核對全期最高月付 ' + bdTextValue(peak?.payment ?? null, 'capacityPeak', 'yuan') + ' 元 ≤ 月付上限 ' + bdTextValue(pay) + ' 元');
-    html += bdTextAnswer('月付可貸上限', valid ? r.capacity : null, 'capacity', '元', '核對後＝');
-    if (methodKnown) html += bdTextNote(s.method === 'principal' ? '本金平均攤還' : '本息平均攤還');
+    const symbol = valid && s.rateType === 'single' && roundedEstimate === r.capacity ? '≈'
+      : valid && roundedEstimate !== null && roundedEstimate !== r.capacity ? '採用' : '＝';
+    html += bdTextAnswer('月付可貸上限', valid ? r.capacity : null, 'capacity', '元', symbol);
     return html;
   }
   function bdTextContent(valid) {
@@ -13107,18 +13132,21 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     sections.push(bdTextSection(5, s.rateType === 'multi' ? '計算各段月利率' : '計算月利率', bdTextRates(s, valid)));
     sections.push(bdTextSection(6, '由月付上限反推貸款能力', bdTextCapacity(s, valid, n, pay)));
     let downHtml;
-    if (ratio === 100) downHtml = bdTextLine('貸款成數上限 100%') + bdTextAnswer('自備款可支持的貸款上限', '不受此項限制', 'byDown', '', '→', false);
-    else if (downBlank) downHtml = bdTextLine('自備款未填，先依月付能力評估。') + bdTextAnswer('自備款可支持的貸款上限', null, 'byDown');
+    if (ratio === 100) downHtml = bdTextLine('貸款成數上限 100%') + bdTextAnswer('', '不受此項限制', 'byDown', '', '→', false);
+    else if (downBlank) downHtml = bdTextLine('自備款未填，先依月付能力評估。') + bdTextAnswer('', null, 'byDown');
     else downHtml = bdTextLine(bdTextTerm('自備款', s.down) + ' × ' + bdTextTerm('貸款成數上限', ratio, '', '%') +
-      ' ÷〔1 − ' + bdTextTerm('貸款成數上限', ratio, '', '%') + '〕') + bdTextAnswer('自備款可支持的貸款上限', byDown, 'byDown', '元', '取整後＝');
+      ' ÷〔1 − ' + bdTextTerm('貸款成數上限', ratio, '', '%') + '〕') + bdTextAnswer('', byDown, 'byDown', '元', '取整後＝');
     sections.push(bdTextSection(7, '計算自備款能支持的貸款上限', downHtml));
     const noDownBound = downBlank || ratio === 100;
     const limit = valid ? Math.min(r.capacity, r.downGiven ? bdLoanByDown(s.down, r.ratioPct) : Infinity) : null;
     let loanHtml = noDownBound ? bdTextLine(bdTextTerm('月付可貸上限', valid ? r.capacity : null, 'loanLimit'))
-      : bdTextLine('取小值〔' + bdTextTerm('月付可貸上限', valid ? r.capacity : null) + '，' + bdTextTerm('自備款可支持的貸款上限', byDown) + '〕') +
-        bdTextAnswer('貸款上限', limit, 'loanLimit');
-    loanHtml += bdTextNote('核對本次最高月付 ' + bdTextValue(valid ? r.payAfter : null, 'peakPayment', 'yuan') + ' 元 ≤ 月付上限 ' + bdTextValue(pay, 'payLimit', 'yuan') + ' 元');
-    loanHtml += bdTextAnswer('預估可貸金額', valid ? r.loan : null, 'loan', '元', '核對後＝');
+      : bdTextLine('取小值〔' + bdTextTerm('月付可貸上限', valid ? r.capacity : null) + '，' + bdTextTerm('自備款可支持的貸款上限', byDown) + '〕');
+    const loanAdjusted = valid && limit !== r.loan;
+    if (loanAdjusted) {
+      if (!noDownBound) loanHtml += bdTextAnswer('貸款上限', limit, 'loanLimit');
+      loanHtml += bdTextAdjustment(s, limit, r.loan, pay, 'loan');
+    }
+    loanHtml += bdTextAnswer('預估可貸金額', valid ? r.loan : null, 'loan', '元', loanAdjusted ? '採用' : '＝');
     sections.push(bdTextSection(8, '決定預估可貸金額', loanHtml));
     // The existing no-down solver derives price from capacity, then rechecks final loan.
     const property = downBlank ? bdTextLine(bdTextTerm('月付可貸上限', valid ? r.capacity : null) + ' ÷ ' + bdTextTerm('貸款成數上限', ratio, '', '%'))
@@ -13127,8 +13155,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const actualRatio = valid ? r.loan / r.price * 100 : null;
     sections.push(bdTextSection(10, '確認實際貸款成數', bdTextLine(bdTextTerm('預估可貸金額', valid ? r.loan : null) +
       ' ÷ ' + bdTextTerm('預估可買總價', valid ? r.price : null) + ' × 100%') +
-      bdTextAnswer('實際貸款成數', actualRatio === null ? null : actualRatio.toFixed(2) + '%', 'actualRatio', '', '≈', false) +
-      bdTextNote(valid ? '未超過設定的 ' + flowEscape(r.ratioPct) + '% 上限。' : '確認未超過設定成數上限。')));
+      bdTextAnswer('實際貸款成數', actualRatio === null ? null : actualRatio.toFixed(2) + '%', 'actualRatio', '', '≈', false,
+        '<span class="bd-t-tail">' + (valid ? '未超過設定的 ' + flowEscape(r.ratioPct) + '% 上限。' : '確認未超過設定成數上限。') + '</span>')));
     return '<div class="bd-text-flow">' + sections.join('') + '</div>';
   }
   function bdVisualContent(valid) {
