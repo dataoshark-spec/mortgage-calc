@@ -3879,9 +3879,9 @@ if ("serviceWorker" in navigator) {
     </div>
 
     <div class="section rate-full" id="rateField">
-      <label class="label-cap">單一式年利率<button type="button" class="yt-cap-max" id="glRateTag" title="點一下填入該數值">默認 2.5 %</button></label>
+      <label class="label-cap">單一式年利率<button type="button" class="yt-cap-max" id="glRateTag" title="點一下填入該數值">默認 2.75 %</button></label>
       <div class="input-box">
-        <input type="text" id="rate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
+        <input type="text" id="rate" class="calc-field" value="2.75" readonly inputmode="none" autocomplete="off">
         <span class="unit">%</span>
       </div>
     </div>
@@ -4250,9 +4250,9 @@ if ("serviceWorker" in navigator) {
           <button type="button" class="choice-btn active" data-yt-gen-type="single" aria-pressed="true">單一式利率</button>
           <button type="button" class="choice-btn" data-yt-gen-type="multi" aria-pressed="false">多段式利率</button>
         </div>
-        <label id="ytGenRateLabel" class="yt-gen-rate-label"><span id="ytGenRateLabelMain">單一式年利率</span><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span><button type="button" class="yt-cap-max" id="ytGenRateTag" title="點一下填入該數值">默認 2.5 %</button></label>
+        <label id="ytGenRateLabel" class="yt-gen-rate-label"><span id="ytGenRateLabelMain">單一式年利率</span><span class="yt-gen-rate-scope">（一般貸款／超出優惠額度部分）</span><button type="button" class="yt-cap-max" id="ytGenRateTag" title="點一下填入該數值">默認 2.75 %</button></label>
         <div id="ytGenRateSingle" class="input-box">
-          <input type="text" id="ytGenRate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="ytGenRate" class="calc-field" value="2.75" readonly inputmode="none" autocomplete="off">
           <span class="unit">%</span>
         </div>
         <div id="ytGenRateMulti" class="rate-segments hidden">
@@ -4465,7 +4465,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
       </div>
-      <p class="gl-note bd-note-static">※ 點 <em>欄位標題</em> ，可一起切換四格的「元／萬」。 <em>既有負債月付</em> ，會減少可用於新房貸的月付額度。 <em>願意負擔</em> 與 <em>他人協助</em> 不影響收支比，僅提供系統評估使用。</p>
+      <p class="gl-note bd-note-static">※ 點擊上方 <em>欄位標題</em> ，可同時切換四格的輸入單位「元／萬」。 <em>既有負債月付</em> ，會減少可用於新房貸的月付額度。 <em>願意負擔</em> 與 <em>他人協助</em> 不影響收支比，僅提供系統評估使用。</p>
 
       <div class="form-grid">
         <div class="field">
@@ -4509,7 +4509,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
 
-      <p class="gl-note bd-note-static">※ <em>貸款成數</em> 為預估最高比例，實際採用成數可能較低；較高 <em>自備款</em> ，可提高購買總價。</p>
+      <p class="gl-note bd-note-static">※ <em>貸款成數</em> 為預估最高比例，實際採用成數可能較低；較高 <em>自備款</em> 可提高購買總價。</p>
 
       <div class="section">
         <label class="label-cap">收支比<button type="button" class="yt-cap-max" id="bdDtiTag" title="點一下填入該數值">默認 50 %</button></label>
@@ -4526,7 +4526,13 @@ if ("serviceWorker" in navigator) {
       </div>
 
       <div class="section">
-        <label>還款方式</label>
+        <label class="label-with-info">還款方式<button type="button" class="apr-info-btn" data-method-info aria-label="兩種還款方式差異說明">
+          <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="8" r="1.1" fill="currentColor" stroke="none"/>
+            <path d="M12 11v5" stroke-linecap="round"/>
+          </svg>
+        </button></label>
         <div class="choice-group">
           <button type="button" class="choice-btn active" data-bd-method="amortize">本息平均攤還</button>
           <button type="button" class="choice-btn" data-bd-method="principal">本金平均攤還</button>
@@ -4541,9 +4547,9 @@ if ("serviceWorker" in navigator) {
       </div>
 
       <div class="section rate-full" id="bdRateField">
-        <label class="label-cap">預估年利率<button type="button" class="yt-cap-max" id="bdRateTag" title="點一下填入該數值">默認 2.5 %</button></label>
+        <label class="label-cap">預估年利率<button type="button" class="yt-cap-max" id="bdRateTag" title="點一下填入該數值">默認 2.75 %</button></label>
         <div class="input-box">
-          <input type="text" id="bdRate" class="calc-field" value="2.5" readonly inputmode="none" autocomplete="off">
+          <input type="text" id="bdRate" class="calc-field" value="2.75" readonly inputmode="none" autocomplete="off">
           <span class="unit">%</span>
         </div>
       </div>
@@ -5021,7 +5027,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.13D";
+const APP_VERSION = "2026.09.13E";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5371,7 +5377,7 @@ function setPeriodUnit(u) {
   if (typeof window.__bdRenderPeriod === 'function') window.__bdRenderPeriod();
 }
 let lastPeriodGroups = null;    // 快取分組結果，切換單位時只重繪表格，不會吃到尚未試算的輸入
-let rateSegments = [{ from: 1, to: 360, rate: '2.5' }];
+let rateSegments = [{ from: 1, to: 360, rate: '2.75' }];
 /* 切回單一利率時把目前的多段設定收起來，再切回多段時原樣拿出來。
    舊版直接重建成一段，使用者辛苦設好的分界與利率會無聲消失。 */
 let lastValidMultiRateSegments = null;
@@ -5547,7 +5553,7 @@ function rebuildRateSegmentsFromSplits(splits, rates, total) {
   let from = 1;
   for (let i = 0; i < n; i++) {
     const to = i === n - 1 ? total : splits[i];
-    rateSegments.push({ from, to, rate: String(rates[i] ?? '2.5') });
+    rateSegments.push({ from, to, rate: String(rates[i] ?? '2.75') });
     from = to + 1;
   }
 }
@@ -5582,8 +5588,8 @@ function syncRateSegmentsContiguous() {
   if (rateType !== 'multi') return;
   const total = getTotalMonths();
   if (total <= 0) return;
-  const rates = (rateSegments.length ? rateSegments : [{ rate: getCalcFieldRawString($('#rate')) || '2.5' }])
-    .map(s => String(s.rate ?? getCalcFieldRawString($('#rate')) ?? '2.5'));
+  const rates = (rateSegments.length ? rateSegments : [{ rate: getCalcFieldRawString($('#rate')) || '2.75' }])
+    .map(s => String(s.rate ?? getCalcFieldRawString($('#rate')) ?? '2.75'));
   const n = Math.max(1, rates.length);
   let splits = [];
   if (rateSegments.length === n && rateSegments[n - 1]) {
@@ -6122,7 +6128,7 @@ function showAprInfo() {
   showAppAlert(APR_INFO_HTML, null, { html: true });
 }
 
-/* 兩種還款方式差異說明：一般貸款與新青安兩個面板共用同一份內容 */
+/* 兩種還款方式差異說明：三個面板共用同一份內容 */
 const METHOD_INFO_HTML = `<div class="mi-block">
   <div class="mi-h">本息平均攤還</div>
   <p>每期繳款金額大致固定，由「本金＋利息」組成。隨著本金逐期償還，利息逐漸減少，每期繳款中本金的占比逐漸增加。</p>
@@ -6155,7 +6161,7 @@ function showAppAlert(message, onClose, opts) {
   $('#appAlertBtn')?.focus({ preventScroll: true });
 }
 
-// 兩個面板各有一顆，用委派一次接起來
+// 三個面板的說明按鈕共用相同事件
 $$('[data-method-info]').forEach((b) => b.addEventListener('click', showMethodInfo));
 
 $('#appAlertBtn')?.addEventListener('click', closeAppAlert);
@@ -6411,7 +6417,7 @@ function normalizeGeneralFormState(state) {
   out.invalidMultiRateState = wantedMulti && !segs;
   if (!segs) {
     out.rateType = 'single';
-    const base = out.rate !== '' ? out.rate : '2.5';
+    const base = out.rate !== '' ? out.rate : '2.75';
     segs = [{ from: 1, to: out.term !== '' ? Number(out.term) * 12 : 360, rate: base }];
   }
   out.rateSegments = segs;
@@ -6488,7 +6494,7 @@ function applyFormState(state) {
   rateType = (state.rateType === 'multi' || state.rateType === 'single') ? state.rateType : 'single';
   rateSegments = Array.isArray(state.rateSegments) && state.rateSegments.length
     ? JSON.parse(JSON.stringify(state.rateSegments))
-    : [{ from: 1, to: getTotalMonths() || 360, rate: getCalcFieldRawString($('#rate')) || '2.5' }];
+    : [{ from: 1, to: getTotalMonths() || 360, rate: getCalcFieldRawString($('#rate')) || '2.75' }];
   syncRateSegmentsContiguous();
   // single也還原獨立記憶；active multi則以這次已驗證的正式分段為最新版本。
   lastValidMultiRateSegments = normalizeGeneralMultiRateMemory(state.lastValidMultiRateSegments);
@@ -6565,7 +6571,7 @@ function enterClearedState(opts) {
 
   method = 'amortize';
   rateType = 'single';
-  rateSegments = [{ from: 1, to: 360, rate: '2.5' }];
+  rateSegments = [{ from: 1, to: 360, rate: '2.75' }];
   lastValidMultiRateSegments = null;
   $$('.choice-btn[data-method]').forEach(b => {
     b.classList.toggle('active', b.dataset.method === 'amortize');
@@ -7268,7 +7274,7 @@ function bindCapBadgeFill() {
     $('#term').dispatchEvent(new Event('input', { bubbles: true }));
   });
   $('#glRateTag')?.addEventListener('click', () => {
-    setCalcFieldStoredValue($('#rate'), getBadgeDefault('general', 'rate', 2.5));
+    setCalcFieldStoredValue($('#rate'), getBadgeDefault('general', 'rate', 2.75));
     $('#rate').dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
@@ -11331,8 +11337,8 @@ function tryAddRateSegment() {
     showToast('', { hint: true, hintHtml: FIELD_HINT_HTML.rateSegmentTermShort });
     return;
   }
-  const rates = rateSegments.map((s) => String(s.rate ?? '2.5'));
-  rates.push(rates[rates.length - 1] || '2.5');
+  const rates = rateSegments.map((s) => String(s.rate ?? '2.75'));
+  rates.push(rates[rates.length - 1] || '2.75');
   rebuildRateSegmentsFromSplits(buildEvenRateSplits(nextCount, total), rates, total);
   renderRateRows();
   maybeRecalc();
@@ -11797,7 +11803,7 @@ $$('.choice-btn[data-rate-type]').forEach(btn => {
           && rateSegments.every((sg) => sg && String(sg.rate ?? '').trim() !== '');
       }
       if (!restored) {
-        rateSegments = [{ from: 1, to: getTotalMonths(), rate: getCalcFieldRawString($('#rate')) || '2.5' }];
+        rateSegments = [{ from: 1, to: getTotalMonths(), rate: getCalcFieldRawString($('#rate')) || '2.75' }];
       }
       renderRateRows();
     }
@@ -12439,13 +12445,13 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   const MONEY_FIELDS = ['#bdIncome', '#bdDebt', '#bdWilling', '#bdHelp'];
   let incomeMode = 'month';
   // 'yuan' 整數；'wan' 可到小數第 4 位（1 元＝0.0001 萬，剛好不失真）
-  let incomeUnit = 'yuan';
+  let incomeUnit = 'wan';
   /* 使用者最後自己填的成數。被上限夾下去之後不會更新，
      這樣「會不會踩到高價住宅門檻」的判斷才有一個穩定的基準。 */
   let bdRatioWanted = 80;
   let bdMethod = 'amortize';
   let bdRateType = 'single';
-  let bdSegs = [{ from: 1, to: 0, rate: '2.5' }];
+  let bdSegs = [{ from: 1, to: 0, rate: '2.75' }];
   // 使用者動過分段（改利率、改分界、增刪）之後就不再自動沿用單一利率的數值
   let segsTouched = false;
   let bdCleared = null;
@@ -12523,7 +12529,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const validArray = Array.isArray(rows) && rows.length > 0;
     if (Array.isArray(originalRows) && originalRows.length > 10) add('bdSegs.$rows', 'segments-count', originalRows);
     if (!validArray) {
-      result.bdSegs = [{ from: 1, to: total || 0, rate: active ? '' : '2.5' }];
+      result.bdSegs = [{ from: 1, to: total || 0, rate: active ? '' : '2.75' }];
       if (active || rows !== undefined) add('bdSegs.$rows', 'segments-shape', rows);
     } else {
       let nextFrom = 1;
@@ -13059,10 +13065,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     if (s.rateType === 'single') {
       const rate = valid ? s.rates[0].rate : s.rate;
       const month = rate === null ? null : rate / 12;
-      const decimal = rate === null ? null : (rate / 1200).toLocaleString('en-US', { maximumFractionDigits: 10, useGrouping: false });
       return bdTextLine(bdTextTerm('年利率', rate, '', '%') + ' ÷ 12') +
-        bdTextAnswer('月利率', month === null ? null : month.toLocaleString('en-US', { maximumFractionDigits: 7, useGrouping: false }) + '%', 'monthlyRatePercent', '', '≈', false) +
-        bdTextNote('r ≈ ' + bdTextValue(decimal, 'monthlyRate', 'decimal') + '；計算保留完整精度。');
+        bdTextAnswer('月利率', month === null ? null : month.toLocaleString('en-US', { maximumFractionDigits: 7, useGrouping: false }) + '%', 'monthlyRatePercent', '', '≈', false);
     }
     if (s.rateType !== 'multi') return bdTextLine('年利率 — ÷ 12') + bdTextAnswer('月利率', null, 'monthlyRatePercent', '', '≈', false);
     const rows = [];
@@ -13127,11 +13131,15 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       const factor = rate !== null && n !== null && methodKnown
         ? s.method === 'principal' ? 1 / n + rate : rate === 0 ? 1 / n : rate / -Math.expm1(-n * Math.log1p(rate)) : null;
       const estimate = factor > 0 && pay !== null ? pay / factor : null;
-      const exponent = n === null ? 'n' : flowNumber(n);
+      const exponent = n === null ? '—' : flowNumber(n);
+      // Display-only decimal conversion: keep all supported annual-rate digits; divide by 12 in the shown expression.
+      const annualDecimal = annual === null ? null : (annual / 100).toLocaleString('en-US', { maximumFractionDigits: MAX_RATE_DECIMALS + 2, useGrouping: false });
+      const monthlyTerm = bdTextValue(annualDecimal) + ' ÷ 12';
       html += bdTextLine(bdTextTerm('有效月付上限', pay));
-      html += methodKnown ? bdTextLine(s.method === 'principal'
-        ? '÷〔1 ÷ ' + exponent + ' ＋ r〕'
-        : '×〔1 −（1 ＋ r）^（−' + exponent + '）〕÷ r', 'bd-t-math')
+      html += methodKnown ? s.method === 'principal'
+        ? bdTextLine('÷〔1 ÷ ' + exponent + ' ＋ ' + monthlyTerm + '〕', 'bd-t-math')
+        : bdTextLine('×〔1 −（1 ＋ ' + monthlyTerm + '）^（−' + exponent + '）〕', 'bd-t-math') +
+          bdTextLine('÷（' + monthlyTerm + '）', 'bd-t-math')
         : bdTextLine('還款方式 —');
       roundedEstimate = estimate === null || !Number.isFinite(estimate) ? null : Math.round(estimate);
       if (roundedEstimate !== null && (!valid || roundedEstimate !== r.capacity)) {
@@ -14048,7 +14056,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       B('#bdGrace').dispatchEvent(new Event('input', { bubbles: true }));
     });
   }
-  [['#bdDtiTag', '#bdDti', 50, 'dti'], ['#bdRateTag', '#bdRate', 2.5, 'rate'], ['#bdTermTag', '#bdTerm', 30, 'term']]
+  [['#bdDtiTag', '#bdDti', 50, 'dti'], ['#bdRateTag', '#bdRate', 2.75, 'rate'], ['#bdTermTag', '#bdTerm', 30, 'term']]
     .forEach(([tag, field, val, key]) => {
       const t = B(tag);
       if (!t) return;
@@ -14321,7 +14329,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       if (next === bdRateType && !bdStoredIssues.some(x => x.path === 'bdRateType')) return;
       bdRateType = next; bdForgetIssue('bdRateType');
       /* 還沒動過分段就把單一利率帶過去：使用者剛把 2% 填在上面，切過來卻看到
-         內建的 2.5%，會以為算錯了。動過之後就尊重使用者自己的設定。 */
+         內建的 2.75%，會以為算錯了。動過之後就尊重使用者自己的設定。 */
       if (next === 'multi' && !segsTouched) {
         const r0 = raw(B('#bdRate'));
         if (r0 !== '') bdSegs.forEach((sg) => { sg.rate = r0; });
@@ -14343,7 +14351,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
         return;
       }
       const last = bdSegs[bdSegs.length - 1];
-      bdSegs.push({ from: 1, to: 0, rate: last ? last.rate : (raw(B('#bdRate')) || '2.5') });
+      bdSegs.push({ from: 1, to: 0, rate: last ? last.rate : (raw(B('#bdRate')) || '2.75') });
       bdConfirmSegmentStructure();
       segsTouched = true;
       renderRateRows(true);
@@ -14376,7 +14384,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     bdMethod = 'amortize';
     bdRatioWanted = 80;
     bdRateType = 'single';
-    bdSegs = [{ from: 1, to: 0, rate: '2.5' }];
+    bdSegs = [{ from: 1, to: 0, rate: '2.75' }];
     segsTouched = false;
     syncIncomeUnitField();
     syncRateUI();
@@ -15090,7 +15098,7 @@ window.addEventListener('resize', () => {
     onChange();
   });
   Y('#ytGenRateTag')?.addEventListener('click', () => {
-    setCalcFieldStoredValue(Y('#ytGenRate'), getBadgeDefault('youth', 'rate', 2.5));clearYouthIssue('#ytGenRate');
+    setCalcFieldStoredValue(Y('#ytGenRate'), getBadgeDefault('youth', 'rate', 2.75));clearYouthIssue('#ytGenRate');
     onChange({target:Y('#ytGenRate')});
   });
   Y('#ytGraceMax')?.addEventListener('click', () => {
@@ -17431,14 +17439,14 @@ function getBadgeDefault(mode, key, fallback) {
   const SPECS = [
     ['general', 'ratio', 'glRatioMax', 80, 100, 0, '%', '一般貸款・貸款成數'],
     ['general', 'term', 'glTermTag', 30, 60, 0, '年', '一般貸款・貸款年限'],
-    ['general', 'rate', 'glRateTag', 2.5, 16, 3, '%', '一般貸款・單一式年利率'],
+    ['general', 'rate', 'glRateTag', 2.75, 16, 3, '%', '一般貸款・單一式年利率'],
     ['youth', 'ratio', 'ytRatioTag', 80, 100, 0, '%', '新青安・貸款成數'],
     ['youth', 'term', 'ytTermMax', 30, 40, 0, '年', '新青安・貸款年限'],
-    ['youth', 'rate', 'ytGenRateTag', 2.5, 16, 3, '%', '新青安・一般貸款年利率'],
+    ['youth', 'rate', 'ytGenRateTag', 2.75, 16, 3, '%', '新青安・一般貸款年利率'],
     ['burden', 'ratio', 'bdRatioTag', 80, 100, 0, '%', '個人評估・貸款成數'],
     ['burden', 'term', 'bdTermTag', 30, 40, 0, '年', '個人評估・貸款年限'],
     ['burden', 'dti', 'bdDtiTag', 50, 100, 4, '%', '個人評估・收支比'],
-    ['burden', 'rate', 'bdRateTag', 2.5, 16, 3, '%', '個人評估・年利率']
+    ['burden', 'rate', 'bdRateTag', 2.75, 16, 3, '%', '個人評估・年利率']
   ].map(([mode, key, id, factory, max, decimals, unit, title]) =>
     Object.freeze({ mode, key, id, factory, max, decimals, unit, title }));
   const MODES = ['general', 'youth', 'burden'];
