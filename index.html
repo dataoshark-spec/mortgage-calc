@@ -1358,12 +1358,12 @@ if ("serviceWorker" in navigator) {
     .calc-btn-zero { grid-column: span 2; }
     .calc-grid.integer-mode .calc-btn-dot { display: none; }
     .calc-grid.integer-mode .calc-btn-zero { grid-column: span 3; }
-    /* 矮桌面視窗保留欄位空間，每顆按鍵仍至少 44px 高。 */
-    @media (hover: hover) and (pointer: fine) and (max-height: 560px) {
-      .calc-sheet-panel { padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); }
-      .calc-grid { gap: 4px; }
+    /* 矮桌面視窗也為三行提示預留空間；僅縮小間距，按鍵仍至少 44px 高。 */
+    @media (hover: hover) and (pointer: fine) and (max-height: 600px) {
+      .calc-sheet-panel { padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px)); }
+      .calc-grid { gap: 2px; }
       .calc-btn { min-height: 44px; height: 44px; padding: 0; line-height: 1.2; }
-      .calc-btn-done { min-height: 44px; height: 44px; padding: 0; margin-top: 6px; line-height: 1.2; }
+      .calc-btn-done { min-height: 44px; height: 44px; padding: 0; margin-top: 4px; line-height: 1.2; }
     }
 
     /* 快捷鈕：固定尺寸，選中不改大小 */
@@ -5058,7 +5058,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.13H";
+const APP_VERSION = "2026.09.13I";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5805,6 +5805,7 @@ function hideToast(toast) {
   toast._toastTimer = 0;
   toast._toastHideAt = 0;
   toast._toastHolding = false;
+  toast._toastHoldPointerId = null;
   toast.classList.remove('show', 'toast-hint', 'toast-hint-multiline');
   toast.textContent = '';
   restoreCalcToast(toast);
@@ -5817,14 +5818,18 @@ function bindToastHold(toast) {
   const onHoldStart = (e) => {
     if (!toast.classList.contains('show')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (toast._toastHolding) return;
     toast._toastHolding = true;
+    toast._toastHoldPointerId = e.pointerId;
     try { toast.setPointerCapture(e.pointerId); } catch (_) {}
     clearTimeout(toast._toastTimer);
     toast._toastTimer = 0;
   };
-  const onHoldEnd = () => {
+  const onHoldEnd = (e) => {
     if (!toast._toastHolding) return;
+    if (e && e.pointerId !== toast._toastHoldPointerId) return;
     toast._toastHolding = false;
+    toast._toastHoldPointerId = null;
     if (!toast.classList.contains('show')) return;
     if (Date.now() >= toast._toastHideAt) {
       hideToast(toast);
@@ -5833,9 +5838,10 @@ function bindToastHold(toast) {
     toast._toastTimer = setTimeout(() => hideToast(toast), toast._toastHideAt - Date.now());
   };
   toast.addEventListener('pointerdown', onHoldStart);
-  toast.addEventListener('pointerup', onHoldEnd);
-  toast.addEventListener('pointercancel', onHoldEnd);
-  toast.addEventListener('lostpointercapture', onHoldEnd);
+  // 收起鍵盤會搬移提示；失去元素捕捉不代表手已放開，改在文件層接同一指標的結束。
+  document.addEventListener('pointerup', onHoldEnd, true);
+  document.addEventListener('pointercancel', onHoldEnd, true);
+  window.addEventListener('blur', () => onHoldEnd());
 }
 
 /* 光學置中：全形括號、句號這類字元的墨水只佔半個字身，排版置中後看起來會偏一邊。
@@ -5984,6 +5990,7 @@ function showToast(msg, opts) {
   const duration = opts.hint ? 2400 : 1500;
   toast._toastHideAt = Date.now() + duration;
   toast._toastHolding = false;
+  toast._toastHoldPointerId = null;
   clearTimeout(toast._toastTimer);
   toast._toastTimer = setTimeout(() => {
     if (toast._toastHolding) return;
@@ -9211,8 +9218,12 @@ function getCalcMainFieldBounds(el) {
     : block?.matches('.yt-step') ? block.querySelector('.yt-step-lab')
     : block?.querySelector(':scope > label');
   const lr = label?.getBoundingClientRect();
-  const top = lr && lr.height ? Math.min(rect.top, lr.top) : rect.top;
-  return { top, bottom: rect.bottom, height: rect.bottom - top };
+  // 部分輸入元件會比外框多出 1px，定位時一併保留完整範圍。
+  const inputRect = el.getBoundingClientRect();
+  const contentTop = Math.min(rect.top, inputRect.top);
+  const bottom = Math.max(rect.bottom, inputRect.bottom);
+  const top = lr && lr.height ? Math.min(contentTop, lr.top) : contentTop;
+  return { top, bottom, height: bottom - top };
 }
 
 function scrollCalcTriggerIntoView(el) {
