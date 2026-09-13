@@ -3725,9 +3725,15 @@ if ("serviceWorker" in navigator) {
 #bdFlowSheet .bd-t-toggle[aria-expanded="false"] .bd-t-chevron { margin-top: 0; transform: rotate(-45deg); }
 #bdFlowSheet .bd-t-section.is-collapsed .bd-t-heading { margin-bottom: 0; }
 #bdFlowSheet .bd-t-content[hidden] { display: none !important; }
+#bdFlowSheet .bd-t-heading-note { display: inline-block; white-space: nowrap; }
 #bdFlowSheet .bd-t-number { flex: 0 0 auto; }
 #bdFlowSheet .bd-t-line { margin: 0; overflow-wrap: anywhere; }
 #bdFlowSheet .bd-t-value { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#bdFlowSheet .bd-t-term { display: inline-block; max-width: 100%; }
+#bdFlowSheet .bd-t-comparison-item { display: block; }
+#bdFlowSheet .bd-t-month-result { color: #f2c46b; font-weight: 500; white-space: nowrap; }
+#bdFlowSheet .bd-t-answer.bd-t-intermediate { color: #a7b8c9; font-size: 13px; }
+#bdFlowSheet .bd-t-answer.bd-t-intermediate > .bd-t-value { font-weight: 400; }
 #bdFlowSheet .bd-t-label { color: #a7b8c9; font-size: 12px; }
 #bdFlowSheet .bd-t-answer { margin: 2px 0 0; color: #f2c46b; font-size: 14px; overflow-wrap: anywhere; line-height: 1.65; }
 #bdFlowSheet .bd-t-answer > .bd-t-value { font-weight: 600; }
@@ -4459,7 +4465,7 @@ if ("serviceWorker" in navigator) {
           </div>
         </div>
       </div>
-      <p class="gl-note bd-note-static">※ 點 <em>欄位標題</em> 可切換 元／萬元，四格一起切換。<em>既有負債月付</em> 填每月要繳的金額（車貸、信貸等）；<em>願意負擔</em> 與 <em>他人協助</em> 不計入收入，只用來壓低月付。</p>
+      <p class="gl-note bd-note-static">※ 點 <em>欄位標題</em> ，可一起切換四格的「元／萬」。 <em>既有負債月付</em> ，會減少可用於新房貸的月付額度。 <em>願意負擔</em> 與 <em>他人協助</em> 不影響收支比，僅提供系統評估使用。</p>
 
       <div class="form-grid">
         <div class="field">
@@ -4503,7 +4509,7 @@ if ("serviceWorker" in navigator) {
         </div>
       </div>
 
-      <p class="gl-note bd-note-static">※ <em>自備款</em> 未填時，依月付與成數推估房價，並列出需要準備的金額；填入後，會同時檢查你的 <em>自備款與月付能力</em>。</p>
+      <p class="gl-note bd-note-static">※ <em>貸款成數</em> 為預估最高比例，實際採用成數可能較低；較高 <em>自備款</em> ，可提高購買總價。</p>
 
       <div class="section">
         <label class="label-cap">收支比<button type="button" class="yt-cap-max" id="bdDtiTag" title="點一下填入該數值">默認 50 %</button></label>
@@ -4546,7 +4552,6 @@ if ("serviceWorker" in navigator) {
         <label>多段利率（年利率）</label>
         <div id="bdRateRows"></div>
         <button type="button" class="btn-add" id="bdAddRate">＋ 新增利率段</button>
-        <p class="gl-note bd-note-static">※ 反推時會檢查<em>每一期的月付</em>，包含利率變動與最後一期，確認全期最高月付不超過你的預算。</p>
       </div>
 
       <div class="actions">
@@ -5016,7 +5021,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.12Q";
+const APP_VERSION = "2026.09.13D";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -8199,7 +8204,7 @@ function calcKeyboardDisplayExpr(expr) {
   }
   const head = calcKeyboard.exactHead;
   const roundGeneralAmount = isGeneralWanAmountField(calcKeyboard.inputEl)
-    || (calcKeyboard.inputEl && calcKeyboard.inputEl.id === 'bdDown');
+    || (calcKeyboard.inputEl && ['bdDown', 'bdDti'].includes(calcKeyboard.inputEl.id));
   if (calcKeyboard.strictInteger) {
     const exact = head && head.text === s ? head.rat : calcEvalExprExact(s);
     if (exact && !ratIsInt(exact)) {
@@ -12985,9 +12990,10 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       ? '—' : typeof value === 'number' ? flowNumber(value) : String(value);
     return '<span class="bd-t-value"' + (key ? ' data-flow-value="' + key + '" data-flow-unit="' + unit + '"' : '') + '>' + flowEscape(shown) + '</span>';
   }
-  function bdTextTerm(label, value, key = '', suffix = '') {
-    return bdTextValue(value, key) + (value !== null && suffix ? flowEscape(suffix) : '') +
+  function bdTextTerm(label, value, key = '', suffix = '', grouped = false) {
+    const html = bdTextValue(value, key) + (value !== null && suffix ? flowEscape(suffix) : '') +
       '<span class="bd-t-label">（' + flowEscape(label) + '）</span>';
+    return grouped ? '<span class="bd-t-term">' + html + '</span>' : html;
   }
   function bdTextLine(html, extra = '') {
     return '<div class="bd-t-line' + (extra ? ' ' + extra : '') + '">' + html + '</div>';
@@ -12997,9 +13003,10 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   }
   function bdTextAnswer(label, value, key, unit = '元', symbol = '＝', amount = true, tail = '') {
     const numeric = typeof value === 'number' && Number.isFinite(value);
-    const alternative = amount && numeric && Math.abs(value) >= 10000
+    const intermediate = key === 'capacityEstimate' || key === 'loanLimit';
+    const alternative = !intermediate && amount && numeric && Math.abs(value) >= 10000
       ? '<span class="bd-t-alt"> ≈ ' + flowEscape((value / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 2 })) + ' 萬</span>' : '';
-    return '<div class="bd-t-answer"><span class="bd-t-symbol">' + flowEscape(symbol) + ' </span>' +
+    return '<div class="bd-t-answer' + (intermediate ? ' bd-t-intermediate' : '') + '"><span class="bd-t-symbol">' + flowEscape(symbol) + ' </span>' +
       bdTextValue(value, key, amount ? 'yuan' : unit) + (numeric && unit ? ' ' + flowEscape(unit) : '') +
       (label ? '<span class="bd-t-label">（' + flowEscape(label) + '）</span>' : '') + alternative + tail + '</div>';
   }
@@ -13039,13 +13046,13 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     });
   }
 
-  function bdTextSection(number, title, html) {
+  function bdTextSection(number, title, html, titleNote = '') {
     const collapsed = bdFlowCollapsed[number] === true;
     const contentId = 'bdFlowStepBody' + number;
     return '<section class="bd-t-section' + (collapsed ? ' is-collapsed' : '') + '" data-flow-step="' + number + '"><h3 class="bd-t-heading">' +
       '<button type="button" class="bd-t-toggle" data-bd-flow-toggle="' + number + '" aria-expanded="' + !collapsed + '" aria-controls="' + contentId + '">' +
       '<span class="bd-t-number">' + ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'][number - 1] + '</span>' +
-      '<span class="bd-t-title">' + flowEscape(title) + '</span><span class="bd-t-chevron" aria-hidden="true"></span></button></h3>' +
+      '<span class="bd-t-title">' + flowEscape(title) + (titleNote ? '<span class="bd-t-heading-note">' + flowEscape(titleNote) + '</span>' : '') + '</span><span class="bd-t-chevron" aria-hidden="true"></span></button></h3>' +
       '<div class="bd-t-content" id="' + contentId + '"' + (collapsed ? ' hidden' : '') + '>' + html + '</div></section>';
   }
   function bdTextRates(s, valid) {
@@ -13075,11 +13082,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }
     if (!rows.length) rows.push({ from: null, to: null, rate: null });
     return rows.map(row => {
-      const decimal = row.rate === null ? '—' : (row.rate / 1200).toLocaleString('en-US', { maximumFractionDigits: 10, useGrouping: false });
       const month = row.rate === null ? '—' : (row.rate / 12).toLocaleString('en-US', { maximumFractionDigits: 7, useGrouping: false }) + '%';
       return '<div class="bd-t-rate-row"><span class="bd-t-label">第 ' + flowEscape(row.from ?? '—') + '～' + flowEscape(row.to ?? '—') + ' 期</span>' +
-        bdTextLine(bdTextValue(row.rate) + (row.rate === null ? '' : '%') + ' ÷ 12 ≈ ' + flowEscape(month)) +
-        bdTextNote('r ≈ ' + flowEscape(decimal)) + '</div>';
+        bdTextLine(bdTextValue(row.rate) + (row.rate === null ? '' : '%') + ' ÷ 12 <span class="bd-t-month-result">≈ ' + flowEscape(month) + '</span>') + '</div>';
     }).join('');
   }
   function bdTextAdjustment(s, candidate, adopted, pay, key) {
@@ -13105,6 +13110,14 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   }
   function bdTextCapacity(s, valid, n, pay) {
     const r = valid ? s.res : null;
+    // Multi-rate explanation reads the unchanged capacity result and its own schedule.
+    if (s.rateType === 'multi') {
+      let peak = null;
+      if (valid && s.capacitySchedule.length) peak = s.capacitySchedule.reduce((best, row) => row.payment > best.payment ? row : best);
+      return '<div class="bd-t-answer">反推可貸上限：' + bdTextValue(valid ? r.capacity : null, 'capacity', 'yuan') +
+        (valid ? ' 元' : '') + '</div>' + bdTextNote((peak ? '已核對' : '') + '最高月付（第 ' +
+        bdTextValue(peak?.period ?? null) + ' 期）：' + bdTextValue(peak?.payment ?? null, 'capacityPeakBreakdown', 'yuan') + (peak ? ' 元' : ''));
+    }
     const methodKnown = s.method === 'amortize' || s.method === 'principal';
     let html = '', roundedEstimate = null;
     if (s.rateType === 'single') {
@@ -13125,19 +13138,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
         html += bdTextAnswer('公式概算', roundedEstimate, 'capacityEstimate', '元', '≈');
         if (valid) html += bdTextAdjustment(s, roundedEstimate, r.capacity, pay, 'capacity');
       }
-    } else if (s.rateType === 'multi') {
-      html += bdTextLine(s.method === 'principal'
-        ? '每期月付＝本期本金＋期初餘額 × r'
-        : s.method === 'amortize' ? '本段月付概算＝本段起始本金 × r ÷〔1 −（1 ＋ r）^（−n）〕'
-        : '還款方式 —', 'bd-t-math');
-      html += bdTextNote('r＝本段月利率；n＝剩餘攤還期數。');
     } else html += bdTextLine('利率計算方式 —');
-    let peak = null;
-    if (valid && s.capacitySchedule.length) peak = s.capacitySchedule.reduce((best, row) => row.payment > best.payment ? row : best);
-    if (s.rateType === 'multi') {
-      html += bdTextLine(bdTextTerm('最高月付期本金', peak?.principal ?? null) + ' ＋ ' + bdTextTerm('當期利息', peak?.interest ?? null) +
-        ' ＝ ' + bdTextValue(peak?.payment ?? null, 'capacityPeakBreakdown', 'yuan'));
-    }
     const symbol = valid && s.rateType === 'single' && roundedEstimate === r.capacity ? '≈'
       : valid && roundedEstimate !== null && roundedEstimate !== r.capacity ? '採用' : '＝';
     html += bdTextAnswer('月付可貸上限', valid ? r.capacity : null, 'capacity', '元', symbol);
@@ -13173,8 +13174,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     sections.push(bdTextSection(2, '計算個人願意負擔的月付上限', bdTextLine(bdTextTerm('願意負擔月付', willingBlank ? null : s.willing) +
       ' ＋ ' + bdTextTerm('他人協助月付', s.help)) + bdTextAnswer(willingBlank ? '個人月付上限・未設定' : '個人月付上限', personalPay, 'personalPay')));
     const budget = willingBlank ? bdTextLine('沿用收入條件月付上限 ' + bdTextValue(ceiling))
-      : bdTextLine('取小值〔' + bdTextTerm('收入條件月付上限', ceiling) + '，' + bdTextTerm('個人月付上限', personalPay) + '〕');
-    sections.push(bdTextSection(3, '決定本次採用的月付上限', budget + bdTextAnswer('有效月付上限', pay, 'pay')));
+      : bdTextLine('<span class="bd-t-comparison-item">' + bdTextTerm('收入條件月付上限', ceiling) + '</span>' +
+        '<span class="bd-t-comparison-item">' + bdTextTerm('個人月付上限', personalPay) + '</span>');
+    sections.push(bdTextSection(3, '決定本次採用的月付上限', budget + bdTextAnswer('有效月付上限', pay, 'pay'), willingBlank ? '' : '（取小值）'));
     sections.push(bdTextSection(4, '計算寬限期結束後的攤還期數', bdTextLine('〔' + bdTextTerm('貸款年限', term, '', ' 年') +
       ' − ' + bdTextTerm('寬限期', grace, '', ' 年') + '〕× 12') + bdTextAnswer('本金攤還期數', n, 'repayMonths', '期', '＝', false)));
     sections.push(bdTextSection(5, s.rateType === 'multi' ? '計算各段月利率' : '計算月利率', bdTextRates(s, valid)));
@@ -13182,20 +13184,21 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     let downHtml;
     if (ratio === 100) downHtml = bdTextLine('貸款成數上限 100%') + bdTextAnswer('', '不受此項限制', 'byDown', '', '→', false);
     else if (downBlank) downHtml = bdTextLine('自備款未填，先依月付能力評估。') + bdTextAnswer('', null, 'byDown');
-    else downHtml = bdTextLine(bdTextTerm('自備款', s.down) + ' × ' + bdTextTerm('貸款成數上限', ratio, '', '%') +
-      ' ÷〔1 − ' + bdTextTerm('貸款成數上限', ratio, '', '%') + '〕') + bdTextAnswer('', byDown, 'byDown', '元', '取整後＝');
+    else downHtml = bdTextLine(bdTextTerm('自備款', s.down, '', '', true) + ' × ' + bdTextTerm('成數上限', ratio, '', '%', true) +
+      '<br>÷〔1 − ' + bdTextValue(ratio) + (ratio !== null ? '%' : '') + '〕') + bdTextAnswer('', byDown, 'byDown', '元', '取整後＝');
     sections.push(bdTextSection(7, '計算自備款能支持的貸款上限', downHtml));
     const noDownBound = downBlank || ratio === 100;
     const limit = valid ? Math.min(r.capacity, r.downGiven ? bdLoanByDown(s.down, r.ratioPct) : Infinity) : null;
     let loanHtml = noDownBound ? bdTextLine(bdTextTerm('月付可貸上限', valid ? r.capacity : null, 'loanLimit'))
-      : bdTextLine('取小值〔' + bdTextTerm('月付可貸上限', valid ? r.capacity : null) + '，' + bdTextTerm('自備款可支持的貸款上限', byDown) + '〕');
+      : bdTextLine('<span class="bd-t-comparison-item">' + bdTextTerm('月付可貸上限', valid ? r.capacity : null) + '</span>' +
+        '<span class="bd-t-comparison-item">' + bdTextTerm('自備款可貸上限', byDown) + '</span>');
     const loanAdjusted = valid && limit !== r.loan;
     if (loanAdjusted) {
       if (!noDownBound) loanHtml += bdTextAnswer('貸款上限', limit, 'loanLimit');
       loanHtml += bdTextAdjustment(s, limit, r.loan, pay, 'loan');
     }
     loanHtml += bdTextAnswer('預估可貸金額', valid ? r.loan : null, 'loan', '元', loanAdjusted ? '採用' : '＝');
-    sections.push(bdTextSection(8, '決定預估可貸金額', loanHtml));
+    sections.push(bdTextSection(8, '決定預估可貸金額', loanHtml, noDownBound ? '' : '（取小值）'));
     // The existing no-down solver derives price from capacity, then rechecks final loan.
     const property = downBlank ? bdTextLine(bdTextTerm('月付可貸上限', valid ? r.capacity : null) + ' ÷ ' + bdTextTerm('貸款成數上限', ratio, '', '%'))
       : bdTextLine(bdTextTerm('預估可貸金額', valid ? r.loan : null) + ' ＋ ' + bdTextTerm('自備款', s.down));
@@ -13750,6 +13753,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   const ERR_MSG = {
     stored: '保存資料需修正，請確認標示的欄位。',
     pay: '以目前的收入與負債，估不出可負擔的房貸金額。請確認收入、既有負債月付與收支比的設定。',
+    downZero: '自備款為 0，請填入可用自備款，或留白估算所需金額。',
+    willingZero: '願意負擔與他人協助月付合計為 0。請填入金額，或將「願意負擔月付」留白，由系統依收入條件評估。',
     dti: '收支比需大於 0%。',
     ratio: '預估貸款成數需大於 0%。',
     grace: '寬限期需小於貸款年限。',
@@ -13824,6 +13829,19 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     return issues.length ? issues : miss.labels.map(label => ({ kind: 'invalid', label }));
   }
 
+  /* 僅釐清提示原因；沿用 compute 的判定與月付優先順序，不改試算結果。 */
+  function bdCalcErrorMessage(error) {
+    if (error === 'pay' && dtiCeiling() > 0) {
+      if (has('#bdWilling') && moneyYuan('#bdWilling') + moneyYuan('#bdHelp') === 0) {
+        return ERR_MSG.willingZero;
+      }
+      if (has('#bdDown') && bdDownYuan() === 0 && bdRequestedRatio() < 100) {
+        return ERR_MSG.downZero;
+      }
+    }
+    return ERR_MSG[error] || '無法評估，請檢查輸入的數值';
+  }
+
   function bdRunCalc() {
     bdForgetIssue('resultsVisible'); bdForgetIssue('autoHidden');
     const miss = bdMissingFields();
@@ -13832,7 +13850,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       return;
     }
     const probe = compute();
-    if (probe.err) { showAppAlert(ERR_MSG[probe.err] || '無法評估，請檢查輸入的數值'); return; }
+    if (probe.err) { showAppAlert(bdCalcErrorMessage(probe.err)); return; }
     try {
       bdAutoHidden = false;
       render();
