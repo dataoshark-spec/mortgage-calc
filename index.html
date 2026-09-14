@@ -3738,65 +3738,6 @@ if ("serviceWorker" in navigator) {
 
     /* 三模式完整名稱換行時，螢幕上的利率數字與百分號仍保持一行。 */
     .apr-footer-screen .apr-val { white-space: nowrap; flex-shrink: 0; }
-    /* J：只套用在匯出副本；三模式、圖片與 PDF 使用同一份固定版面。 */
-    .export-capture {
-      width: 720px !important;
-      min-width: 720px !important;
-      max-width: 720px !important;
-      padding: 24px !important;
-      margin: 0;
-      border: 0 !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      font-size: 16px;
-      line-height: 1.5;
-      zoom: 1 !important;
-      transform: none !important;
-      -webkit-text-size-adjust: none;
-      text-size-adjust: none;
-    }
-    .export-capture .conditions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; }
-    .export-capture .conditions-body { padding: 16px 18px; }
-    .export-capture .cond-item { font-size: 13.5px; column-gap: 10px; }
-    .export-capture .cond-rate-row { font-size: 14px; }
-    .export-capture .conditions-head h3 { font-size: 15px; }
-    .export-capture .conditions-rates.single-rate .cond-rate-period,
-    .export-capture .conditions-rates.single-rate .cond-rate-tag { font-size: 17px; }
-    .export-capture .conditions-rates.single-rate .cond-rate-value { font-size: 20px; }
-    .export-capture .summary-grid,
-    .export-capture[data-export-mode="burden"] .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .export-capture .summary-item,
-    .export-capture[data-export-mode="burden"] .summary-item { min-width: 0; padding: 16px 12px; }
-    .export-capture .summary-item .label,
-    .export-capture[data-export-mode="burden"] .summary-item .label { font-size: 14px; line-height: 1.4; }
-    .export-capture .summary-item .value,
-    .export-capture .summary-item.summary-amount-toggle .value,
-    .export-capture[data-export-mode="burden"] .summary-item .value { font-size: 22px; line-height: 1.3; overflow-wrap: anywhere; }
-    .export-capture .period-title h3 { font-size: 17px; }
-    .export-capture .payment-head { font-size: 13px; }
-    .export-capture .payment-head span { padding: 10px 8px; }
-    .export-capture .payment-row > div { padding: 14px 8px; }
-    .export-capture .payment-row .period-range { font-size: 14px; }
-    .export-capture .payment-row .period-mid { font-size: 14px; }
-    .export-capture .payment-row .period-mid.two { padding: 4px 2px; column-gap: 3px; }
-    .export-capture .payment-row .period-amount,
-    .export-capture .payment-row .amount-val { font-size: 17px; }
-    .export-capture .pmode { font-size: 12.5px; }
-    .export-capture .year-header .year-summary { white-space: normal; overflow: visible; text-overflow: clip; font-size: 12.5px; }
-    .export-capture .year-body table { font-size: 13px; }
-    .export-capture .year-body th,
-    .export-capture .detail-section.show-cum .year-body th { font-size: 12px; }
-    .export-capture .year-body td,
-    .export-capture .detail-section.show-cum .year-body td { font-size: 13px; }
-    .export-capture .apr-export-title { font-size: 15px; }
-    .export-capture .apr-export-hint { font-size: 11px; }
-    .export-capture .note { font-size: 12px; color: #777; }
-    .export-capture .yt-rule-b { font-size: 12px; line-height: 1.8; }
-    .export-capture .yt-rule-b.lv1 > b { font-size: 13px; }
-    .export-capture .yt-rule-b.lv2 { padding-left: 12px; }
-    .export-capture .yt-rule-b.lv3 { padding-left: 26px; }
-    .export-capture .spec-src { font-size: 11px; }
-
 /* Only Personal Assessment's formula dialog uses the selected blue-gray palette. */
 #bdFlowSheet { background: #142332; color: #e0e9f2; color-scheme: dark; --teal: #a2cffa; --teal-dark: #1b4668; --teal-light: #2d353d; }
 #bdFlowSheet .spec-sheet-head { background: #1b4668; color: #f6fbff; box-shadow: none; border-bottom: 1px solid #344555; }
@@ -5117,182 +5058,22 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.14B";
+const APP_VERSION = "2026.09.13I";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
 
 
-/* 分頁各自保存；新開頁讀最後保存的完整試算，重整只恢復本頁。
-   保存失敗時保留本頁最新修改；讀取失敗則暫停寫回，避免原資料被預設值覆蓋。 */
+/* 保存失敗時保留本頁最新修改，讓使用者明確重試；讀取失敗後停止本頁寫回，
+   避免尚未讀到的原資料被預設值覆蓋。保護從第一次讀取例外開始，不回溯已成功的操作。 */
 const appStorage = (() => {
-  // sessionStorage belongs to this top-level browsing context. Never share a tab ID.
-  const SESSION_KEY = 'mortgage_tab_state_v1';
-  const LATEST_KEY = 'mortgage_latest_state_v1';
-  const KEYS = Object.freeze([
-  "mortgage_form_state_v4",
-  "mortgage_clear_snapshot_v4",
-  "mortgage_burden_state_v1",
-  "mortgage_burden_cleared_v1",
-  "youth_form_state_v3",
-  "youth_clear_snapshot_v3",
-  "youth_clear_baseline_v3",
-  "youth_dirty_since_clear_v3",
-  "mortgage_calc_mode_v1",
-  "mortgage-period-unit-v1",
-  "mortgage-total-unit-v1",
-  "mortgage_badge_lock_general_v1",
-  "mortgage_badge_lock_youth_v1",
-  "mortgage_lux_rows_v1",
-  "mortgage_lux_sel_v1",
-  "mortgage_lux_on_v1",
-  "mortgage_hh_rows_v1",
-  "mortgage_hh_sel_v1",
-  "mortgage_hh_on_v1",
-  "mortgage-burden-flow-collapsed-v1",
-  "mortgage-burden-summary-decimals-v1",
-  "mortgage-export-include-detail",
-  "cb_spec_sheet_view_v1",
-  "youth_spec_sheet_view_v1",
-  "mortgage_app_install_dismiss_v1",
-  "youth_base_default_v1",
-  "youth_region_rows_v1",
-  "youth_region_on_v1",
-  "mortgage_defaults_general_v1",
-  "mortgage_defaults_youth_v1",
-  "mortgage_defaults_burden_v1",
-  "loan_price_only_migrated_20260912J",
-  "mortgage_decimal_migrated_v2",
-  "mortgage_form_state_v1",
-  "mortgage_form_state_v2",
-  "mortgage_form_state_v3",
-  "mortgage_clear_snapshot_v1",
-  "mortgage_clear_snapshot_v2",
-  "mortgage_clear_snapshot_v3",
-  "mortgage_amount_mode_migrated_v3",
-  "youth_form_state_v1",
-  "youth_form_state_v2",
-  "youth_clear_snapshot_v1",
-  "youth_clear_snapshot_v2",
-  "youth_clear_baseline_v1",
-  "youth_clear_baseline_v2",
-  "youth_dirty_since_clear_v1",
-  "youth_dirty_since_clear_v2",
-  "youth_amount_input_migrated_v2"
-]);
-  const allowedKeys = new Set(KEYS);
-  let values = Object.create(null);
+  const pending = new Map();
   let readBlocked = false;
-  let sessionFailed = false;
-  let latestFailed = false;
-  let needsPublish = false;
-  let userHasActed = false;
-  let legacyBootstrap = false;
-
-  function parseSnapshot(raw) {
-    const snapshot = JSON.parse(raw);
-    if (!snapshot || snapshot.schema !== 1 || !snapshot.values ||
-        typeof snapshot.values !== 'object' || Array.isArray(snapshot.values) ||
-        (snapshot.needsPublish !== undefined && typeof snapshot.needsPublish !== 'boolean')) {
-      throw new Error('Invalid saved page snapshot');
-    }
-    const restored = Object.create(null);
-    for (const [key, value] of Object.entries(snapshot.values)) {
-      if (!allowedKeys.has(key) || typeof value !== 'string') throw new Error('Invalid saved page value');
-      restored[key] = value;
-    }
-    return { values: restored, needsPublish: snapshot.needsPublish === true };
-  }
-
-  function checkKey(key) {
-    if (!allowedKeys.has(key)) throw new Error('Unknown application storage key: ' + key);
-  }
-
-  function persistSession() {
-    try {
-      window.sessionStorage.setItem(SESSION_KEY, JSON.stringify({ schema: 1, values, needsPublish }));
-      sessionFailed = false;
-    } catch (error) {
-      sessionFailed = true;
-      throw error;
-    }
-  }
-
-  function publishLatest() {
-    // The per-page copy must be durable before announcing a new default for new pages.
-    try {
-      window.localStorage.setItem(LATEST_KEY, JSON.stringify({ schema: 1, values }));
-      needsPublish = false;
-      latestFailed = false;
-    } catch (error) {
-      latestFailed = true;
-      throw error;
-    }
-    persistSession();
-  }
-
-  function initializeState() {
-    try {
-      const navigation = performance.getEntriesByType('navigation')[0];
-      const resume = navigation?.type === 'reload' || navigation?.type === 'back_forward' || document.wasDiscarded === true;
-      // A newly opened/duplicated page may receive a copy of the opener's sessionStorage.
-      // Only a true reload/history restore resumes it; new navigation starts from latest.
-      const tabRaw = window.sessionStorage.getItem(SESSION_KEY);
-      const restored = resume && tabRaw !== null ? parseSnapshot(tabRaw) : null;
-      if (restored) {
-        values = restored.values;
-        needsPublish = restored.needsPublish;
-        latestFailed = needsPublish;
-      } else {
-        const latestRaw = window.localStorage.getItem(LATEST_KEY);
-        if (latestRaw !== null) {
-          values = parseSnapshot(latestRaw).values;
-        } else {
-          // All legacy reads must succeed before accepting any data or writing a new snapshot.
-          const imported = Object.create(null);
-          for (const key of KEYS) {
-            const value = window.localStorage.getItem(key);
-            if (value !== null) imported[key] = value;
-          }
-          values = imported;
-          legacyBootstrap = true;
-        }
-      }
-    } catch (_) {
-      readBlocked = true;
-      updateStatus();
-      return;
-    }
-    try { persistSession(); } catch (_) {}
-    updateStatus();
-  }
-
-  function initializeLatestIfMissing() {
-    if (!legacyBootstrap || readBlocked || sessionFailed) return;
-    try {
-      // Another page may have finished importing while this page was loading.
-      if (window.localStorage.getItem(LATEST_KEY) !== null) return;
-    } catch (_) {
-      readBlocked = true;
-      updateStatus();
-      return;
-    }
-    needsPublish = true;
-    try { persistSession(); publishLatest(); } catch (_) {}
-    updateStatus();
-  }
-
-  function markUserAction(event) {
-    if (!event.isTrusted) return;
-    // Pointer motion, wheel and focus alone never authorize publishing startup normalization.
-    userHasActed = true;
-  }
-
   let status, message, retryButton, reloadButton;
 
   /* 警告與重試按鈕屬於目前互動區域的正常流，不能浮在設定或數字上。
      只在永久存在的頁首／視窗卡片間移動同一元素；絕不放入會被移除的計算鍵盤。
-     分頁保存狀態與重試機制共用此提示，移動只影響版面。 */
+     pending、readBlocked 與重試機制完全沿用，移動只影響版面。 */
   let statusLayoutFrame = 0;
   function scheduleStatusKeyboardLayout() {
     if (statusLayoutFrame || !document.querySelector('.calc-backdrop')) return;
@@ -5320,7 +5101,7 @@ const appStorage = (() => {
   }
 
   function updateStatus() {
-    if (!status && !readBlocked && !sessionFailed && !latestFailed) return;
+    if (!status && !readBlocked && pending.size === 0) return;
     if (!status) {
       status = document.createElement('div');
       status.id = 'storageStatus';
@@ -5355,12 +5136,10 @@ const appStorage = (() => {
       status.append(message, buttons);
       document.body.prepend(status);
     }
-    status.hidden = !readBlocked && !sessionFailed && !latestFailed;
+    status.hidden = !readBlocked && pending.size === 0;
     message.textContent = readBlocked
-      ? '無法讀取此分頁或原本保存的資料，已暫停儲存。重新載入會放棄尚未保存的修改。'
-      : sessionFailed
-        ? '此分頁的變更未能儲存，重新整理或離開可能遺失修改。請重新儲存。'
-        : '此分頁已保存，但未能更新下次新開時的資料。請重新儲存。';
+      ? '無法讀取原本保存的資料，已暫停儲存。重新載入會放棄尚未保存的修改。'
+      : '變更未能儲存，離開此頁會遺失未儲存的修改。請重新儲存。';
     retryButton.hidden = readBlocked;
     reloadButton.hidden = !readBlocked;
     syncStatusPlacement();
@@ -5368,63 +5147,56 @@ const appStorage = (() => {
   }
 
   function perform(key, operation) {
-    checkKey(key);
     if (readBlocked) {
       updateStatus();
       throw new Error('Saving paused after a storage read failure');
     }
-    const before = Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
-    const after = operation.remove ? null : operation.value;
-    const changed = before !== after;
-    if (operation.remove) delete values[key];
-    else values[key] = operation.value;
-    if (changed && userHasActed) needsPublish = true;
-    if (!changed && !sessionFailed && !latestFailed) return;
     try {
-      persistSession();
-      // Startup/restore writes stay in this page; a failed publish waits for a user retry.
-      if (needsPublish && userHasActed) publishLatest();
-    } finally {
+      const native = window.localStorage;
+      if (operation.remove) native.removeItem(key);
+      else native.setItem(key, operation.value);
+      // A normal successful save also supersedes any previously failed operation.
+      pending.delete(key);
       updateStatus();
+    } catch (error) {
+      pending.set(key, operation);
+      updateStatus();
+      throw error;
     }
   }
 
   function retryPending() {
     if (readBlocked) { updateStatus(); return; }
-    try {
-      persistSession();
-      if (needsPublish || legacyBootstrap) {
-        needsPublish = true;
-        persistSession();
-        publishLatest();
-      }
-    } catch (_) {}
+    // Preserve failed keys while allowing independent successful keys to recover.
+    for (const [key, operation] of Array.from(pending.entries())) {
+      try { perform(key, operation); } catch (_) {}
+    }
     updateStatus();
   }
 
-  // Keep the existing warning placement and keyboard geometry behavior.
+  // 開關浮層會改 class/hidden；節點移動後 host 不變即返回，不形成重排迴圈。
   new MutationObserver(() => {
     if (status && !status.hidden) syncStatusPlacement();
   }).observe(document.body, { subtree: true, childList: true, attributes: true,
     attributeFilter: ['class', 'hidden'] });
 
-  for (const type of ['click', 'keydown', 'input', 'change']) {
-    document.addEventListener(type, markUserAction, true);
-  }
-  initializeState();
-  if (document.readyState === 'complete') initializeLatestIfMissing();
-  else window.addEventListener('load', initializeLatestIfMissing, { once: true });
-
   return Object.freeze({
     getItem(key) {
       key = String(key);
-      checkKey(key);
-      if (readBlocked) throw new Error('Reading paused after a storage read failure');
-      return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
+      if (pending.has(key)) {
+        const operation = pending.get(key);
+        return operation.remove ? null : operation.value;
+      }
+      try { return window.localStorage.getItem(key); }
+      catch (error) {
+        readBlocked = true;
+        updateStatus();
+        throw error;
+      }
     },
     setItem(key, value) { perform(String(key), { value: String(value), remove: false }); },
     removeItem(key) { perform(String(key), { remove: true }); },
-    hasFailure() { return readBlocked || sessionFailed || latestFailed; }
+    hasFailure() { return readBlocked || pending.size > 0; }
   });
 })();
 
@@ -9798,8 +9570,6 @@ function createExportContext() {
   const text = getShareText(includeGeneralLoan);
   if (!text) return null;
   const results = RES(), template = results.cloneNode(true);
-  // 螢幕上的 fitPaymentTable 依裝置縮字；固定輸出副本改由共用 export CSS 決定字級。
-  template.querySelectorAll('.payment-row > div').forEach(cell => cell.style.removeProperty('font-size'));
   template.dataset.exportMode = mode;
   if (mode === 'youth') prepareYouthGeneralLoanExport(template, includeGeneralLoan);
   const includeDetail = getEffectiveExportIncludeDetail(mode, includeGeneralLoan), cum = isCumInterestVisible();
@@ -9816,7 +9586,7 @@ function createExportContext() {
   const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
   const tags = ['重點摘要', ...(includeDetail ? ['還款明細', ...(cum ? ['累積利息'] : [])] : [])];
   return Object.freeze({mode, text, template, includeDetail, includeGeneralLoan, cum, detailScope,
-    width: EXPORT_LAYOUT_WIDTH, title: prefix + (mode === 'burden' ? '' : '結果'), url: location.href,
+    width: results.offsetWidth, title: prefix + (mode === 'burden' ? '' : '結果'), url: location.href,
     filename: prefix + '_' + stamp + '_' + tags.join('_')});
 }
 function exportFileName(ext, context) {
@@ -10006,10 +9776,6 @@ function getShareText(includeGeneralLoan) {
 }
 
 
-const EXPORT_LAYOUT_WIDTH = 720;
-const EXPORT_CAPTURE_VIEWPORT_WIDTH = 768;
-const EXPORT_CAPTURE_VIEWPORT_HEIGHT = 1000;
-const PDF_PAGE_MAX_CSS_HEIGHT = 5400;
 const EXPORT_BOTTOM_PAD_CSS = 24;
 const PDF_PAGE_BOTTOM_PAD_CSS = 36;
 const EXPORT_CAPTURE_HEIGHT_SLACK = 12;
@@ -10110,13 +9876,9 @@ function centerPdfCanvas(canvas, targetW) {
 }
 
 function normalizePdfCanvases(canvases) {
-  const expectedWidth = Math.round(EXPORT_LAYOUT_WIDTH * EXPORT_CANVAS_SCALE);
-  canvases.forEach(canvas => {
-    if (!canvas || canvas.width !== expectedWidth || canvas.height <= 0) {
-      throw new Error('invalid fixed export canvas dimensions');
-    }
-  });
-  return canvases;
+  if (!canvases.length) return canvases;
+  const targetW = Math.max(...canvases.map((c) => c.width));
+  return canvases.map((canvas) => centerPdfCanvas(canvas, targetW));
 }
 
 function getPdfExportFinalizeOpts(rootEl) {
@@ -10135,14 +9897,14 @@ function getCanvasCssScale(canvas, cssWidth) {
 
 function finalizePdfPageCanvas(canvas, cssWidth) {
   const scale = getCanvasCssScale(canvas, cssWidth);
-  return trimExportCanvasVertical(canvas, scale);
+  const trimmed = trimExportCanvasVertical(canvas, scale);
+  return padExportCanvasBottom(trimmed, Math.round(PDF_PAGE_BOTTOM_PAD_CSS * scale));
 }
 
 const EXPORT_CANVAS_SCALE_SUMMARY = 3;
-const EXPORT_CANVAS_SCALE_DETAIL = 3;
+const EXPORT_CANVAS_SCALE_DETAIL = 2.5;
 const EXPORT_CANVAS_SCALE = EXPORT_CANVAS_SCALE_SUMMARY;
-const EXPORT_JPEG_QUALITY = 0.98;
-const PDF_JPEG_QUALITY = EXPORT_JPEG_QUALITY;
+const PDF_JPEG_QUALITY = 0.98;
 const PDF_IMAGE_COMPRESS = 'NONE';
 const EXPORT_SLICE_MAX_CSS_PX = 4000;
 const BROWSER_CANVAS_MAX_PX = 16384;
@@ -10154,8 +9916,12 @@ const JSPDF_PAGE_MAX_USER_UNIT = 14400;
 const JSPDF_PAGE_MAX_PX = Math.floor(JSPDF_PAGE_MAX_USER_UNIT / JSPDF_PX_SCALE);   // 10800
 
 function getExportCanvasScale(cssHeight, preferredScale) {
-  if (!Number.isFinite(cssHeight) || cssHeight <= 0) throw new Error('invalid export height');
-  return preferredScale != null ? preferredScale : EXPORT_CANVAS_SCALE;
+  let scale = preferredScale != null ? preferredScale : EXPORT_CANVAS_SCALE_SUMMARY;
+  const maxH = BROWSER_CANVAS_MAX_PX - 64;
+  while (cssHeight * scale > maxH && scale > 1) {
+    scale = scale <= 1.5 ? 1 : Math.round((scale - 0.5) * 10) / 10;
+  }
+  return scale;
 }
 
 function flattenCanvases(items) {
@@ -10217,40 +9983,34 @@ function balanceExportCanvasHorizontal(canvas) {
 function trimExportCanvasVertical(canvas, scale) {
   scale = scale || EXPORT_CANVAS_SCALE;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) throw new Error('canvas allocation failed');
   const { width, height } = canvas;
-  let contentBottom = -1;
-  // Only a finished page/image reaches this function. Preserve pale borders,
-  // footer antialiasing and isolated pixels; internal capture slices skip it.
-  for (let bottom = height; bottom > 0 && contentBottom < 0;) {
-    const top = Math.max(0, bottom - 64);
-    const pixels = ctx.getImageData(0, top, width, bottom - top).data;
-    for (let y = bottom - top - 1; y >= 0 && contentBottom < 0; y--) {
-      const end = (y + 1) * width * 4;
-      for (let i = y * width * 4; i < end; i += 4) {
-        if (pixels[i + 3] > 0 && (pixels[i] < 255 || pixels[i + 1] < 255 || pixels[i + 2] < 255)) {
-          contentBottom = top + y;
-          break;
-        }
+  const colStep = Math.max(1, Math.floor(width / 240));
+  let maxY = -1;
+  for (let y = height - 1; y >= 0; y--) {
+    const denseTail = y >= height - 120;
+    if (!denseTail && y !== 0 && y % 4 !== 0) continue;
+    const row = ctx.getImageData(0, y, width, 1).data;
+    let hasInk = false;
+    for (let x = 0; x < width; x += colStep) {
+      const i = x * 4;
+      if (!isExportCanvasBlankPixel(row[i], row[i + 1], row[i + 2], row[i + 3])) {
+        hasInk = true;
+        break;
       }
     }
-    bottom = top;
+    if (hasInk) {
+      maxY = y;
+      break;
+    }
   }
-  if (contentBottom < 0) return canvas;
-  const targetHeight = contentBottom + 1 + Math.round(EXPORT_BOTTOM_PAD_CSS * scale);
-  if (width > BROWSER_CANVAS_MAX_PX || targetHeight > BROWSER_CANVAS_MAX_PX) {
-    throw new Error('canvas too large');
-  }
-  if (targetHeight === height) return canvas;
-  const finished = document.createElement('canvas');
-  finished.width = width;
-  finished.height = targetHeight;
-  const finishedCtx = finished.getContext('2d');
-  if (!finishedCtx) throw new Error('canvas allocation failed');
-  finishedCtx.fillStyle = '#ffffff';
-  finishedCtx.fillRect(0, 0, width, targetHeight);
-  finishedCtx.drawImage(canvas, 0, 0);
-  return finished;
+  if (maxY < 0) return canvas;
+  const trimmedHeight = maxY + 1 + Math.round(EXPORT_BOTTOM_PAD_CSS * scale);
+  if (trimmedHeight >= height) return canvas;
+  const trimmed = document.createElement('canvas');
+  trimmed.width = width;
+  trimmed.height = trimmedHeight;
+  trimmed.getContext('2d').drawImage(canvas, 0, 0, width, trimmedHeight, 0, 0, width, trimmedHeight);
+  return trimmed;
 }
 
 async function waitExportLayout() {
@@ -10294,35 +10054,11 @@ function forceSpecRuleInExportClone(clone) {
 }
 
 async function mountExportNode(el) {
-  const frame = document.createElement('iframe');
-  frame.className = 'export-layout-frame';
-  frame.setAttribute('aria-hidden', 'true');
-  frame.setAttribute('tabindex', '-1');
-  frame.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + EXPORT_CAPTURE_VIEWPORT_WIDTH + 'px;height:' + EXPORT_CAPTURE_VIEWPORT_HEIGHT + 'px;border:0;visibility:visible;pointer-events:none;z-index:-1';
-  document.body.appendChild(frame);
-  try {
-    const doc = frame.contentDocument;
-    if (!doc) throw new Error('export layout frame unavailable');
-    doc.documentElement.lang = document.documentElement.lang || 'zh-Hant';
-    doc.head.replaceChildren();
-    const base = doc.createElement('base'); base.href = document.baseURI; doc.head.appendChild(base);
-    // Copy presentation only. No App scripts, mutable inputs or storage initialization run here.
-    document.head.querySelectorAll('style').forEach(style => doc.head.appendChild(doc.importNode(style, true)));
-    const fixedBase = doc.createElement('style');
-    fixedBase.textContent = 'html{font-size:16px!important}body{margin:0!important;padding:0!important;min-width:0!important}';
-    doc.head.appendChild(fixedBase);
-    doc.body.dataset.mode = el.dataset.exportMode;
-    el.setAttribute('aria-hidden', 'true');
-    el.classList.add('export-offscreen-clone');
-    const removeNode = el.remove.bind(el);
-    el.remove = function () { removeNode(); frame.remove(); };
-    doc.body.appendChild(el);
-    await waitExportLayout();
-    return el;
-  } catch (err) {
-    frame.remove();
-    throw err;
-  }
+  el.setAttribute('aria-hidden', 'true');
+  el.classList.add('export-offscreen-clone');
+  document.body.appendChild(el);
+  await waitExportLayout();
+  return el;
 }
 
 function parseYearItemYear(el) {
@@ -10353,33 +10089,19 @@ function getDetailYearGroups(context) {
 }
 
 async function buildExportSummaryPart(context) {
-  const clone = context.template.cloneNode(true);
+  const results = context.template;
+  const clone = results.cloneNode(true);
   clone.removeAttribute('id');
   clone.classList.add('export-capture', 'export-pdf-part', 'show');
-  clone.dataset.exportPart = 'summary';
   clone.style.width = context.width + 'px';
   clone.style.maxWidth = context.width + 'px';
   clone.querySelector('.export-section')?.remove();
   clone.querySelector('.detail-eye-btn')?.remove();
   clone.querySelector('.detail-section')?.remove();
-  if (context.mode === 'youth') clone.querySelector('#ytSpecBlock')?.remove();
-  clone.querySelectorAll('.conditions-box').forEach(box => box.classList.remove('collapsed'));
+  // 三個面板的條件區 id 各自不同，用 class 才不會只對一般貸款生效
+  clone.querySelectorAll('.conditions-box').forEach((box) => box.classList.remove('collapsed'));
   dropEmptyAprBlockInExportClone(clone);
   return mountExportNode(clone);
-}
-
-async function buildExportYouthRulesPart(context) {
-  if (context.mode !== 'youth') return null;
-  const rules = context.template.querySelector('#ytSpecBlock');
-  if (!rules || !rules.textContent.trim()) return null;
-  const shell = context.template.cloneNode(false);
-  shell.removeAttribute('id');
-  shell.classList.add('export-capture', 'export-pdf-part', 'export-rules-page', 'show');
-  shell.dataset.exportPart = 'rules';
-  shell.style.width = context.width + 'px';
-  shell.style.maxWidth = context.width + 'px';
-  shell.appendChild(rules.cloneNode(true));
-  return mountExportNode(shell);
 }
 
 function formatExportDetailYearRange(from, to) {
@@ -10415,7 +10137,6 @@ async function buildExportDetailPart(group, isFirstDetailPage, context) {
   const shell = document.createElement('div');
   shell.className = 'card results export-capture export-pdf-part show';
   shell.dataset.exportMode = context.mode;
-  shell.dataset.exportPart = 'detail';
   shell.style.cssText = context.template.style.cssText;
   shell.style.width = width + 'px';
   shell.style.maxWidth = width + 'px';
@@ -10441,11 +10162,11 @@ async function captureExportRootSlices(rootEl, opts) {
   const finalize = (canvas) => finalizeExportCanvas(canvas, opts);
   const finalizeSlice = (canvas) => finalizeExportCanvas(canvas, { ...opts, bottomPadPx: 0, skipVerticalTrim: true });
   // 量測與畫圖使用同一個視窗，避免複製頁面縮窄後重新換行而截掉底部。
-  const captureWindowWidth = EXPORT_CAPTURE_VIEWPORT_WIDTH;
-  const captureWindowHeight = EXPORT_CAPTURE_VIEWPORT_HEIGHT;
+  const captureWindowWidth = window.innerWidth;
+  const captureWindowHeight = window.innerHeight;
   const totalWidth = rootEl.offsetWidth;
   const totalHeight = getResultsExportHeight(rootEl);
-  const sliceMax = opts.pdfPageMaxCssHeight || EXPORT_SLICE_MAX_CSS_PX;
+  const sliceMax = EXPORT_SLICE_MAX_CSS_PX;
   const scale = getExportCanvasScale(totalHeight, opts.canvasScale);
   const needsChunkedCapture = totalHeight > sliceMax;
 
@@ -10465,8 +10186,7 @@ async function captureExportRootSlices(rootEl, opts) {
     return [finalize(canvas)];
   }
 
-  const captureDocument = rootEl.ownerDocument;
-  const viewport = captureDocument.createElement('div');
+  const viewport = document.createElement('div');
   viewport.setAttribute('aria-hidden', 'true');
   viewport.style.cssText = [
     'position:fixed',
@@ -10479,7 +10199,7 @@ async function captureExportRootSlices(rootEl, opts) {
     'width:' + totalWidth + 'px',
     'background:#fff'
   ].join(';');
-  captureDocument.body.appendChild(viewport);
+  document.body.appendChild(viewport);
   rootEl.classList.remove('export-offscreen-clone');
   viewport.appendChild(rootEl);
   rootEl.style.position = 'relative';
@@ -10488,12 +10208,9 @@ async function captureExportRootSlices(rootEl, opts) {
   rootEl.style.marginTop = '0';
 
   const slices = [];
-  const ranges = opts.pdfPageMaxCssHeight
-    ? getPdfSafeCaptureRanges(rootEl, totalHeight, sliceMax)
-    : Array.from({ length: Math.ceil(totalHeight / sliceMax) }, (_, i) => ({ top: i * sliceMax, height: Math.min(sliceMax, totalHeight - i * sliceMax) }));
   try {
-    for (const range of ranges) {
-      const top = range.top, sliceH = range.height;
+    for (let top = 0; top < totalHeight; top += sliceMax) {
+      const sliceH = Math.min(sliceMax, totalHeight - top);
       viewport.style.height = sliceH + 'px';
       rootEl.style.marginTop = (-top) + 'px';
       await waitExportLayout();
@@ -10509,10 +10226,7 @@ async function captureExportRootSlices(rootEl, opts) {
         windowWidth: captureWindowWidth,
         windowHeight: captureWindowHeight
       });
-      const pageSlice = finalizeSlice(sliceCanvas);
-      slices.push(opts.pdfPageMaxCssHeight && top > 0
-        ? padExportCanvasTop(pageSlice, Math.round(EXPORT_BOTTOM_PAD_CSS * scale))
-        : pageSlice);
+      slices.push(finalizeSlice(sliceCanvas));
     }
     return slices;
   } finally {
@@ -10521,135 +10235,61 @@ async function captureExportRootSlices(rootEl, opts) {
 }
 
 async function captureExportRoot(rootEl, opts) {
-  const totalHeight = getResultsExportHeight(rootEl);
-  const scale = getExportCanvasScale(totalHeight, opts?.canvasScale);
-  // 先檢查完整圖與收尾留白；不可先產生大量切片，最後才發現無法拼接。
-  const outputHeight = Math.ceil(totalHeight * scale) + Math.ceil(EXPORT_BOTTOM_PAD_CSS * scale);
-  if (Math.ceil(rootEl.offsetWidth * scale) > BROWSER_CANVAS_MAX_PX || outputHeight > BROWSER_CANVAS_MAX_PX) {
-    throw new Error('canvas too large');
-  }
   const slices = await captureExportRootSlices(rootEl, opts);
   if (slices.length === 1) return slices[0];
   return finalizeExportCanvas(stitchCanvasesVertically(slices), opts);
 }
 
-function padExportCanvasTop(canvas, padPx) {
-  const result = document.createElement('canvas');
-  result.width = canvas.width;
-  result.height = canvas.height + padPx;
-  const ctx = result.getContext('2d');
-  if (!ctx) throw new Error('canvas allocation failed');
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, result.width, result.height);
-  ctx.drawImage(canvas, 0, padPx);
-  return result;
-}
-
-function getPdfSafeCaptureRanges(rootEl, totalHeight, maxHeight) {
-  const origin = rootEl.getBoundingClientRect().top;
-  const protectedIntervals = [];
-  const add = rect => {
-    if (!rect || rect.width <= 0 || rect.height <= 0) return;
-    const from = Math.max(0, rect.top - origin), to = Math.min(totalHeight, rect.bottom - origin);
-    if (to > from) protectedIntervals.push({ from, to });
-  };
-  // Normal cards/years stay whole. Oversized containers fall back to complete rows and text lines.
-  const blocks = new Set([...rootEl.children, ...rootEl.querySelectorAll('.conditions-box,.summary-grid,.period-summary,.year-item,.yt-rule-b,.note,.export-detail-head,.period-title')]);
-  blocks.forEach(node => { const rect = node.getBoundingClientRect(); if (rect.height < maxHeight - 4) add(rect); });
-  rootEl.querySelectorAll('tr,img,svg').forEach(node => add(node.getBoundingClientRect()));
-  const walker = rootEl.ownerDocument.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
-  let text;
-  while ((text = walker.nextNode())) {
-    if (!text.textContent.trim()) continue;
-    const range = rootEl.ownerDocument.createRange();
-    range.selectNodeContents(text);
-    for (const rect of range.getClientRects()) add(rect);
-  }
-  const ranges = [];
-  let top = 0;
-  while (top < totalHeight) {
-    let end = Math.min(totalHeight, top + maxHeight);
-    if (end < totalHeight) {
-      let moved;
-      do {
-        moved = false;
-        for (const block of protectedIntervals) {
-          if (end > block.from && end < block.to) {
-            end = Math.floor(block.from);
-            moved = true;
-          }
-        }
-      } while (moved && end > top);
-      if (end <= top) throw new Error('PDF內容無法安全分頁，請縮短過長的單列內容');
-    }
-    ranges.push({ top, height: end - top });
-    top = end;
-  }
-  return ranges;
-}
-
-async function capturePdfPartWithinLimit(node, opts) {
-  if (getResultsExportHeight(node) <= PDF_PAGE_MAX_CSS_HEIGHT) return [await captureExportRoot(node, opts)];
-  return captureExportRootSlices(node, { ...opts, pdfPageMaxCssHeight: PDF_PAGE_MAX_CSS_HEIGHT });
-}
-
 async function captureExportRootByYearItems(rootEl, opts) {
-  const years = Array.from(rootEl.querySelectorAll('.year-item'));
-  if (!years.length) return capturePdfPartWithinLimit(rootEl, opts);
-  const detailSource = rootEl.querySelector('.detail-section');
-  const headSource = rootEl.querySelector('.export-detail-head');
+  const yearItems = rootEl.querySelectorAll('.year-item');
+  if (!yearItems.length) return [await captureExportRoot(rootEl, opts)];
+  const width = rootEl.offsetWidth || parseFloat(rootEl.style.width);
+  const detailSectionSrc = rootEl.querySelector('.detail-section');
+  const detailHead = rootEl.querySelector('.export-detail-head');
   const canvases = [];
-  let page = null, accordion = null;
-  async function startPage() {
-    page = rootEl.cloneNode(false);
-    page.removeAttribute('id');
-    const detail = detailSource ? detailSource.cloneNode(false) : document.createElement('div');
-    if (!detailSource) detail.className = 'detail-section';
-    if (headSource) detail.appendChild(headSource.cloneNode(true));
-    accordion = document.createElement('div');
+  for (let i = 0; i < yearItems.length; i++) {
+    const shell = document.createElement('div');
+    shell.className = rootEl.className;
+    shell.dataset.exportMode = rootEl.dataset.exportMode;
+    shell.style.cssText = rootEl.style.cssText;
+    shell.style.width = width + 'px';
+    shell.style.maxWidth = width + 'px';
+    const detailSection = document.createElement('div');
+    detailSection.className = detailSectionSrc?.className || 'detail-section';
+    if (detailHead) detailSection.appendChild(detailHead.cloneNode(true));
+    const accordion = document.createElement('div');
     accordion.className = 'year-accordion';
-    detail.appendChild(accordion);
-    page.appendChild(detail);
-    await mountExportNode(page);
-  }
-  async function finishPage() {
-    const items = Array.from(accordion.children);
-    if (!items.length) return;
-    const rangeLabel = page.querySelector('.export-detail-range-sub');
-    if (rangeLabel) rangeLabel.textContent = formatExportDetailYearRange(parseYearItemYear(items[0]), parseYearItemYear(items[items.length - 1]));
-    await waitExportLayout();
-    canvases.push(...await capturePdfPartWithinLimit(page, opts));
-    page.remove(); page = null; accordion = null;
-  }
-  try {
-    for (const original of years) {
-      if (!page) await startPage();
-      const copy = original.cloneNode(true); copy.classList.add('open');
-      accordion.appendChild(copy);
-      await waitExportLayout();
-      if (getResultsExportHeight(page) > PDF_PAGE_MAX_CSS_HEIGHT && accordion.children.length > 1) {
-        copy.remove();
-        await finishPage(); await startPage();
-        accordion.appendChild(copy); await waitExportLayout();
-      }
-      if (getResultsExportHeight(page) > PDF_PAGE_MAX_CSS_HEIGHT) await finishPage();
+    const yearClone = yearItems[i].cloneNode(true);
+    yearClone.classList.add('open');
+    accordion.appendChild(yearClone);
+    detailSection.appendChild(accordion);
+    shell.appendChild(detailSection);
+    const node = await mountExportNode(shell);
+    try {
+      canvases.push(await captureExportRoot(node, opts));
+    } finally {
+      node.remove();
     }
-    if (page) await finishPage();
-    return canvases;
-  } finally {
-    page?.remove();
   }
+  return canvases;
 }
 
 async function captureExportRootForPdf(rootEl) {
-  const opts = getPdfExportFinalizeOpts(rootEl);
-  if (getResultsExportHeight(rootEl) <= PDF_PAGE_MAX_CSS_HEIGHT) return [await captureExportRoot(rootEl, opts)];
-  return rootEl.querySelector('.year-item')
-    ? captureExportRootByYearItems(rootEl, opts)
-    : capturePdfPartWithinLimit(rootEl, opts);
+  const pdfOpts = getPdfExportFinalizeOpts(rootEl);
+  const slices = await captureExportRootSlices(rootEl, pdfOpts);
+  if (slices.length === 1) return slices;
+  try {
+    return [finalizeExportCanvas(stitchCanvasesVertically(slices), pdfOpts)];
+  } catch (_) {
+    return captureExportRootByYearItems(rootEl, pdfOpts);
+  }
 }
 
 async function captureResultsPdfCanvases(context) {
+  if (!context.includeDetail) {
+    // 與「含還款明細」相同：依內容墨水邊界水平置中，左右留白一致
+    return normalizePdfCanvases(flattenCanvases([await captureResultsRawCanvas(context)]));
+  }
   const canvases = [];
   const summaryNode = await buildExportSummaryPart(context);
   try {
@@ -10657,23 +10297,13 @@ async function captureResultsPdfCanvases(context) {
   } finally {
     summaryNode.remove();
   }
-  if (context.includeDetail) {
-    const groups = getDetailYearGroups(context);
-    for (let i = 0; i < groups.length; i++) {
-      const detailNode = await buildExportDetailPart(groups[i], i === 0, context);
-      try {
-        canvases.push(...await captureExportRootForPdf(detailNode));
-      } finally {
-        detailNode.remove();
-      }
-    }
-  }
-  const rulesNode = await buildExportYouthRulesPart(context);
-  if (rulesNode) {
+  const groups = getDetailYearGroups(context);
+  for (let i = 0; i < groups.length; i++) {
+    const detailNode = await buildExportDetailPart(groups[i], i === 0, context);
     try {
-      canvases.push(...await captureExportRootForPdf(rulesNode));
+      canvases.push(...await captureExportRootForPdf(detailNode));
     } finally {
-      rulesNode.remove();
+      detailNode.remove();
     }
   }
   return normalizePdfCanvases(canvases);
@@ -10685,7 +10315,6 @@ async function buildExportCaptureNode(context) {
   const clone = results.cloneNode(true);
   clone.removeAttribute('id');
   clone.classList.add('export-capture', 'export-offscreen-clone', 'show');
-  clone.dataset.exportPart = 'image';
   clone.setAttribute('aria-hidden', 'true');
   clone.style.width = context.width + 'px';
   clone.style.maxWidth = context.width + 'px';
@@ -10711,12 +10340,15 @@ async function buildExportCaptureNode(context) {
 
   dropEmptyAprBlockInExportClone(clone);
 
-  return mountExportNode(clone);
+  document.body.appendChild(clone);
+  await waitExportLayout();
+  return clone;
 }
 
 function polishSummaryExportCanvas(rawCanvas, cssWidth) {
-  normalizePdfCanvases([rawCanvas]);
-  return finalizePdfPageCanvas(rawCanvas, cssWidth);
+  // 與含明細 PDF 同一套水平置中，避免僅摘要右側空白偏多
+  const centered = centerPdfCanvas(rawCanvas, rawCanvas.width);
+  return finalizePdfPageCanvas(centered, cssWidth);
 }
 
 const SUMMARY_EXPORT_CAPTURE_OPTS = {
@@ -10735,7 +10367,7 @@ async function captureResultsRawCanvas(context) {
     clone = await buildExportCaptureNode(context);
     return await captureExportRoot(clone, SUMMARY_EXPORT_CAPTURE_OPTS);
   } finally {
-    if (clone) clone.remove();
+    if (clone?.parentElement === document.body) clone.remove();
   }
 }
 
@@ -10746,21 +10378,15 @@ async function captureResultsCanvas(context) {
 // Only Youth exports preserve navigation made after their immutable snapshot.
 // Other modes retain the existing scroll-restoration contract.
 function watchYouthExportNavigation() {
-  let navigated = false, intentUntil = 0, touch = null, scrollbarPointer = null;
+  let navigated = false, intentUntil = 0, touch = null;
   const cleanups = [];
   const on = (target, type, fn, options) => {
     target.addEventListener(type, fn, options);
     cleanups.push(() => target.removeEventListener(type, fn, options));
   };
   const position = () => ({ x: window.scrollX, y: window.scrollY });
-  const startPosition = position();
-  let intentPosition = startPosition;
-  function arm() {
-    intentPosition = position();
-    // 瀏覽器可能已先捲動，才送出使用者事件；此時不再還原到匯出前。
-    if (intentPosition.x !== startPosition.x || intentPosition.y !== startPosition.y) navigated = true;
-    intentUntil = performance.now() + 800;
-  }
+  let intentPosition = position();
+  function arm() { intentPosition = position(); intentUntil = performance.now() + 800; }
   on(window, 'wheel', e => {
     if (e.isTrusted && !e.ctrlKey && (e.deltaX || e.deltaY)) arm();
   }, { passive: true, capture: true });
@@ -10770,22 +10396,8 @@ function watchYouthExportNavigation() {
     if (['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(e.key)) arm();
   }, true);
   on(window, 'pointerdown', e => {
-    if (e.isTrusted && e.pointerType === 'mouse' && e.button === 0 && e.clientX >= document.documentElement.clientWidth) {
-      scrollbarPointer = e.pointerId;
-      arm();
-    }
+    if (e.isTrusted && e.pointerType === 'mouse' && e.clientX >= document.documentElement.clientWidth) arm();
   }, { passive: true, capture: true });
-  const finishScrollbarDrag = () => {
-    if (scrollbarPointer === null) return;
-    if (window.scrollY !== intentPosition.y || window.scrollX !== intentPosition.x) navigated = true;
-    scrollbarPointer = null;
-  };
-  const releaseScrollbarPointer = e => {
-    if (e.pointerId === scrollbarPointer) finishScrollbarDrag();
-  };
-  on(window, 'pointerup', releaseScrollbarPointer, true);
-  on(window, 'pointercancel', releaseScrollbarPointer, true);
-  on(window, 'blur', finishScrollbarDrag);
   on(window, 'touchstart', e => {
     touch = e.isTrusted && e.touches.length === 1
       ? { x: e.touches[0].clientX, y: e.touches[0].clientY, scroll: position() } : null;
@@ -10801,7 +10413,7 @@ function watchYouthExportNavigation() {
   on(window, 'touchend', () => { touch = null; }, { passive: true, capture: true });
   on(window, 'touchcancel', () => { touch = null; }, { passive: true, capture: true });
   on(window, 'scroll', () => {
-    if ((scrollbarPointer !== null || performance.now() <= intentUntil) && (window.scrollY !== intentPosition.y || window.scrollX !== intentPosition.x)) navigated = true;
+    if (performance.now() <= intentUntil && (window.scrollY !== intentPosition.y || window.scrollX !== intentPosition.x)) navigated = true;
   }, { passive: true });
   const detail = document.getElementById('ytDetailSection');
   if (detail) on(detail, 'youth-detail-navigation', () => { navigated = true; });
@@ -10844,7 +10456,7 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
     console.error(err);
     const msg = String(err?.message || '');
     if (msg.includes('canvas too large')) {
-      showToast('', { html: toastLines('內容過長', '請改用 PDF') });
+      showToast('', { html: toastLines('明細過長', '請改用 PDF或分享') });
     } else {
       showToast('', { html: toastLines('匯出失敗', '請稍後再試') });
     }
@@ -10877,11 +10489,13 @@ function clearExportBtnBusy(btn) {
   if (labelEl) labelEl.textContent = original;
 }
 
-function fitCanvasToPdfPage(canvas, cssWidth) {
-  const pageW = cssWidth || EXPORT_LAYOUT_WIDTH;
-  const pageH = canvas.height * pageW / canvas.width;
-  if (!Number.isFinite(pageH) || pageH <= 0 || pageW > JSPDF_PAGE_MAX_PX || pageH > JSPDF_PAGE_MAX_PX) {
-    throw new Error('PDF page exceeds safe dimensions');
+function fitCanvasToPdfPage(canvas) {
+  let pageW = canvas.width;
+  let pageH = canvas.height;
+  if (pageW > JSPDF_PAGE_MAX_PX || pageH > JSPDF_PAGE_MAX_PX) {
+    const fit = Math.min(JSPDF_PAGE_MAX_PX / pageW, JSPDF_PAGE_MAX_PX / pageH);
+    pageW = Math.max(1, Math.floor(pageW * fit));
+    pageH = Math.max(1, Math.floor(pageH * fit));
   }
   return { pageW, pageH, imgData: canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY) };
 }
@@ -10894,7 +10508,7 @@ function canvasesToPdf(canvases, cssWidth) {
   let pdf = null;
   canvases.forEach((canvas, index) => {
     const pageCanvas = finalizePdfPageCanvas(canvas, cssWidth);
-    const { pageW, pageH, imgData } = fitCanvasToPdfPage(pageCanvas, cssWidth);
+    const { pageW, pageH, imgData } = fitCanvasToPdfPage(pageCanvas);
     if (index === 0) {
       pdf = new jsPDF({
         unit: 'px',
@@ -10927,7 +10541,7 @@ async function exportAsImage(mime, ext) {
   const tag = ext.toUpperCase();
   await withExportLock(async (context) => {
     const canvas = await captureResultsCanvas(context);
-    const quality = mime === 'image/jpeg' ? EXPORT_JPEG_QUALITY : undefined;
+    const quality = mime === 'image/jpeg' ? 0.92 : undefined;
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), mime, quality);
     });
@@ -10955,7 +10569,7 @@ async function shareResults() {
     } else {
       const canvas = await captureResultsCanvas(context);
       blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', EXPORT_JPEG_QUALITY);
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', 0.92);
       });
       ext = 'jpg';
       mime = 'image/jpeg';
