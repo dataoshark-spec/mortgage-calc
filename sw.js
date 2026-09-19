@@ -1,9 +1,11 @@
-const CACHE = "mortgage-calc-v20260919A";
-/* 每個安裝路徑使用自己的快取；同源其他工具與另一份貸款試算互不刪除或取用。 */
+const CACHE = "mortgage-calc-v20260919F";
+/* 每個安裝路徑使用自己的快取；只處理本 App 的已知檔案，不代管其他工具。 */
 const SCOPE = self.registration.scope;
 const CACHE_KEY = CACHE + "::" + SCOPE;
 const SHELL_CORE = ["./", "./index.html", "./sw.js", "./html2canvas.min.js", "./jspdf.umd.min.js"];
 const SHELL_OPTIONAL = ["./icon-192.png", "./icon-180.png", "./icon-512.png"];
+const SHELL_URLS = new Set(SHELL_CORE.concat(SHELL_OPTIONAL).map(function (path) { return new URL(path, SCOPE).href; }));
+const HOME_URLS = new Set([new URL("./", SCOPE).href, new URL("index.html", SCOPE).href]);
 const OFFLINE_HTML = "<!DOCTYPE html><html lang=\"zh-Hant\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Offline</title></head><body style=\"font-family:sans-serif;padding:2rem;text-align:center\"><h1>Offline</h1><p>Please reconnect and reopen the app.</p></body></html>";
 
 function cacheEach(cache, urls) {
@@ -61,20 +63,24 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin || !url.href.startsWith(SCOPE)) return;
+  // 本 App 為固定靜態檔；版本等查詢參數共用同一份已驗證的殼層快取。
+  url.search = ""; url.hash = "";
+  const cacheUrl = url.href;
+  // 在讀取任何快取之前排除其他路徑，舊快取殘留也不會被誤用。
+  if (!SHELL_URLS.has(cacheUrl)) return;
   e.respondWith(caches.open(CACHE_KEY).then(async function (cache) {
-    const cached = await cache.match(e.request);
+    const cached = await cache.match(cacheUrl);
     if (cached) return cached;
     try {
       const response = await fetch(e.request);
       if (response && response.status === 200 && response.type !== "opaque") {
-        e.waitUntil(cache.put(e.request, response.clone()).catch(function (err) {
+        e.waitUntil(cache.put(cacheUrl, response.clone()).catch(function (err) {
           console.warn("[sw] 資源快取失敗：" + e.request.url, err);
         }));
       }
       return response;
     } catch (err) {
-      if (e.request.mode === "navigate") {
+      if (e.request.mode === "navigate" && HOME_URLS.has(cacheUrl)) {
         return await cache.match(new URL("index.html", SCOPE).href) || new Response(OFFLINE_HTML, {
           headers: { "Content-Type": "text/html; charset=utf-8" }
         });
