@@ -5174,7 +5174,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.19F";
+const APP_VERSION = "2026.09.20A";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -12844,23 +12844,65 @@ $('#conditionsToggle').addEventListener('click', () => {
   try { const v = appStorage.getItem(VIEW_KEY); if (v === 'qa' || v === 'reg') view = v; } catch (_) {}
 
   function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
-  function mark(text, q) {
-    if (!q) return esc(text);
-    let out = '', rest = String(text), at = rest.toLowerCase().indexOf(q);
-    while (at >= 0) {
-      out += esc(rest.slice(0, at)) + '<span class="spec-hit">' + esc(rest.slice(at, at + q.length)) + '</span>';
-      rest = rest.slice(at + q.length);
-      at = rest.toLowerCase().indexOf(q);
+  // 搜尋忽略排版空白，但保留原文字元位置，供反白還原使用。
+  function searchIndex(text) {
+    let key = '', offset = 0;
+    const starts = [], ends = [];
+    for (const ch of String(text)) {
+      const end = offset + ch.length;
+      if (!/\s/u.test(ch)) {
+        const lower = ch.toLowerCase();
+        key += lower;
+        for (let i = 0; i < lower.length; i++) { starts.push(offset); ends.push(end); }
+      }
+      offset = end;
     }
-    return out + esc(rest);
+    return { key, starts, ends };
+  }
+  function searchKey(text) { return searchIndex(text).key; }
+  function searchHas(text, q) { return searchKey(text).includes(q); }
+  function markRuleParts(parts, q) {
+    if (!q) return parts.map(esc);
+    const text = parts.join(''), index = searchIndex(text), ranges = [];
+    for (let at = index.key.indexOf(q); at >= 0; at = index.key.indexOf(q, at + q.length)) {
+      const from = index.starts[at], to = index.ends[at + q.length - 1];
+      const last = ranges[ranges.length - 1];
+      if (last && from < last[1]) last[1] = Math.max(last[1], to);
+      else ranges.push([from, to]);
+    }
+    let offset = 0;
+    return parts.map(part => {
+      const start = offset, end = start + part.length;
+      offset = end;
+      let out = '', cursor = 0;
+      ranges.forEach(([from, to]) => {
+        const a = Math.max(start, from) - start, b = Math.min(end, to) - start;
+        if (b <= a) return;
+        out += esc(part.slice(cursor, a)) + '<span class="spec-hit">' + esc(part.slice(a, b)) + '</span>';
+        cursor = b;
+      });
+      return out + esc(part.slice(cursor));
+    });
+  }
+  function mark(text, q) { return markRuleParts([String(text)], q)[0]; }
+
+  function qaTableCells(x, section) {
+    if (section !== '二、購地貸款' || x.n !== 2 || x.a.length !== 6) return null;
+    const cells = x.a.slice(2).map(p => p.split('｜'));
+    return cells.every(row => row.length === 3) ? cells : null;
+  }
+  function qaSearchHit(x, q, section) {
+    const cells = qaTableCells(x, section);
+    const answers = cells ? x.a.slice(0, 2).concat(...cells) : x.a;
+    // 各段與各儲存格獨立比對，避免跨區拼字或內部表格分隔符產生假命中。
+    return [String(x.n), x.q, ...answers].some(part => searchHas(part, q));
   }
 
   function qaAnswerHTML(x, q, section) {
     const paragraphs = ps => ps.map(p => '<p>' + mark(p, q) + '</p>').join('');
-    // 原文與搜尋來源維持 a[]；只把此題已核對的四段三欄內容轉成表格。
-    if (section !== '二、購地貸款' || x.n !== 2 || x.a.length !== 6) return paragraphs(x.a);
-    const cells = x.a.slice(2).map(p => p.split('｜'));
-    if (!cells.every(row => row.length === 3)) return paragraphs(x.a);
+    // 搜尋與顯示共用儲存格邊界；原文 a[] 不變。
+    const cells = qaTableCells(x, section);
+    if (!cells) return paragraphs(x.a);
     return paragraphs(x.a.slice(0, 2)) +
       '<div class="cb-qa-table-wrap"><table class="cb-qa-table" aria-label="購地貸款撥款金額範例">' +
       '<colgroup><col style="width:33.333333%"><col style="width:33.333333%"><col style="width:33.333333%"></colgroup>' +
@@ -12872,7 +12914,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   function qaHTML(q) {
     let total = 0;
     const secs = CB_QA.map((sec) => {
-      const hit = (x) => (String(x.n) + x.q + x.a.join('')).toLowerCase().indexOf(q) >= 0;
+      const hit = (x) => qaSearchHit(x, q, sec.sec);
       const list = q ? sec.qs.filter(hit) : sec.qs;
       if (!list.length) return '';
       total += list.length;
@@ -12883,7 +12925,7 @@ $('#conditionsToggle').addEventListener('click', () => {
           const key = sec.sec + '#' + x.n;
           return '<div class="yt-qa-item' + (open[key] ? ' open' : '') + '">' +
             '<button type="button" class="yt-qa-q" data-cb-qa="' + esc(key) + '" aria-expanded="' + !!open[key] + '">' +
-            '<span class="yt-qa-n">' + x.n + '</span><span class="yt-qa-t">' + mark(x.q, q) + '</span>' +
+            '<span class="yt-qa-n">' + mark(String(x.n), q) + '</span><span class="yt-qa-t">' + mark(x.q, q) + '</span>' +
             '<span class="yt-qa-arrow">&#9660;</span></button>' +
             '<div class="yt-qa-a">' + qaAnswerHTML(x, q, sec.sec) + '</div></div>';
         }).join('') + '</div></div>';
@@ -12900,7 +12942,7 @@ $('#conditionsToggle').addEventListener('click', () => {
       let lv1 = -1;
       CB_REG.forEach((b, i) => {
         if (b.lv === 1 && !b.cont) lv1 = i;
-        if (b.t.toLowerCase().indexOf(q) >= 0) { keep.add(i); n++; if (lv1 >= 0) keep.add(lv1); }
+        if (searchHas(b.t, q)) { keep.add(i); n++; if (lv1 >= 0) keep.add(lv1); }
       });
       rows = CB_REG.filter((_, i) => keep.has(i));
       if (!rows.length) return { html: '<p class="spec-empty">找不到符合「' + esc(input.value.trim()) + '」的條文<br>換個關鍵字試試</p>', n: 0 };
@@ -12910,7 +12952,8 @@ $('#conditionsToggle').addEventListener('click', () => {
         const i = b.t.indexOf('：');
         const head = i < 0 ? b.t : b.t.slice(0, i + 1);
         const rest = i < 0 ? '' : b.t.slice(i + 1);
-        return '<div class="yt-rule-b lv1"><b>' + mark(head, q) + '</b>' + mark(rest, q) + '</div>';
+        const [markedHead, markedRest] = markRuleParts([head, rest], q);
+        return '<div class="yt-rule-b lv1"><b>' + markedHead + '</b>' + markedRest + '</div>';
       }
       return '<div class="yt-rule-b lv' + (b.cont ? '1 cb-cont' : b.lv) + '">' + mark(b.t, q) + '</div>';
     }).join('') + '</div>';
@@ -12930,7 +12973,7 @@ $('#conditionsToggle').addEventListener('click', () => {
       b.setAttribute('aria-selected', on);
     });
     if (clearBtn) clearBtn.hidden = q === '';
-    const lq = q.trim().toLowerCase();
+    const lq = searchKey(q);
     const r = view === 'qa' ? qaHTML(lq) : regHTML(lq);
     body.innerHTML = '<div class="spec-body' + (view === 'qa' ? '' : ' tappable') + '">' + r.html +
       '<p class="spec-src">' + CB_SRC[view] + '</p></div>';
@@ -12994,7 +13037,7 @@ $('#conditionsToggle').addEventListener('click', () => {
 
   input.addEventListener('input', () => { open = {}; render(); scroller.scrollTop = 0; });
   if (clearBtn) clearBtn.addEventListener('click', () => {
-    input.value = ''; open = {}; render(true); input.focus();
+    input.value = ''; open = {}; render(true); scroller.scrollTop = 0; input.focus({ preventScroll: true });
   });
 
   /* 左右滑動即返回，與青安相關視窗同一套手勢 */
@@ -16717,26 +16760,31 @@ window.addEventListener('resize', () => {
 
   // 篩選用：把關鍵字命中的字串標起來（先轉義再插標記，避免破壞既有內容）
   function esc(s) { return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
-  function mark(text, q) {
-    if (!q) return text;
-    const i = text.toLowerCase().indexOf(q);
-    if (i < 0) return text;
-    let out = '', rest = text, lo = text.toLowerCase(), at = i;
-    while (at >= 0) {
-      out += esc(rest.slice(0, at)) + '<span class="spec-hit">' + esc(rest.slice(at, at + q.length)) + '</span>';
-      rest = rest.slice(at + q.length);
-      lo = rest.toLowerCase();
-      at = lo.indexOf(q);
+  // 搜尋忽略排版空白，但保留原文字元位置，供反白還原使用。
+  function searchIndex(text) {
+    let key = '', offset = 0;
+    const starts = [], ends = [];
+    for (const ch of String(text)) {
+      const end = offset + ch.length;
+      if (!/\s/u.test(ch)) {
+        const lower = ch.toLowerCase();
+        key += lower;
+        for (let i = 0; i < lower.length; i++) { starts.push(offset); ends.push(end); }
+      }
+      offset = end;
     }
-    return out + esc(rest);
+    return { key, starts, ends };
   }
-
-  // 用完整條文找命中範圍，再分配至標題／正文；跨冒號或粗體邊界仍能完整反白。
+  function searchKey(text) { return searchIndex(text).key; }
+  function searchHas(text, q) { return searchKey(text).includes(q); }
   function markRuleParts(parts, q) {
     if (!q) return parts.map(esc);
-    const text = parts.join(''), lower = text.toLowerCase(), ranges = [];
-    for (let at = lower.indexOf(q); at >= 0; at = lower.indexOf(q, at + q.length)) {
-      ranges.push([at, at + q.length]);
+    const text = parts.join(''), index = searchIndex(text), ranges = [];
+    for (let at = index.key.indexOf(q); at >= 0; at = index.key.indexOf(q, at + q.length)) {
+      const from = index.starts[at], to = index.ends[at + q.length - 1];
+      const last = ranges[ranges.length - 1];
+      if (last && from < last[1]) last[1] = Math.max(last[1], to);
+      else ranges.push([from, to]);
     }
     let offset = 0;
     return parts.map(part => {
@@ -16752,20 +16800,24 @@ window.addEventListener('resize', () => {
       return out + esc(part.slice(cursor));
     });
   }
+  function mark(text, q) { return markRuleParts([String(text)], q)[0]; }
+  function faqSearchHit(x, q) {
+    return [String(x.n), x.q, ...x.a].some(part => searchHas(part, q));
+  }
 
   function specBodyHTML(view, opts) {
     const o = opts || {};
     const open = o.open || faqOpen;
-    const q = (o.filter || '').trim().toLowerCase();
+    const q = searchKey(o.filter || '');
     if (view === 'faq') {
       const list = q
-        ? SPEC_FAQ.filter((x) => (x.n + x.q + x.a.join('')).toLowerCase().indexOf(q) >= 0)
+        ? SPEC_FAQ.filter((x) => faqSearchHit(x, q))
         : SPEC_FAQ;
       if (!list.length) return '<p class="spec-empty">找不到符合「' + esc(o.filter.trim()) + '」的問答<br>換個關鍵字試試</p>';
       return '<div class="yt-qa">' + list.map((x) =>
         `<div class="yt-qa-item${open[x.n] ? ' open' : ''}">
           <button type="button" class="yt-qa-q" data-faq="${x.n}" aria-expanded="${!!open[x.n]}">
-            <span class="yt-qa-n">${x.n}</span><span class="yt-qa-t">${mark(x.q, q)}</span><span class="yt-qa-arrow">&#9660;</span>
+            <span class="yt-qa-n">${mark(String(x.n), q)}</span><span class="yt-qa-t">${mark(x.q, q)}</span><span class="yt-qa-arrow">&#9660;</span>
           </button>
           <div class="yt-qa-a">${x.a.map((p) => `<p>${mark(p, q)}</p>`).join('')}</div>
         </div>`).join('') + '</div>';
@@ -16777,7 +16829,7 @@ window.addEventListener('resize', () => {
       let lv1 = -1;
       SPEC_RULE.forEach((b, i) => {
         if (b.lv === 1) lv1 = i;
-        if (((b.h || '') + b.t).toLowerCase().indexOf(q) >= 0) { keep.add(i); if (lv1 >= 0) keep.add(lv1); }
+        if (searchHas((b.h || '') + b.t, q)) { keep.add(i); if (lv1 >= 0) keep.add(lv1); }
       });
       rules = SPEC_RULE.filter((_, i) => keep.has(i));
       if (!rules.length) return '<p class="spec-empty">找不到符合「' + esc(o.filter.trim()) + '」的條文<br>換個關鍵字試試</p>';
@@ -17284,8 +17336,15 @@ window.addEventListener('resize', () => {
       if (v === 'faq' || v === 'rule') sheetView = v;
     } catch (_) {}
 
+    let filterTimer = null;
+    function cancelPendingFilter() {
+      clearTimeout(filterTimer);
+      filterTimer = null;
+    }
     let renderedSig = null;
     function renderSheet(force) {
+      // 新操作已即時更新畫面，舊的延遲搜尋不得再收合答案或重設捲動。
+      cancelPendingFilter();
       const q = input.value;
       const sig = sheetView + '\u0000' + q + '\u0000' + Object.keys(sheetOpen).join(',');
       if (!force && sig === renderedSig) return;
@@ -17301,12 +17360,12 @@ window.addEventListener('resize', () => {
       body.innerHTML = `<div class="spec-body">${specBodyHTML(sheetView, { open: sheetOpen, filter: q })}${src}</div>`;
       // 未篩選時不顯示題數，避免多餘資訊佔用頂部空間
       const count = Y('#ytSheetCount');
-      if (!q.trim()) { count.textContent = ''; count.hidden = true; return; }
+      if (!searchKey(q)) { count.textContent = ''; count.hidden = true; return; }
       // 計數與篩選使用同一份原文；脈絡主條不計入，跨標題的命中也不依反白 DOM 猜測。
-      const query = q.trim().toLowerCase();
+      const query = searchKey(q);
       const shown = sheetView === 'faq'
-        ? SPEC_FAQ.filter(x => (x.n + x.q + x.a.join('')).toLowerCase().includes(query)).length
-        : SPEC_RULE.filter(b => ((b.h || '') + b.t).toLowerCase().includes(query)).length;
+        ? SPEC_FAQ.filter(x => faqSearchHit(x, query)).length
+        : SPEC_RULE.filter(b => searchHas((b.h || '') + b.t, query)).length;
       count.hidden = false;
       count.textContent = `${shown} ${sheetView === 'faq' ? '題' : '條'}`;
     }
@@ -17325,6 +17384,7 @@ window.addEventListener('resize', () => {
       Y('#ytSheetClose').focus({ preventScroll: true });
     }
     function closeSheet() {
+      cancelPendingFilter();
       beginAppModalClose(sheet);
       sheet.classList.remove('show');
       const closeSeq = ++sheetSeq;
@@ -17366,10 +17426,9 @@ window.addEventListener('resize', () => {
       scroller.scrollTop = 0;
     }));
 
-    let filterTimer = null;
     input.addEventListener('input', () => {
       clearTimeout(filterTimer);
-      filterTimer = setTimeout(() => { sheetOpen = {}; renderSheet(); scroller.scrollTop = 0; }, 160);
+      filterTimer = setTimeout(() => { filterTimer = null; sheetOpen = {}; renderSheet(); scroller.scrollTop = 0; }, 160);
     });
     Y('#ytSheetFilterClear').addEventListener('click', () => {
       input.value = '';
