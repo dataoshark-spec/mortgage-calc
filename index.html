@@ -5111,7 +5111,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.20C";
+const APP_VERSION = "2026.09.20D";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -12088,6 +12088,9 @@ function renderResults(scrollToResults) {
   $('#detailSub').innerHTML = termSummaryText(schedule.length);
   $('#detailSection').classList.toggle('show-cum', showCumInterest);
   $('#toggleCumBtn').classList.toggle('active', showCumInterest);
+  $('#toggleCumBtn').setAttribute('aria-pressed', String(showCumInterest));
+  $('#toggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
+  $('#toggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
 
   let cumInterest = 0;
   $('#yearAccordion').innerHTML = Object.keys(byYear).map(y => {
@@ -12792,7 +12795,12 @@ $('#toggleCumBtn').addEventListener('click', () => {
   const bdSec = document.getElementById('bdDetailSection');
   if (bdSec) bdSec.classList.toggle('show-cum', showCumInterest);
   const bdBtn = document.getElementById('bdToggleCumBtn');
-  if (bdBtn) { bdBtn.classList.toggle('active', showCumInterest); bdBtn.setAttribute('aria-pressed', String(showCumInterest)); }
+  if (bdBtn) {
+    bdBtn.classList.toggle('active', showCumInterest);
+    bdBtn.setAttribute('aria-pressed', String(showCumInterest));
+    bdBtn.title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
+    bdBtn.setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
+  }
   $('#toggleCumBtn').setAttribute('aria-pressed', showCumInterest);
   $('#toggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
   $('#toggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
@@ -14550,6 +14558,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     B('#bdDetailSub').innerHTML = termSummaryText(sched.length);
     B('#bdDetailSection').classList.toggle('show-cum', showCumInterest);
     B('#bdToggleCumBtn').classList.toggle('active', showCumInterest);
+    B('#bdToggleCumBtn').setAttribute('aria-pressed', String(showCumInterest));
+    B('#bdToggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
+    B('#bdToggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
     let cum = 0;
     B('#bdYearAccordion').innerHTML = Object.keys(byYear).map((y) => {
       const rows = byYear[y];
@@ -14990,7 +15001,12 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const gl = document.getElementById('detailSection');
     if (gl) gl.classList.toggle('show-cum', on);
     const glBtn = document.getElementById('toggleCumBtn');
-    if (glBtn) { glBtn.classList.toggle('active', on); glBtn.setAttribute('aria-pressed', String(on)); }
+    if (glBtn) {
+      glBtn.classList.toggle('active', on);
+      glBtn.setAttribute('aria-pressed', String(on));
+      glBtn.title = on ? '隱藏累積利息' : '顯示累積利息';
+      glBtn.setAttribute('aria-label', on ? '隱藏累積利息' : '顯示累積利息');
+    }
   });
   const condToggle = B('#bdConditionsToggle');
   if (condToggle) {
