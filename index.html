@@ -5121,7 +5121,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.20E";
+const APP_VERSION = "2026.09.20F";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -10763,7 +10763,7 @@ async function captureExportRootSlices(rootEl, opts) {
         windowHeight: captureWindowHeight
       });
       const pageSlice = finalizeSlice(sliceCanvas);
-      slices.push(opts.pdfPageMaxCssHeight && top > 0
+      slices.push(opts.pdfPageMaxCssHeight && top > 0 && !opts.pdfContinuousPage
         ? padExportCanvasTop(pageSlice, Math.round(EXPORT_BOTTOM_PAD_CSS * scale))
         : pageSlice);
     }
@@ -10918,6 +10918,74 @@ async function captureExportRootForPdf(rootEl) {
     : capturePdfPartWithinLimit(rootEl, opts);
 }
 
+// PDF only: a ten-year detail page may contain several safe-size images.
+// The layout is created once; internal images never get repeated page headings
+// or page padding. No oversized canvas is assembled.
+function getPdfDetailEdgeInk(canvas, fromTop) {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) throw new Error('canvas allocation failed');
+  const { width, height } = canvas;
+  for (let offset = 0; offset < height; offset += 64) {
+    const rows = Math.min(64, height - offset);
+    const start = fromTop ? offset : height - offset - rows;
+    const pixels = ctx.getImageData(0, start, width, rows).data;
+    for (let row = 0; row < rows; row++) {
+      const y = fromTop ? row : rows - 1 - row;
+      for (let i = y * width * 4, end = (y + 1) * width * 4; i < end; i += 4) {
+        if (pixels[i + 3] > 0 && (pixels[i] < 255 || pixels[i + 1] < 255 || pixels[i + 2] < 255)) return start + y;
+      }
+    }
+  }
+  return -1;
+}
+
+function cropPdfDetailSegment(canvas, top, bottom) {
+  if (top === 0 && bottom === canvas.height) return canvas;
+  if (top < 0 || bottom > canvas.height || bottom <= top) throw new Error('invalid PDF detail crop');
+  const cropped = document.createElement('canvas');
+  cropped.width = canvas.width;
+  cropped.height = bottom - top;
+  const ctx = cropped.getContext('2d');
+  if (!ctx) throw new Error('canvas allocation failed');
+  ctx.drawImage(canvas, 0, top, canvas.width, bottom - top, 0, 0, canvas.width, bottom - top);
+  return cropped;
+}
+
+function getPdfDetailPageFormat(page, cssWidth) {
+  const pageW = cssWidth || EXPORT_LAYOUT_WIDTH;
+  const pageH = page.height * pageW / page.width;
+  if (!Number.isFinite(pageH) || pageH <= 0 || pageW <= 0 || pageW > JSPDF_PAGE_MAX_PX || pageH > JSPDF_PAGE_MAX_PX) {
+    throw new Error('PDF detail page exceeds safe dimensions');
+  }
+  return { pageW, pageH };
+}
+
+async function capturePdfDetailLogicalPage(rootEl) {
+  const opts = { ...getPdfExportFinalizeOpts(rootEl), pdfPageMaxCssHeight: PDF_PAGE_MAX_CSS_HEIGHT, pdfContinuousPage: true };
+  const raw = await captureExportRootSlices(rootEl, opts);
+  if (!raw.length) throw new Error('empty PDF detail page');
+  const width = Math.round(EXPORT_LAYOUT_WIDTH * EXPORT_CANVAS_SCALE_DETAIL);
+  for (const canvas of raw) {
+    if (canvas.width !== width || canvas.height <= 0 || canvas.width > BROWSER_CANVAS_MAX_PX || canvas.height > BROWSER_CANVAS_MAX_PX) {
+      throw new Error('invalid PDF detail segment dimensions');
+    }
+  }
+  const firstInk = getPdfDetailEdgeInk(raw[0], true);
+  const lastInk = getPdfDetailEdgeInk(raw[raw.length - 1], false);
+  if (firstInk < 0 || lastInk < 0) throw new Error('blank PDF detail edge');
+  const pad = Math.round(EXPORT_BOTTOM_PAD_CSS * EXPORT_CANVAS_SCALE_DETAIL);
+  let top = pad;
+  const pdfSegments = raw.map((canvas, index) => {
+    const cropped = cropPdfDetailSegment(canvas, index === 0 ? firstInk : 0, index === raw.length - 1 ? lastInk + 1 : canvas.height);
+    const segment = { canvas: cropped, top };
+    top += cropped.height;
+    return segment;
+  });
+  const page = { width, height: top + pad, pdfSegments };
+  getPdfDetailPageFormat(page, EXPORT_LAYOUT_WIDTH);
+  return page;
+}
+
 async function captureResultsPdfCanvases(context) {
   const canvases = [];
   const summaryNode = await buildExportSummaryPart(context);
@@ -10931,7 +10999,7 @@ async function captureResultsPdfCanvases(context) {
     for (let i = 0; i < groups.length; i++) {
       const detailNode = await buildExportDetailPart(groups[i], i === 0, context);
       try {
-        canvases.push(...await captureExportRootForPdf(detailNode));
+        canvases.push(await capturePdfDetailLogicalPage(detailNode));
       } finally {
         detailNode.remove();
       }
@@ -11163,8 +11231,10 @@ function canvasesToPdf(canvases, cssWidth) {
   const { jsPDF } = window.jspdf;
   let pdf = null;
   canvases.forEach((canvas, index) => {
-    const pageCanvas = finalizePdfPageCanvas(canvas, cssWidth);
-    const { pageW, pageH, imgData } = fitCanvasToPdfPage(pageCanvas, cssWidth);
+    const pageCanvas = canvas.pdfSegments ? canvas : finalizePdfPageCanvas(canvas, cssWidth);
+    const { pageW, pageH, imgData } = canvas.pdfSegments
+      ? getPdfDetailPageFormat(pageCanvas, cssWidth)
+      : fitCanvasToPdfPage(pageCanvas, cssWidth);
     if (index === 0) {
       pdf = new jsPDF({
         unit: 'px',
@@ -11175,7 +11245,15 @@ function canvasesToPdf(canvases, cssWidth) {
     } else {
       pdf.addPage([pageW, pageH], pageW >= pageH ? 'l' : 'p');
     }
-    pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, PDF_IMAGE_COMPRESS);
+    if (pageCanvas.pdfSegments) {
+      const scale = pageCanvas.width / pageW;
+      pageCanvas.pdfSegments.forEach(segment => {
+        pdf.addImage(segment.canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY), 'JPEG',
+          0, segment.top / scale, pageW, segment.canvas.height / scale, undefined, PDF_IMAGE_COMPRESS);
+      });
+    } else {
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH, undefined, PDF_IMAGE_COMPRESS);
+    }
   });
   return pdf;
 }
