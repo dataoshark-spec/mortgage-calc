@@ -5121,7 +5121,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.21A";
+const APP_VERSION = "2026.09.21B";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -9850,6 +9850,7 @@ function exportBtnOf(kind) {
 
 function syncExportFormatButtons() {
   const detailOnlyPdfTitle = '含還款明細僅支援 PDF';
+  const includeDetail = getEffectiveExportIncludeDetail();
   // 三組按鈕套用同一規則，避免只有一邊會反灰
   [
     [['#exportJpgBtn', '#ytExportJpgBtn', '#bdExportJpgBtn'], '下載 JPG'],
@@ -9858,8 +9859,6 @@ function syncExportFormatButtons() {
   ].forEach(([sels, title]) => {
     sels.map((x) => $(x)).forEach((btn) => {
       if (!btn) return;
-      const mode = btn.id.startsWith('yt') ? 'youth' : btn.id.startsWith('bd') ? 'burden' : 'general';
-      const includeDetail = getEffectiveExportIncludeDetail(mode);
       btn.disabled = includeDetail || exportBusy;
       btn.title = includeDetail ? detailOnlyPdfTitle : title;
     });
@@ -9899,13 +9898,9 @@ function detailAccordionSel() {
   return mode === 'youth' ? '#ytYearAccordion' : mode === 'burden' ? '#bdYearAccordion' : '#yearAccordion';
 }
 
-/* 青安收起一般貸款時，本次實際匯出沒有明細；不改共用的使用者偏好。 */
-function getEffectiveExportIncludeDetail(mode = document.body.dataset.mode, includeGeneralLoan) {
-  if (!getExportIncludeDetail()) return false;
-  if (mode !== 'youth') return true;
-  const include = typeof includeGeneralLoan === 'boolean' ? includeGeneralLoan
-    : typeof window.__ytIncludeGeneralLoan !== 'function' || window.__ytIncludeGeneralLoan();
-  return !!include;
+/* 匯出內容以使用者選擇為準；畫面收合不會取消已選的還款明細。 */
+function getEffectiveExportIncludeDetail() {
+  return getExportIncludeDetail();
 }
 
 /* 在同步快照建立時完成取捨，所有圖片／摘要／分頁明細只讀同一份 template。
@@ -9943,7 +9938,9 @@ function RES() {
 function createExportContext() {
   const mode = document.body.dataset.mode;
   if (!hasValidExportResult(mode)) return null;
-  const includeGeneralLoan = mode !== 'youth' || typeof window.__ytIncludeGeneralLoan !== 'function' || !!window.__ytIncludeGeneralLoan();
+  const includeDetail = getEffectiveExportIncludeDetail();
+  // 含明細時只在匯出副本納入一般貸款；僅摘要沿用畫面原本的收合選擇。
+  const includeGeneralLoan = mode !== 'youth' || includeDetail || typeof window.__ytIncludeGeneralLoan !== 'function' || !!window.__ytIncludeGeneralLoan();
   const text = getShareText(includeGeneralLoan);
   if (!text) return null;
   const results = RES(), template = results.cloneNode(true);
@@ -9951,7 +9948,7 @@ function createExportContext() {
   template.querySelectorAll('.payment-row > div').forEach(cell => cell.style.removeProperty('font-size'));
   template.dataset.exportMode = mode;
   if (mode === 'youth') prepareYouthGeneralLoanExport(template, includeGeneralLoan);
-  const includeDetail = getEffectiveExportIncludeDetail(mode, includeGeneralLoan), cum = isCumInterestVisible();
+  const cum = isCumInterestVisible();
   const style = getComputedStyle(results);
   for (let i = 0; i < style.length; i++) {
     const prop = style[i];
