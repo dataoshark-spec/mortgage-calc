@@ -3755,104 +3755,41 @@ if ("serviceWorker" in navigator) {
 
     /* 三模式完整名稱換行時，螢幕上的利率數字與百分號仍保持一行。 */
     .apr-footer-screen .apr-val { white-space: nowrap; flex-shrink: 0; }
-    /* C：匯出固定同寬；恢復 I 窄版的直式閱讀比例，與螢幕樣式隔離。 */
+    /* B：沿用 390px 手機視窗的原樣式。結果卡扣掉 wrap 左右各 16px，
+       以 358px 排版後整體放大到同寬影像，不再逐項改大標題或縮小附註。 */
     .export-capture {
-      width: 720px !important;
-      min-width: 720px !important;
-      max-width: 720px !important;
-      padding: 28px !important;
+      width: 358px !important;
+      min-width: 358px !important;
+      max-width: 358px !important;
+      padding: 28px 18px !important;
       margin: 0;
       border: 0 !important;
       border-radius: 0 !important;
       box-shadow: none !important;
-      font-size: 24px;
-      line-height: 1.5;
       zoom: 1 !important;
       transform: none !important;
       -webkit-text-size-adjust: none;
       text-size-adjust: none;
     }
-    .export-capture .conditions-box { border-radius: 18px; margin-bottom: 36px; }
-    .export-capture .conditions-head { padding: 18px 24px; }
-    .export-capture .conditions-head h3 { font-size: 23px; }
-    .export-capture .conditions-grid { grid-template-columns: minmax(0, 1fr); gap: 21px; }
-    .export-capture .conditions-body { padding: 24px 28px; }
-    .export-capture .cond-item { grid-template-columns: 12px max-content minmax(0, 1fr); font-size: 20.5px; column-gap: 15px; }
-    .export-capture .cond-dot { width: 12px; height: 12px; margin-top: 9px; }
-    .export-capture .conditions-rates { margin-top: 24px; padding-top: 21px; }
-    .export-capture .cond-rate-row { font-size: 21px; padding: 15px 12px; gap: 12px; }
-    .export-capture .conditions-rates.single-rate .cond-rate-row { padding: 21px 12px 18px; gap: 15px; }
-    .export-capture .conditions-rates.single-rate .cond-rate-period,
-    .export-capture .conditions-rates.single-rate .cond-rate-tag { font-size: 26px; }
-    .export-capture .conditions-rates.single-rate .cond-rate-value { font-size: 30px; }
-    .export-capture .summary-grid { grid-template-columns: minmax(0, 1fr); gap: 15px; margin-bottom: 36px; }
-    .export-capture .summary-item { min-width: 0; padding: 21px; border-radius: 24px; }
-    .export-capture .summary-item .label { font-size: 22px; line-height: 1.4; margin-bottom: 6px; }
-    .export-capture .summary-item .value,
-    .export-capture .summary-item.summary-amount-toggle .value { font-size: 34px; line-height: 1.2; overflow-wrap: anywhere; }
-    .export-capture[data-export-mode="burden"] .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .export-capture[data-export-mode="burden"] .summary-item { min-height: 129px; padding: 21px 12px; }
-    .export-capture[data-export-mode="burden"] .summary-item .label { font-size: 20px; }
-    .export-capture[data-export-mode="burden"] .summary-item .value { font-size: 29px; line-height: 1.3; }
-    .export-capture .results-heading { margin: 12px 0 24px; }
-    .export-capture .period-summary { padding: 12px 0 6px; }
-    .export-capture .period-title { gap: 21px; margin-bottom: 24px; }
-    .export-capture .period-title h3 { font-size: 26px; }
-    .export-capture .period-dots { margin-bottom: 14px; padding: 0 5px; }
-    .export-capture .punit { border-radius: 10px; }
-    .export-capture .punit .pu { height: 27px; min-width: 30px; padding: 0 8px; font-size: 16px; line-height: 27px; }
-    .export-capture .punit .pu::after { display: none; }
-    .export-capture .payment-table { border-radius: 18px; }
-    .export-capture .payment-head { font-size: 19.5px; }
-    .export-capture .payment-head span { padding: 15px 12px; }
-    .export-capture .payment-row > div { padding: 21px 12px; min-height: 74px; }
-    .export-capture .payment-row .period-range { font-size: 20.5px; white-space: normal; overflow-wrap: anywhere; }
-    .export-capture .payment-row .period-mid { font-size: 21px; }
-    .export-capture .payment-row .period-mid.two { padding: 6px 3px; column-gap: 4px; row-gap: 3px; }
+    /* 只保留匯出必需的防裁切，不覆寫手機版的字級、色彩或卡片排列。 */
+    .export-capture .summary-item { min-width: 0; }
+    .export-capture .summary-item .value { overflow-wrap: normal; }
+    .export-capture[data-export-mode="burden"] .summary-grid { margin-bottom: 16px; }
+    .export-capture[data-export-mode="burden"] .summary-item .value { overflow-wrap: normal; }
+    .export-capture .payment-row .period-range { white-space: normal; overflow-wrap: anywhere; }
+    .export-capture .payment-row .period-mid { white-space: normal; }
     .export-capture .payment-row .period-amount,
-    .export-capture .payment-row .amount-val { font-size: 25.5px; }
-    .export-capture .payment-row .amount-val { flex-wrap: wrap; white-space: normal; overflow-wrap: anywhere; }
-    .export-capture .pmode { font-size: 19px; }
-    .export-capture .apr-block { margin-top: 21px; }
-    .export-capture .apr-export-title { font-size: 23px; }
-    .export-capture .apr-export-hint { font-size: 16.5px; }
-    .export-capture .apr-footer .apr-val { font-size: 27px; }
-    .export-capture .note { font-size: 17px; line-height: 1.8; margin-top: 30px; color: #999; }
-    /* 青安摘要的附加資訊沿用相同閱讀比例，不移除審查／利率／補貼內容。 */
-    .export-capture .yt-total-split { column-gap: 8px; margin-bottom: 10px; padding-bottom: 10px; }
-    .export-capture .yt-total-split .ts-lab { font-size: 16.5px; }
-    .export-capture .yt-total-split .ts-val { font-size: 21px; }
-    .export-capture .yt-total-split .ts-op { font-size: 19px; }
-    .export-capture .yt-condition-rate-group { margin-top: 24px; padding-top: 21px; }
-    .export-capture .yt-condition-rate-title { font-size: 22px; margin-bottom: 15px; }
-    .export-capture .yt-condition-rate-row { padding: 15px 6px; font-size: 21px; gap: 6px 12px; }
-    .export-capture .yt-banner .yt-b-title { font-size: 30px; }
-    .export-capture .yt-banner .yt-b-mid { font-size: 21px; }
-    .export-capture .yt-banner .yt-b-sub { font-size: 18px; }
-    .export-capture .yt-general-notice { font-size: 19px; }
-    .export-capture .yt-general-notice strong { font-size: 23px; }
-    .export-capture .yt-save { padding: 20px 21px 18px; margin: 24px 0; border-radius: 18px; }
-    .export-capture .yt-save-l { font-size: 17px; }
-    .export-capture .yt-save-v { font-size: 38px; }
-    .export-capture .yt-save-cap { font-size: 16px; }
-    .export-capture .yt-save-r { grid-template-columns: 20px 1fr auto; column-gap: 9px; font-size: 17px; }
-    .export-capture .yt-save-r em { font-size: 16px; }
-    .export-capture .yt-save-r.sum { font-size: 19px; }
-    .export-capture .yt-save-r.sum b { font-size: 23px; }
-    .export-capture .yt-save-cmp { font-size: 16.5px; }
-    .export-capture .yt-save-cmp .yt-save-cap { font-size: 18px; }
-    /* 六欄明細與完整貸款原則保留既有字級、固定同寬及安全分頁。 */
-    .export-capture .year-header .year-summary { white-space: normal; overflow: visible; text-overflow: clip; font-size: 12.5px; }
-    .export-capture .year-body table { font-size: 13px; }
-    .export-capture .year-body th,
-    .export-capture .detail-section.show-cum .year-body th { font-size: 12px; }
-    .export-capture .year-body td,
-    .export-capture .detail-section.show-cum .year-body td { font-size: 13px; }
-    .export-capture .yt-rule-b { font-size: 12px; line-height: 1.8; }
-    .export-capture .yt-rule-b.lv1 > b { font-size: 13px; }
-    .export-capture .yt-rule-b.lv2 { padding-left: 12px; }
-    .export-capture .yt-rule-b.lv3 { padding-left: 26px; }
-    .export-capture .spec-src { font-size: 11px; }
+    .export-capture .payment-row .amount-val { flex-wrap: wrap; white-space: normal; }
+    .export-capture .export-number { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: normal; vertical-align: baseline; }
+    .export-capture .year-header .year-summary { white-space: normal; overflow: visible; text-overflow: clip; }
+    .export-capture .year-body th { word-break: normal; overflow-wrap: anywhere; }
+    .export-capture .year-body td { overflow-wrap: normal; }
+    .export-capture .punit .pu::after { display: none; }
+    .export-capture .note { margin-bottom: 0; padding-bottom: 0; }
+    .export-capture .period-summary { margin-bottom: 28px; }
+    .export-capture.export-rules-page .period-title.spec-title { margin-top: 0; }
+    .export-capture[data-export-part="detail"] .detail-section { margin-top: 0; }
+
 
 /* Only Personal Assessment's formula dialog uses the selected blue-gray palette. */
 #bdFlowSheet { background: #142332; color: #e0e9f2; color-scheme: dark; --teal: #a2cffa; --teal-dark: #1b4668; --teal-light: #2d353d; }
@@ -5174,7 +5111,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.20A";
+const APP_VERSION = "2026.09.20B";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -9974,7 +9911,7 @@ function createExportContext() {
   const text = getShareText(includeGeneralLoan);
   if (!text) return null;
   const results = RES(), template = results.cloneNode(true);
-  // 螢幕上的 fitPaymentTable 依裝置縮字；固定輸出副本改由共用 export CSS 決定字級。
+  // 螢幕 fit 依裝置縮字；匯出副本在固定手機視窗重新排版，長金額在千分位組間換行。
   template.querySelectorAll('.payment-row > div').forEach(cell => cell.style.removeProperty('font-size'));
   template.dataset.exportMode = mode;
   if (mode === 'youth') prepareYouthGeneralLoanExport(template, includeGeneralLoan);
@@ -10182,13 +10119,20 @@ function getShareText(includeGeneralLoan) {
 }
 
 
-const EXPORT_LAYOUT_WIDTH = 720;
-const EXPORT_CAPTURE_VIEWPORT_WIDTH = 768;
+// 390px 手機視窗，結果卡扣除 App 左右各16px。只提高點陣解析度，不改內容比例。
+const EXPORT_CAPTURE_VIEWPORT_WIDTH = 390;
+const EXPORT_LAYOUT_WIDTH = EXPORT_CAPTURE_VIEWPORT_WIDTH - 32;
+const EXPORT_OUTPUT_WIDTH = 2160;
 const EXPORT_CAPTURE_VIEWPORT_HEIGHT = 1000;
-const PDF_PAGE_MAX_CSS_HEIGHT = 5400;
-const EXPORT_BOTTOM_PAD_CSS = 24;
-const PDF_PAGE_BOTTOM_PAD_CSS = 36;
+const EXPORT_BOTTOM_PAD_CSS = 28;
 const EXPORT_CAPTURE_HEIGHT_SLACK = 12;
+const EXPORT_CANVAS_SCALE_SUMMARY = EXPORT_OUTPUT_WIDTH / EXPORT_LAYOUT_WIDTH;
+const EXPORT_CANVAS_SCALE_DETAIL = EXPORT_CANVAS_SCALE_SUMMARY;
+const EXPORT_CANVAS_SCALE = EXPORT_CANVAS_SCALE_SUMMARY;
+const BROWSER_CANVAS_MAX_PX = 16384;
+// 首頁與續頁都預留完整的上下白邊，不能沿用720px排版時的5400px頁高。
+const PDF_PAGE_MAX_CSS_HEIGHT = Math.floor(BROWSER_CANVAS_MAX_PX / EXPORT_CANVAS_SCALE) - EXPORT_BOTTOM_PAD_CSS * 2 - EXPORT_CAPTURE_HEIGHT_SLACK;
+const EXPORT_SLICE_MAX_CSS_PX = Math.min(2000, PDF_PAGE_MAX_CSS_HEIGHT);
 
 function getResultsExportHeight(el) {
   const rootRect = el.getBoundingClientRect();
@@ -10314,14 +10258,9 @@ function finalizePdfPageCanvas(canvas, cssWidth) {
   return trimExportCanvasVertical(canvas, scale);
 }
 
-const EXPORT_CANVAS_SCALE_SUMMARY = 3;
-const EXPORT_CANVAS_SCALE_DETAIL = 3;
-const EXPORT_CANVAS_SCALE = EXPORT_CANVAS_SCALE_SUMMARY;
 const EXPORT_JPEG_QUALITY = 0.98;
 const PDF_JPEG_QUALITY = EXPORT_JPEG_QUALITY;
 const PDF_IMAGE_COMPRESS = 'NONE';
-const EXPORT_SLICE_MAX_CSS_PX = 4000;
-const BROWSER_CANVAS_MAX_PX = 16384;
 // jsPDF 以 unit:'px' 建立文件時，內部會把 format 乘上 scaleFactor = 96/72 換成
 // userUnit 再檢查 14400 的上限。過去這裡直接用 14400 當 px 上限，等於放寬了
 // 1.333 倍，超過 10800px 的長頁會被 jsPDF 截斷成空白頁並印出警告。
@@ -10395,29 +10334,36 @@ function trimExportCanvasVertical(canvas, scale) {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) throw new Error('canvas allocation failed');
   const { width, height } = canvas;
-  let contentBottom = -1;
-  // Only a finished page/image reaches this function. Preserve pale borders,
-  // footer antialiasing and isolated pixels; internal capture slices skip it.
+  const hasInk = (pixels, start, end) => {
+    for (let i = start; i < end; i += 4) {
+      if (pixels[i + 3] > 0 && (pixels[i] < 255 || pixels[i + 1] < 255 || pixels[i + 2] < 255)) return true;
+    }
+    return false;
+  };
+  let contentBottom = -1, contentTop = -1;
+  // Only finished pages reach this function. Every non-white pixel counts,
+  // including pale borders and antialiasing; internal capture slices skip it.
   for (let bottom = height; bottom > 0 && contentBottom < 0;) {
     const top = Math.max(0, bottom - 64);
     const pixels = ctx.getImageData(0, top, width, bottom - top).data;
     for (let y = bottom - top - 1; y >= 0 && contentBottom < 0; y--) {
-      const end = (y + 1) * width * 4;
-      for (let i = y * width * 4; i < end; i += 4) {
-        if (pixels[i + 3] > 0 && (pixels[i] < 255 || pixels[i + 1] < 255 || pixels[i + 2] < 255)) {
-          contentBottom = top + y;
-          break;
-        }
-      }
+      if (hasInk(pixels, y * width * 4, (y + 1) * width * 4)) contentBottom = top + y;
     }
     bottom = top;
   }
   if (contentBottom < 0) return canvas;
-  const targetHeight = contentBottom + 1 + Math.round(EXPORT_BOTTOM_PAD_CSS * scale);
-  if (width > BROWSER_CANVAS_MAX_PX || targetHeight > BROWSER_CANVAS_MAX_PX) {
-    throw new Error('canvas too large');
+  for (let top = 0; top <= contentBottom && contentTop < 0; top += 64) {
+    const rows = Math.min(64, contentBottom + 1 - top);
+    const pixels = ctx.getImageData(0, top, width, rows).data;
+    for (let y = 0; y < rows && contentTop < 0; y++) {
+      if (hasInk(pixels, y * width * 4, (y + 1) * width * 4)) contentTop = top + y;
+    }
   }
-  if (targetHeight === height) return canvas;
+  const pad = Math.round(EXPORT_BOTTOM_PAD_CSS * scale);
+  const contentHeight = contentBottom - contentTop + 1;
+  const targetHeight = contentHeight + pad * 2;
+  if (width > BROWSER_CANVAS_MAX_PX || targetHeight > BROWSER_CANVAS_MAX_PX) throw new Error('canvas too large');
+  if (contentTop === pad && targetHeight === height) return canvas;
   const finished = document.createElement('canvas');
   finished.width = width;
   finished.height = targetHeight;
@@ -10425,7 +10371,7 @@ function trimExportCanvasVertical(canvas, scale) {
   if (!finishedCtx) throw new Error('canvas allocation failed');
   finishedCtx.fillStyle = '#ffffff';
   finishedCtx.fillRect(0, 0, width, targetHeight);
-  finishedCtx.drawImage(canvas, 0, 0);
+  finishedCtx.drawImage(canvas, 0, contentTop, width, contentHeight, 0, pad, width, contentHeight);
   return finished;
 }
 
@@ -10469,6 +10415,41 @@ function forceSpecRuleInExportClone(clone) {
   }
 }
 
+// 只處理匯出副本：保留文字與精度，長金額必要時在千分位組之間換行。
+function prepareExportNumberWrapping(root) {
+  const doc = root.ownerDocument;
+  const targets = root.querySelectorAll('.cond-value,.summary-item .value,.amount-val,.year-body td,.yt-total-split .ts-val,.yt-split-v,.yt-save-v,.yt-save-r b');
+  targets.forEach(target => {
+    const walker = doc.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!node.parentElement.closest('.export-number')) nodes.push(node);
+    }
+    nodes.forEach(text => {
+      const value = text.textContent;
+      const matches = [...value.matchAll(/\d{1,3}(?:,\d{3})+(?:\.\d+)?/g)];
+      if (!matches.length) return;
+      const fragment = doc.createDocumentFragment();
+      let cursor = 0;
+      matches.forEach(match => {
+        fragment.appendChild(doc.createTextNode(value.slice(cursor, match.index)));
+        const number = doc.createElement('span');
+        number.className = 'export-number';
+        const groups = match[0].split(',');
+        groups.forEach((group, index) => {
+          number.appendChild(doc.createTextNode(group + (index < groups.length - 1 ? ',' : '')));
+          if (index < groups.length - 1) number.appendChild(doc.createElement('wbr'));
+        });
+        fragment.appendChild(number);
+        cursor = match.index + match[0].length;
+      });
+      fragment.appendChild(doc.createTextNode(value.slice(cursor)));
+      text.replaceWith(fragment);
+    });
+  });
+}
+
 async function mountExportNode(el) {
   const frame = document.createElement('iframe');
   frame.className = 'export-layout-frame';
@@ -10485,7 +10466,7 @@ async function mountExportNode(el) {
     // Copy presentation only. No App scripts, mutable inputs or storage initialization run here.
     document.head.querySelectorAll('style').forEach(style => doc.head.appendChild(doc.importNode(style, true)));
     const fixedBase = doc.createElement('style');
-    fixedBase.textContent = 'html{font-size:16px!important}body{margin:0!important;padding:0!important;min-width:0!important}';
+    fixedBase.textContent = 'html{font-size:16px!important;scrollbar-gutter:auto!important;scrollbar-width:none!important}html::-webkit-scrollbar{display:none!important}body{margin:0!important;padding:0!important;min-width:0!important}';
     doc.head.appendChild(fixedBase);
     doc.body.dataset.mode = el.dataset.exportMode;
     el.setAttribute('aria-hidden', 'true');
@@ -10493,6 +10474,7 @@ async function mountExportNode(el) {
     const removeNode = el.remove.bind(el);
     el.remove = function () { removeNode(); frame.remove(); };
     doc.body.appendChild(el);
+    prepareExportNumberWrapping(el);
     await waitExportLayout();
     return el;
   } catch (err) {
@@ -10730,8 +10712,24 @@ function getPdfSafeCaptureRanges(rootEl, totalHeight, maxHeight) {
     if (to > from) protectedIntervals.push({ from, to });
   };
   // Normal cards/years stay whole. Oversized containers fall back to complete rows and text lines.
-  const blocks = new Set([...rootEl.children, ...rootEl.querySelectorAll('.conditions-box,.summary-grid,.period-summary,.year-item,.yt-rule-b,.note,.export-detail-head,.period-title')]);
+  const blocks = new Set([...rootEl.children, ...rootEl.querySelectorAll('.conditions-box,.summary-grid,.period-summary,.year-item,.yt-rule-b,.note,.export-detail-head,.period-title,.payment-row,.cond-item,.cond-rate-row,.yt-condition-rate-row,.yt-chk,.yt-split-row,.yt-save')]);
   blocks.forEach(node => { const rect = node.getBoundingClientRect(); if (rect.height < maxHeight - 4) add(rect); });
+  // 標題和後方第一項一起留在下一頁，避免只剩標題掛在前頁底部。
+  rootEl.querySelectorAll('.period-title,.yt-rule-b.lv1').forEach(title => {
+    if (title.matches('.yt-rule-b.lv1') && title.textContent.trim() !== title.querySelector('b')?.textContent.trim()) return;
+    let next = title.nextElementSibling, first = null;
+    while (next && !first) {
+      first = next.matches('.yt-rule-b,.yt-chk,.yt-split-row,.summary-item,.payment-row') ? next
+        : next.querySelector('.yt-rule-b,.yt-chk,.yt-split-row,.summary-item,.payment-row');
+      if (!first && !next.matches('.period-dots')) break;
+      next = next.nextElementSibling;
+    }
+    if (!first) return;
+    const heading = title.getBoundingClientRect(), item = first.getBoundingClientRect();
+    if (item.bottom > heading.top && item.bottom - heading.top < maxHeight - 4) {
+      add({ top: heading.top, bottom: item.bottom, height: item.bottom - heading.top, width: heading.width });
+    }
+  });
   rootEl.querySelectorAll('tr,img,svg').forEach(node => add(node.getBoundingClientRect()));
   const walker = rootEl.ownerDocument.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
   let text;
