@@ -3776,8 +3776,8 @@ if ("serviceWorker" in navigator) {
     .export-capture .summary-item .value { overflow-wrap: normal; }
     .export-capture[data-export-mode="burden"] .summary-grid { margin-bottom: 16px; }
     .export-capture[data-export-mode="burden"] .summary-item .value { overflow-wrap: normal; }
-    .export-capture .payment-row .period-range { white-space: normal; overflow-wrap: anywhere; }
-    .export-capture .payment-row .period-mid { white-space: normal; }
+    .export-capture .payment-row .period-range,
+    .export-capture .payment-row .period-mid { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
     .export-capture .payment-row .period-amount,
     .export-capture .payment-row .amount-val { flex-wrap: wrap; white-space: normal; }
     .export-capture .export-number { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: normal; vertical-align: baseline; }
@@ -5111,7 +5111,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.20B";
+const APP_VERSION = "2026.09.20C";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -10450,6 +10450,19 @@ function prepareExportNumberWrapping(root) {
   });
 }
 
+// 在固定手機寬度中只重算副本的期數／利率字級；金額維持千分位換行。
+function fitExportPaymentTable(root) {
+  if (!root || !root.classList.contains('export-capture')) return;
+  root.querySelectorAll('.payment-table').forEach(table => {
+    table.querySelectorAll('.payment-row').forEach(row => {
+      const period = row.querySelector(':scope > .period-range');
+      if (period) fitPaymentCells([period]);
+    });
+    // 利率整欄共用比例，青安合計的兩列 grid 與末期小標仍保留原結構。
+    fitPaymentCells([...table.querySelectorAll('.payment-row > .period-mid')]);
+  });
+}
+
 async function mountExportNode(el) {
   const frame = document.createElement('iframe');
   frame.className = 'export-layout-frame';
@@ -10475,6 +10488,8 @@ async function mountExportNode(el) {
     el.remove = function () { removeNode(); frame.remove(); };
     doc.body.appendChild(el);
     prepareExportNumberWrapping(el);
+    await waitExportLayout();
+    fitExportPaymentTable(el);
     await waitExportLayout();
     return el;
   } catch (err) {
