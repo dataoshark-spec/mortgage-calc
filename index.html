@@ -1708,7 +1708,8 @@ if ("serviceWorker" in navigator) {
       height: 8px;
       border-radius: 50%;
       background: var(--teal);
-      margin-top: 6px;
+      /* Align to the label's first 1.5em line, even when the value wraps. */
+      margin-top: calc(0.75em - 4px);
       flex-shrink: 0;
     }
     /* 標題保留完整一行；長條件在值欄換行，不能反過來擠成直排標題。 */
@@ -1729,10 +1730,9 @@ if ("serviceWorker" in navigator) {
     .cond-item--lux .cond-value { display: contents; }
     .cond-item--lux .cond-main { grid-column: 3; grid-row: 1; min-width: 0; }
     .cond-item--lux .cond-note { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
-    @media (max-width: 430px) {
-      .cond-item--lux { column-gap: 4px; }
-    }
-    .export-capture[data-export-mode="general"] .cond-item--lux { column-gap: 10px; }
+    /* Keep the shared 10px column gap on screen and in all three exports.
+       Exported CJK glyphs need a small optical offset from the line center. */
+    .export-capture .cond-dot { margin-top: calc(0.75em - 3.25px); }
 
     .conditions-rates {
       margin-top: 14px;
@@ -5121,7 +5121,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.20F";
+const APP_VERSION = "2026.09.21A";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }

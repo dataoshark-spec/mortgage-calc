@@ -1,4 +1,4 @@
-const CACHE = "mortgage-calc-v20260920F";
+const CACHE = "mortgage-calc-v20260921A";
 /* 每個安裝路徑使用自己的快取；只處理本 App 的已知檔案，不代管其他工具。 */
 const SCOPE = self.registration.scope;
 const CACHE_KEY = CACHE + "::" + SCOPE;
