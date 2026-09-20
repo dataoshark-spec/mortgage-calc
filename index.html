@@ -1732,6 +1732,7 @@ if ("serviceWorker" in navigator) {
     @media (max-width: 430px) {
       .cond-item--lux { column-gap: 4px; }
     }
+    .export-capture[data-export-mode="general"] .cond-item--lux { column-gap: 10px; }
 
     .conditions-rates {
       margin-top: 14px;
@@ -3098,6 +3099,15 @@ if ("serviceWorker" in navigator) {
     .yt-f-note .nw { white-space: nowrap; }
     /* 資格檢查項的標題同理：窄機折行只斷在「／」之後 */
     .yt-chk-t .nw { white-space: nowrap; }
+    .export-capture[data-export-mode="youth"] .apr-export-scope {
+      font-family: inherit; font-size: .758em; font-weight: 500;
+      color: #222; opacity: 1; white-space: nowrap;
+    }
+    .export-capture[data-export-mode="youth"] .yt-chk-t { flex: 1; min-width: 0; }
+    .export-capture[data-export-mode="youth"] .export-yt-check-title {
+      display: block; font-size: 11.5px; white-space: nowrap;
+    }
+    .export-capture[data-export-mode="youth"] .yt-chk-s { white-space: nowrap; }
     /* 新青安專屬選項元件：grid 排版，min-width:0 避免窄螢幕撐破 */
     .yt-opts { display: grid; gap: 8px; }
     .yt-opts.c3 { grid-template-columns: repeat(3, 1fr); }
@@ -4422,7 +4432,7 @@ if ("serviceWorker" in navigator) {
         <div class="apr-block" id="ytAprBlock">
           <div class="apr-footer apr-footer-screen">
             <span class="apr-label-wrap">
-              <span class="apr-label">換算年利率<span class="apr-scope">（全案合計）</span></span>
+              <span class="apr-label">換算年利率<span class="apr-scope">（全案）</span></span>
               <button type="button" class="apr-info-btn" id="ytAprInfoBtn" aria-label="換算年利率說明">
                 <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                   <circle cx="12" cy="12" r="9"/>
@@ -5111,7 +5121,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.20D";
+const APP_VERSION = "2026.09.20E";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5134,6 +5144,9 @@ const appStorage = (() => {
   "youth_dirty_since_clear_v3",
   "mortgage_calc_mode_v1",
   "mortgage-period-unit-v1",
+  "mortgage-cum-interest-general-v1",
+  "mortgage-cum-interest-burden-v1",
+  "mortgage-cum-interest-youth-v1",
   "mortgage-total-unit-v1",
   "mortgage_badge_lock_general_v1",
   "mortgage_badge_lock_youth_v1",
@@ -5935,7 +5948,30 @@ const CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v4';
 const GENERAL_DECIMAL_MIGRATION_KEY = 'mortgage_decimal_migrated_v2';
 const LEGACY_FORM_STATE_STORAGE_KEY = 'mortgage_form_state_v1';
 const LEGACY_CLEAR_SNAPSHOT_KEY = 'mortgage_clear_snapshot_v1';
-let showCumInterest = false;
+// 三模式各自保存顯示偏好，不納入試算數值或清空／恢復快照。
+function loadCumInterestPreference(mode) {
+  try { return appStorage.getItem('mortgage-cum-interest-' + mode + '-v1') === '1'; }
+  catch (_) { return false; }
+}
+function saveCumInterestPreference(mode, on) {
+  try { appStorage.setItem('mortgage-cum-interest-' + mode + '-v1', on ? '1' : '0'); }
+  catch (_) {} // appStorage 保留本頁 pending，並顯示既有的保存失敗提示。
+}
+function applyCumInterestVisibility(mode, on) {
+  const ids = { general: ['detailSection', 'toggleCumBtn'], burden: ['bdDetailSection', 'bdToggleCumBtn'], youth: ['ytDetailSection', 'ytToggleCumBtn'] }[mode];
+  if (!ids) return;
+  const section = document.getElementById(ids[0]);
+  const button = document.getElementById(ids[1]);
+  if (section) section.classList.toggle('show-cum', on);
+  if (button) {
+    button.classList.toggle('active', on);
+    button.setAttribute('aria-pressed', String(on));
+    button.title = on ? '隱藏累積利息' : '顯示累積利息';
+    button.setAttribute('aria-label', button.title);
+  }
+}
+let showCumInterest = loadCumInterestPreference('general');
+applyCumInterestVisibility('general', showCumInterest);
 
 const FIELD_HINT_HTML = {
   price: hintLines('購屋總價上限為', tEm('9,999,999 萬元')),
@@ -10390,6 +10426,13 @@ function prepareExportAprBlock(clone) {
       const prefix = document.createElement('span'); prefix.className = 'apr-export-prefix';
       const label = document.createElement('span'); label.className = 'apr-export-title';
       label.textContent = '換算年利率（全案合計）';
+      if (clone.dataset.exportMode === 'youth') {
+        label.textContent = '換算年利率';
+        const scope = document.createElement('span');
+        scope.className = 'apr-export-scope';
+        scope.textContent = '（全案）';
+        label.appendChild(scope);
+      }
       prefix.appendChild(label);
       const val = document.createElement('span'); val.className = 'apr-val'; val.textContent = value;
       const hint = document.createElement('span'); hint.className = 'apr-export-hint'; hint.textContent = APR_EXPORT_NOTE;
@@ -10463,6 +10506,40 @@ function fitExportPaymentTable(root) {
   });
 }
 
+// 匯出副本才將標題與副說明分離；完整保留文字及原有強調節點。
+function prepareExportYouthCheckTitles(root) {
+  if (root.dataset.exportMode !== 'youth') return;
+  root.querySelectorAll('.yt-chk-t').forEach(box => {
+    if (box.querySelector('.export-yt-check-title')) return;
+    const subtitle = box.querySelector('.yt-chk-s');
+    if (!subtitle) return;
+    const title = root.ownerDocument.createElement('span');
+    title.className = 'export-yt-check-title';
+    while (box.firstChild && box.firstChild !== subtitle) title.appendChild(box.firstChild);
+    box.insertBefore(title, subtitle);
+  });
+}
+function fitExportYouthCheckTitles(root) {
+  if (root.dataset.exportMode !== 'youth') return;
+  const win = root.ownerDocument.defaultView;
+  // 標題與副說明分成兩組，各組七項同字級且各占一行；保留兩者大小層次。
+  // 先於摘要分頁前量測；後續頁保留已選字級，不因短句重新放大。
+  ['.export-yt-check-title', '.yt-chk-t > .yt-chk-s'].forEach(selector => {
+    const lines = [...root.querySelectorAll(selector)];
+    if (!lines.length) return;
+    let size = Math.min(...lines.map(line => parseFloat(win.getComputedStyle(line).fontSize)));
+    let ratio = 1;
+    lines.forEach(line => {
+      const range = root.ownerDocument.createRange();
+      range.selectNodeContents(line);
+      const width = range.getBoundingClientRect().width;
+      if (width > 0 && line.clientWidth > 0) ratio = Math.min(ratio, (line.clientWidth - 1) / width);
+    });
+    size = Math.floor(size * ratio * 100) / 100;
+    lines.forEach(line => { line.style.fontSize = size + 'px'; });
+  });
+}
+
 async function mountExportNode(el) {
   const frame = document.createElement('iframe');
   frame.className = 'export-layout-frame';
@@ -10488,8 +10565,11 @@ async function mountExportNode(el) {
     el.remove = function () { removeNode(); frame.remove(); };
     doc.body.appendChild(el);
     prepareExportNumberWrapping(el);
+    prepareExportYouthCheckTitles(el);
+    if (doc.fonts && el.dataset.exportMode === 'youth') await doc.fonts.ready;
     await waitExportLayout();
     fitExportPaymentTable(el);
+    fitExportYouthCheckTitles(el);
     await waitExportLayout();
     return el;
   } catch (err) {
@@ -12086,11 +12166,7 @@ function renderResults(scrollToResults) {
   });
 
   $('#detailSub').innerHTML = termSummaryText(schedule.length);
-  $('#detailSection').classList.toggle('show-cum', showCumInterest);
-  $('#toggleCumBtn').classList.toggle('active', showCumInterest);
-  $('#toggleCumBtn').setAttribute('aria-pressed', String(showCumInterest));
-  $('#toggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
-  $('#toggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
+  applyCumInterestVisibility('general', showCumInterest);
 
   let cumInterest = 0;
   $('#yearAccordion').innerHTML = Object.keys(byYear).map(y => {
@@ -12789,21 +12865,8 @@ $('#periodDots').addEventListener('click', (e) => {
 
 $('#toggleCumBtn').addEventListener('click', () => {
   showCumInterest = !showCumInterest;
-  $('#detailSection').classList.toggle('show-cum', showCumInterest);
-  $('#toggleCumBtn').classList.toggle('active', showCumInterest);
-  // 個人評估已算過的話一併同步，兩邊的眼睛狀態才會一致
-  const bdSec = document.getElementById('bdDetailSection');
-  if (bdSec) bdSec.classList.toggle('show-cum', showCumInterest);
-  const bdBtn = document.getElementById('bdToggleCumBtn');
-  if (bdBtn) {
-    bdBtn.classList.toggle('active', showCumInterest);
-    bdBtn.setAttribute('aria-pressed', String(showCumInterest));
-    bdBtn.title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
-    bdBtn.setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
-  }
-  $('#toggleCumBtn').setAttribute('aria-pressed', showCumInterest);
-  $('#toggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
-  $('#toggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
+  applyCumInterestVisibility('general', showCumInterest);
+  saveCumInterestPreference('general', showCumInterest);
 });
 
 $('#exportPdfBtn').addEventListener('click', exportAsPdf);
@@ -13341,6 +13404,8 @@ window.addEventListener('resize', scheduleFitPaymentTable);
      這樣「會不會踩到高價住宅門檻」的判斷才有一個穩定的基準。 */
   let bdRatioWanted = 80;
   let bdMethod = 'amortize';
+  let bdShowCumInterest = loadCumInterestPreference('burden');
+  applyCumInterestVisibility('burden', bdShowCumInterest);
   let bdRateType = 'single';
   let bdSegs = [{ from: 1, to: 0, rate: '2.75' }];
   // 使用者動過分段（改利率、改分界、增刪）之後就不再自動沿用單一利率的數值
@@ -14556,11 +14621,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       (byYear[y] = byYear[y] || []).push(r);
     });
     B('#bdDetailSub').innerHTML = termSummaryText(sched.length);
-    B('#bdDetailSection').classList.toggle('show-cum', showCumInterest);
-    B('#bdToggleCumBtn').classList.toggle('active', showCumInterest);
-    B('#bdToggleCumBtn').setAttribute('aria-pressed', String(showCumInterest));
-    B('#bdToggleCumBtn').title = showCumInterest ? '隱藏累積利息' : '顯示累積利息';
-    B('#bdToggleCumBtn').setAttribute('aria-label', showCumInterest ? '隱藏累積利息' : '顯示累積利息');
+    applyCumInterestVisibility('burden', bdShowCumInterest);
     let cum = 0;
     B('#bdYearAccordion').innerHTML = Object.keys(byYear).map((y) => {
       const rows = byYear[y];
@@ -14989,24 +15050,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     if (u) setPeriodUnit(u.dataset.punit);
   });
   B('#bdToggleCumBtn').addEventListener('click', () => {
-    showCumInterest = !showCumInterest;
-    const on = showCumInterest;
-    B('#bdDetailSection').classList.toggle('show-cum', on);
-    const btn = B('#bdToggleCumBtn');
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-pressed', String(on));
-    btn.title = on ? '隱藏累積利息' : '顯示累積利息';
-    btn.setAttribute('aria-label', on ? '隱藏累積利息' : '顯示累積利息');
-    // 一般貸款那邊若已算過，一併同步，切面板才不會兩邊不一致
-    const gl = document.getElementById('detailSection');
-    if (gl) gl.classList.toggle('show-cum', on);
-    const glBtn = document.getElementById('toggleCumBtn');
-    if (glBtn) {
-      glBtn.classList.toggle('active', on);
-      glBtn.setAttribute('aria-pressed', String(on));
-      glBtn.title = on ? '隱藏累積利息' : '顯示累積利息';
-      glBtn.setAttribute('aria-label', on ? '隱藏累積利息' : '顯示累積利息');
-    }
+    bdShowCumInterest = !bdShowCumInterest;
+    applyCumInterestVisibility('burden', bdShowCumInterest);
+    saveCumInterestPreference('burden', bdShowCumInterest);
   });
   const condToggle = B('#bdConditionsToggle');
   if (condToggle) {
@@ -15820,7 +15866,8 @@ window.addEventListener('resize', () => {
 
   let noHome = true, neverUsed = true, selfUse = true;
   let stepsTouched = [false, false, false, false, false];
-  let detailSrc = 'all', ytCum = false, ytStale = true;
+  let detailSrc = 'all', ytCum = loadCumInterestPreference('youth'), ytStale = true;
+  applyCumInterestVisibility('youth', ytCum);
   // 結果因必填欄位變空而暫時收起（補回去就自動展開），與「首次／剛清空」區分開
   let ytAutoHidden = false;
   let periodSrc = 'all';
@@ -16753,7 +16800,7 @@ window.addEventListener('resize', () => {
     if (!avail[detailSrc]) detailSrc = both ? 'all' : (avail.youth ? 'youth' : 'general');
     const sch = detailSrc === 'youth' ? last.sy : detailSrc === 'general' ? last.sg : last.all;
     Y('#ytDetailSub').innerHTML = termSummaryText(sch.length);
-    Y('#ytDetailSection').classList.toggle('show-cum', ytCum);
+    applyCumInterestVisibility('youth', ytCum); // 重繪沿用此模式自己的偏好
     YA('#ytDetailSeg button').forEach((b) => {
       const k = b.dataset.ytSrc;
       b.disabled = !avail[k];
@@ -17319,11 +17366,8 @@ window.addEventListener('resize', () => {
 
   Y('#ytToggleCumBtn').addEventListener('click', () => {
     ytCum = !ytCum;
-    Y('#ytDetailSection').classList.toggle('show-cum', ytCum);
-    Y('#ytToggleCumBtn').classList.toggle('active', ytCum);
-    Y('#ytToggleCumBtn').setAttribute('aria-pressed', ytCum);
-    Y('#ytToggleCumBtn').title = ytCum ? '隱藏累積利息' : '顯示累積利息';
-    Y('#ytToggleCumBtn').setAttribute('aria-label', ytCum ? '隱藏累積利息' : '顯示累積利息');
+    applyCumInterestVisibility('youth', ytCum);
+    saveCumInterestPreference('youth', ytCum);
   });
   bindYouthDetailNavigation();
   Y('#ytPeriodLines').addEventListener('click', () => {
@@ -18333,7 +18377,7 @@ window.addEventListener('resize', () => {
     const scope = Y('#ytPeriodDots .pmode')?.textContent || (d.youthWan > 0 ? '青安貸款' : '一般貸款');
     L.push('【每月還款：' + scope + '】');
     L.push(...periodShareLines(Y('#ytPeriodLines')));
-    if (!Y('#ytAprBlock').classList.contains('hidden')) L.push('換算年利率（全案合計）：' + Y('#ytResApr').textContent.trim(), APR_EXPORT_NOTE);
+    if (!Y('#ytAprBlock').classList.contains('hidden')) L.push('換算年利率（全案）：' + Y('#ytResApr').textContent.trim(), APR_EXPORT_NOTE);
     }
     // 利率表在畫面上屬於摺疊外的試算條件，收起結果仍須保留。
     L.push(...youthConditionRateShareLines(d));
