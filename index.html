@@ -5138,7 +5138,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.21C";
+const APP_VERSION = "2026.09.21D";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -10194,6 +10194,13 @@ function getResultsExportHeight(el) {
     if (r.height <= 0) return;
     maxBottom = Math.max(maxBottom, r.bottom - rootRect.top);
   });
+  // 青安摘要分組後，前頁可能以資格審查收尾；需納入整組最後一個可見區塊。
+  if (el.dataset.exportSummaryGroup) {
+    Array.from(el.children).forEach(node => {
+      const r = node.getBoundingClientRect();
+      if (r.height > 0) maxBottom = Math.max(maxBottom, r.bottom - rootRect.top);
+    });
+  }
   el.querySelectorAll('.note').forEach((note) => {
     maxBottom = Math.max(maxBottom, note.offsetTop + note.offsetHeight);
     maxBottom = Math.max(maxBottom, note.offsetTop + note.scrollHeight);
@@ -10925,9 +10932,51 @@ async function captureExportRootByYearItems(rootEl, opts) {
   }
 }
 
+/* 青安摘要超過單張高度時，先分「條件／資格」與「結果／組成／月付」。
+   只分匯出副本，字級與寬度不變；過長的單組仍沿用完整卡片／列安全續頁。 */
+async function buildYouthSummaryGroupPages(rootEl) {
+  if (rootEl.dataset.exportMode !== 'youth' || rootEl.dataset.exportPart !== 'summary' ||
+      getResultsExportHeight(rootEl) <= PDF_PAGE_MAX_CSS_HEIGHT) return [];
+  const notice = rootEl.querySelector('#ytGeneralNotice');
+  let first = notice && notice.getBoundingClientRect().height > 0
+    ? notice : rootEl.querySelector('#ytResultHeading');
+  if (!first) return [];
+  while (first.parentElement && first.parentElement !== rootEl) first = first.parentElement;
+  const nodes = Array.from(rootEl.childNodes), splitAt = nodes.indexOf(first);
+  if (splitAt <= 0 || !nodes.slice(0, splitAt).some(node =>
+    node.nodeType === 1 && node.getBoundingClientRect().height > 0)) return [];
+  const pages = [];
+  try {
+    for (const [index, group] of [nodes.slice(0, splitAt), nodes.slice(splitAt)].entries()) {
+      const page = rootEl.cloneNode(false);
+      page.dataset.exportSummaryGroup = index === 0 ? 'conditions' : 'results';
+      group.forEach(node => page.appendChild(node.cloneNode(true)));
+      // 原有區塊間距不帶到新頁頁首；沿用匯出容器的上下留白。
+      const head = Array.from(page.children).find(node => !node.hidden);
+      if (head) head.style.marginTop = '0';
+      pages.push(page);
+      await mountExportNode(page);
+    }
+    return pages;
+  } catch (error) {
+    pages.forEach(page => page.remove());
+    throw error;
+  }
+}
+
 async function captureExportRootForPdf(rootEl) {
   const opts = getPdfExportFinalizeOpts(rootEl);
   if (getResultsExportHeight(rootEl) <= PDF_PAGE_MAX_CSS_HEIGHT) return [await captureExportRoot(rootEl, opts)];
+  const groups = await buildYouthSummaryGroupPages(rootEl);
+  if (groups.length) {
+    const canvases = [];
+    try {
+      for (const page of groups) canvases.push(...await capturePdfPartWithinLimit(page, getPdfExportFinalizeOpts(page)));
+      return canvases;
+    } finally {
+      groups.forEach(page => page.remove());
+    }
+  }
   return rootEl.querySelector('.year-item')
     ? captureExportRootByYearItems(rootEl, opts)
     : capturePdfPartWithinLimit(rootEl, opts);
@@ -14228,8 +14277,12 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }
     sections.push(bdTextSection(1, '計算收入條件允許的月付上限', bdTextLine(income) +
       bdTextAnswer('收入條件月付上限', ceiling, 'ceiling', '元', clipped ? '最低以 0 計 →' : rounded ? '取整元 →' : '＝')));
-    sections.push(bdTextSection(2, '計算個人願意負擔的月付上限', bdTextLine(bdTextTerm('願意負擔月付', willingBlank ? null : s.willing) +
-      ' ＋ ' + bdTextTerm('他人協助月付', s.help)) + bdTextAnswer(willingBlank ? '個人月付上限・未設定' : '個人月付上限', personalPay, 'personalPay')));
+    const personalHtml = willingBlank
+      ? bdTextLine('願意負擔月付未填，先依收入條件月付上限評估。') +
+        (s.help > 0 ? bdTextNote('他人協助月付未納入本次月付上限。') : '')
+      : bdTextLine(bdTextTerm('願意負擔月付', s.willing) + ' ＋ ' + bdTextTerm('他人協助月付', s.help)) +
+        bdTextAnswer('個人月付上限', personalPay, 'personalPay');
+    sections.push(bdTextSection(2, '計算個人願意負擔／他人協助的月付上限', personalHtml));
     const budget = willingBlank ? bdTextLine('沿用收入條件月付上限 ' + bdTextValue(ceiling))
       : bdTextLine('<span class="bd-t-comparison-item">' + bdTextTerm('收入條件月付上限', ceiling) + '</span>' +
         '<span class="bd-t-comparison-item">' + bdTextTerm('個人月付上限', personalPay) + '</span>');
@@ -14240,7 +14293,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     sections.push(bdTextSection(6, '由月付上限反推貸款能力', bdTextCapacity(s, valid, n, pay)));
     let downHtml;
     if (ratio === 100) downHtml = bdTextLine('貸款成數上限 100%') + bdTextAnswer('', '不受此項限制', 'byDown', '', '→', false);
-    else if (downBlank) downHtml = bdTextLine('自備款未填，先依月付能力評估。') + bdTextAnswer('', null, 'byDown');
+    else if (downBlank) downHtml = bdTextLine('自備款未填，先依月付能力評估。');
     else downHtml = bdTextLine(bdTextTerm('自備款', s.down, '', '', true) + ' × ' + bdTextTerm('成數上限', ratio, '', '%', true) +
       '<br>÷〔1 − ' + bdTextValue(ratio) + (ratio !== null ? '%' : '') + '〕') + bdTextAnswer('', byDown, 'byDown', '元', '取整後＝');
     sections.push(bdTextSection(7, '計算自備款能支持的貸款上限', downHtml));
