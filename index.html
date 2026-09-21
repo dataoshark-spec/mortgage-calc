@@ -2966,7 +2966,7 @@ if ("serviceWorker" in navigator) {
       }
       .summary-grid { grid-template-columns: 1fr; }
       /* 個人評估的四個數字都很短，手機上維持兩欄才不會拉成長長一條 */
-      #bdResults .summary-grid { grid-template-columns: 1fr 1fr; }
+      #bdResults .bd-assessment-grid { grid-template-columns: 1fr 1fr; }
       .header-actions { gap: 6px; }
       .clear-btn, .restore-btn { padding: 7px 10px; font-size: 0.78rem; }
       .export-actions { grid-template-columns: repeat(2, 1fr); }
@@ -3270,8 +3270,8 @@ if ("serviceWorker" in navigator) {
     .export-capture .bd-mini { pointer-events: none; }
     #bdResults .bd-summary-toggle { cursor: pointer; -webkit-tap-highlight-color: transparent; }
     #bdResults .bd-summary-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
-    #bdResults .summary-grid { margin-bottom: 16px; }
-    #bdResults .summary-item .value { font-size: 1.18rem; }
+    #bdResults .bd-assessment-grid { margin-bottom: 16px; }
+    #bdResults .bd-assessment-grid .summary-item .value { font-size: 1.18rem; }
     .gl-note em { font-style: normal; font-weight: 600; color: var(--teal-dark); }
     /* 被蓋過的那道規則仍然存在、只是沒咬住，所以整句維持一般內文色（含數字）。
        兩道的差別靠「上限值有沒有上琥珀色」來分；轉灰會讓人以為那條規則失效了。 */
@@ -3754,10 +3754,10 @@ if ("serviceWorker" in navigator) {
     }
 
     /* 個評四卡固定兩排兩欄；長金額完整換行，不改金額精度。 */
-    #bdResults .summary-grid, .export-capture[data-export-mode="burden"] .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; }
-    #bdResults .summary-item, .export-capture[data-export-mode="burden"] .summary-item { min-width: 0; min-height: 86px; padding: 14px 8px; display: flex; flex-direction: column; justify-content: center; }
-    #bdResults .summary-item .label, .export-capture[data-export-mode="burden"] .summary-item .label { font-size: 0.82rem; line-height: 1.4; }
-    #bdResults .summary-item .value, .export-capture[data-export-mode="burden"] .summary-item .value { font-size: clamp(1rem, 4.8vw, 1.18rem); line-height: 1.3; overflow-wrap: anywhere; }
+    #bdResults .bd-assessment-grid, .export-capture[data-export-mode="burden"] .bd-assessment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+    #bdResults .bd-assessment-grid .summary-item, .export-capture[data-export-mode="burden"] .bd-assessment-grid .summary-item { min-width: 0; min-height: 86px; padding: 14px 8px; display: flex; flex-direction: column; justify-content: center; }
+    #bdResults .bd-assessment-grid .summary-item .label, .export-capture[data-export-mode="burden"] .bd-assessment-grid .summary-item .label { font-size: 0.82rem; line-height: 1.4; }
+    #bdResults .bd-assessment-grid .summary-item .value, .export-capture[data-export-mode="burden"] .bd-assessment-grid .summary-item .value { font-size: clamp(1rem, 4.8vw, 1.18rem); line-height: 1.3; overflow-wrap: anywhere; }
 
   
     /* I：基準利率視窗比照持買比率外觀；保留原 yt-set 鍵盤顯示條件。 */
@@ -3784,7 +3784,7 @@ if ("serviceWorker" in navigator) {
     /* 只保留匯出必需的防裁切，不覆寫手機版的字級、色彩或卡片排列。 */
     .export-capture .summary-item { min-width: 0; }
     .export-capture .summary-item .value { overflow-wrap: normal; }
-    .export-capture[data-export-mode="burden"] .summary-grid { margin-bottom: 16px; }
+    .export-capture[data-export-mode="burden"] .bd-assessment-grid { margin-bottom: 16px; }
     .export-capture[data-export-mode="burden"] .summary-item .value { overflow-wrap: normal; }
     .export-capture .payment-row .period-range,
     .export-capture .payment-row .period-mid { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
@@ -4680,7 +4680,7 @@ if ("serviceWorker" in navigator) {
       <span class="title-line"></span>
     </div>
 
-    <div class="summary-grid">
+    <div class="summary-grid bd-assessment-grid">
       <div class="summary-item bd-summary-toggle" role="button" tabindex="0" aria-pressed="false">
         <div class="label" id="bdResPriceLabel">預估可買總價</div>
         <div class="value" id="bdResPrice">—</div>
@@ -4696,6 +4696,23 @@ if ("serviceWorker" in navigator) {
       <div class="summary-item bd-summary-toggle" role="button" tabindex="0" aria-pressed="false">
         <div class="label">預估每月房貸</div>
         <div class="value" id="bdResPay">—</div>
+      </div>
+    </div>
+
+    <div class="period-title results-heading">
+      <span class="title-line"></span>
+      <h3>試算結果</h3>
+      <span class="title-line"></span>
+    </div>
+
+    <div class="summary-grid" id="bdLoanSummary">
+      <div class="summary-item summary-amount-toggle" id="bdResTotalItem" role="button" tabindex="0" title="點擊切換元／萬" aria-label="貸款總額，點擊切換元或萬元顯示">
+        <div class="label">貸款總額</div>
+        <div class="value" id="bdResTotal">—</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">還款期間</div>
+        <div class="value" id="bdResTerm">—</div>
       </div>
     </div>
 
@@ -5121,7 +5138,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.21B";
+const APP_VERSION = "2026.09.21C";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -5148,6 +5165,7 @@ const appStorage = (() => {
   "mortgage-cum-interest-burden-v1",
   "mortgage-cum-interest-youth-v1",
   "mortgage-total-unit-v1",
+  "mortgage-burden-total-unit-v1",
   "mortgage_badge_lock_general_v1",
   "mortgage_badge_lock_youth_v1",
   "mortgage_lux_rows_v1",
@@ -12227,7 +12245,7 @@ function renderResults(scrollToResults) {
   $('#aprBlock')?.classList.toggle('hidden', !showApr);
   if (showApr) syncAprExportDisplay();
   $('#resTerm').innerHTML = graceVal === 0
-    ? `${$('#term').value} 年（無寬限期）`
+    ? `${$('#term').value} 年<span class="term-grace-note">（無寬限期）</span>`
     : `${$('#term').value} 年<span class="term-grace-note">（寬限期 ${graceVal} ${graceUnit}）</span>`;
 
   lastPeriodGroups = groupPeriodSummary(schedule, graceMonths, getTotalMonths());
@@ -14725,6 +14743,42 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     }).join('');
   }
 
+  /* 新增結果卡使用同次正式結果；單位獨立於一般貸款、原四卡小數及清空快照。 */
+  const BD_TOTAL_AMOUNT_UNIT_KEY = 'mortgage-burden-total-unit-v1';
+  let bdTotalAmountUnit = 'yuan';
+
+  function renderBdLoanSummary() {
+    const res = bdFlowSnapshot?.res;
+    if (!res) return;
+    const total = B('#bdResTotal'), item = B('#bdResTotalItem');
+    total.textContent = bdTotalAmountUnit === 'wan' ? fmtWan(res.loan) + ' 萬元' : yuan(res.loan);
+    item.setAttribute('aria-label', '貸款總額，' + total.textContent + '，點擊切換元或萬元顯示');
+    B('#bdResTerm').innerHTML = `${res.term} 年<span class="term-grace-note">` +
+      (res.grace === 0 ? '（無寬限期）' : `（寬限期 ${res.grace} 年）`) + '</span>';
+  }
+
+  function toggleBdTotalAmountUnit() {
+    if (!hasBdFlowResult()) return;
+    bdTotalAmountUnit = bdTotalAmountUnit === 'yuan' ? 'wan' : 'yuan';
+    try { appStorage.setItem(BD_TOTAL_AMOUNT_UNIT_KEY, bdTotalAmountUnit); } catch (_) {}
+    renderBdLoanSummary();
+  }
+
+  function initBdTotalAmountToggle() {
+    try {
+      const saved = appStorage.getItem(BD_TOTAL_AMOUNT_UNIT_KEY);
+      if (saved === 'yuan' || saved === 'wan') bdTotalAmountUnit = saved;
+    } catch (_) {}
+    const item = B('#bdResTotalItem');
+    item.addEventListener('click', toggleBdTotalAmountUnit);
+    item.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        if (!event.repeat) toggleBdTotalAmountUnit();
+      }
+    });
+  }
+
   /* 個評摘要顯示偏好：獨立於輸入與清空快照，不參與試算。 */
   const BD_SUMMARY_DECIMALS_KEY = 'mortgage-burden-summary-decimals-v1';
   let bdSummaryDecimals = false;
@@ -14777,6 +14831,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     // 以同次計算結果產生條件與明細。
     B('#bdResPriceLabel').textContent = '預估可買總價';
     renderBdSummaryAmounts();
+    renderBdLoanSummary();
     B('#bdResPay').textContent = yuan(res.payAfter);
     syncBdSummaryToggle();
     renderConditions(res);
@@ -15444,6 +15499,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     const lines = ['個人購屋能力評估結果', '', '【評估條件】', ...cond, ...rates, '',
       val('#bdResPriceLabel') + '：' + val('#bdResPrice'), '預估可貸金額：' + val('#bdResLoan'),
       '所需自備頭款：' + val('#bdResDown'), '預估每月房貸：' + val('#bdResPay'),
+      '', '【試算結果】', '貸款總額：' + val('#bdResTotal'), '還款期間：' + val('#bdResTerm'),
       '', '【每月還款】', ...periodShareLines(B('#bdPeriodLines'))];
     if (!B('#bdAprBlock').classList.contains('hidden')) {
       lines.push('換算年利率（全案合計）：' + val('#bdResApr'), APR_EXPORT_NOTE);
@@ -15455,6 +15511,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   /* ---------- 啟動 ---------- */
   initBdFlowSections();
   initBdSummaryToggle();
+  initBdTotalAmountToggle();
   const bdVersionLine = B('#bdVerLine');
   if (bdVersionLine) bdVersionLine.textContent = VERSION_LINE_TEXT();
   syncIncomeUnitField();
@@ -16622,7 +16679,7 @@ window.addEventListener('resize', () => {
     Y('#ytResTotalLabel').textContent = youthLoanTotalLabel(d);
     Y('#ytResTotal').textContent = yuan(totalYuan) + ' 元';
     Y('#ytResTerm').innerHTML = d.graceY === 0
-      ? `${d.term} 年（無寬限期）`
+      ? `${d.term} 年<span class="term-grace-note">（無寬限期）</span>`
       : `${d.term} 年<span class="term-grace-note">（寬限期 ${d.graceY} 年）</span>`;
     /* 換算年利率：比照一般貸款，全案只有單一利率時不顯示。
        單一利率下 APR 會因寬限期與尾期結清而與輸入的利率差一點點，
