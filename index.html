@@ -3099,7 +3099,7 @@ if ("serviceWorker" in navigator) {
     .yt-f-note .nw { white-space: nowrap; }
     /* 資格檢查項的標題同理：窄機折行只斷在「／」之後 */
     .yt-chk-t .nw { white-space: nowrap; }
-    .export-capture[data-export-mode="youth"] .apr-export-scope {
+    .export-capture .apr-export-scope {
       font-family: inherit; font-size: .758em; font-weight: 500;
       color: #222; opacity: 1; white-space: nowrap;
     }
@@ -4034,7 +4034,7 @@ if ("serviceWorker" in navigator) {
       <div class="apr-block hidden" id="aprBlock">
         <div class="apr-footer apr-footer-screen">
           <span class="apr-label-wrap">
-            <span class="apr-label">換算年利率<span class="apr-scope">（全案合計）</span></span>
+            <span class="apr-label">換算年利率<span class="apr-scope">（全案）</span></span>
             <button type="button" class="apr-info-btn" id="aprInfoBtn" aria-label="換算年利率說明">
               <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                 <circle cx="12" cy="12" r="9"/>
@@ -4047,7 +4047,7 @@ if ("serviceWorker" in navigator) {
         </div>
         <div class="apr-footer apr-footer-export" id="aprFooterExport" aria-hidden="true">
           <span class="apr-export-prefix">
-            <span class="apr-export-title">換算年利率（全案合計）</span>
+            <span class="apr-export-title">換算年利率<span class="apr-export-scope">（全案）</span></span>
           </span>
           <span class="apr-val" id="resAprExport">—</span>
           <span class="apr-export-hint">（換算年利率係依全期還款現金流換算）</span>
@@ -4727,7 +4727,7 @@ if ("serviceWorker" in navigator) {
         <div class="apr-block hidden" id="bdAprBlock">
           <div class="apr-footer apr-footer-screen">
             <span class="apr-label-wrap">
-              <span class="apr-label">換算年利率<span class="apr-scope">（全案合計）</span></span>
+              <span class="apr-label">換算年利率<span class="apr-scope">（全案）</span></span>
               <button type="button" class="apr-info-btn" id="bdAprInfoBtn" aria-label="換算年利率說明">
                 <svg class="apr-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
                   <circle cx="12" cy="12" r="9"/>
@@ -5138,7 +5138,7 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <script>
-const APP_VERSION = "2026.09.21D";
+const APP_VERSION = "2026.09.21E";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -6485,7 +6485,7 @@ const APR_INFO_HTML_YT = APR_INFO_BODY + APR_INFO_SCOPE_YT + APR_INFO_FOOT;
 const APR_EXPORT_NOTE = '（換算年利率係依全期還款現金流換算）';
 
 function formatAprExportLine() {
-  return `換算年利率（全案合計）  ${$('#resApr').textContent.trim()}\n${APR_EXPORT_NOTE}`;
+  return `換算年利率（全案）  ${$('#resApr').textContent.trim()}\n${APR_EXPORT_NOTE}`;
 }
 
 function syncAprExportDisplay() {
@@ -10447,14 +10447,11 @@ function prepareExportAprBlock(clone) {
       exp = document.createElement('div'); exp.className = 'apr-footer apr-footer-export';
       const prefix = document.createElement('span'); prefix.className = 'apr-export-prefix';
       const label = document.createElement('span'); label.className = 'apr-export-title';
-      label.textContent = '換算年利率（全案合計）';
-      if (clone.dataset.exportMode === 'youth') {
-        label.textContent = '換算年利率';
-        const scope = document.createElement('span');
-        scope.className = 'apr-export-scope';
-        scope.textContent = '（全案）';
-        label.appendChild(scope);
-      }
+      label.textContent = '換算年利率';
+      const scope = document.createElement('span');
+      scope.className = 'apr-export-scope';
+      scope.textContent = '（全案）';
+      label.appendChild(scope);
       prefix.appendChild(label);
       const val = document.createElement('span'); val.className = 'apr-val'; val.textContent = value;
       const hint = document.createElement('span'); hint.className = 'apr-export-hint'; hint.textContent = APR_EXPORT_NOTE;
@@ -15555,7 +15552,7 @@ window.addEventListener('resize', scheduleFitPaymentTable);
       '', '【試算結果】', '貸款總額：' + val('#bdResTotal'), '還款期間：' + val('#bdResTerm'),
       '', '【每月還款】', ...periodShareLines(B('#bdPeriodLines'))];
     if (!B('#bdAprBlock').classList.contains('hidden')) {
-      lines.push('換算年利率（全案合計）：' + val('#bdResApr'), APR_EXPORT_NOTE);
+      lines.push('換算年利率（全案）：' + val('#bdResApr'), APR_EXPORT_NOTE);
     }
     return lines.join('\n');
   };
