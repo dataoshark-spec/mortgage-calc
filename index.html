@@ -1176,6 +1176,23 @@ if ("serviceWorker" in navigator) {
 .export-files-close, .export-files-actions, .export-files-summary, .export-files-status, .export-files-card h2 { flex-shrink: 0; }
 @media(max-height: 540px) { .export-files-card { padding: 12px; gap: 8px; } .export-files-card h2 { font-size: 1rem; } }
 
+/* H: receipt states describe browser requests, never completed device storage. */
+.export-files-row .export-file-number { flex: none; align-self: flex-start; width: 2.1em; padding: 2px 3px; margin-top: 2px; border-radius: 7px; text-align: center; white-space: nowrap; color: var(--export-accent, #2e6da4); background: #edf2f3; background: color-mix(in srgb, var(--export-accent, #2e6da4) 12%, white); font-size: .8rem; font-weight: 650; line-height: 1.65; }
+.export-files-row [data-download-index] { width: 4.8em; padding-left: 5px; padding-right: 5px; white-space: nowrap; }
+.export-files-feedback { flex: none; border-radius: 10px; padding: 10px 8px; background: #f4f5f6; }
+.export-files-feedback .export-files-status { margin: 0; color: #444; font-weight: 600; }
+.export-files-download-note { margin: 5px 0 0; color: #777; font-size: .72rem; line-height: 1.55; text-align: center; }
+.export-download-toast > div { font-weight: 600; }
+.export-download-toast > small { display: block; margin-top: 5px; font-size: .8em; line-height: 1.5; color: #777; white-space: normal; }
+@media(max-height: 540px) { .export-files-feedback { padding: 7px 6px; } }
+
+/* H: the PDF recommendation is the only text that scales in this heading. */
+.export-title.export-title-with-hint { display: flex; align-items: center; gap: 6px; }
+.export-title-label { flex: none; white-space: nowrap; }
+.export-pdf-hint { flex: 1; min-width: 0; color: #777; font-size: 75%; font-weight: 400; line-height: 1.4; white-space: nowrap; }
+.export-pdf-hint[hidden] { display: none !important; }
+.export-pdf-hint-text { display: inline-block; white-space: nowrap; }
+
     /* 個評零月付提示：依確認稿分成原因、兩種處理方式；不改其他提示。 */
     .app-alert-bd-budget .app-alert-icon { display: none; }
     .app-alert-bd-budget .app-alert-card { max-width: 360px; padding: 20px 22px 18px; gap: 18px; border-color: transparent; }
@@ -5180,7 +5197,10 @@ if ("serviceWorker" in navigator) {
     <p class="export-files-summary" id="exportFilesSummary"></p>
     <div class="export-files-list" id="exportFilesList"></div>
     <div class="export-files-actions" id="exportFilesActions"></div>
-    <p class="export-files-status" id="exportFilesStatus" role="status" aria-live="polite"></p>
+    <div class="export-files-feedback">
+      <p class="export-files-status" id="exportFilesStatus" role="status" aria-live="polite"></p>
+      <p class="export-files-download-note">下載可能在背景執行，請查看下載通知。</p>
+    </div>
     <button type="button" class="export-files-close" id="exportFilesClose">關閉</button>
   </div>
 </div>
@@ -6324,7 +6344,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
 
 </script>
 <script>
-const APP_VERSION = "2026.09.21G";
+const APP_VERSION = "2026.09.21H";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -11033,12 +11053,68 @@ function setExportIncludeDetail(includeDetail) {
   } catch (_) {}
 }
 
+// H: visible guidance only; the existing shared export preference remains authoritative.
+const exportPdfHintState = { titles: [], frame: 0, initialized: false };
+
+function fitExportPdfHints() {
+  exportPdfHintState.frame = 0;
+  exportPdfHintState.titles.forEach(title => {
+    const hint = title.querySelector('.export-pdf-hint');
+    const text = hint && hint.querySelector('.export-pdf-hint-text');
+    if (!hint || hint.hidden || !text || !title.getClientRects().length) return;
+    const available = hint.getBoundingClientRect().width;
+    if (available <= 0) return;
+    const base = parseFloat(getComputedStyle(title).fontSize) * .75;
+    hint.style.fontSize = base + 'px';
+    const natural = text.getBoundingClientRect().width;
+    if (natural > available) {
+      // Round downward and leave a subpixel guard for glyph rasterization.
+      const fitted = Math.floor(base * Math.max(0, available - .5) / natural * 100) / 100;
+      hint.style.fontSize = fitted + 'px';
+    }
+  });
+}
+
+function scheduleExportPdfHintFit() {
+  if (!exportPdfHintState.frame) exportPdfHintState.frame = requestAnimationFrame(fitExportPdfHints);
+}
+
+function syncExportPdfHint() {
+  if (!exportPdfHintState.initialized) {
+    exportPdfHintState.initialized = true;
+    exportPdfHintState.titles = Array.from(document.querySelectorAll('#exportSection > .export-title, #ytExportSection > .export-title, #bdExportSection > .export-title'));
+    exportPdfHintState.titles.forEach(title => {
+      const label = document.createElement('span'); label.className = 'export-title-label';
+      while (title.firstChild) label.appendChild(title.firstChild);
+      const hint = document.createElement('span'); hint.className = 'export-pdf-hint';
+      const text = document.createElement('span'); text.className = 'export-pdf-hint-text';
+      text.textContent = '（含還款明細，推薦 PDF 檔／檔案生成較快）';
+      hint.appendChild(text); title.append(label, hint); title.classList.add('export-title-with-hint');
+    });
+    if (typeof ResizeObserver === 'function') {
+      const observer = new ResizeObserver(scheduleExportPdfHintFit);
+      exportPdfHintState.titles.forEach(title => observer.observe(title));
+    }
+    new MutationObserver(scheduleExportPdfHintFit).observe(document.body, { attributes: true, attributeFilter: ['data-mode'] });
+    window.addEventListener('resize', scheduleExportPdfHintFit, { passive: true });
+    window.addEventListener('pageshow', scheduleExportPdfHintFit);
+    if (document.fonts) {
+      document.fonts.ready.then(scheduleExportPdfHintFit);
+      if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', scheduleExportPdfHintFit);
+    }
+  }
+  const show = getExportIncludeDetail();
+  exportPdfHintState.titles.forEach(title => { title.querySelector('.export-pdf-hint').hidden = !show; });
+  scheduleExportPdfHintFit();
+}
+
 function syncExportDetailToggle() {
   const includeDetail = getExportIncludeDetail();
   $$('.export-detail-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.exportDetail === (includeDetail ? 'detail' : 'summary'));
   });
   syncExportFormatButtons();
+  syncExportPdfHint();
 }
 
 // 兩個面板各有一組匯出按鈕，依目前模式取用，忙碌狀態才會顯示在使用者實際按的那顆上
@@ -12635,21 +12711,60 @@ function downloadPreparedExportImage(file) {
   try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
 }
 
+function refreshPreparedDownloadLabels(state) {
+  if (preparedExportImages !== state || state.closed) return;
+  const job = state.downloadJob;
+  $('#exportFilesList').querySelectorAll('[data-download-index]').forEach(button => {
+    const index = Number(button.dataset.downloadIndex);
+    button.textContent = job?.activeIndex === index ? '處理中' : state.requestedIndices.has(index) ? '再下載' : '下載';
+    button.setAttribute('aria-label', (state.requestedIndices.has(index) ? '再次下載第 ' : '下載第 ') + (index + 1) + ' 張 ' + state.images[index].label);
+  });
+  const all = $('#exportFilesDownloadAll');
+  if (all) all.textContent = job?.all ? '處理中 ' + job.sent + '／' + job.total : all.dataset.defaultLabel;
+}
+
 async function downloadPreparedExportImages(state, index) {
   if (state.busy || state.closed) return;
+  const requests = index === undefined ? state.images.map((image, i) => ({ file: image.file, index: i })) : [{ file: state.images[index].file, index }];
+  const job = { all: index === undefined, total: requests.length, sent: 0, activeIndex: null };
+  state.downloadJob = job;
   state.busy = true;
-  const files = index === undefined ? state.images.map(x => x.file) : [state.images[index].file];
   setPreparedExportButtonsBusy(state, true);
+  setExportFilesStatus(state, '正在送出下載請求…');
+  refreshPreparedDownloadLabels(state);
   try {
-    for (let i = 0; i < files.length && !state.closed; i++) {
-      downloadPreparedExportImage(files[i]);
-      if (i < files.length - 1) await new Promise(resolve => setTimeout(resolve, 200));
+    for (const request of requests) {
+      if (state.closed) break;
+      job.activeIndex = request.index;
+      refreshPreparedDownloadLabels(state);
+      // Preserve the direct click for the first browser download request.
+      downloadPreparedExportImage(request.file);
+      job.sent++;
+      state.requestedIndices.add(request.index);
+      setExportFilesStatus(state, requests.length === 1
+        ? '已送出單張下載請求'
+        : job.sent < job.total
+          ? '已送出 ' + job.sent + '／' + job.total + ' 張下載請求…'
+          : '已送出全部 ' + job.total + ' 張下載請求');
+      refreshPreparedDownloadLabels(state);
+      if (job.sent < job.total) await new Promise(resolve => setTimeout(resolve, 200));
     }
-    setExportFilesStatus(state, files.length === 1 ? '已送出下載請求。' : '已送出 ' + files.length + ' 張圖片的下載請求。若未存下全部圖片，可逐張下載。');
   } catch {
-    setExportFilesStatus(state, '下載未完成，請點選各張旁的「下載」再試。');
-  } finally { state.busy = false; setPreparedExportButtonsBusy(state, false); }
+    setExportFilesStatus(state, job.sent
+      ? '已送出 ' + job.sent + '／' + job.total + ' 張下載請求，其餘未能送出，請重試。'
+      : '未能送出下載請求，請再試一次。');
+  } finally {
+    state.downloadJob = null;
+    state.busy = false;
+    refreshPreparedDownloadLabels(state);
+    setPreparedExportButtonsBusy(state, false);
+  }
 }
+
+function showSingleExportDownloadNotice() {
+  showToast('', { html: '<div class="export-download-toast"><div>已送出單張下載請求</div><small>下載可能在背景執行，請查看下載通知。</small></div>' });
+}
+
 
 function setPreparedExportButtonsBusy(state, busy) {
   if (preparedExportImages !== state || state.closed) return;
@@ -12675,7 +12790,7 @@ function showExportFilesDialog(images, context, action, ext) {
   if (!images.length) throw new Error('No complete export images');
   closeExportFilesDialog();
   const dialog = $('#exportFilesDialog');
-  const state = { images, context, action, closed: false, busy: false, returnFocus: exportBtnOf(action === 'share' ? 'share' : ext) };
+  const state = { images, context, action, closed: false, busy: false, requestedIndices: new Set(), downloadJob: null, returnFocus: exportBtnOf(action === 'share' ? 'share' : ext) };
   preparedExportImages = state;
   dialog.style.setProperty('--export-accent', context.template.style.getPropertyValue('--teal') || '#2e6da4');
   $('#exportFilesTitle').textContent = action === 'share' ? '分享圖片已準備完成' : '匯出圖片已準備完成';
@@ -12684,9 +12799,10 @@ function showExportFilesDialog(images, context, action, ext) {
   images.forEach((image, index) => {
     const row = document.createElement('div'); row.className = 'export-files-row';
     const label = document.createElement('div'); label.className = 'export-files-label';
-    label.textContent = String(index + 1).padStart(2, '0') + '　' + image.label;
+    const number = document.createElement('span'); number.className = 'export-file-number'; number.textContent = String(index + 1).padStart(2, '0'); row.appendChild(number);
+    label.textContent = image.label;
     const size = document.createElement('small'); size.textContent = image.file.size < 1048576 ? Math.ceil(image.file.size / 1024) + ' KB' : (image.file.size / 1048576).toFixed(1) + ' MB'; label.appendChild(size); row.appendChild(label);
-    const save = document.createElement('button'); save.type = 'button'; save.textContent = '下載'; save.setAttribute('aria-label', '下載第 ' + (index + 1) + ' 張 ' + image.label);
+    const save = document.createElement('button'); save.type = 'button'; save.textContent = '下載'; save.dataset.downloadIndex = String(index); save.setAttribute('aria-label', '下載第 ' + (index + 1) + ' 張 ' + image.label);
     save.addEventListener('click', () => downloadPreparedExportImages(state, index)); row.appendChild(save);
     if (action === 'share' && canShareExportImages([image.file])) {
       const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享'; share.setAttribute('aria-label', '分享第 ' + (index + 1) + ' 張 ' + image.label);
@@ -12699,7 +12815,7 @@ function showExportFilesDialog(images, context, action, ext) {
   if (shareable) {
     const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享全部圖片'; share.id = 'exportFilesShareAll'; share.addEventListener('click', () => sharePreparedExportImages(state)); actions.appendChild(share);
   }
-  const save = document.createElement('button'); save.type = 'button'; save.textContent = '全部下載 ' + ext.toUpperCase(); save.id = 'exportFilesDownloadAll';
+  const save = document.createElement('button'); save.type = 'button'; save.textContent = '全部下載 ' + ext.toUpperCase(); save.id = 'exportFilesDownloadAll'; save.dataset.defaultLabel = save.textContent;
   if (shareable) save.className = 'export-files-secondary'; save.addEventListener('click', () => downloadPreparedExportImages(state)); actions.appendChild(save);
   const hasSingleShare = action === 'share' && images.some(image => canShareExportImages([image.file]));
   $('#exportFilesStatus').textContent = action === 'share' && !shareable
@@ -12721,7 +12837,7 @@ function exportImagePartName(ext, context, kind, index, total) {
   return stem + '_' + kind + '_' + pad(index + 1) + '-' + pad(total) + '.' + ext;
 }
 
-async function captureResultsImageFiles(context, mime, ext) {
+async function captureResultsImageFiles(context, mime, ext, imageRecords) {
   const parts = [];
   async function capturePart(node, kind) {
     if (!node) return;
@@ -12762,7 +12878,13 @@ async function captureResultsImageFiles(context, mime, ext) {
       const blob = await new Promise((resolve, reject) => {
         canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), mime, quality);
       });
-      files.push(new File([blob], exportImagePartName(ext, context, kind, i, parts.length), { type: mime }));
+      const file = new File([blob], exportImagePartName(ext, context, kind, i, parts.length), { type: mime });
+      files.push(file);
+      if (imageRecords) {
+        const sectionPages = parts.filter(part => part.kind === kind).length;
+        const sectionPage = parts.slice(0, i + 1).filter(part => part.kind === kind).length;
+        imageRecords.push({ file, kind, group: null, label: kind + (sectionPages > 1 ? '（' + sectionPage + '／' + sectionPages + '）' : '') });
+      }
       canvas.width = canvas.height = 1;
     }
     return files;
@@ -12776,25 +12898,24 @@ async function exportAsImage(mime, ext) {
   const tag = ext.toUpperCase();
   await withExportLock(async (context) => {
     if (context.includeDetail) { await runDetailImageExport(context, mime, ext, 'download'); return; }
-    const files = await captureResultsImageFiles(context, mime, ext);
-    files.forEach(file => downloadBlob(file, file.name));
-    showToast(files.length === 1 ? '已下載' + tag : '已產生 ' + files.length + ' 張 ' + tag);
+    const images = [];
+    const files = await captureResultsImageFiles(context, mime, ext, images);
+    if (files.length > 1) { showExportFilesDialog(images, context, 'download', ext); return; }
+    downloadBlob(files[0], files[0].name);
+    showSingleExportDownloadNotice();
   }, `正在產生 ${tag}…`, btn, `${tag}  生成中`);
 }
 
 async function shareResults() {
   await withExportLock(async (context) => {
     if (context.includeDetail) { await runDetailImageExport(context, 'image/jpeg', 'jpg', 'share'); return; }
-    const files = await captureResultsImageFiles(context, 'image/jpeg', 'jpg');
+    const images = [];
+    const files = await captureResultsImageFiles(context, 'image/jpeg', 'jpg', images);
+    if (files.length > 1) { showExportFilesDialog(images, context, 'share', 'jpg'); return; }
     const shareData = { title: context.title, text: context.text, files };
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
       await navigator.share(shareData);
       showToast('已開啟分享');
-      return;
-    }
-    if (files.length > 1) {
-      files.forEach(file => downloadBlob(file, file.name));
-      showToast('', { html: toastLines('此裝置不支援多張圖片分享', '已產生 ' + files.length + ' 張 JPG 供下載') });
       return;
     }
     if (navigator.share) {
@@ -12803,7 +12924,7 @@ async function shareResults() {
       return;
     }
     files.forEach(file => downloadBlob(file, file.name));
-    showToast('', { html: toastLines('此裝置不支援分享', '已改為下載JPG') });
+    showSingleExportDownloadNotice();
   }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
 }
 
