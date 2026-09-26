@@ -3900,6 +3900,24 @@ if ("serviceWorker" in navigator) {
        版本與原本 CDN 完全相同：html2canvas 1.4.1、jsPDF 2.5.1。 -->
   <script src="./html2canvas.min.js"></script>
   <script src="./jspdf.umd.min.js"></script>
+<style id="threshold-protection-style">
+body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){visibility:hidden}
+#thresholdBoot{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:#eef0f1;color:#222;box-sizing:border-box}
+.threshold-boot-card{width:min(100%,420px);max-height:90dvh;overflow:auto;background:#fff;border-radius:20px;padding:22px;box-sizing:border-box;font-size:15px;line-height:1.6}
+.threshold-boot-card h2{font-size:20px;margin:0 0 12px}.threshold-boot-actions{display:grid;gap:12px}
+.threshold-boot-actions button{min-height:44px;border:0;border-radius:10px;background:#c99524;color:white;font:inherit;padding:8px 12px}.threshold-boot-actions button:disabled{opacity:.45}
+.threshold-candidate{display:flex;align-items:flex-start;gap:10px;border:1px solid #ddd;border-radius:12px;padding:12px;font-size:13px}.threshold-candidate input{margin-top:6px;flex-shrink:0}
+.threshold-field-label{display:flex;align-items:center;gap:5px;min-height:23px;flex-wrap:wrap;margin-bottom:3px}.threshold-field-label label{margin:0!important}
+.threshold-source-badge{border:0;border-radius:6px;padding:2px 6px;background:#e1f2ed;color:#0c7866;font:inherit;font-size:10px;line-height:1.5;white-space:nowrap}
+#glHhSetDlg .threshold-source-badge,#glRegionSetDlg .threshold-source-badge{background:#fbf0d9;color:#966611}
+.field:has(>.threshold-field-label){display:flex;flex-direction:column}.threshold-field-label{flex:1}
+@media(max-width:360px){.threshold-field-label{gap:3px}.threshold-field-label label{font-size:10px}.threshold-source-badge{font-size:9px;padding:1px 4px}}
+.threshold-source-badge[hidden]{display:none}
+.threshold-save-error{margin:12px 0;padding:10px 12px;border:1px solid #dfc58e;border-radius:10px;background:#fff5df;color:#704c0f;font-size:13px;line-height:1.6}
+.threshold-candidate input{appearance:auto;-webkit-appearance:radio;width:16px;height:16px;margin:0;flex:0 0 16px}
+#thresholdUpdateNotice{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff5df;color:#75521b;font-size:12px;line-height:1.5}#thresholdUpdateNotice[hidden]{display:none}#thresholdUpdateNotice button{flex-shrink:0;border:1px solid #d8bf87;background:white;border-radius:7px;padding:7px;font:inherit;color:inherit}
+
+</style>
 </head>
 <body>
 <div class="wrap" id="appShell">
@@ -6344,7 +6362,987 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
 
 </script>
 <script>
-const APP_VERSION = "2026.09.21I";
+/* Independent threshold settings. Classic script; no DOM, form, or formula access.
+ * Persistence is authoritative only after the IndexedDB transaction completes.
+ * Legacy v1 appStorage snapshots are import candidates, never ongoing writers.
+ */
+(function (root) {
+  'use strict';
+
+  const SCHEMA = 1, PROTOCOL = 1, STORE = 'state', RECORD_KEY = 'thresholds';
+  const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+  const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const integer = value => Number.isSafeInteger(value) && value >= 0;
+  const dict = () => Object.create(null);
+
+  class ThresholdStoreError extends Error {
+    constructor(code, message, details) {
+      super(message);
+      this.name = 'ThresholdStoreError';
+      this.code = code;
+      if (details !== undefined) this.details = details;
+    }
+  }
+  function fail(code, message, details) { throw new ThresholdStoreError(code, message, details); }
+  function clone(value) {
+    try { return JSON.parse(JSON.stringify(value)); }
+    catch (_) { fail('INVALID_INPUT', 'Expected JSON-serializable data.'); }
+  }
+  function stable(value) {
+    if (Array.isArray(value)) return '[' + value.map(stable).join(',') + ']';
+    if (object(value)) return '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + stable(value[key])).join(',') + '}';
+    return JSON.stringify(value);
+  }
+  function fieldName(key) {
+    if (typeof key !== 'string' || !/^[A-Za-z][A-Za-z0-9_.:-]{0,120}$/.test(key)
+        || ['__proto__', 'constructor', 'prototype'].includes(key)) fail('INVALID_FIELD', 'Invalid threshold field ID.', { field: key });
+  }
+  function valuesMap(input, known) {
+    if (!object(input)) fail('INVALID_INPUT', 'Expected a field-to-string map.');
+    const out = dict();
+    for (const key of Object.keys(input)) {
+      fieldName(key);
+      if (known && !own(known, key)) fail('UNKNOWN_FIELD', 'Unknown threshold field.', { field: key });
+      if (typeof input[key] !== 'string') fail('INVALID_INPUT', 'Threshold values must remain strings.', { field: key });
+      out[key] = input[key];
+    }
+    return out;
+  }
+  function normalizeDefaults(input, revision) {
+    const values = valuesMap(input);
+    if (!Object.keys(values).length || !integer(revision) || revision === 0) fail('INVALID_DEFAULTS', 'Defaults require fields and a positive integer revision.');
+    return { revision, values };
+  }
+  function normalizeCandidates(input, known) {
+    if (input === undefined) return [];
+    if (!Array.isArray(input)) fail('INVALID_LEGACY', 'Legacy candidates must be an array.');
+    const out = [], ids = new Set();
+    for (const candidate of input) {
+      if (!object(candidate)) fail('INVALID_LEGACY', 'Invalid legacy candidate.');
+      if (candidate.present === false) continue;
+      if (typeof candidate.id !== 'string' || !candidate.id || ids.has(candidate.id)) fail('INVALID_LEGACY', 'Legacy candidates require unique IDs.');
+      ids.add(candidate.id);
+      const item = {
+        id: candidate.id,
+        source: typeof candidate.source === 'string' ? candidate.source : candidate.id,
+        values: valuesMap(candidate.values || {}, known),
+        raw: own(candidate, 'raw') ? clone(candidate.raw) : null,
+        issues: own(candidate, 'issues') ? clone(candidate.issues) : []
+      };
+      out.push(item);
+    }
+    return out;
+  }
+  function candidateContent(candidate) {
+    return stable({ source: candidate.source, values: candidate.values, raw: candidate.raw, issues: candidate.issues });
+  }
+  function validateRecord(record) {
+    if (!object(record) || record.schema !== SCHEMA || record.protocol !== PROTOCOL
+        || !integer(record.minWriter) || record.minWriter < 1 || record.minWriter > PROTOCOL) {
+      fail('UNSUPPORTED_SCHEMA', 'This version cannot read or write the saved threshold format.');
+    }
+    if (typeof record.generation !== 'string' || !record.generation || !integer(record.revision)
+        || !object(record.defaults) || !object(record.fields) || !object(record.migration)
+        || !['fresh', 'legacy', 'pending'].includes(record.migration.status)
+        || !Array.isArray(record.migration.candidates) || !Array.isArray(record.appliedOperations)) {
+      fail('CORRUPT_RECORD', 'Saved threshold metadata is invalid.');
+    }
+    let defaults;
+    try { defaults = normalizeDefaults(record.defaults.values, record.defaults.revision); }
+    catch (_) { fail('CORRUPT_RECORD', 'Saved threshold defaults are invalid.'); }
+    const keys = Object.keys(defaults.values);
+    if (Object.keys(record.fields).length !== keys.length) fail('CORRUPT_RECORD', 'Saved threshold fields are incomplete.');
+    for (const key of keys) {
+      const cell = record.fields[key];
+      if (!object(cell) || !['default', 'custom', 'legacy'].includes(cell.source)
+          || !integer(cell.rev) || cell.rev > record.revision
+          || (cell.source !== 'default' && typeof cell.value !== 'string')
+          || (cell.source === 'default' && own(cell, 'value'))) {
+        fail('CORRUPT_RECORD', 'Saved threshold cell is invalid.', { field: key });
+      }
+    }
+    try {
+      normalizeCandidates(record.migration.candidates, defaults.values);
+      if (own(record.migration, 'selectedByField')) {
+        normalizeLegacyFieldSelection(record.migration.candidates, defaults.values, record.migration.selectedByField);
+      }
+    }
+    catch (_) { fail('CORRUPT_RECORD', 'Saved legacy candidate is invalid.'); }
+    if (record.appliedOperations.length > 64 || record.appliedOperations.some(item => !object(item)
+        || typeof item.id !== 'string' || !item.id || typeof item.signature !== 'string')) {
+      fail('CORRUPT_RECORD', 'Saved threshold operation metadata is invalid.');
+    }
+    return record;
+  }
+  function snapshot(record, extra) {
+    validateRecord(record);
+    const fields = dict(), values = dict();
+    for (const key of Object.keys(record.fields)) {
+      const cell = record.fields[key];
+      const value = cell.source === 'default' ? record.defaults.values[key] : cell.value;
+      values[key] = value;
+      fields[key] = { source: cell.source, value, rev: cell.rev };
+    }
+    return Object.assign({
+      status: record.migration.status === 'pending' ? 'needsLegacyChoice' : 'ready',
+      needsLegacyChoice: record.migration.status === 'pending',
+      schema: record.schema, generation: record.generation, revision: record.revision,
+      defaultsRevision: record.defaults.revision, defaults: clone(record.defaults.values),
+      values, fields, migration: clone(record.migration)
+    }, extra || {});
+  }
+  function normalizeLegacyFieldSelection(candidates, defaults, input) {
+    if (!object(input)) fail('INVALID_LEGACY_CHOICE', 'Legacy field selections must be a field-to-candidate map.');
+    const selected = dict();
+    for (const key of Object.keys(input)) {
+      fieldName(key);
+      if (!own(defaults, key)) fail('INVALID_LEGACY_CHOICE', 'The selected threshold field does not exist.', { field: key });
+      const candidateId = input[key];
+      if (typeof candidateId !== 'string' || !candidateId) fail('INVALID_LEGACY_CHOICE', 'Each selected field requires a candidate ID.', { field: key });
+      const candidate = candidates.find(item => item.id === candidateId);
+      if (!candidate || !own(candidate.values, key)) {
+        fail('INVALID_LEGACY_CHOICE', 'The selected candidate does not contain this threshold field.', { field: key, candidateId });
+      }
+      selected[key] = candidateId;
+    }
+    return selected;
+  }
+  function legacyChoices(candidates, defaults, selectedId, fieldCandidateIds) {
+    const values = dict(), conflicts = [];
+    if (selectedId !== undefined && fieldCandidateIds !== undefined) fail('INVALID_LEGACY_CHOICE', 'Use either one legacy candidate or field selections, not both.');
+    const selected = selectedId === undefined ? null : candidates.find(item => item.id === selectedId);
+    if (selectedId !== undefined && !selected) fail('INVALID_LEGACY_CHOICE', 'The selected legacy candidate does not exist.');
+    const selectedByField = fieldCandidateIds === undefined ? dict() : normalizeLegacyFieldSelection(candidates, defaults, fieldCandidateIds);
+    if (selected) {
+      for (const key of Object.keys(selected.values)) selectedByField[key] = selected.id;
+    }
+    for (const key of Object.keys(defaults)) {
+      const choices = candidates.filter(item => own(item.values, key));
+      if (!choices.length) continue;
+      const distinct = [...new Set(choices.map(item => item.values[key]))];
+      if (distinct.length === 1) values[key] = distinct[0];
+      else if (own(selectedByField, key)) values[key] = choices.find(item => item.id === selectedByField[key]).values[key];
+      else conflicts.push({ field: key, choices: choices.map(item => ({ candidateId: item.id, value: item.values[key] })) });
+    }
+    return { values, conflicts, selectedByField };
+  }
+  function createRecord(args) {
+    const defaults = normalizeDefaults(args.defaults, args.defaultsRevision);
+    const candidates = normalizeCandidates(args.legacyCandidates, defaults.values);
+    const chosen = legacyChoices(candidates, defaults.values, args.selectedLegacyId);
+    const fields = dict();
+    for (const key of Object.keys(defaults.values)) fields[key] = { source: 'default', rev: 0 };
+    const record = {
+      schema: SCHEMA, protocol: PROTOCOL, minWriter: PROTOCOL,
+      generation: args.generation, revision: 0, defaults, fields,
+      migration: { status: candidates.length ? 'legacy' : 'fresh', candidates, selectedLegacyId: args.selectedLegacyId || null },
+      appliedOperations: []
+    };
+    if (chosen.conflicts.length) {
+      record.migration.status = 'pending';
+      record.migration.conflicts = chosen.conflicts;
+    } else {
+      for (const key of Object.keys(chosen.values)) fields[key] = { source: 'legacy', value: chosen.values[key], rev: 0 };
+    }
+    validateRecord(record);
+    return record;
+  }
+  function initializeRecord(existing, args) {
+    const incoming = normalizeDefaults(args.defaults, args.defaultsRevision);
+    if (existing === undefined) {
+      const record = createRecord(args);
+      return { record, changed: true, value: snapshot(record) };
+    }
+    validateRecord(existing);
+    const record = clone(existing), warnings = [];
+    if (stable(Object.keys(incoming.values).sort()) !== stable(Object.keys(record.defaults.values).sort())) {
+      fail('UNSUPPORTED_FIELDS', 'Saved threshold fields differ from this application version.');
+    }
+    let changed = false;
+    if (incoming.revision === record.defaults.revision && stable(incoming.values) !== stable(record.defaults.values)) {
+      fail('DEFAULTS_REVISION_MISMATCH', 'One defaults revision cannot describe different default values.');
+    }
+    if (incoming.revision > record.defaults.revision) {
+      record.revision += 1;
+      for (const key of Object.keys(record.fields)) {
+        if (record.fields[key].source === 'default' && incoming.values[key] !== record.defaults.values[key]) record.fields[key].rev = record.revision;
+      }
+      record.defaults = incoming;
+      changed = true;
+    }
+    // Existing authority is usable even when obsolete sources cannot be decoded.
+    let candidates = [];
+    try { candidates = normalizeCandidates(args.legacyCandidates, record.defaults.values); }
+    catch (error) { warnings.push({ code: 'LEGACY_IGNORED', message: error.message }); }
+    let archivedNewCandidate = false;
+    for (const candidate of candidates) {
+      if (!record.migration.candidates.some(saved => candidateContent(saved) === candidateContent(candidate))) {
+        // IDs are source labels. Keep changed content under a distinct archive ID.
+        const archived = clone(candidate);
+        if (record.migration.candidates.some(saved => saved.id === archived.id)) {
+          const base = archived.id; let suffix = 2;
+          while (record.migration.candidates.some(saved => saved.id === base + '#' + suffix)) suffix += 1;
+          archived.id = base + '#' + suffix;
+          archived.originalId = base;
+        }
+        record.migration.candidates.push(archived);
+        changed = true;
+        archivedNewCandidate = true;
+      }
+    }
+    // Archival must never import new values or disturb a completed migration.
+    if (record.migration.status === 'pending') {
+      if (archivedNewCandidate) record.revision += 1;
+      const chosen = legacyChoices(record.migration.candidates, record.defaults.values, args.selectedLegacyId);
+      record.migration.conflicts = chosen.conflicts;
+      if (!chosen.conflicts.length) {
+        record.revision += 1;
+        for (const key of Object.keys(chosen.values)) record.fields[key] = { source: 'legacy', value: chosen.values[key], rev: record.revision };
+        record.migration.status = 'legacy';
+        record.migration.selectedLegacyId = args.selectedLegacyId || null;
+        delete record.migration.conflicts;
+        changed = true;
+      }
+    }
+    return { record, changed, value: snapshot(record, warnings.length ? { warnings } : undefined) };
+  }
+  // Import only once, using the values this device already had. Completed
+  // authority always wins; archived snapshots never become later writers.
+  function initializePreservedRecord(existing, args) {
+    if (existing !== undefined) validateRecord(existing);
+    const needsImport = existing === undefined || existing.migration.status === 'pending';
+    const seed = existing === undefined
+      ? createRecord(Object.assign({}, args, { legacyCandidates: [], selectedLegacyId: undefined }))
+      : clone(existing);
+    // Let the shared initializer update the default catalog and archive inputs,
+    // without its older interactive pending-resolution behavior.
+    if (seed.migration.status === 'pending') seed.migration.status = 'legacy';
+    const outcome = initializeRecord(seed, Object.assign({}, args, { selectedLegacyId: undefined }));
+    const record = outcome.record;
+    let changed = outcome.changed || existing === undefined;
+    const updates = dict();
+    if (needsImport) {
+      const incoming = normalizeCandidates(args.legacyCandidates, record.defaults.values);
+      if (args.preferredCandidateId !== undefined &&
+          (typeof args.preferredCandidateId !== 'string' || !incoming.some(item => item.id === args.preferredCandidateId))) {
+        fail('INVALID_LEGACY_PREFERENCE', 'The preferred candidate must belong to this initialization input.');
+      }
+      const ranked = args.preferredCandidateId === undefined ? incoming : [
+        ...incoming.filter(item => item.id === args.preferredCandidateId),
+        ...incoming.filter(item => item.id !== args.preferredCandidateId)
+      ];
+      // A source label (e.g. session) can be reused for newer contents. Map by
+      // exact content so session#2 is chosen instead of the older session.
+      const ordered = [];
+      ranked.forEach(candidate => {
+        const saved = record.migration.candidates.find(item => candidateContent(item) === candidateContent(candidate));
+        if (saved && !ordered.some(item => item.id === saved.id)) ordered.push(saved);
+      });
+      record.migration.candidates.forEach(candidate => {
+        if (!ordered.some(item => item.id === candidate.id)) ordered.push(candidate);
+      });
+      const groups = dict(), selectedByField = dict();
+      for (const key of Object.keys(record.defaults.values)) {
+        const group = key.split('.')[0];
+        if (!own(groups, group)) groups[group] = [];
+        groups[group].push(key);
+      }
+      const defaultGroups = args.defaultGroups === undefined ? [] : args.defaultGroups;
+      if (!Array.isArray(defaultGroups) || defaultGroups.some(group => typeof group !== 'string' || !own(groups, group))) {
+        fail('INVALID_DEFAULT_GROUPS', 'Default preservation requires known threshold group IDs.');
+      }
+      for (const [group, keys] of Object.entries(groups)) {
+        if (defaultGroups.includes(group)) {
+          keys.forEach(key => { updates[key] = { source: 'default' }; });
+          continue;
+        }
+        const selected = ordered.find(candidate => keys.every(key => own(candidate.values, key)));
+        if (!selected) {
+          // Partial rows cannot be safely combined across saved copies. Keep
+          // the original record intact rather than silently replacing them.
+          if (ordered.some(candidate => keys.some(key => own(candidate.values, key)))) {
+            fail('INCOMPLETE_LEGACY_GROUP', 'No saved candidate contains this complete threshold group.', { fields: keys });
+          }
+          continue;
+        }
+        for (const key of keys) {
+          updates[key] = { source: 'custom', value: selected.values[key] };
+          selectedByField[key] = selected.id;
+        }
+      }
+      record.migration.status = record.migration.candidates.length ? 'legacy' : 'fresh';
+      record.migration.selectedLegacyId = null;
+      record.migration.selectedByField = selectedByField;
+      record.migration.preservedAutomatically = true;
+      record.migration.preservedDefaultGroups = [...new Set(defaultGroups)];
+      delete record.migration.conflicts;
+      changed = true;
+    } else {
+      // Old versions had no provenance for imported values. Pin those values
+      // instead of asking the user to choose whether to keep their numbers.
+      for (const key of Object.keys(record.fields)) {
+        const cell = record.fields[key];
+        if (cell.source === 'legacy') updates[key] = { source: 'custom', value: cell.value };
+      }
+    }
+    if (Object.keys(updates).length) {
+      record.revision += 1;
+      for (const key of Object.keys(updates)) record.fields[key] = Object.assign({}, updates[key], { rev: record.revision });
+      changed = true;
+    }
+    validateRecord(record);
+    return { record, changed, value: snapshot(record, outcome.value.warnings ? { warnings: outcome.value.warnings } : undefined) };
+  }
+  function checkBaseline(record, baseline) {
+    if (!object(baseline) || baseline.schema !== SCHEMA || baseline.generation !== record.generation || !object(baseline.fields)) {
+      fail('STALE_BASELINE', 'The editing baseline belongs to another settings generation.');
+    }
+  }
+  function normalizedChanges(changes, record, allowLegacy) {
+    if (!object(changes)) fail('INVALID_INPUT', 'A threshold patch must contain a field map.');
+    const out = dict();
+    for (const key of Object.keys(changes)) {
+      fieldName(key);
+      if (!own(record.fields, key)) fail('UNKNOWN_FIELD', 'Unknown threshold field.', { field: key });
+      const item = changes[key];
+      if (!object(item) || !['default', 'custom', ...(allowLegacy ? ['legacy'] : [])].includes(item.source)) {
+        fail('INVALID_PATCH', 'Patches must explicitly select default or custom.', { field: key });
+      }
+      if (item.source === 'default') out[key] = { source: 'default' };
+      else {
+        if (typeof item.value !== 'string') fail('INVALID_PATCH', 'Custom values must be strings.', { field: key });
+        out[key] = { source: item.source, value: item.value };
+      }
+    }
+    return out;
+  }
+  function applyPatch(existing, args, allowLegacy) {
+    validateRecord(existing);
+    if (existing.migration.status === 'pending') fail('LEGACY_CHOICE_REQUIRED', 'Select a legacy settings candidate before editing.');
+    checkBaseline(existing, args.baseline);
+    const changes = normalizedChanges(args.changes, existing, allowLegacy);
+    const signature = stable(changes);
+    if (args.operationId !== undefined && (typeof args.operationId !== 'string' || !args.operationId)) fail('INVALID_INPUT', 'operationId must be a nonempty string.');
+    const previous = args.operationId && existing.appliedOperations.find(item => item.id === args.operationId);
+    if (previous) {
+      if (previous.signature !== signature) fail('OPERATION_ID_REUSED', 'One operation ID cannot identify different edits.');
+      return { record: existing, changed: false, value: snapshot(existing, { alreadyCommitted: true }) };
+    }
+    const conflicts = [], changedKeys = [];
+    for (const key of Object.keys(changes)) {
+      const current = existing.fields[key], desired = changes[key], before = args.baseline.fields[key];
+      if (!object(before) || !integer(before.rev)) fail('INVALID_BASELINE', 'The baseline is missing an edited field.', { field: key });
+      const equal = current.source === desired.source && (desired.source === 'default' || current.value === desired.value);
+      if (equal) continue; // A completed save may be safely retried after page interruption.
+      if (current.rev !== before.rev) conflicts.push({ field: key, baseline: clone(before), current: snapshot(existing).fields[key], desired: clone(desired) });
+      else changedKeys.push(key);
+    }
+    if (conflicts.length) fail('CONFLICT', 'Another page changed the same threshold field.', { conflicts, snapshot: snapshot(existing) });
+    if (!changedKeys.length && !args.operationId) return { record: existing, changed: false, value: snapshot(existing, { unchanged: true }) };
+    const record = clone(existing);
+    if (changedKeys.length) {
+      record.revision += 1;
+      for (const key of changedKeys) record.fields[key] = Object.assign({}, changes[key], { rev: record.revision });
+    }
+    if (args.operationId) {
+      record.appliedOperations.push({ id: args.operationId, signature });
+      record.appliedOperations = record.appliedOperations.slice(-64);
+    }
+    return { record, changed: true, value: snapshot(record, { changedFields: changedKeys }) };
+  }
+  function chooseLegacy(existing, args) {
+    validateRecord(existing);
+    checkBaseline(existing, args.baseline);
+    if (existing.migration.status !== 'pending') fail('LEGACY_ALREADY_RESOLVED', 'Initial legacy selection has already completed.', { snapshot: snapshot(existing) });
+    if (args.baseline.revision !== existing.revision) fail('STALE_BASELINE', 'Reload the current legacy choices before selecting.');
+    const chosen = legacyChoices(existing.migration.candidates, existing.defaults.values, args.candidateId, args.fieldCandidateIds);
+    if (chosen.conflicts.length) fail('LEGACY_CHOICE_INCOMPLETE', 'The candidate does not resolve every differing field.', { conflicts: chosen.conflicts });
+    const record = clone(existing);
+    record.revision += 1;
+    for (const key of Object.keys(chosen.values)) record.fields[key] = { source: 'legacy', value: chosen.values[key], rev: record.revision };
+    record.migration.status = 'legacy';
+    record.migration.selectedLegacyId = args.candidateId || null;
+    record.migration.selectedByField = clone(chosen.selectedByField);
+    delete record.migration.conflicts;
+    return { record, changed: true, value: snapshot(record) };
+  }
+  function adoptLegacy(existing, args) {
+    validateRecord(existing);
+    const candidate = existing.migration.candidates.find(item => item.id === args.candidateId);
+    if (!candidate) fail('INVALID_LEGACY_CHOICE', 'The selected archived candidate does not exist.');
+    const keys = args.fieldIds === undefined ? Object.keys(candidate.values) : args.fieldIds;
+    if (!Array.isArray(keys)) fail('INVALID_INPUT', 'fieldIds must be an array.');
+    const changes = dict();
+    for (const key of keys) {
+      if (!own(candidate.values, key)) fail('INVALID_LEGACY_CHOICE', 'The archived candidate does not contain this field.', { field: key });
+      changes[key] = { source: 'legacy', value: candidate.values[key] };
+    }
+    return applyPatch(existing, Object.assign({}, args, { changes }), true);
+  }
+
+  function thresholdStoreFactory(options) {
+    options = options || {};
+    const idb = options.indexedDB || root.indexedDB;
+    const dbName = options.dbName || 'mortgage_threshold_settings_v1';
+    let dbPromise = null, readyPromise = null;
+    function generation() {
+      if (typeof options.createGeneration === 'function') return options.createGeneration();
+      if (root.crypto && typeof root.crypto.randomUUID === 'function') return root.crypto.randomUUID();
+      return 'settings-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + '-' + Math.random().toString(36).slice(2);
+    }
+    function open() {
+      if (dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject) => {
+        if (!idb || typeof idb.open !== 'function') { reject(new ThresholdStoreError('STORAGE_UNAVAILABLE', 'IndexedDB is unavailable.')); return; }
+        let request, settled = false;
+        const rejectOnce = error => { if (!settled) { settled = true; reject(error); } };
+        try { request = idb.open(dbName, 1); }
+        catch (error) { rejectOnce(error); return; }
+        request.onupgradeneeded = () => {
+          try { if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE); }
+          catch (error) { rejectOnce(error); if (request.transaction) request.transaction.abort(); }
+        };
+        request.onerror = () => rejectOnce(request.error || new ThresholdStoreError('OPEN_FAILED', 'Unable to open threshold settings.'));
+        request.onblocked = () => rejectOnce(new ThresholdStoreError('OPEN_BLOCKED', 'Another application version is blocking threshold storage.'));
+        request.onsuccess = () => {
+          const db = request.result;
+          if (settled) { db.close(); return; }
+          if (!db.objectStoreNames.contains(STORE)) { db.close(); rejectOnce(new ThresholdStoreError('UNSUPPORTED_SCHEMA', 'The threshold object store is missing.')); return; }
+          db.onversionchange = () => { db.close(); dbPromise = null; };
+          settled = true;
+          resolve(db);
+        };
+      }).catch(error => { dbPromise = null; throw error; });
+      return dbPromise;
+    }
+    async function transact(mode, action) {
+      const db = await open();
+      return new Promise((resolve, reject) => {
+        let transaction, result, failure;
+        try { transaction = db.transaction(STORE, mode); }
+        catch (error) { reject(error); return; }
+        transaction.oncomplete = () => resolve(result);
+        transaction.onabort = () => reject(failure || transaction.error || new ThresholdStoreError('TRANSACTION_ABORTED', 'Threshold settings were not saved.'));
+        transaction.onerror = event => { if (!failure) failure = event.target.error || transaction.error; };
+        try {
+          const store = transaction.objectStore(STORE);
+          const request = store.get(RECORD_KEY);
+          request.onsuccess = () => {
+            try {
+              const outcome = action(request.result);
+              result = outcome.value;
+              if (outcome.changed) {
+                if (mode !== 'readwrite') fail('INTERNAL_ERROR', 'A read transaction cannot mutate settings.');
+                store.put(outcome.record, RECORD_KEY);
+              }
+            } catch (error) { failure = error; transaction.abort(); }
+          };
+        } catch (error) { failure = error; transaction.abort(); }
+      });
+    }
+    function checked(outcome, operation, fields) {
+      if (outcome.value.status !== 'needsLegacyChoice' && typeof options.validateSnapshot === 'function') {
+        const valid = options.validateSnapshot(outcome.value, { operation, fields });
+        if (valid && typeof valid.then === 'function') fail('ASYNC_VALIDATOR', 'Threshold validation must finish inside the transaction callback.');
+        if (valid === false) fail('VALIDATION_FAILED', 'The merged threshold settings are invalid.');
+      }
+      return outcome;
+    }
+    const api = {
+      init(args) {
+        args = Object.assign({}, clone(args || {}), { generation: generation() });
+        readyPromise = transact('readwrite', record => checked(initializeRecord(record, args), 'init', Object.keys(args.defaults || {})));
+        return readyPromise;
+      },
+      initPreserved(args) {
+        args = Object.assign({}, clone(args || {}), { generation: generation() });
+        readyPromise = transact('readwrite', record => checked(initializePreservedRecord(record, args), 'initPreserved', Object.keys(args.defaults || {})));
+        return readyPromise;
+      },
+      async read() {
+        if (readyPromise) await readyPromise;
+        return transact('readonly', record => {
+          if (record === undefined) fail('NOT_INITIALIZED', 'Initialize threshold settings before reading.');
+          return { changed: false, value: snapshot(record) };
+        });
+      },
+      async patch(args) {
+        args = clone(args);
+        if (readyPromise) await readyPromise;
+        return transact('readwrite', record => checked(applyPatch(record, args), 'patch', Object.keys(args.changes || {})));
+      },
+      async chooseLegacy(args) {
+        args = clone(args);
+        if (readyPromise) await readyPromise;
+        return transact('readwrite', record => checked(chooseLegacy(record, args), 'chooseLegacy', []));
+      },
+      async adoptLegacy(args) {
+        args = clone(args);
+        if (readyPromise) await readyPromise;
+        return transact('readwrite', record => checked(adoptLegacy(record, args), 'adoptLegacy', args.fieldIds || []));
+      },
+      async close() {
+        if (dbPromise) { const db = await dbPromise; db.close(); dbPromise = null; }
+      }
+    };
+    Object.defineProperty(api, 'ready', { enumerable: true, get: () => readyPromise });
+    return Object.freeze(api);
+  }
+  thresholdStoreFactory.pure = Object.freeze({ normalizeCandidates, validateRecord, createRecord, initializeRecord, initializePreservedRecord, snapshot, applyPatch, chooseLegacy, adoptLegacy, stable });
+  thresholdStoreFactory.ThresholdStoreError = ThresholdStoreError;
+  thresholdStoreFactory.SCHEMA = SCHEMA;
+  root.thresholdStoreFactory = thresholdStoreFactory;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* Startup-only repair. The caller archives raw and commits the returned rows.
+   This view never writes storage and never substitutes defaults without consent. */
+async function repairThresholdLegacy({ group, raw, defaults, parse, validate, gate }) {
+  const names = { hh: '貸款戶數門檻', lux: '高價住宅門檻', yr: '購屋縣市門檻' };
+  const fields = group === 'hh' ? ['ratio', 'grace'] : group === 'lux' ? ['name', 'amount', 'ratio', 'grace'] : ['name', 'amount'];
+  const labels = { name: '縣市名稱', amount: group === 'yr' ? '購屋總價上限（萬）' : '高價住宅金額（萬）', ratio: '成數上限（%）', grace: '寬限期上限（年）' };
+  const household = ['無房屋／無房貸', '有房屋／無房貸', '已有1戶房貸', '已有2戶以上房貸'];
+  const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+  const plain = value => !!value && typeof value === 'object' && !Array.isArray(value);
+  const copy = value => JSON.parse(JSON.stringify(value));
+  const textOf = value => {
+    if (typeof value === 'string' || typeof value === 'number') return String(value);
+    if (value === undefined) return '';
+    try { return JSON.stringify(value); } catch (_) { return String(value); }
+  };
+  if (!own(names, group) || !Array.isArray(defaults) || defaults.length !== (group === 'hh' ? 4 : 3)
+      || typeof parse !== 'function' || typeof validate !== 'function' || typeof gate !== 'function') {
+    throw new Error('Invalid threshold repair configuration');
+  }
+
+  let parsed, parseFailed = false;
+  try { parsed = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (_) { parseFailed = true; }
+  let originalRows = Array.isArray(parsed) ? parsed : plain(parsed) && Array.isArray(parsed.rows) ? parsed.rows : null;
+  const issues = plain(parsed) && Array.isArray(parsed.issues) ? parsed.issues : [];
+  // I may already have materialized fallback rows beside an archived shape
+  // error. Recover from that archived input instead of calling fallbacks original.
+  const wholeIssue = issues.find(item => plain(item) && item.row === null && item.field === '$rows');
+  if (wholeIssue) {
+    let archived = wholeIssue.raw;
+    if (wholeIssue.reason === 'json' && typeof archived === 'string') {
+      try { archived = JSON.parse(archived); } catch (_) { archived = null; }
+    }
+    originalRows = Array.isArray(archived) ? archived : plain(archived) && Array.isArray(archived.rows) ? archived.rows : null;
+  }
+  let incompleteShape = parseFailed || !originalRows || originalRows.length !== defaults.length;
+  const initial = defaults.map((_, row) => {
+    const rowIssue = issues.find(item => plain(item) && item.row === row && item.field === '$row');
+    const original = rowIssue ? rowIssue.raw : originalRows && originalRows[row];
+    const validRow = plain(original);
+    if (!validRow) incompleteShape = true;
+    return Object.fromEntries(fields.map(field => {
+      let value = validRow && own(original, field) ? original[field] : undefined;
+      let missing = !validRow || !own(original, field);
+      let problem = missing;
+      const issue = issues.find(item => plain(item) && item.row === row && item.field === field);
+      const youthIssue = validRow && plain(original.invalid) && own(original.invalid, field) ? original.invalid[field] : undefined;
+      if (issue) {
+        problem = true;
+        if (own(issue, 'raw')) {
+          if (plain(issue.raw) && issue.raw.missing === true) { missing = true; value = undefined; }
+          else { value = issue.raw; missing = false; }
+        }
+      } else if (youthIssue !== undefined) {
+        problem = true;
+        value = plain(youthIssue) && own(youthIssue, 'original') ? youthIssue.original : youthIssue;
+      }
+      if (missing) incompleteShape = true;
+      return [field, { value: textOf(value), problem, missing }];
+    }));
+  });
+
+  const overlay = gate('修正舊的' + names[group], '原設定尚未更動。可辨識的內容已保留，請核對並修正後再繼續。');
+  const card = overlay.querySelector('.threshold-boot-card');
+  const actions = overlay.querySelector('.threshold-boot-actions');
+  if (!card || !actions) throw new Error('Missing threshold repair host');
+  overlay.dataset.repairGroup = group;
+  const title = card.querySelector('h2');
+  if (title) { title.id = 'thresholdRepairTitle'; overlay.setAttribute('aria-labelledby', title.id); }
+  card.tabIndex = -1;
+  const style = document.createElement('style');
+  style.textContent = '#thresholdBoot[data-repair-group] .threshold-boot-card{width:min(100%,460px);text-align:left}'
+    + '#thresholdBoot .threshold-repair-form{display:grid;gap:12px;margin:14px 0}'
+    + '#thresholdBoot .threshold-repair-row{min-width:0;margin:0;padding:10px;border:1px solid #ddd;border-radius:12px}'
+    + '#thresholdBoot .threshold-repair-row legend{font-size:13px;font-weight:700;color:#866119;padding:0 5px}'
+    + '#thresholdBoot .threshold-repair-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}'
+    + '#thresholdBoot .threshold-repair-field{display:grid;gap:4px;min-width:0;font-size:12px;color:#555}'
+    + '#thresholdBoot .threshold-repair-field input{box-sizing:border-box;min-width:0;width:100%;height:40px;border:1px solid #ccc;border-radius:8px;padding:7px 9px;background:#f8f8f8;color:#222;font:inherit;font-size:15px}'
+    + '#thresholdBoot .threshold-repair-field input:focus{outline:2px solid #c99524;outline-offset:1px}'
+    + '#thresholdBoot .threshold-repair-field input[aria-invalid="true"]{border-color:#b87927}'
+    + '#thresholdBoot .threshold-repair-flag{color:#9b5715;font-size:11px}'
+    + '#thresholdBoot .threshold-repair-help{font-size:12px;line-height:1.6;color:#666;margin:10px 0}'
+    + '#thresholdBoot .threshold-repair-alert{padding:10px;border:1px solid #dec18a;border-radius:9px;background:#fff5df;color:#75501a;font-size:13px}'
+    + '#thresholdBoot .threshold-repair-original{font-size:12px;color:#666;margin:12px 0}'
+    + '#thresholdBoot .threshold-repair-original pre{max-height:150px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:8px;background:#f5f5f5;border-radius:8px;font:11px/1.5 monospace}'
+    + '#thresholdBoot .threshold-repair-check{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.6;margin:12px 0}'
+    + '#thresholdBoot .threshold-repair-check input{appearance:auto;-webkit-appearance:auto;flex:0 0 18px;width:18px;height:18px;min-width:18px;min-height:18px;margin:3px 0 0;padding:0;accent-color:#c99524}'
+    + '#thresholdBoot[data-repair-group] button:focus-visible,#thresholdBoot .threshold-repair-check input:focus-visible,#thresholdBoot .threshold-repair-original summary:focus-visible{outline:2px solid #c99524;outline-offset:2px}'
+    + '#thresholdBoot .threshold-repair-actions{position:sticky;bottom:-22px;background:white;padding:12px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}'
+    + '#thresholdBoot .threshold-repair-actions .threshold-repair-secondary{background:white;color:#775b22;border:1px solid #d8c49a}'
+    + '#thresholdBoot .threshold-repair-actions [data-repair-confirm]{grid-column:1/-1}'
+    + '#thresholdBoot[data-repair-group="yr"] .threshold-repair-row legend{color:#0e7564}'
+    + '#thresholdBoot[data-repair-group="yr"] .threshold-repair-actions [data-repair-confirm]{background:#0e816c}'
+    + '#thresholdBoot[data-repair-group="yr"] .threshold-repair-field input:focus{outline-color:#0e816c}'
+    + '#thresholdBoot [hidden]{display:none!important}';
+  card.prepend(style);
+
+  const help = document.createElement('p'); help.className = 'threshold-repair-help';
+  help.textContent = group === 'hh'
+    ? '成數留白＝不限，範圍為 1～100%；寬限期留白＝不限，0 年＝不得有寬限期，範圍為 0～40 年。數字需為整數。'
+    : '名稱留白＝停用該組，其他數值保留。名稱最多 8 字；金額需為 1～9,999,999 的整數萬元。'
+      + (group === 'lux' ? '成數留白＝不限，範圍為 1～100%；寬限期留白＝不限，0 年＝不得有寬限期，範圍為 0～60 年。' : '');
+  const form = document.createElement('div'); form.className = 'threshold-repair-form';
+  const inputs = [];
+  initial.forEach((row, rowIndex) => {
+    const fieldset = document.createElement('fieldset'); fieldset.className = 'threshold-repair-row';
+    const legend = document.createElement('legend');
+    legend.textContent = group === 'hh' ? household[rowIndex] : '第 ' + (rowIndex + 1) + ' 組';
+    fieldset.append(legend);
+    const grid = document.createElement('div'); grid.className = 'threshold-repair-grid';
+    for (const field of fields) {
+      const entry = row[field];
+      const label = document.createElement('label'); label.className = 'threshold-repair-field';
+      const text = document.createElement('span'); text.textContent = labels[field]; label.append(text);
+      const input = document.createElement('input'); input.type = 'text'; input.autocomplete = 'off';
+      input.id = 'thresholdRepair-' + group + '-' + rowIndex + '-' + field;
+      input.dataset.repairRow = String(rowIndex); input.dataset.repairField = field;
+      input.value = entry.value;
+      if (field !== 'name') input.inputMode = 'decimal';
+      input.spellcheck = false;
+      if (entry.problem) input.setAttribute('aria-invalid', 'true');
+      if (entry.missing) input.placeholder = '請確認並填寫';
+      label.append(input);
+      const flag = document.createElement('span'); flag.className = 'threshold-repair-flag';
+      flag.textContent = entry.missing ? '原欄位無法辨識，尚未填值' : entry.problem ? '原保存內容需確認' : '';
+      flag.hidden = !entry.problem; label.append(flag);
+      inputs.push({ input, row: rowIndex, field, flag }); grid.append(label);
+    }
+    fieldset.append(grid); form.append(fieldset);
+  });
+
+  const structural = document.createElement('p'); structural.className = 'threshold-repair-alert';
+  structural.hidden = !incompleteShape;
+  structural.textContent = '原資料結構無法完整辨識。沒有可辨識原值的欄位先留白，並未填入預設；請重新填寫，或明確選擇恢復本組預設。';
+  const reviewLabel = document.createElement('label'); reviewLabel.className = 'threshold-repair-check'; reviewLabel.hidden = !incompleteShape;
+  const reviewed = document.createElement('input'); reviewed.type = 'checkbox'; reviewed.id = 'thresholdRepairReviewed';
+  const reviewText = document.createElement('span'); reviewText.textContent = '我已核對本組所有欄位，包括留白所代表的不限或停用。';
+  reviewLabel.append(reviewed, reviewText);
+  const original = document.createElement('details'); original.className = 'threshold-repair-original';
+  const summary = document.createElement('summary'); summary.textContent = '查看保留的原始內容';
+  const pre = document.createElement('pre'); pre.textContent = typeof raw === 'string' ? raw : textOf(raw);
+  original.append(summary, pre);
+  const status = document.createElement('p'); status.className = 'threshold-repair-help'; status.setAttribute('role', 'status');
+  status.textContent = '確認前不會套用修改。也可關閉此頁稍後處理，原保存資料仍保留。';
+  const error = document.createElement('p'); error.className = 'threshold-repair-alert'; error.hidden = true; error.setAttribute('role', 'alert');
+  actions.before(help, structural, form, reviewLabel, original, status, error);
+  actions.classList.add('threshold-repair-actions');
+  const reset = document.createElement('button'); reset.type = 'button'; reset.className = 'threshold-repair-secondary'; reset.textContent = '恢復本組預設'; reset.dataset.repairReset = '';
+  const restore = document.createElement('button'); restore.type = 'button'; restore.className = 'threshold-repair-secondary'; restore.textContent = '還原原始內容'; restore.dataset.repairRestore = '';
+  const confirm = document.createElement('button'); confirm.type = 'button'; confirm.textContent = '確認修正並保留'; confirm.dataset.repairConfirm = '';
+  actions.append(reset, restore, confirm);
+
+  let useDefaults = false, structurallyReviewed = false, settled = false;
+  function refreshIntent() {
+    confirm.textContent = useDefaults ? '確認使用本組預設' : '確認修正並保留';
+    reviewLabel.hidden = !incompleteShape || structurallyReviewed || useDefaults;
+  }
+  inputs.forEach(({ input, flag }) => input.addEventListener('input', () => {
+    useDefaults = false; error.hidden = true; input.removeAttribute('aria-invalid'); flag.hidden = true;
+    status.textContent = '修改尚未套用，請核對後按「確認修正並保留」。'; refreshIntent();
+  }));
+  reset.addEventListener('click', () => {
+    inputs.forEach(({ input, row, field, flag }) => { input.value = String(defaults[row][field] ?? ''); input.removeAttribute('aria-invalid'); flag.hidden = true; });
+    useDefaults = true; structurallyReviewed = true; reviewed.checked = false; error.hidden = true;
+    status.textContent = '已填入本組預設，尚未套用。請核對後按「確認使用本組預設」。'; refreshIntent();
+  });
+  restore.addEventListener('click', () => {
+    inputs.forEach(({ input, row, field, flag }) => {
+      const entry = initial[row][field]; input.value = entry.value; flag.hidden = !entry.problem;
+      if (entry.problem) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
+    });
+    useDefaults = false; structurallyReviewed = false; reviewed.checked = false; error.hidden = true;
+    status.textContent = '已還原表格中的原始內容，尚未套用任何修改。'; refreshIntent();
+  });
+
+  return new Promise(resolve => {
+    function keyGuard(event) {
+      if (!overlay.isConnected || settled) return;
+      if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); card.focus({ preventScroll: true }); return; }
+      if (event.key === 'Tab') {
+        const targets = [...card.querySelectorAll('button,input,summary,[tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length && !el.closest('[hidden]'));
+        if (!targets.length) return;
+        const at = targets.indexOf(document.activeElement);
+        const next = event.shiftKey ? at <= 0 ? targets.length - 1 : at - 1 : at < 0 || at === targets.length - 1 ? 0 : at + 1;
+        event.preventDefault(); event.stopImmediatePropagation(); targets[next].focus();
+      } else if (event.key === 'Enter' && event.target?.tagName === 'INPUT' && !event.isComposing) {
+        event.preventDefault(); event.stopImmediatePropagation();
+      }
+    }
+    document.addEventListener('keydown', keyGuard, true);
+    confirm.addEventListener('click', () => {
+      if (settled) return;
+      if (incompleteShape && !structurallyReviewed && !reviewed.checked && !useDefaults) {
+        error.textContent = '請先核對所有欄位，並勾選已確認留白的設定意義。'; error.hidden = false; reviewed.focus(); return;
+      }
+      const rows = defaults.map((_, row) => Object.fromEntries(inputs.filter(entry => entry.row === row).map(entry => [entry.field, entry.input.value.trim()])));
+      let normalized;
+      try {
+        validate(group, rows);
+        normalized = parse(group, rows);
+        validate(group, normalized);
+      } catch (_) {
+        error.textContent = '仍有不合法的欄位。請依上方範圍修正；啟用的縣市必須填寫有效金額。原資料尚未更動。'; error.hidden = false;
+        inputs.find(entry => entry.input.getAttribute('aria-invalid') === 'true')?.input.focus();
+        error.scrollIntoView({ block: 'nearest' }); return;
+      }
+      settled = true;
+      document.removeEventListener('keydown', keyGuard, true);
+      actions.querySelectorAll('button').forEach(button => { button.disabled = true; });
+      delete overlay.dataset.repairGroup;
+      resolve({ rows: copy(normalized), useDefaults });
+    });
+    card.focus({ preventScroll: true });
+  });
+}
+
+/* Three threshold groups have their own durable authority. Old page snapshots
+   remain readable for one-time import, but are never a write-through cache. */
+function createThresholdUI() {
+  const groupKeys = { hh: 'mortgage_hh_rows_v1', lux: 'mortgage_lux_rows_v1', yr: 'youth_region_rows_v1' };
+  const groupNames = { hh: '貸款戶數門檻', lux: '高價住宅門檻', yr: '購屋縣市門檻' };
+  const columns = { hh: ['ratio', 'grace'], lux: ['name', 'amount', 'ratio', 'grace'], yr: ['name', 'amount'] };
+  const inputPrefixes = { hh: {ratio:'glHhRatio',grace:'glHhGrace'}, lux: {name:'glSetName',amount:'glSetAmt',ratio:'glSetRatio',grace:'glSetGrace'}, yr: {name:'ytRegSetName',amount:'ytRegSetAmt'} };
+  const captured = {};
+  let captureError = null, store, snapshot, defaults, defaultsRows, hooks, channel, appliedValues={}, openEpoch=0, legacyDefaultGroups=[];
+  const bindings = [];
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
+  const escape = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const flatten = (group, rows) => Object.fromEntries(rows.flatMap((row,i) => columns[group].map(field => [group+'.'+i+'.'+field, String(row[field])])));
+  function rowsOf(group, state = snapshot) {
+    return defaultsRows[group].map((row,i) => Object.fromEntries(columns[group].map(field => [field, state.fields[group+'.'+i+'.'+field].value])));
+  }
+  function gate(title, text) {
+    let el = document.getElementById('thresholdBoot');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'thresholdBoot';
+      el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
+      document.body.append(el);
+    }
+    document.body.dataset.thresholdLoading = '1';
+    Array.from(document.body.children).forEach(child => { if (child !== el && !['SCRIPT','STYLE'].includes(child.tagName)) child.inert = true; });
+    el.innerHTML = '<div class="threshold-boot-card"><h2>'+escape(title)+'</h2><p>'+escape(text)+'</p><div class="threshold-boot-actions"></div></div>';
+    return el;
+  }
+  function bootFailure(error) {
+    const el = gate('目前無法讀取門檻設定', '為保留原本的設定，暫停載入。請重新載入再試一次。');
+    el.dataset.error = error?.code || 'READ_FAILED';
+    const button = document.createElement('button'); button.type='button'; button.textContent='重新載入';
+    button.onclick = () => location.reload(); el.querySelector('.threshold-boot-actions').append(button);
+  }
+  gate('正在讀取已儲存設定', '請稍候…');
+  try {
+    captured.session = sessionStorage.getItem('mortgage_tab_state_v1');
+    captured.latest = localStorage.getItem('mortgage_latest_state_v1');
+    captured.standalone = Object.fromEntries(Object.values(groupKeys).map(key => [key,localStorage.getItem(key)]));
+  } catch (error) { captureError=error; }
+
+  async function candidates(repair=false) {
+    if (captureError) throw captureError;
+    const out=[];
+    const filled=new Set();legacyDefaultGroups=[];
+    async function add(id, source, values, raw) {
+      const fields={},issues=[];
+      let hasOriginal=false;
+      for (const [group,key] of Object.entries(groupKeys)) {
+        if (!own(values,key) || values[key] === null) continue;
+        hasOriginal=true;
+        let rows;
+        try {rows=hooks.parseLegacy(group,JSON.parse(values[key]));}
+        catch(error){
+          if(!repair||filled.has(group)){issues.push({group,code:'UNUSED_INVALID'});continue;}
+          const resolution=await repairThresholdLegacy({group,raw:values[key],defaults:clone(defaultsRows[group]),parse:hooks.parseLegacy.bind(hooks),validate:hooks.validate.bind(hooks),gate});
+          filled.add(group);
+          if(resolution.useDefaults){legacyDefaultGroups.push(group);continue;}
+          rows=resolution.rows;
+        }
+        filled.add(group);
+        Object.assign(fields,flatten(group,rows));
+      }
+      if(hasOriginal) out.push({id,source,values:fields,issues,raw:Object.fromEntries(Object.values(groupKeys).filter(key=>own(values,key)).map(key=>[key,values[key]]))});
+    }
+    // Match the existing form restore rule: resume this page on refresh/history,
+    // while a new page starts from the last saved browser snapshot.
+    const navigation=performance.getEntriesByType('navigation')[0];
+    const resume=navigation?.type==='reload'||navigation?.type==='back_forward'||document.wasDiscarded===true;
+    const order=resume?['session','latest']:['latest','session'];
+    const names={session:'這個分頁原本的設定',latest:'最近新開頁使用的設定'};
+    for(const id of order) {
+      if(captured[id]===null) continue;
+      let data;
+      try{
+        data=JSON.parse(captured[id]);
+        if(!data||data.schema!==1||!data.values||typeof data.values!=='object'||Array.isArray(data.values))throw new Error('Invalid old snapshot');
+      }catch(error){if(repair&&filled.size<Object.keys(groupKeys).length)throw error;continue;}
+      await add(id,names[id],data.values,captured[id]);
+    }
+    // Standalone keys are a predecessor, not an additional latest snapshot.
+    // Once a v1 snapshot exists, stale standalone data must not revive itself.
+    if(captured.latest===null && captured.session===null) await add('standalone','先前儲存的設定',captured.standalone,captured.standalone);
+    return out;
+  }
+  async function init(options) {
+    hooks=options; defaultsRows=clone(options.defaultsRows);
+    defaults=Object.assign({},...Object.keys(groupKeys).map(group=>flatten(group,defaultsRows[group])));
+    store=thresholdStoreFactory({indexedDB:window.indexedDB,validateSnapshot(state){
+      if(!state.needsLegacyChoice)Object.keys(groupKeys).forEach(group=>hooks.validate(group,rowsOf(group,state)));
+    }});
+    // Read authority first: obsolete or damaged legacy storage cannot shadow it.
+    let existing;
+    try { existing=await store.read(); } catch(error) { if(error.code!=='NOT_INITIALIZED') throw error; }
+    let list=[];
+    if(!existing||existing.needsLegacyChoice)list=await candidates(true);
+    else {try{list=await candidates();}catch(_){/* Saved authority remains usable even if obsolete storage is damaged. */}}
+    snapshot=await store.initPreserved({defaults,defaultsRevision:20260926,legacyCandidates:list,preferredCandidateId:list[0]?.id,defaultGroups:legacyDefaultGroups});
+    // Storage schema validation and application numeric validation are separate.
+    Object.keys(groupKeys).forEach(group=>hooks.validate(group,rowsOf(group)));
+    appliedValues=clone(snapshot.values);
+    try {
+      channel=new BroadcastChannel('mortgage_threshold_changes_v1');
+      channel.onmessage=()=>noticeExternal();
+    } catch(_) {}
+    window.addEventListener('focus',()=>noticeExternal());
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)noticeExternal();});
+  }
+  function showPending(latest) {
+    const differs=Object.keys(appliedValues).some(id=>appliedValues[id]!==latest.values[id]);
+    let notice=document.getElementById('thresholdUpdateNotice');
+    if(differs&&!notice) {
+      notice=document.createElement('div');notice.id='thresholdUpdateNotice';notice.setAttribute('role','status');
+      notice.innerHTML='<span>其他分頁已更新門檻設定。本頁仍有尚未套用的設定。</span><button type="button">重新載入套用</button>';
+      notice.querySelector('button').onclick=()=>location.reload();
+      document.querySelector('.sticky-top')?.append(notice);
+    }
+    if(notice)notice.hidden=!differs;
+  }
+  let checking=false;
+  async function noticeExternal() {
+    if(!snapshot || checking) return;
+    checking=true;
+    try {
+      const latest=await store.read();
+      if(latest)showPending(latest);
+    } catch(_) { /* Settings dialogs do a fresh read and display actionable errors. */ }
+    finally { checking=false; }
+  }
+  function finish() {
+    document.getElementById('thresholdBoot')?.remove();
+    delete document.body.dataset.thresholdLoading;
+    Array.from(document.body.children).forEach(child=>{if(!['SCRIPT','STYLE'].includes(child.tagName))child.inert=false;});
+  }
+  function wire(options) {
+    const {group,dlg,readRaw,setRaw,accepted,beginModal,endModal,restoreFocus}=options;
+    const entries=defaultsRows[group].flatMap((row,i)=>columns[group].map(field=>({id:group+'.'+i+'.'+field,field,row:i,el:document.getElementById(inputPrefixes[group][field]+i)})));
+    let baseline=null,changes={},invalid=new Set(),active=false,busy=false,opening=false;
+    const errorBox=document.createElement('div');errorBox.className='threshold-save-error';errorBox.setAttribute('role','alert');errorBox.hidden=true;
+    dlg.querySelector('.yt-set-actions')?.insertAdjacentElement('beforebegin',errorBox);
+    if(!errorBox.parentElement)dlg.querySelector('.yt-set-card').append(errorBox);
+    function source(id) { return changes[id]?.source || baseline?.fields[id]?.source; }
+    function value(id) { return changes[id]?.source==='default' ? baseline.defaults[id] : (changes[id]?.value ?? baseline.fields[id].value); }
+    function refresh() {
+      entries.forEach(entry=>{
+        const kind=source(entry.id);
+        entry.badge.hidden=kind!=='custom'&&kind!=='legacy';
+        entry.badge.textContent='自訂';
+        entry.badge.dataset.source='custom';
+      });
+    }
+    function error(text) {errorBox.textContent=text;errorBox.hidden=false;}
+    function pinRow(entry) {
+      if(entry.field!=='name' || readRaw(entry.el)===baseline.defaults[entry.id]) return;
+      entries.filter(other=>other.row===entry.row && other.field!=='name').forEach(other=>{
+        changes[other.id]={source:'custom',value:readRaw(other.el)};
+      });
+    }
+    function edit(event) {
+      if(!active || busy) return;
+      const entry=entries.find(item=>item.el===event.target);if(!entry)return;
+      const acceptance=accepted(entry.el);
+      if(acceptance===null)return; // Opening/closing an untouched keypad is a no-op.
+      if(!acceptance) { invalid.add(entry.id); return; }
+      invalid.delete(entry.id);
+      changes[entry.id]={source:'custom',value:readRaw(entry.el)};
+      pinRow(entry);refresh();
+    }
+    dlg.addEventListener('input',edit);dlg.addEventListener('change',edit);
+    entries.forEach(entry=>{
+      const label=dlg.querySelector('label[for="'+entry.el.id+'"]');
+      const wrap=document.createElement('div');wrap.className='threshold-field-label';
+      label.before(wrap);wrap.append(label);
+      const badge=document.createElement('span');badge.className='threshold-source-badge';badge.hidden=true;
+      wrap.append(badge);entry.badge=badge;
+    });
+    const binding={
+      async open() {
+        if(busy||opening||active)return null;
+        opening=true;
+        const epoch=++openEpoch,mode=document.body.dataset.mode;
+        const cancelPending=event=>{if(event.type==='keydown'&&event.key==='Escape')openEpoch++;};
+        document.addEventListener('keydown',cancelPending,true);
+        try {
+          const loaded=await store.read();
+          if(epoch!==openEpoch || mode!==document.body.dataset.mode)return null;
+          baseline=loaded;if(!baseline)throw new Error('Missing settings');
+          hooks.validate(group,rowsOf(group,baseline));changes={};invalid.clear();active=true;errorBox.hidden=true;refresh();
+          return rowsOf(group,baseline);
+        } catch(error) {hooks.alert('無法讀取已保存的門檻設定，請重新載入後再試。');return null;}
+        finally{opening=false;document.removeEventListener('keydown',cancelPending,true);}
+      },
+      reset() {
+        changes=Object.fromEntries(entries.map(entry=>[entry.id,{source:'default'}]));invalid.clear();errorBox.hidden=true;refresh();
+        return rowsOf(group,{fields:Object.fromEntries(entries.map(entry=>[entry.id,{value:baseline.defaults[entry.id]}]))});
+      },
+      close() { if(busy)return false;openEpoch++;active=false;return true; },
+      async commit(rows) {
+        if(busy||!active||!baseline)return null;
+        if(invalid.size) {error('有欄位尚未完成有效輸入，請重新確認後再儲存。');return null;}
+        const flat=flatten(group,rows);
+        // The accepted UI value and saved intent must agree. Untouched fields
+        // are omitted entirely; only explicit edits/reset choices are patches.
+        for(const entry of entries) {
+          if(changes[entry.id]?.source==='custom')changes[entry.id].value=flat[entry.id];
+          else if(flat[entry.id]!==value(entry.id)){error('欄位內容尚未確認，請重新輸入後再儲存。');return null;}
+        }
+        try{hooks.validate(group,rows);}catch(_){error('門檻設定含無效數值，請確認後再儲存。');return null;}
+        busy=true;errorBox.hidden=true;
+        const buttons=Array.from(dlg.querySelectorAll('button,input'));
+        const disabled=buttons.map(el=>el.disabled);buttons.forEach(el=>{el.disabled=true;});
+        try {
+          const result=await store.patch({changes:clone(changes),baseline});
+          hooks.validate(group,rowsOf(group,result));
+          snapshot=result;baseline=result;changes={};refresh();
+          entries.forEach(entry=>{appliedValues[entry.id]=result.values[entry.id];});
+          showPending(result);
+          try{channel?.postMessage({revision:result.revision});}catch(_){/* A notification failure cannot undo a committed setting. */}
+          return rowsOf(group,result);
+        } catch(err) {
+          error(err.code==='CONFLICT' ? '同一欄位已在其他分頁更新，本次尚未儲存。你的輸入仍保留；請先取消並重開設定，核對最新數值。' : '門檻設定尚未儲存，你的輸入仍保留。請再按「儲存並套用」重試。');
+          return null;
+        } finally {busy=false;buttons.forEach((el,i)=>{el.disabled=disabled[i];});}
+      }
+    };
+    bindings.push(binding);return binding;
+  }
+  return {init,rowsOf,wire,finish,bootFailure};
+}
+
+const thresholdSettings = createThresholdUI();
+(async () => {
+const APP_VERSION = "2026.09.26C";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -8255,6 +9253,59 @@ function getYtGraceMaxValue() {
 }
 const PRICE_MAX_WAN = 9999999;
 
+const LUX_DEFAULT_ROWS = [
+{ name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
+{ name: '新北市', amount: '6000', ratio: '30', grace: '0' },
+{ name: '其他縣市', amount: '4000', ratio: '30', grace: '0' }
+];
+const HH_DEFAULT_ROWS = [
+{ ratio: '', grace: '' },     // 首購且名下無房：規定未設限
+{ ratio: '', grace: '0' },    // 無房貸但已有房屋：不得有寬限期
+{ ratio: '70', grace: '0' },  // 已有 1 戶房貸：七成、不得有寬限期
+{ ratio: '30', grace: '0' }   // 已有 2 戶以上：三成、不得有寬限期
+];
+const YR_DEFAULT_ROWS = [
+  { name: '臺北市', amount: '3500' },
+  { name: '新北・新竹', amount: '2500' },
+  { name: '其他縣市', amount: '2000' }
+];
+await thresholdSettings.init({
+  defaultsRows:{hh:HH_DEFAULT_ROWS,lux:LUX_DEFAULT_ROWS,yr:YR_DEFAULT_ROWS},
+  alert: message => showAppAlert(message),
+  parseLegacy(group, parsed) {
+    if(group!=='yr') {
+      const data=normalizeStoredCapRows(parsed,{kind:group,present:true});
+      if(data.issues.length)throw new Error('Invalid legacy threshold rows');
+      return data.rows;
+    }
+    if(!Array.isArray(parsed)||parsed.length>3)throw new Error('Invalid legacy youth rows');
+    const rows=Array.from({length:3},(_,i)=>parsed[i]===undefined?{name:'',amount:''}:parsed[i]);
+    this.validate('yr',rows);
+    return rows.map(row=>({name:row.name.trim(),amount:parseStoredNumeric(row.amount,{allowMissing:false,allowBlank:true,integer:true,min:1,max:PRICE_MAX_WAN}).text}));
+  },
+  validate(group,rows) {
+    if(group!=='yr') {
+      const data=normalizeStoredCapRows(rows,{kind:group,present:true});
+      if(data.issues.length)throw new Error('Invalid threshold values');
+      return;
+    }
+    if(!Array.isArray(rows)||rows.length!==3)throw new Error('Invalid youth row count');
+    for(const row of rows){
+      if(!row||typeof row.name!=='string'||row.name.trim().length>8||row.invalid&&Object.keys(row.invalid).length)throw new Error('Invalid youth name');
+      const amount=parseStoredNumeric(row.amount,{allowMissing:false,allowBlank:row.name.trim()==='',integer:true,min:1,max:PRICE_MAX_WAN});
+      if(!amount.ok)throw new Error('Invalid youth amount');
+    }
+  }
+});
+function bindThresholdDialog(group,dlg){
+  return thresholdSettings.wire({group,dlg,
+    readRaw:el=>el.classList.contains('calc-field')?getCalcFieldRawString(el):el.value.trim(),
+    setRaw:(el,value)=>{if(!el.classList.contains('calc-field'))el.value=value;else if(value==='')clearCalcField(el);else setCalcFieldStoredValue(el,value);},
+    accepted:el=>calcKeyboard.inputEl===el&&calcKeyboard.pristine?null:storedCapAcceptedEdit(el),beginModal:beginAppModalOpen,endModal:beginAppModalClose,restoreFocus:restoreFocusQuietly
+  });
+}
+
+
 /* ===================== 一般貸款：央行購置高價住宅門檻 =====================
    央行對「購置高價住宅貸款」訂有成數與寬限期限制，門檻金額與上限會隨政策調整。
    這裡刻意不寫死法規數字，改由使用者在高價住宅旁的齒輪內自行維護 —— 法規異動時
@@ -8265,11 +9316,7 @@ const LUX_SEL_KEY = 'mortgage_lux_sel_v1';
    與門檻設定同屬「設定」而非試算數值，清空數值不會動到它。 */
 const LUX_ON_KEY = 'mortgage_lux_on_v1';
 const LUX_ROW_N = 3;
-const LUX_DEFAULT_ROWS = [
-  { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
-  { name: '新北市', amount: '6000', ratio: '30', grace: '0' },
-  { name: '其他縣市', amount: '4000', ratio: '30', grace: '0' }
-];
+/* LUX_DEFAULT_ROWS is defined once in the threshold catalog. */
 
 let luxRowIssues = [], hhRowIssues = [];
 let luxSelectionIssue = null, hhSelectionIssue = null, luxOnIssue = null, hhOnIssue = null;
@@ -8302,17 +9349,8 @@ function cloneLuxRows(rows) {
   for (let i = 0; i < LUX_ROW_N; i++) out.push(normalizeLuxRow(rows && rows[i]));
   return out;
 }
-function loadLuxRows() {
-  let raw = null, parsed, parseError = false;
-  try { raw = appStorage.getItem(LUX_ROWS_KEY); if (raw !== null) parsed = JSON.parse(raw); } catch (_) { parseError = true; }
-  const data = normalizeStoredCapRows(parsed, { kind: 'lux', present: raw !== null || parseError, parseError, raw });
-  luxRowIssues = data.issues;
-  if (raw !== null && !parseError || raw !== null && parseError) saveLuxRows(data.rows);
-  return data.rows;
-}
-function saveLuxRows(rows) {
-  try { appStorage.setItem(LUX_ROWS_KEY, JSON.stringify(serializeStoredCapRows(rows, luxRowIssues))); } catch (_) {}
-}
+function loadLuxRows() { return thresholdSettings.rowsOf('lux'); }
+/* Lux settings are committed only by the dedicated threshold store. */
 function loadLuxSel() {
   let raw = null;
   try { raw = appStorage.getItem(LUX_SEL_KEY); } catch (_) {}
@@ -8419,12 +9457,7 @@ const HH_ROWS_KEY = 'mortgage_hh_rows_v1';
 const HH_SEL_KEY = 'mortgage_hh_sel_v1';
 const HH_ON_KEY = 'mortgage_hh_on_v1';
 const HH_LABELS = ['無房屋／無房貸', '有房屋／無房貸', '已有1戶房貸', '已有2戶以上房貸'];
-const HH_DEFAULT_ROWS = [
-  { ratio: '', grace: '' },     // 首購且名下無房：規定未設限
-  { ratio: '', grace: '0' },    // 無房貸但已有房屋：不得有寬限期
-  { ratio: '70', grace: '0' },  // 已有 1 戶房貸：七成、不得有寬限期
-  { ratio: '30', grace: '0' }   // 已有 2 戶以上：三成、不得有寬限期
-];
+/* HH_DEFAULT_ROWS is defined once in the threshold catalog. */
 /* 115.9.18 一次性政策升級。只改舊一戶 60%／0 年設定與相應試算輸入。
    marker 跟隨每分頁的戶數設定，舊版仍可讀 schema 2；不新增舊版不認得的儲存鍵。
    必須在 PriceOnlyMigration 之後、loadHhRows／載入表單及清空快照之前執行。 */
@@ -8491,7 +9524,7 @@ function migrateCbc1150918Storage() {
   }
   try { appStorage.setItems(updates); } catch (_) { /* 本頁整組 pending 交原有重試處理。 */ }
 }
-migrateCbc1150918Storage();
+/* Prior 60→70 migration is superseded by explicit default/custom intent. */
 
 function normalizeHhRow(r) {
   const o = r && typeof r === 'object' ? r : {};
@@ -8503,17 +9536,8 @@ function cloneHhRows(rows) {
   for (let i = 0; i < HH_LABELS.length; i++) out.push(normalizeHhRow(rows && rows[i]));
   return out;
 }
-function loadHhRows() {
-  let raw = null, parsed, parseError = false;
-  try { raw = appStorage.getItem(HH_ROWS_KEY); if (raw !== null) parsed = JSON.parse(raw); } catch (_) { parseError = true; }
-  const data = normalizeStoredCapRows(parsed, { kind: 'hh', present: raw !== null || parseError, parseError, raw });
-  hhRowIssues = data.issues;
-  if (raw !== null && !parseError || raw !== null && parseError) saveHhRows(data.rows);
-  return data.rows;
-}
-function saveHhRows(rows) {
-  try { appStorage.setItem(HH_ROWS_KEY, JSON.stringify({ ...serializeStoredCapRows(rows, hhRowIssues), policyVersion: '1150918' })); } catch (_) {}
-}
+function loadHhRows() { return thresholdSettings.rowsOf('hh'); }
+/* Household settings are committed only by the dedicated threshold store. */
 function loadHhSel() {
   let raw = null;
   try { raw = appStorage.getItem(HH_SEL_KEY); } catch (_) {}
@@ -14063,6 +15087,7 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
 (function () {
   const dlg = $('#glHhSetDlg');
   if (!dlg) return;
+    const thresholdDraft = bindThresholdDialog('hh',dlg);
   initCalcFields(dlg);
   let lastFocus = null;
   let editedFields = [], resetRows = false, openedIssues = [], pendingSaveIssues = [];
@@ -14112,8 +15137,9 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     }
     return null;
   }
-  function openDlg() {
-    fill(hhRows);
+  async function openDlg() {
+    const fresh = await thresholdDraft.open(); if (!fresh) return;
+    fill(fresh);
     editedFields = []; resetRows = false; openedIssues = hhRowIssues;
     for (let i = 0; i < 4; i++) for (const [field, el] of Object.entries({ ratio: rEl(i), grace: gEl(i) })) {
       if (el) { if (hasStoredCapIssue(openedIssues, i, [field])) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
@@ -14131,6 +15157,7 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
     });
   }
   function closeDlg() {
+    if (!thresholdDraft.close()) return;
     beginAppModalClose(dlg);
       dlg.classList.remove('show');
     const card = $('#glHhSetCard');
@@ -14143,12 +15170,12 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
   $('#glHhSetBtn') && $('#glHhSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
   $('#glHhSetCancel') && $('#glHhSetCancel').addEventListener('click', closeDlg);
   $('#glHhSetReset') && $('#glHhSetReset').addEventListener('click', () => {
-    fill(cloneHhRows(HH_DEFAULT_ROWS));
+    fill(thresholdDraft.reset());
     resetRows = true; editedFields = [];
     dlg.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
     showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
   });
-  $('#glHhSetSave') && $('#glHhSetSave').addEventListener('click', () => {
+  $('#glHhSetSave') && $('#glHhSetSave').addEventListener('click', async () => {
     const rows = readRows();
     const edits = resetRows ? null : editedFields;
     const remainingIssues = clearStoredCapIssues(openedIssues, edits);
@@ -14159,9 +15186,9 @@ $('#glHhOff') && $('#glHhOff').addEventListener('click', () => {
       return;
     }
     const householdOn = hhOn;
-    hhRows = rows;
-    hhRowIssues = remainingIssues;
-    saveHhRows(hhRows);
+    const committed = await thresholdDraft.commit(rows); if (!committed) return;
+    hhRows = committed;
+    hhRowIssues = [];
     // 存檔後由下方「已套用…」那則提示交代結果，這裡不再多跳一則上限提示
     applyLuxCaps();
     updateAmount();
@@ -14783,6 +15810,7 @@ $('#conditionsToggle').addEventListener('click', () => {
 (function () {
   const dlg = $('#glRegionSetDlg');
   if (!dlg) return;
+    const thresholdDraft = bindThresholdDialog('lux',dlg);
   initCalcFields(dlg);          // 視窗內的數字欄位共用同一套計算鍵盤
   let lastFocus = null;
   let editedFields = [], resetRows = false, openedIssues = [], pendingSaveIssues = [];
@@ -14863,8 +15891,9 @@ $('#conditionsToggle').addEventListener('click', () => {
     return null;
   }
 
-  function openDlg() {
-    fill(luxRows);
+  async function openDlg() {
+    const fresh = await thresholdDraft.open(); if (!fresh) return;
+    fill(fresh);
     editedFields = []; resetRows = false; openedIssues = luxRowIssues;
     for (let i = 0; i < 3; i++) for (const [field, el] of Object.entries({ name: nameEl(i), amount: amtEl(i), ratio: ratioEl(i), grace: graceEl(i) })) {
       if (el) { if (hasStoredCapIssue(openedIssues, i, [field])) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
@@ -14884,6 +15913,7 @@ $('#conditionsToggle').addEventListener('click', () => {
   }
   /* 關閉時把焦點還給開啟它的按鈕，但不能讓瀏覽器為了「捲到焦點」而把底層頁面拉走 */
   function closeDlg() {
+    if (!thresholdDraft.close()) return;
     beginAppModalClose(dlg);
       dlg.classList.remove('show');
     const card = $('#glRegionSetCard');
@@ -14896,12 +15926,12 @@ $('#conditionsToggle').addEventListener('click', () => {
   $('#glRegionSetBtn') && $('#glRegionSetBtn').addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
   $('#glRegionSetCancel') && $('#glRegionSetCancel').addEventListener('click', closeDlg);
   $('#glRegionSetReset') && $('#glRegionSetReset').addEventListener('click', () => {
-    fill(cloneLuxRows(LUX_DEFAULT_ROWS));
+    fill(thresholdDraft.reset());
     resetRows = true; editedFields = [];
     dlg.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
     showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
   });
-  $('#glRegionSetSave') && $('#glRegionSetSave').addEventListener('click', () => {
+  $('#glRegionSetSave') && $('#glRegionSetSave').addEventListener('click', async () => {
     const rows = readRows();
     const edits = resetRows ? null : editedFields;
     const remainingIssues = clearStoredCapIssues(openedIssues, edits);
@@ -14912,9 +15942,9 @@ $('#conditionsToggle').addEventListener('click', () => {
       return;
     }
     let n, regionOn;
-    luxRows = rows;
-    luxRowIssues = remainingIssues;
-    saveLuxRows(luxRows);
+    const committed = await thresholdDraft.commit(rows); if (!committed) return;
+    luxRows = committed;
+    luxRowIssues = [];
     n = luxValidIndexes().length;
     syncLuxSelection();
     saveLuxSel(luxSel);
@@ -17460,11 +18490,7 @@ window.addEventListener('resize', () => {
   const YR_ROWS_KEY = 'youth_region_rows_v1';
   const YR_ON_KEY = 'youth_region_on_v1';
   const YR_ROW_N = 3;
-  const YR_DEFAULT_ROWS = [
-    { name: '臺北市', amount: '3500' },
-    { name: '新北・新竹', amount: '2500' },
-    { name: '其他縣市', amount: '2000' }
-  ];
+/* YR_DEFAULT_ROWS is defined once in the threshold catalog. */
   /* 舊版把選擇存成固定代碼，改成槽位索引後要能接上，否則既有使用者的選擇會跳掉 */
   const YR_LEGACY_SEL = { taipei: 0, newtaipei: 1, other: 2 };
   let yrRowsInvalid=false,yrOnInvalid=false;
@@ -17492,17 +18518,7 @@ window.addEventListener('resize', () => {
   function cloneYrRows(rows) {
     return Array.from({length:YR_ROW_N},(_,i)=>normalizeYrRow(rows&&rows[i]));
   }
-  function loadYrRows() {
-    try{
-      const raw=appStorage.getItem(YR_ROWS_KEY);
-      if(raw!==null){
-        try{const a=JSON.parse(raw);if(Array.isArray(a)&&a.length<=YR_ROW_N)return cloneYrRows(a);}catch(e){}
-        yrRowsInvalid=true;return cloneYrRows([]);
-      }
-    }catch(e){}
-    return cloneYrRows(YR_DEFAULT_ROWS);
-  }
-  function saveYrRows(rows) { try { appStorage.setItem(YR_ROWS_KEY, JSON.stringify(rows)); } catch (e) {} }
+  function loadYrRows() { return cloneYrRows(thresholdSettings.rowsOf('yr')); }
   function loadYrOn() {
     try{const v=appStorage.getItem(YR_ON_KEY);if(v===null||v==='1')return true;if(v==='0')return false;yrOnInvalid=true;}catch(e){}
     return true;
@@ -19326,6 +20342,7 @@ window.addEventListener('resize', () => {
   (function () {
     const dlg = Y('#ytRegionSetDlg');
     if (!dlg) return;
+    const thresholdDraft = bindThresholdDialog('yr',dlg);
     initCalcFields(dlg);
     let lastFocus = null;
     /* 設定視窗自己的開啟輪次。closeDlg 的 160ms 延遲原本沒有取消／輪次檢查，
@@ -19384,8 +20401,9 @@ window.addEventListener('resize', () => {
       return null;
     }
 
-    function openDlg() {
-      fill(yrRows);
+    async function openDlg() {
+    const fresh = await thresholdDraft.open(); if (!fresh) return;
+    fill(fresh);
       lastFocus = document.activeElement;
       const openSeq = ++dlgSeq;
       dlg.hidden = false;
@@ -19398,6 +20416,7 @@ window.addEventListener('resize', () => {
       });
     }
     function closeDlg() {
+    if (!thresholdDraft.close()) return;
       beginAppModalClose(dlg);
       dlg.classList.remove('show');
       const card = Y('#ytRegionSetCard');
@@ -19410,18 +20429,19 @@ window.addEventListener('resize', () => {
     Y('#ytRegionSetBtn')?.addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
     Y('#ytRegionSetCancel')?.addEventListener('click', closeDlg);
     Y('#ytRegionSetReset')?.addEventListener('click', () => {
-      fill(cloneYrRows(YR_DEFAULT_ROWS));draftTopInvalid=false;draftInvalid=Array.from({length:YR_ROW_N},()=>({}));
+      fill(thresholdDraft.reset());draftTopInvalid=false;draftInvalid=Array.from({length:YR_ROW_N},()=>({}));
       showToast('', { html: toastLines('已恢復至 ' + tOk('預設值'), '請按「儲存並套用」') });
     });
-    Y('#ytRegionSetSave')?.addEventListener('click', () => {
+    Y('#ytRegionSetSave')?.addEventListener('click', async () => {
       const rows = readRows();
       const bad = validate(rows);
       if (bad) {
         showAppAlert(bad.msg, () => { if (bad.el && typeof bad.el.focus === 'function') bad.el.focus({ preventScroll: true }); });
         return;
       }
-      yrRows = rows;yrRowsInvalid=false;
-      saveYrRows(yrRows);
+      const committed = await thresholdDraft.commit(rows); if (!committed) return;
+    yrRows = committed;
+    yrRowsInvalid = false;
       const n = yrValidIndexes().length;
       syncYrSelection();
       syncChoices(); persist(); markStale();
@@ -20403,6 +21423,8 @@ function getBadgeDefault(mode, key, fallback) {
   });
   refreshBadges();
 })();
+thresholdSettings.finish();
+})().catch(error => thresholdSettings.bootFailure(error));
 </script>
 </body>
 </html>
