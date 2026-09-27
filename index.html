@@ -6219,147 +6219,6 @@ root.LoanDetailJpeg = Object.freeze({
 });
 })(typeof window !== 'undefined' ? window : globalThis);
 
-/* Prototype only. A fixed-pixel row source for a mounted ten-year detail clone.
-   Rendering never allocates the full-height image. Caller receives RGBA rows.
-   dispose() owns removal of the supplied export clone (and its mount iframe). */
-async function createLoanDetailRowSource(rootEl, options = {}) {
-  if (!rootEl || !rootEl.isConnected) throw new Error('detail root is not mounted');
-  const scale = EXPORT_CANVAS_SCALE_DETAIL;
-  const width = Math.round(rootEl.offsetWidth * scale);
-  if (width !== EXPORT_OUTPUT_WIDTH) throw new Error('unexpected detail row width');
-  const rawHeight = Math.ceil(getResultsExportHeight(rootEl) * scale);
-  if (!Number.isSafeInteger(rawHeight) || rawHeight <= 0) throw new Error('invalid detail row height');
-  const bandRows = 2032, guardRows = 8;
-  const pad = Math.round(EXPORT_BOTTOM_PAD_CSS * scale);
-  let disposed = false, cache = null;
-  let queue = Promise.resolve();
-
-  function release(canvas) {
-    if (canvas) canvas.width = canvas.height = 1;
-  }
-  function dispose() {
-    disposed = true;
-    release(cache?.canvas);
-    cache = null;
-    // An active html2canvas owns its target until it settles. Its finally block
-    // releases it; resizing it here could turn an in-flight draw into success.
-    rootEl.remove();
-  }
-  function assertOpen() {
-    if (disposed) throw new Error('detail row source is disposed');
-    try {
-      if (typeof options.checkCancelled === 'function' && options.checkCancelled()) {
-        throw new DOMException('Export cancelled', 'AbortError');
-      }
-    } catch (error) {
-      dispose();
-      throw error;
-    }
-  }
-  async function bandAt(rawY) {
-    assertOpen();
-    const coreTop = Math.floor(rawY / bandRows) * bandRows;
-    if (cache?.coreTop === coreTop) return cache;
-    release(cache?.canvas);
-    cache = null;
-    const top = Math.max(0, coreTop - guardRows);
-    const end = Math.min(rawHeight, coreTop + bandRows + guardRows);
-    const canvas = rootEl.ownerDocument.createElement('canvas');
-    canvas.width = width;
-    canvas.height = end - top;
-    // Readback is the purpose of this canvas; choose its context before the
-    // renderer so Chrome does not switch raster backends during row reads.
-    if (!canvas.getContext('2d', { willReadFrequently: true })) throw new Error('detail row canvas unavailable');
-    try {
-      const rendered = await html2canvas(rootEl, {
-        canvas,
-        onclone: doc => { doc.body.dataset.mode = rootEl.dataset.exportMode; },
-        ...(rootEl.dataset.exportMode === 'youth' ? { scrollX: 0, scrollY: 0 } : {}),
-        scale,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false,
-        width: rootEl.offsetWidth,
-        height: (end - top) / scale,
-        x: 0,
-        y: top / scale,
-        windowWidth: EXPORT_CAPTURE_VIEWPORT_WIDTH,
-        windowHeight: EXPORT_CAPTURE_VIEWPORT_HEIGHT
-      });
-      assertOpen();
-      if (rendered !== canvas || canvas.width !== width || canvas.height !== end - top) {
-        throw new Error('detail row capture dimensions changed');
-      }
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) throw new Error('detail row canvas unavailable');
-      cache = { canvas, ctx, top, end, coreTop };
-      return cache;
-    } catch (error) {
-      release(canvas);
-      throw error;
-    }
-  }
-  async function findInk(fromTop) {
-    for (let offset = 0; offset < rawHeight; offset += bandRows) {
-      const coreTop = fromTop ? offset : Math.max(0, rawHeight - offset - bandRows);
-      // Last probe may straddle the fixed band grid: visit each small slice.
-      const count = Math.min(bandRows, rawHeight - coreTop);
-      let cursor = fromTop ? coreTop : coreTop + count;
-      while (fromTop ? cursor < coreTop + count : cursor > coreTop) {
-        const band = await bandAt(fromTop ? cursor : cursor - 1);
-        const from = fromTop ? cursor : Math.max(coreTop, band.coreTop);
-        const to = fromTop ? Math.min(coreTop + count, band.coreTop + bandRows, rawHeight) : cursor;
-        const pixels = band.ctx.getImageData(0, from - band.top, width, to - from).data;
-        for (let row = 0; row < to - from; row++) {
-          const y = fromTop ? row : to - from - row - 1;
-          for (let i = y * width * 4, end = (y + 1) * width * 4; i < end; i += 4) {
-            if (pixels[i + 3] > 0 && (pixels[i] < 255 || pixels[i + 1] < 255 || pixels[i + 2] < 255)) return from + y;
-          }
-        }
-        cursor = fromTop ? to : from;
-      }
-    }
-    return -1;
-  }
-  try {
-    const firstInk = await findInk(true);
-    const lastInk = firstInk < 0 ? -1 : await findInk(false);
-    if (firstInk < 0 || lastInk < firstInk) throw new Error('empty detail row image');
-    const height = lastInk - firstInk + 1 + pad * 2;
-    async function readRowsNow(y, count) {
-      assertOpen();
-      if (!Number.isSafeInteger(y) || !Number.isSafeInteger(count) || y < 0 || count < 0 || y + count > height) {
-        throw new RangeError('detail row request out of bounds');
-      }
-      const output = new Uint8Array(width * count * 4);
-      output.fill(255);
-      let cursor = Math.max(y, pad);
-      const end = Math.min(y + count, height - pad);
-      while (cursor < end) {
-        const rawY = firstInk + cursor - pad;
-        const band = await bandAt(rawY);
-        const rows = Math.min(end - cursor, band.coreTop + bandRows - rawY, rawHeight - rawY);
-        const pixels = band.ctx.getImageData(0, rawY - band.top, width, rows).data;
-        output.set(pixels, (cursor - y) * width * 4);
-        cursor += rows;
-      }
-      return output;
-    }
-    return {
-      width, height,
-      readRows(y, count) {
-        const work = queue.then(() => readRowsNow(y, count));
-        queue = work.catch(() => {});
-        return work;
-      },
-      dispose
-    };
-  } catch (error) {
-    dispose();
-    throw error;
-  }
-}
-
 </script>
 <script>
 /* Independent threshold settings. Classic script; no DOM, form, or formula access.
@@ -7370,7 +7229,7 @@ function createThresholdUI() {
 
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.27A";
+const APP_VERSION = "2026.09.28A";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -13894,6 +13753,147 @@ function detailImageFileName(context, ext, part, index, total) {
   const years = part.group ? '_第' + pad(part.group.from) + '-' + pad(part.group.to) + '年' : '';
   const cum = part.group && context.cum ? '_累積利息' : '';
   return stem + '_' + pad(index + 1) + '-' + pad(total) + '_' + part.kind + scope + years + cum + '.' + ext;
+}
+
+/* Prototype only. A fixed-pixel row source for a mounted ten-year detail clone.
+   Rendering never allocates the full-height image. Caller receives RGBA rows.
+   dispose() owns removal of the supplied export clone (and its mount iframe). */
+async function createLoanDetailRowSource(rootEl, options = {}) {
+  if (!rootEl || !rootEl.isConnected) throw new Error('detail root is not mounted');
+  const scale = EXPORT_CANVAS_SCALE_DETAIL;
+  const width = Math.round(rootEl.offsetWidth * scale);
+  if (width !== EXPORT_OUTPUT_WIDTH) throw new Error('unexpected detail row width');
+  const rawHeight = Math.ceil(getResultsExportHeight(rootEl) * scale);
+  if (!Number.isSafeInteger(rawHeight) || rawHeight <= 0) throw new Error('invalid detail row height');
+  const bandRows = 2032, guardRows = 8;
+  const pad = Math.round(EXPORT_BOTTOM_PAD_CSS * scale);
+  let disposed = false, cache = null;
+  let queue = Promise.resolve();
+
+  function release(canvas) {
+    if (canvas) canvas.width = canvas.height = 1;
+  }
+  function dispose() {
+    disposed = true;
+    release(cache?.canvas);
+    cache = null;
+    // An active html2canvas owns its target until it settles. Its finally block
+    // releases it; resizing it here could turn an in-flight draw into success.
+    rootEl.remove();
+  }
+  function assertOpen() {
+    if (disposed) throw new Error('detail row source is disposed');
+    try {
+      if (typeof options.checkCancelled === 'function' && options.checkCancelled()) {
+        throw new DOMException('Export cancelled', 'AbortError');
+      }
+    } catch (error) {
+      dispose();
+      throw error;
+    }
+  }
+  async function bandAt(rawY) {
+    assertOpen();
+    const coreTop = Math.floor(rawY / bandRows) * bandRows;
+    if (cache?.coreTop === coreTop) return cache;
+    release(cache?.canvas);
+    cache = null;
+    const top = Math.max(0, coreTop - guardRows);
+    const end = Math.min(rawHeight, coreTop + bandRows + guardRows);
+    const canvas = rootEl.ownerDocument.createElement('canvas');
+    canvas.width = width;
+    canvas.height = end - top;
+    // Readback is the purpose of this canvas; choose its context before the
+    // renderer so Chrome does not switch raster backends during row reads.
+    if (!canvas.getContext('2d', { willReadFrequently: true })) throw new Error('detail row canvas unavailable');
+    try {
+      const rendered = await html2canvas(rootEl, {
+        canvas,
+        onclone: doc => { doc.body.dataset.mode = rootEl.dataset.exportMode; },
+        ...(rootEl.dataset.exportMode === 'youth' ? { scrollX: 0, scrollY: 0 } : {}),
+        scale,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        width: rootEl.offsetWidth,
+        height: (end - top) / scale,
+        x: 0,
+        y: top / scale,
+        windowWidth: EXPORT_CAPTURE_VIEWPORT_WIDTH,
+        windowHeight: EXPORT_CAPTURE_VIEWPORT_HEIGHT
+      });
+      assertOpen();
+      if (rendered !== canvas || canvas.width !== width || canvas.height !== end - top) {
+        throw new Error('detail row capture dimensions changed');
+      }
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) throw new Error('detail row canvas unavailable');
+      cache = { canvas, ctx, top, end, coreTop };
+      return cache;
+    } catch (error) {
+      release(canvas);
+      throw error;
+    }
+  }
+  async function findInk(fromTop) {
+    for (let offset = 0; offset < rawHeight; offset += bandRows) {
+      const coreTop = fromTop ? offset : Math.max(0, rawHeight - offset - bandRows);
+      // Last probe may straddle the fixed band grid: visit each small slice.
+      const count = Math.min(bandRows, rawHeight - coreTop);
+      let cursor = fromTop ? coreTop : coreTop + count;
+      while (fromTop ? cursor < coreTop + count : cursor > coreTop) {
+        const band = await bandAt(fromTop ? cursor : cursor - 1);
+        const from = fromTop ? cursor : Math.max(coreTop, band.coreTop);
+        const to = fromTop ? Math.min(coreTop + count, band.coreTop + bandRows, rawHeight) : cursor;
+        const pixels = band.ctx.getImageData(0, from - band.top, width, to - from).data;
+        for (let row = 0; row < to - from; row++) {
+          const y = fromTop ? row : to - from - row - 1;
+          for (let i = y * width * 4, end = (y + 1) * width * 4; i < end; i += 4) {
+            if (pixels[i + 3] > 0 && (pixels[i] < 255 || pixels[i + 1] < 255 || pixels[i + 2] < 255)) return from + y;
+          }
+        }
+        cursor = fromTop ? to : from;
+      }
+    }
+    return -1;
+  }
+  try {
+    const firstInk = await findInk(true);
+    const lastInk = firstInk < 0 ? -1 : await findInk(false);
+    if (firstInk < 0 || lastInk < firstInk) throw new Error('empty detail row image');
+    const height = lastInk - firstInk + 1 + pad * 2;
+    async function readRowsNow(y, count) {
+      assertOpen();
+      if (!Number.isSafeInteger(y) || !Number.isSafeInteger(count) || y < 0 || count < 0 || y + count > height) {
+        throw new RangeError('detail row request out of bounds');
+      }
+      const output = new Uint8Array(width * count * 4);
+      output.fill(255);
+      let cursor = Math.max(y, pad);
+      const end = Math.min(y + count, height - pad);
+      while (cursor < end) {
+        const rawY = firstInk + cursor - pad;
+        const band = await bandAt(rawY);
+        const rows = Math.min(end - cursor, band.coreTop + bandRows - rawY, rawHeight - rawY);
+        const pixels = band.ctx.getImageData(0, rawY - band.top, width, rows).data;
+        output.set(pixels, (cursor - y) * width * 4);
+        cursor += rows;
+      }
+      return output;
+    }
+    return {
+      width, height,
+      readRows(y, count) {
+        const work = queue.then(() => readRowsNow(y, count));
+        queue = work.catch(() => {});
+        return work;
+      },
+      dispose
+    };
+  } catch (error) {
+    dispose();
+    throw error;
+  }
 }
 
 async function captureDetailedImageFiles(context, mime, ext, job) {
