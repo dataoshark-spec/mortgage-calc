@@ -3903,6 +3903,8 @@ if ("serviceWorker" in navigator) {
 <style id="threshold-protection-style">
 body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){visibility:hidden}
 #thresholdBoot{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:#eef0f1;color:#222;box-sizing:border-box}
+#thresholdBoot[data-startup-wait]{background:var(--bg)}
+#thresholdBoot[data-startup-wait="pending"] .threshold-boot-card{visibility:hidden}
 .threshold-boot-card{width:min(100%,420px);max-height:90dvh;overflow:auto;background:#fff;border-radius:20px;padding:22px;box-sizing:border-box;font-size:15px;line-height:1.6}
 .threshold-boot-card h2{font-size:20px;margin:0 0 12px}.threshold-boot-actions{display:grid;gap:12px}
 .threshold-boot-actions button{min-height:44px;border:0;border-radius:10px;background:#c99524;color:white;font:inherit;padding:8px 12px}.threshold-boot-actions button:disabled{opacity:.45}
@@ -3918,8 +3920,44 @@ body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){v
 #thresholdUpdateNotice{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff5df;color:#75521b;font-size:12px;line-height:1.5}#thresholdUpdateNotice[hidden]{display:none}#thresholdUpdateNotice button{flex-shrink:0;border:1px solid #d8bf87;background:white;border-radius:7px;padding:7px;font:inherit;color:inherit}
 
 </style>
+<style id="loan-notice-styles">
+/* 共用提示的底邊以正常鍵盤本體量測；提示不再成為鍵盤的一部分。 */
+#loanNoticeLayer{position:fixed;inset:0;z-index:700;pointer-events:none}
+#toast,.loan-persistent{position:absolute!important;left:var(--loan-notice-center,50%)!important;bottom:var(--loan-notice-bottom,40%)!important;transform:translateX(-50%)!important;width:max-content!important;max-width:var(--loan-notice-width,calc(100vw - 24px))!important;max-height:var(--loan-notice-max-height,50vh)!important;box-sizing:border-box;overflow:auto;overscroll-behavior:contain;text-align:center;margin:0!important;white-space:normal!important;overflow-wrap:anywhere}
+#toast{padding:14px 16px;border-radius:14px;font-size:24px;font-weight:700;line-height:1.4;transition:opacity .15s;box-shadow:0 6px 20px #0003;z-index:700;-webkit-touch-callout:none;touch-action:pan-y}
+#toast:not(.show),#toast.loan-notice-suppressed{visibility:hidden;pointer-events:none}
+#toast.show:not(.loan-notice-suppressed){visibility:visible}
+#toast.toast-warning,#toast.toast-reset{background:#C44E4E;color:#fff;border:0}
+#toast.toast-warning :is(.toast-hint-main,.toast-hint-em,.toast-paren,.toast-warn,.toast-no,.toast-ok){color:#fff}
+#toast .toast-lines>span,#toast .nw,#toast .toast-hint-sub{white-space:normal;max-width:100%;overflow-wrap:anywhere}
+#toast .toast-hint-body,#toast .toast-lines{max-width:100%}
+#toast .toast-hint-sub{display:block}
+#toast .toast-reset-title{display:block;font-size:24px;line-height:1.4}
+#toast .toast-reset-line{display:block;font-size:18px;line-height:1.5;margin-top:6px}
+#toast.toast-held{outline:2px solid #e9c987;outline-offset:3px}
+#toast .export-download-toast{font-size:15.2px}
+#toast .export-download-toast>div{white-space:normal}
+.loan-persistent{display:none!important;background:#C44E4E!important;color:#fff!important;border:0!important;border-radius:14px!important;padding:14px 16px!important;font-family:inherit!important;font-size:16px!important;font-weight:600!important;line-height:1.5!important;box-shadow:0 6px 20px #0003!important;pointer-events:auto;z-index:700}
+.loan-persistent.loan-notice-active:not([hidden]){display:block!important}
+#installBar.loan-persistent{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important}
+#installBar.loan-persistent.loan-notice-active{display:flex!important}
+.export-image-progress.loan-persistent{right:auto!important;background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;font-size:15px!important;font-weight:500!important}
+.export-image-progress.loan-persistent.loan-notice-active{display:flex!important}
+.export-image-progress.loan-persistent button{margin-top:0;color:inherit;border-color:currentColor}
+.loan-persistent button{font:inherit;font-size:15px;min-height:40px;margin:8px 4px 0;padding:6px 14px;border:1px solid #fff;border-radius:9px;background:#fff;color:#9b3030;cursor:pointer}
+#appAlert .app-alert-card{position:absolute;left:var(--loan-alert-center,50%);bottom:var(--loan-alert-bottom,40%);transform:translateX(-50%);width:max-content;max-width:min(420px,var(--loan-notice-width,calc(100vw - 24px)));max-height:var(--loan-notice-max-height,50vh);padding:16px;gap:10px;border-radius:14px;animation:none;box-sizing:border-box;overflow:hidden}
+#appAlert .app-alert-text{max-width:100%;overflow-wrap:anywhere}
+#appAlert .app-alert-btn{flex-shrink:0}
+#appAlert.app-alert-warning .app-alert-card{background:#C44E4E;border:0;color:#fff}
+#appAlert.app-alert-warning :is(.app-alert-text,.am-lead,.am-lead b,.am-chip,.am-detail,.am-detail-label,.app-alert-icon){color:#fff}
+#appAlert.app-alert-warning :is(.am-chip,.am-detail,.app-alert-icon){background:#ffffff12;border-color:#ffffff70}
+#appAlert.app-alert-warning .app-alert-btn{background:#fff;color:#9b3030;border-color:#fff}
+#appAlert .app-alert-icon{width:34px;height:34px;flex-shrink:0}
+#appAlert .app-alert-icon svg{width:22px;height:22px}
+@media(max-width:360px){#toast{font-size:20px}#toast .toast-reset-title{font-size:20px}#toast .toast-reset-line{font-size:16px}}
+</style>
 </head>
-<body>
+<body data-threshold-loading="1">
 <div class="wrap" id="appShell">
   <div class="sticky-top">
     <header class="app-hero">
@@ -6228,7 +6266,7 @@ root.LoanDetailJpeg = Object.freeze({
 (function (root) {
   'use strict';
 
-  const SCHEMA = 1, PROTOCOL = 2, STORE = 'state', RECORD_KEY = 'thresholds';
+  const SCHEMA = 1, PROTOCOL = 3, STORE = 'state', RECORD_KEY = 'thresholds';
   const STORAGE_MODEL = 'fixed-thresholds-v1';
   const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -6301,7 +6339,7 @@ root.LoanDetailJpeg = Object.freeze({
         || !integer(record.minWriter) || record.minWriter < 1 || record.minWriter > protocol) {
       fail('UNSUPPORTED_SCHEMA', 'This version cannot read or write the saved threshold format.');
     }
-    if (protocol === PROTOCOL && record.storageModel !== STORAGE_MODEL) fail('UNSUPPORTED_SCHEMA', 'This saved threshold model is not recognized.');
+    if (protocol >= 2 && record.storageModel !== STORAGE_MODEL) fail('UNSUPPORTED_SCHEMA', 'This saved threshold model is not recognized.');
     if (typeof record.generation !== 'string' || !record.generation || !integer(record.revision)
         || !object(record.defaults) || !object(record.fields) || !object(record.migration)
         || !['fresh', 'legacy', 'pending'].includes(record.migration.status)
@@ -6344,6 +6382,13 @@ root.LoanDetailJpeg = Object.freeze({
     if (existing && existing.protocol === PROTOCOL) {
       validateRecord(existing);
       return { record: clone(existing), changed: false };
+    }
+    if (existing && existing.protocol === 2) {
+      validateRecordShape(existing, 2);
+      const record = clone(existing);
+      record.protocol = PROTOCOL; record.minWriter = PROTOCOL;
+      validateRecord(record);
+      return { record, changed: true };
     }
     validateRecordShape(existing, 1);
     const record = clone(existing);
@@ -7006,6 +7051,16 @@ function createThresholdUI() {
   const captured = {};
   let captureError = null, store, snapshot, defaults, defaultsRows, hooks, channel, appliedValues={}, openEpoch=0, legacyDefaultGroups=[];
   const bindings = [];
+  let bootHintTimer = null;
+  function validateSavedRows(group, rows) {
+    try { hooks.validate(group,rows); }
+    catch(error) {
+      if(error?.constructor===Error && ['Invalid threshold values','Invalid youth row count','Invalid youth name','Invalid youth amount'].includes(error.message)){
+        error.name='LoanStoredDataError';error.code='VALIDATION_FAILED';
+      }
+      throw error;
+    }
+  }
   const clone = value => JSON.parse(JSON.stringify(value));
   const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
   const escape = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -7013,7 +7068,8 @@ function createThresholdUI() {
   function rowsOf(group, state = snapshot) {
     return defaultsRows[group].map((row,i) => Object.fromEntries(columns[group].map(field => [field, state.fields[group+'.'+i+'.'+field].value])));
   }
-  function gate(title, text) {
+  function gate(title, text, delayLoading = false) {
+    clearTimeout(bootHintTimer); bootHintTimer = null;
     let el = document.getElementById('thresholdBoot');
     if (!el) {
       el = document.createElement('div'); el.id = 'thresholdBoot';
@@ -7022,16 +7078,22 @@ function createThresholdUI() {
     }
     document.body.dataset.thresholdLoading = '1';
     Array.from(document.body.children).forEach(child => { if (child !== el && !['SCRIPT','STYLE'].includes(child.tagName)) child.inert = true; });
+    if (delayLoading) el.dataset.startupWait = 'pending';
+    else delete el.dataset.startupWait;
     el.innerHTML = '<div class="threshold-boot-card"><h2>'+escape(title)+'</h2><p>'+escape(text)+'</p><div class="threshold-boot-actions"></div></div>';
+    if (delayLoading) bootHintTimer = setTimeout(() => {
+      bootHintTimer = null;
+      if (el.isConnected && document.body.dataset.thresholdLoading === '1') el.dataset.startupWait = 'visible';
+    }, 300);
     return el;
   }
   function bootFailure(error) {
-    const el = gate('目前無法讀取門檻設定', '為保留原本的設定，暫停載入。請重新載入再試一次。');
+    const el = gate('程式載入失敗', '目前無法完成程式載入，請重新載入再試一次。');
     el.dataset.error = error?.code || 'READ_FAILED';
     const button = document.createElement('button'); button.type='button'; button.textContent='重新載入';
     button.onclick = () => location.reload(); el.querySelector('.threshold-boot-actions').append(button);
   }
-  gate('正在讀取已儲存設定', '請稍候…');
+  gate('正在讀取已儲存設定', '請稍候…', true);
   try {
     captured.session = sessionStorage.getItem('mortgage_tab_state_v1');
     captured.latest = localStorage.getItem('mortgage_latest_state_v1');
@@ -7039,6 +7101,7 @@ function createThresholdUI() {
   } catch (error) { captureError=error; }
 
   async function candidates(repair=false) {
+    if (window.loanDataRecovery?.ignoresLegacy() || window.loanDataRecovery?.isTemporary()) return [];
     if (captureError) throw captureError;
     const out=[];
     const filled=new Set();legacyDefaultGroups=[];
@@ -7051,11 +7114,11 @@ function createThresholdUI() {
         let rows;
         try {rows=hooks.parseLegacy(group,JSON.parse(values[key]));}
         catch(error){
+          if(!(error instanceof SyntaxError) && !['Invalid legacy threshold rows','Invalid legacy youth rows','Invalid youth row count','Invalid youth name','Invalid youth amount'].includes(error?.message))throw error;
           if(!repair||filled.has(group)){issues.push({group,code:'UNUSED_INVALID'});continue;}
-          const resolution=await repairThresholdLegacy({group,raw:values[key],defaults:clone(defaultsRows[group]),parse:hooks.parseLegacy.bind(hooks),validate:hooks.validate.bind(hooks),gate});
-          filled.add(group);
-          if(resolution.useDefaults){legacyDefaultGroups.push(group);continue;}
-          rows=resolution.rows;
+          const failure=new Error('A required saved threshold group is unreadable.');
+          failure.name='LoanStoredDataError';failure.code='CORRUPT_THRESHOLD_LEGACY';
+          failure.loanDataScope=id==='session'?'session':'authority';throw failure;
         }
         filled.add(group);
         Object.assign(fields,flatten(group,rows));
@@ -7074,7 +7137,7 @@ function createThresholdUI() {
       try{
         data=JSON.parse(captured[id]);
         if(!data||data.schema!==1||!data.values||typeof data.values!=='object'||Array.isArray(data.values))throw new Error('Invalid old snapshot');
-      }catch(error){if(repair&&filled.size<Object.keys(groupKeys).length)throw error;continue;}
+      }catch(error){if(repair&&filled.size<Object.keys(groupKeys).length){error.name='LoanStoredDataError';error.code='CORRUPT_THRESHOLD_LEGACY';error.loanDataScope=id==='session'?'session':'authority';throw error;}continue;}
       await add(id,names[id],data.values,captured[id]);
     }
     // Standalone keys are a predecessor, not an additional latest snapshot.
@@ -7085,19 +7148,31 @@ function createThresholdUI() {
   async function init(options) {
     hooks=options; defaultsRows=clone(options.defaultsRows);
     defaults=Object.assign({},...Object.keys(groupKeys).map(group=>flatten(group,defaultsRows[group])));
-    store=thresholdStoreFactory({indexedDB:window.indexedDB,bootstrap: options.bootstrap,validateSnapshot(state){
-      if(!state.needsLegacyChoice)Object.keys(groupKeys).forEach(group=>hooks.validate(group,rowsOf(group,state)));
+    const factory=window.loanDataRecovery?.isTemporary()?window.loanDataRecovery.memoryThresholdStore:thresholdStoreFactory;
+    store=factory({indexedDB:window.indexedDB,bootstrap: options.bootstrap,validateSnapshot(state){
+      if(!state.needsLegacyChoice)Object.keys(groupKeys).forEach(group=>validateSavedRows(group,rowsOf(group,state)));
     }});
+    try {
     // Read authority first: obsolete or damaged legacy storage cannot shadow it.
     let existing;
     try { existing=await store.read(); } catch(error) { if(error.code!=='NOT_INITIALIZED') throw error; }
     let list=[];
     if(!existing||existing.needsLegacyChoice)list=await candidates(true);
-    else {try{list=await candidates();}catch(_){/* Saved authority remains usable even if obsolete storage is damaged. */}}
+    // Completed authority needs no obsolete snapshots, including their damaged raw content.
     snapshot=await store.initPreserved({defaults,defaultsRevision:20260926,legacyCandidates:list,preferredCandidateId:list[0]?.id,defaultGroups:legacyDefaultGroups});
     // Storage schema validation and application numeric validation are separate.
-    Object.keys(groupKeys).forEach(group=>hooks.validate(group,rowsOf(group)));
+    Object.keys(groupKeys).forEach(group=>validateSavedRows(group,rowsOf(group)));
     appliedValues=clone(snapshot.values);
+    } catch(error) {
+      if(!window.loanDataRecovery?.isTemporary()){
+        if(await window.loanDataRecovery?.recover(error))return new Promise(()=>{});
+        if(window.loanDataRecovery?.isUnavailable(error)||window.loanDataRecovery?.recoveryFailed()){
+          try{await store.close?.();}catch(_){}
+          options.onUnavailable();return init(options);
+        }
+      }
+      throw error;
+    }
     try {
       channel=new BroadcastChannel('mortgage_threshold_changes_v1');
       channel.onmessage=()=>noticeExternal();
@@ -7122,11 +7197,13 @@ function createThresholdUI() {
     checking=true;
     try {
       const latest=await store.read();
+      if(latest&&latest.generation!==snapshot.generation){window.loanDataRecovery?.followGeneration();return;}
       if(latest)showPending(latest);
     } catch(_) { /* Settings dialogs do a fresh read and display actionable errors. */ }
     finally { checking=false; }
   }
   function finish() {
+    clearTimeout(bootHintTimer); bootHintTimer = null;
     document.getElementById('thresholdBoot')?.remove();
     delete document.body.dataset.thresholdLoading;
     Array.from(document.body.children).forEach(child=>{if(!['SCRIPT','STYLE'].includes(child.tagName))child.inert=false;});
@@ -7229,7 +7306,24 @@ function createThresholdUI() {
 
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.28A";
+const APP_VERSION = "2026.09.28C";
+// The same catalog initializes both a fresh installation and an atomic data reset.
+const LUX_DEFAULT_ROWS = [
+{ name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
+{ name: '新北市', amount: '6000', ratio: '30', grace: '0' },
+{ name: '其他縣市', amount: '4000', ratio: '30', grace: '0' }
+];
+const HH_DEFAULT_ROWS = [
+{ ratio: '', grace: '' },     // 首購且名下無房：規定未設限
+{ ratio: '', grace: '0' },    // 無房貸但已有房屋：不得有寬限期
+{ ratio: '70', grace: '0' },  // 已有 1 戶房貸：七成、不得有寬限期
+{ ratio: '30', grace: '0' }   // 已有 2 戶以上：三成、不得有寬限期
+];
+const YR_DEFAULT_ROWS = [
+  { name: '臺北市', amount: '3500' },
+  { name: '新北・新竹', amount: '2500' },
+  { name: '其他縣市', amount: '2000' }
+];
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -7244,6 +7338,8 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
   const RECORD = 'loan-user-data-v2', ORIGINALS = 'loan-user-data-v2-originals';
   const SESSION = 'mortgage_tab_state_v2', LEGACY_SESSION = 'mortgage_tab_state_v1';
   const LEGACY_LATEST = 'mortgage_latest_state_v1', MODEL = 'protected-loan-user-data-v1';
+  const RESET = 'loan-user-reset-v1', RESTART = 'mortgage_reset_reload_v1';
+  let observedAuthority, observedThreshold, observedReset = null, bootDatabase = null;
   const TRIAL_KEYS = [
     'mortgage_form_state_v4', 'mortgage_clear_snapshot_v4', 'mortgage_burden_state_v1',
     'mortgage_burden_cleared_v1', 'youth_form_state_v3', 'youth_clear_snapshot_v3',
@@ -7368,7 +7464,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     return values;
   }
   function validateRecord(record) {
-    if (!object(record) || record.model !== MODEL || record.schema !== 1 || record.protocol !== 2
+    if (!object(record) || record.model !== MODEL || record.schema !== 1 || ![2, 3].includes(record.protocol)
         || typeof record.generation !== 'string' || !record.generation || !Number.isInteger(record.revision)
         || record.revision < 0 || !object(record.migration) || record.migration.complete !== true
         || !object(record.settings) || !object(record.latest) || !Number.isInteger(record.latest.revision)
@@ -7395,7 +7491,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     }
   }
   function newRecord(values, generation, source) {
-    return validateRecord({ model: MODEL, schema: 1, protocol: 2, generation, revision: 0,
+    return validateRecord({ model: MODEL, schema: 1, protocol: 3, generation, revision: 0,
       migration: { complete: true, source }, settings: sharedCells(values),
       latest: { revision: 0, values: trialValues(values) }, appliedOperations: [] });
   }
@@ -7466,6 +7562,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     }
     function project(recordToUse, page) { return Object.assign(dict(), clone(page), projectShared(recordToUse)); }
     function journal() {
+      if(restarting)return;
       const envelope = { model: MODEL, schema: 1, generation: record?.generation || null, tabId,
         values: trialValues(values), pending: pending ? clone(pending) : null, inFlight: active || recovery ? clone(active || recovery) : null,
         legacyPending: legacyPending ? clone(legacyPending) : null };
@@ -7519,7 +7616,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     function commitOperation(operation) {
       return transaction('readwrite', [RECORD, 'thresholds'], (data, store) => {
         const latest = validateRecord(data[RECORD]);
-        if (!data.thresholds || data.thresholds.schema !== 1 || data.thresholds.protocol !== 2 || data.thresholds.minWriter !== 2) fail('CORRUPT_RECORD', 'The threshold authority is missing or incompatible.');
+        if (!data.thresholds || data.thresholds.schema !== 1 || data.thresholds.protocol !== 3 || data.thresholds.minWriter !== 3) fail('CORRUPT_RECORD', 'The threshold authority is missing or incompatible.');
         if (latest.generation !== operation.generation) fail('STALE_GENERATION', 'This page belongs to a different saved generation.');
         if (latest.appliedOperations.some(item => item.id === operation.id)) return latest;
         const next = clone(latest), conflicts = [];
@@ -7573,7 +7670,11 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
         error = null;
         notifyShared();
         try { channel?.postMessage({ generation: record.generation, revision: record.revision }); } catch (_) {}
-      } catch (e) { recovery = operation; error = e; notify(); throw e; }
+      } catch (e) {
+        if(e.code==='STALE_GENERATION'){ready=false;pending=null;recovery=null;root.loanDataRecovery?.followGeneration();}
+        else recovery = operation;
+        error = e; notify(); throw e;
+      }
       finally {
         committing = null; active = null;
         try { journal(); } catch (_) { /* immutable in-flight operation IDs make a reload retry idempotent */ }
@@ -7647,10 +7748,11 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     async function bootstrapThreshold(action) {
       const result = await transaction('readwrite', [RECORD, ORIGINALS, 'thresholds'], (data, store) => {
         if (data[RECORD] !== undefined) {
-          const existing = validateRecord(data[RECORD]);
+          const existing = clone(validateRecord(data[RECORD]));
           if (data.thresholds === undefined) fail('CORRUPT_RECORD', 'Canonical user data exists without thresholds.');
           if (!object(data[ORIGINALS]) || data[ORIGINALS].model !== MODEL || data[ORIGINALS].generation !== existing.generation) fail('CORRUPT_RECORD', 'The original migration archive is missing or inconsistent.');
           const threshold = action(data.thresholds);
+          if (existing.protocol !== 3) { existing.protocol = 3; store.put(existing, RECORD); }
           if (threshold.changed) store.put(threshold.record, 'thresholds');
           return { record: existing, value: threshold.value };
         }
@@ -7659,7 +7761,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
           fail('UNSUPPORTED_RECORD', 'Unrecognized threshold format without a matching migration record.');
         }
         const threshold = action(data.thresholds);
-        if (!threshold?.record || threshold.record.protocol !== 2 || threshold.record.minWriter !== 2) fail('INVALID_BOOTSTRAP', 'Threshold migration must fence obsolete writers.');
+        if (!threshold?.record || threshold.record.protocol !== 3 || threshold.record.minWriter !== 3) fail('INVALID_BOOTSTRAP', 'Threshold migration must fence obsolete writers.');
         const created = newRecord(bootOriginals.sharedValues, record.generation, bootOriginals.source);
         store.put(threshold.record, 'thresholds'); store.put(created, RECORD);
         store.put({ model: MODEL, generation: created.generation, captured: { ...bootOriginals.raw, threshold: data.thresholds ?? null } }, ORIGINALS);
@@ -7695,12 +7797,20 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
       // A pending retry is deliberately explicit, as it may conflict with another page.
       return true;
     }
-    db = await opened();
-    record = await transaction('readonly', [RECORD], data => data[RECORD] === undefined ? null : validateRecord(data[RECORD]));
+    db = await opened(); bootDatabase = db;
+    let bootSourceScope = 'authority';
+    try {
+    record = await transaction('readonly', [RECORD, 'thresholds', RESET], data => {
+      observedAuthority = data[RECORD]; observedThreshold = data.thresholds; observedReset = data[RESET] || null;
+      if(data[RECORD]===undefined)return null;
+      const saved=validateRecord(data[RECORD]);validateSavedFormEnvelopes(saved.latest.values);return saved;
+    });
+    if(observedReset?.status==='committed')observedReset=await root.loanDataRecovery.completeCleanup(observedReset);
     let parsedSession = null;
     if (resume) {
       newSessionRaw = session.getItem(SESSION);
       if (newSessionRaw !== null) {
+        bootSourceScope = 'session';
         try { parsedSession = JSON.parse(newSessionRaw); } catch (_) { fail('CORRUPT_SESSION', 'The saved page cannot be parsed.'); }
         if (!object(parsedSession) || parsedSession.model !== MODEL || parsedSession.schema !== 1 || typeof parsedSession.tabId !== 'string') fail('CORRUPT_SESSION', 'The saved page format is invalid.');
         validateValues(parsedSession.values);
@@ -7711,15 +7821,17 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     if (record) {
       let page = parsedSession?.values || record.latest.values;
       if (parsedSession) { pending = parsedSession.pending; recovery = parsedSession.inFlight || null; legacyPending = parsedSession.legacyPending; }
-      else if (resume) {
+      else if (resume && !observedReset) {
         const oldRaw = session.getItem(LEGACY_SESSION);
         if (oldRaw !== null) {
+          bootSourceScope = 'session';
           const old = parseLegacy(oldRaw); page = trialValues(old.values);
           if (old.needsPublish) legacyPending = old;
         }
       }
       values = project(record, page);
     } else {
+      if (observedReset) fail('CORRUPT_RECORD', 'A reset authority is missing.');
       const raw = { latest: local.getItem(LEGACY_LATEST), session: resume ? session.getItem(LEGACY_SESSION) : null, standalone: dict() };
       let global;
       if (raw.latest !== null) global = parseLegacy(raw.latest);
@@ -7728,10 +7840,12 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
         for (const key of KEYS) { const value = local.getItem(key); raw.standalone[key] = value; if (value !== null) imported[key] = value; }
         global = { schema: 1, values: imported };
       }
-      const page = raw.session !== null ? parseLegacy(raw.session) : global;
+      const page = raw.session !== null ? (() => { bootSourceScope = 'session'; return parseLegacy(raw.session); })() : global;
+      bootSourceScope = 'authority';
       record = newRecord(global.values, uuid(), Object.keys(global.values).length ? 'legacy' : 'fresh');
       bootOriginals = { raw, sharedValues: clone(global.values), source: record.migration.source };
       values = Object.assign(dict(), clone(page.values), projectShared(record));
+      if (raw.session !== null) bootSourceScope = 'session';
       if (page.needsPublish) legacyPending = clone(page);
     }
     validateSavedFormEnvelopes(values);
@@ -7754,8 +7868,13 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
       error = new LoanStorageError('PENDING_SAVE', 'The previous operation has not been confirmed.');
     }
     if (legacyPending) parseLegacy(JSON.stringify(legacyPending));
+    } catch (error) {
+      error.loanDataScope = error.loanDataScope || bootSourceScope;
+      throw error;
+    }
     let channel = null;
-    try { if (host.BroadcastChannel) { channel = new host.BroadcastChannel('loan-user-data-v2-changes'); channel.onmessage = () => { if (ready) refreshShared().catch(e => { error = e; notify(); }); }; } } catch (_) {}
+    try { if (host.BroadcastChannel) { channel = new host.BroadcastChannel('loan-user-data-v2-changes'); channel.onmessage = () => { if (ready) refreshShared().catch(e => { if(e.code==='STALE_GENERATION'){root.loanDataRecovery?.followGeneration();return;} error = e; notify(); }); }; } } catch (_) {}
+    if (doc) host.addEventListener?.('focus', () => { if(ready) refreshShared().catch(e => { if(e.code==='STALE_GENERATION')root.loanDataRecovery?.followGeneration(); }); });
     function userEvent(event) {
       if (!ready || !event.isTrusted) return;
       const target = event.target;
@@ -7782,9 +7901,163 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
   createLoanUserStorage.pure = Object.freeze({ validateRecord, parseLegacy, sharedCells, projectShared, newRecord, trialValues, frozenBaseDefault });
   createLoanUserStorage.LoanStorageError = LoanStorageError;
   root.createLoanUserStorage = createLoanUserStorage;
+  // Recovery control contains generations/status only, never discarded values.
+  const contentErrors = new Set(['CORRUPT_RECORD','UNSUPPORTED_RECORD','CORRUPT_LEGACY','UNSUPPORTED_LEGACY',
+    'CORRUPT_SETTING','CORRUPT_FORM','CORRUPT_SESSION','CORRUPT_THRESHOLD_LEGACY','UNSUPPORTED_SCHEMA',
+    'UNSUPPORTED_FIELDS','INCOMPLETE_LEGACY_GROUP','INVALID_LEGACY','VALIDATION_FAILED']);
+  let restarting = false, recoveryFailed = false, temporary = false;
+  function isUnavailable(error) {
+    return ['SecurityError','QuotaExceededError','AbortError','InvalidStateError','UnknownError','NotReadableError'].includes(error?.name)
+      || ['STORAGE_UNAVAILABLE','OPEN_BLOCKED','OPEN_FAILED','TRANSACTION_ABORTED','SESSION_WRITE_FAILED'].includes(error?.code);
+  }
+  async function recoveryTransaction(mode, action) {
+    const db = await new Promise((resolve,reject) => {
+      let request;
+      try { request=root.indexedDB.open(DB,1); } catch(error){reject(error);return;}
+      request.onerror=()=>reject(request.error);request.onblocked=()=>reject(new Error('Recovery storage is blocked.'));
+      request.onsuccess=()=>resolve(request.result);
+    });
+    try { return await new Promise((resolve,reject) => {
+      let tx,result,failure;
+      try {tx=db.transaction(STORE,mode);} catch(error){reject(error);return;}
+      tx.oncomplete=()=>resolve(result);tx.onabort=()=>reject(failure||tx.error);tx.onerror=event=>{failure ||= event.target.error;};
+      const store=tx.objectStore(STORE),data={},requests=[RECORD,'thresholds',RESET],keysRequest=store.getAllKeys();let remaining=4;
+      function done(){if(--remaining)return;try{result=action(data,store,keysRequest.result);}catch(error){failure=error;tx.abort();}}
+      keysRequest.onsuccess=done;
+      requests.forEach(key=>{const request=store.get(key);request.onsuccess=()=>{data[key]=request.result;done();};});
+    }); } finally {db.close();}
+  }
+  function clearPageStorage() {root.sessionStorage.removeItem(SESSION);root.sessionStorage.removeItem(LEGACY_SESSION);}
+  async function completeCleanup(marker) {
+    for(const key of [LEGACY_LATEST,...KEYS])root.localStorage.removeItem(key);
+    clearPageStorage();
+    return recoveryTransaction('readwrite',(data,store)=>{
+      if(data[RESET]?.generation!==marker.generation)return data[RESET];
+      const next={...data[RESET],status:'ready'};store.put(next,RESET);return next;
+    });
+  }
+  function recoveryFailure() {
+    recoveryFailed=true;
+    root.loanNotifications?.showPersistent('data-recovery','目前無法完成資料讀取或重設，尚未確認保存成功。請重新載入再試。',{
+      actionText:'重新載入',onAction:()=>root.location.reload()});
+  }
+  function restart(kind,generation) {
+    if(restarting)return;
+    root.sessionStorage.setItem(RESTART,JSON.stringify({kind,generation:generation||null,attempt:1}));
+    restarting=true;bootDatabase?.close();root.location.reload();
+  }
+  root.loanDataRecovery=Object.freeze({
+    isUnavailable,recoveryFailed(){return recoveryFailed;},isTemporary(){return temporary;},
+    createMemoryStorage(){
+      temporary=true;bootDatabase?.close();
+      const record=newRecord({},root.crypto.randomUUID(),'temporary');let values=projectShared(record);
+      function stage(entries){for(const[key,value]of entries){if(!ALLOWED.has(key))fail('INVALID_KEY','Unknown application key.');if(value===null)delete values[key];else values[key]=String(value);}}
+      return Object.freeze({temporary:true,getItem(key){return own(values,key)?values[key]:null;},
+        setItem(key,value){stage([[key,value]]);},removeItem(key){stage([[key,null]]);},setItems:stage,
+        hasFailure(){return true;},hasPending(){return false;},markTrialAction(){},markModeDragAction(){},
+        hasAuthority(){return true;},isFresh(){return true;},async finish(){return true;},async flush(){return false;},
+        async retryPending(){return false;},async refreshShared(){return true;},async rebaseShared(key){return this.getItem(key);},confirmShared(){},
+        bootstrapThreshold(){fail('INVALID_BOOTSTRAP','Temporary thresholds use their memory store.');},
+        inspect(){return clone({record,values,ready:true,temporary:true});},close(){}
+      });
+    },
+    memoryThresholdStore(options={}){
+      let record;
+      const pure=thresholdStoreFactory.pure;
+      function accept(next){const value=pure.snapshot(next);options.validateSnapshot?.(value);record=next;return value;}
+      return {async read(){if(!record)fail('NOT_INITIALIZED','Initialize temporary thresholds.');return pure.snapshot(record);},
+        async initPreserved(args){return accept(pure.createRecord({...args,generation:root.crypto.randomUUID(),legacyCandidates:[]}));},
+        async patch(args){return accept(pure.applyPatch(record,args).record);},async close(){}};
+    },
+    ignoresLegacy(){return !!observedReset;},
+    completeCleanup,
+    async followGeneration(){
+      if(restarting)return;
+      try{clearPageStorage();restart('follow',null);}catch(_){recoveryFailure();}
+    },
+    async recover(error){
+      const known=['LoanStorageError','ThresholdStoreError','LoanStoredDataError'].includes(error?.name);
+      if(!known||(!contentErrors.has(error.code)&&error.code!=='STALE_GENERATION')){
+        if(isUnavailable(error))recoveryFailure();
+        return false;
+      }
+      try {
+        // A failed recovery is retried by the user; it never causes a reload loop.
+        if(root.sessionStorage.getItem(RESTART)!==null){recoveryFailure();return false;}
+        if(error.code==='STALE_GENERATION'||error.loanDataScope==='session'){
+          clearPageStorage();restart(error.code==='STALE_GENERATION'?'follow':'page',null);return true;
+        }
+        const generation=root.crypto.randomUUID(),thresholdGeneration=root.crypto.randomUUID();
+        const defaults={};
+        for(const[group,rows]of Object.entries({hh:HH_DEFAULT_ROWS,lux:LUX_DEFAULT_ROWS,yr:YR_DEFAULT_ROWS})){
+          rows.forEach((row,i)=>Object.entries(row).forEach(([field,value])=>{defaults[group+'.'+i+'.'+field]=String(value);}));
+        }
+        const outcome=await recoveryTransaction('readwrite',(data,store,keys)=>{
+          // A competing reset or save wins; this page may only discard its own stale session.
+          if(JSON.stringify(data[RECORD])!==JSON.stringify(observedAuthority)
+             ||JSON.stringify(data.thresholds)!==JSON.stringify(observedThreshold)){
+            validateRecord(data[RECORD]);return {follow:true,generation:data[RECORD].generation};
+          }
+          const clean=newRecord({},generation,'reset');
+          const threshold=thresholdStoreFactory.pure.createRecord({defaults,defaultsRevision:20260926,generation:thresholdGeneration,legacyCandidates:[]});
+          const marker={model:MODEL,schema:1,generation,thresholdGeneration,status:'committed',noticePending:true};
+          for(const key of keys)if(key===RECORD||key==='thresholds'||key===ORIGINALS||key===RESET||String(key).startsWith('loan-user-tab-v2:'))store.delete(key);
+          store.put(clean,RECORD);store.put(threshold,'thresholds');store.put(marker,RESET);
+          store.put({model:MODEL,generation,reset:true},ORIGINALS);
+          return marker;
+        });
+        if(outcome.follow){clearPageStorage();restart('follow',outcome.generation);return true;}
+        await completeCleanup(outcome);
+        await recoveryTransaction('readonly',data=>{
+          validateRecord(data[RECORD]);thresholdStoreFactory.pure.validateRecord(data.thresholds);
+          if(data[RECORD].generation!==generation||data.thresholds.generation!==thresholdGeneration||data[RESET]?.status!=='ready')fail('RESET_READBACK_FAILED','Reset was not confirmed.');
+        });
+        try{const channel=new root.BroadcastChannel('loan-user-data-v2-changes');channel.postMessage({generation,reset:true});channel.close();}catch(_){}
+        try{const channel=new root.BroadcastChannel('mortgage_threshold_changes_v1');channel.postMessage({generation:thresholdGeneration,reset:true});channel.close();}catch(_){}
+        restart('reset',generation);return true;
+      }catch(_){recoveryFailure();return false;}
+    },
+    async bootReady(storage){
+      if(storage.temporary){
+        root.loanNotifications?.dismissPersistent('data-recovery');
+        root.loanNotifications?.showPersistent('temporary-storage','目前無法保存資料\n可暫時試算，離開後輸入不會保留',{actionText:'重新載入',onAction:()=>root.location.reload()});return;
+      }
+      if(storage.hasFailure()){
+        // 普通待保存狀態沿用 storageStatus，只有未完成的重設才顯示重設錯誤。
+        try{
+          const resetPending=await recoveryTransaction('readonly',data=>!!data[RESET]?.noticePending);
+          if(resetPending)recoveryFailure();
+        }catch(_){/* 保存狀態已有重試提示，不將暫時受阻誤報為重設失敗。 */}
+        return;
+      }
+      let restarted=null;try{restarted=JSON.parse(root.sessionStorage.getItem(RESTART));}catch(_){}
+      try {
+        const show=await recoveryTransaction('readwrite',(data,store)=>{
+          validateRecord(data[RECORD]);thresholdStoreFactory.pure.validateRecord(data.thresholds);
+          const marker=data[RESET];
+          if(!marker)return false;
+          if(marker.generation!==data[RECORD].generation||marker.thresholdGeneration!==data.thresholds.generation||marker.status!=='ready')fail('RESET_READBACK_FAILED','Reset is incomplete.');
+          if(!marker.noticePending)return false;
+          store.put({...marker,noticePending:false},RESET);return true;
+        });
+        root.sessionStorage.removeItem(RESTART);
+        root.loanNotifications?.dismissPersistent('data-recovery');
+        if(show)root.loanNotifications?.showReset();
+        else if(restarted?.kind==='page')root.loanNotifications?.show('這個分頁的輸入無法讀取，已重新載入保存資料。',{kind:'warning',scope:'global',duration:4800});
+      }catch(_){recoveryFailure();}
+    }
+  });
 })(typeof window !== 'undefined' ? window : globalThis);
 
-const appStorage = await window.createLoanUserStorage();
+let appStorage = await (async()=>{
+  try{return await window.createLoanUserStorage();}
+  catch(error){
+    if(window.loanDataRecovery.isUnavailable(error))return window.loanDataRecovery.createMemoryStorage();
+    if(await window.loanDataRecovery.recover(error))return new Promise(()=>{});
+    if(window.loanDataRecovery.recoveryFailed())return window.loanDataRecovery.createMemoryStorage();
+    throw error;
+  }
+})();
 
 
 /* J：只在新保存世代首次使用時，將 D–I 的金額輸入狀態轉成 C 的總價輸入結構。
@@ -8409,6 +8682,32 @@ function buildCalcMissingAlertHtml(entries) {
   return `<div class="app-alert-missing"><div class="am-lead">${lead}</div>${chips.length ? `<div class="am-chips">${items}</div>` : ''}${paragraphs.length ? `<div class="am-details">${details}</div>` : ''}</div>`;
 }
 
+let loanToastRequest = 0;
+let loanToastQueued = null;
+const loanNoticeNow = () => performance.now();
+
+function continueToastTimer(toast) {
+  clearTimeout(toast._toastTimer);
+  toast._toastTimer = 0;
+  if (toast._toastHolding || toast._toastSuspendedAt !== null) return;
+  const generation = toast._toastGeneration;
+  const remaining = toast._toastHideAt - loanNoticeNow();
+  if (remaining <= 0) { hideToast(toast); return; }
+  toast._toastTimer = setTimeout(() => {
+    if (generation === toast._toastGeneration && !toast._toastHolding && toast._toastSuspendedAt === null) hideToast(toast);
+  }, remaining);
+}
+
+function flushQueuedToast() {
+  const toast = $('#toast');
+  if (!loanToastQueued || toast?.classList.contains('show') || document.hidden
+      || document.body.dataset.thresholdLoading === '1' || loanNotifications.isBlocked(loanToastQueued.opts.priority)) return;
+  const next = loanToastQueued;
+  loanToastQueued = null;
+  if (next.opts.scope !== 'global' && next.opts._mode !== document.body.dataset.mode) return;
+  showToast(next.msg, { ...next.opts, _queued: true });
+}
+
 function hideToast(toast) {
   if (!toast) return;
   clearTimeout(toast._toastTimer);
@@ -8416,10 +8715,20 @@ function hideToast(toast) {
   toast._toastHideAt = 0;
   toast._toastHolding = false;
   toast._toastHoldPointerId = null;
-  toast.classList.remove('show', 'toast-hint', 'toast-hint-multiline');
+  toast._toastSuspendedAt = null;
+  toast._toastGeneration = (toast._toastGeneration || 0) + 1;
+  toast.classList.remove('show', 'toast-hint', 'toast-hint-multiline', 'toast-warning', 'toast-reset', 'toast-held', 'loan-notice-suppressed');
   toast.textContent = '';
   restoreCalcToast(toast);
-  if (document.querySelector('[data-calc-backdrop]')) onCalcViewportChange();
+  onCalcViewportChange();
+  setTimeout(flushQueuedToast, 0);
+}
+
+function hideContextToast() {
+  loanToastRequest++;
+  if (loanToastQueued?.opts.scope !== 'global') loanToastQueued = null;
+  const toast = $('#toast');
+  if (toast?._toastScope !== 'global') hideToast(toast);
 }
 
 function bindToastHold(toast) {
@@ -8429,8 +8738,11 @@ function bindToastHold(toast) {
     if (!toast.classList.contains('show')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (toast._toastHolding) return;
+    e.preventDefault();
+    e.stopPropagation();
     toast._toastHolding = true;
     toast._toastHoldPointerId = e.pointerId;
+    toast.classList.add('toast-held');
     try { toast.setPointerCapture(e.pointerId); } catch (_) {}
     clearTimeout(toast._toastTimer);
     toast._toastTimer = 0;
@@ -8440,18 +8752,36 @@ function bindToastHold(toast) {
     if (e && e.pointerId !== toast._toastHoldPointerId) return;
     toast._toastHolding = false;
     toast._toastHoldPointerId = null;
+    toast.classList.remove('toast-held');
     if (!toast.classList.contains('show')) return;
-    if (Date.now() >= toast._toastHideAt) {
+    if (e?.type === 'pointerup') {
+      toast._toastReleasePointer = e.pointerId;
+      toast._toastConsumeClickUntil = loanNoticeNow() + 400;
+    }
+    if (loanNoticeNow() >= toast._toastHideAt || loanToastQueued) {
       hideToast(toast);
       return;
     }
-    toast._toastTimer = setTimeout(() => hideToast(toast), toast._toastHideAt - Date.now());
+    loanNotifications.updatePosition();
+    continueToastTimer(toast);
   };
   toast.addEventListener('pointerdown', onHoldStart);
   // 收起鍵盤會搬移提示；失去元素捕捉不代表手已放開，改在文件層接同一指標的結束。
   document.addEventListener('pointerup', onHoldEnd, true);
   document.addEventListener('pointercancel', onHoldEnd, true);
   window.addEventListener('blur', () => onHoldEnd());
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) onHoldEnd();
+    else { loanNotifications.updatePosition(); flushQueuedToast(); }
+  });
+  toast.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('pointerdown', () => { toast._toastConsumeClickUntil = 0; }, true);
+  document.addEventListener('click', e => {
+    if (loanNoticeNow() <= (toast._toastConsumeClickUntil || 0)
+        && (toast.contains(e.target) || e.pointerId === toast._toastReleasePointer)) {
+      e.preventDefault(); e.stopImmediatePropagation(); toast._toastConsumeClickUntil = 0;
+    }
+  }, true);
 }
 
 /* 光學置中：全形括號、句號這類字元的墨水只佔半個字身，排版置中後看起來會偏一邊。
@@ -8559,35 +8889,54 @@ function badgeLockBlocked() {
 })();
 
 function restoreCalcToast(toast) {
-  if (!toast?._calcToastHome) return;
-  toast._calcToastHome.replaceWith(toast);
-  delete toast._calcToastHome;
+  if (toast?._calcToastHome) {
+    toast._calcToastHome.replaceWith(toast);
+    delete toast._calcToastHome;
+  }
+  loanNotifications.updatePosition();
 }
 function dockCalcToast() {
-  const toast = document.getElementById('toast');
-  const panel = document.querySelector('[data-calc-backdrop] .calc-sheet-panel');
-  if (!toast || !panel || !toast.classList.contains('show')) return;
-  if (toast.parentElement !== panel) {
-    if (!toast._calcToastHome) {
-      toast._calcToastHome = document.createComment('toast-home');
-      toast.before(toast._calcToastHome);
-    }
-    panel.prepend(toast);
-  }
+  loanNotifications.updatePosition();
 }
 
 function showToast(msg, opts) {
-  opts = opts || {};
-  const storageSuccess = /已(?:儲存|保存|設定|套用|更新默認值|清空|恢復|鎖定|解除鎖定|啟用|關閉)/.test(String(msg || '') + String(opts.html || ''));
+  opts = { ...(opts || {}) };
+  const request = opts._requestId || ++loanToastRequest;
+  opts._requestId = request;
+  opts._mode = opts._mode || document.body.dataset.mode;
+  opts.scope = opts.scope || 'context';
+  opts.kind = opts.kind || (opts.hint ? 'warning' : 'normal');
+  opts.priority = opts.priority ?? (opts.kind === 'reset' ? 140 : opts.kind === 'warning' ? 120 : 10);
+  if (opts.scope !== 'global' && opts._mode !== document.body.dataset.mode) return;
+  // 重設通知有獨立類型；「已清空／已恢復」不再把它誤當成一般保存回饋。
+  const storageSuccess = opts.kind !== 'reset' && !opts.storageCommitted
+    && /已(?:儲存|保存|設定|套用|更新默認值|清空|恢復|鎖定|解除鎖定|啟用|關閉)/.test(String(msg || '') + String(opts.html || ''));
   if (storageSuccess && appStorage.hasPending() && !opts.storageCommitted) {
-    appStorage.flush().then(saved => { if (saved && !appStorage.hasFailure()) showToast(msg, { ...opts, storageCommitted: true }); }).catch(() => {});
+    appStorage.flush().then(saved => {
+      if (saved && !appStorage.hasFailure() && request === loanToastRequest
+          && (opts.scope === 'global' || opts._mode === document.body.dataset.mode)) showToast(msg, { ...opts, storageCommitted: true });
+    }).catch(() => {});
     return;
   }
   if (storageSuccess && appStorage.hasFailure()) return;
-  // 保存失敗的持續提醒優先，避免同時顯示已設定／已套用的成功訊息。
-  if (appStorage.hasFailure() && /已(?:儲存|保存|設定|套用)/.test(String(msg || '') + String(opts.html || ''))) return;
   const toast = $('#toast');
   bindToastHold(toast);
+  const showing = toast.classList.contains('show');
+  const blocked = document.hidden || document.body.dataset.thresholdLoading === '1' || loanNotifications.isBlocked(opts.priority);
+  if (blocked || (showing && (toast._toastHolding || toast._toastPriority > opts.priority))) {
+    if ((!showing || opts.priority >= toast._toastPriority)
+        && (!loanToastQueued || opts.priority >= loanToastQueued.opts.priority)) loanToastQueued = { msg, opts };
+    return;
+  }
+  if (!opts._queued && loanToastQueued && opts.priority >= loanToastQueued.opts.priority) loanToastQueued = null;
+  clearTimeout(toast._toastTimer);
+  toast._toastGeneration = (toast._toastGeneration || 0) + 1;
+  toast._toastScope = opts.scope;
+  toast._toastMode = opts._mode;
+  toast._toastPriority = opts.priority;
+  toast._toastSuspendedAt = null;
+  toast.classList.toggle('toast-warning', opts.kind === 'warning');
+  toast.classList.toggle('toast-reset', opts.kind === 'reset');
   toast.classList.toggle('toast-hint', !!opts.hint);
   toast.classList.toggle('toast-hint-multiline', !!opts.graceHint || !!opts.multiline);
   if (opts.graceHint) {
@@ -8599,20 +8948,144 @@ function showToast(msg, opts) {
   } else {
     toast.textContent = msg;
   }
-  applyOpticalCenter(toast);
+  // 自然換行時不以單行字墨補償，避免窄螢幕的負 margin 讓文字越框。
+  if (opts.kind !== 'reset') applyOpticalCenter(toast);
   toast.classList.add('show');
-  dockCalcToast();
-  if (document.querySelector('[data-calc-backdrop]')) onCalcViewportChange();
-  const duration = opts.hint ? 2400 : 1500;
-  toast._toastHideAt = Date.now() + duration;
+  const duration = opts.duration === 4800 || opts.kind === 'reset' ? 4800 : 2400;
+  toast._toastHideAt = loanNoticeNow() + duration;
   toast._toastHolding = false;
   toast._toastHoldPointerId = null;
-  clearTimeout(toast._toastTimer);
-  toast._toastTimer = setTimeout(() => {
-    if (toast._toastHolding) return;
-    hideToast(toast);
-  }, duration);
+  dockCalcToast();
+  continueToastTimer(toast);
+  onCalcViewportChange();
 }
+
+/* 提示位置與必要按鈕共用一層；不把試算、匯出清單或系統分享面板搬進來。 */
+const loanNotifications = (() => {
+  const layer = document.createElement('div');
+  layer.id = 'loanNoticeLayer';
+  layer.inert = document.body.dataset.thresholdLoading === '1';
+  document.body.append(layer);
+  const toast = $('#toast');
+  toast.setAttribute('role', 'status'); toast.setAttribute('aria-live', 'polite'); toast.setAttribute('aria-atomic', 'true');
+  layer.append(toast);
+  toast.inert = false;
+  const sources = new Map();
+  let positionQueued = false, positioning = false;
+  const sourceSelector = '#storageStatus, #thresholdUpdateNotice, .threshold-save-error, #installBar, .export-image-progress';
+  function register(node, priority, owner) {
+    if (sources.has(node)) return;
+    sources.set(node, { priority, owner });
+    node.classList.add('loan-persistent');
+    node.setAttribute('aria-live', 'polite');
+    layer.append(node);
+    node.inert = false;
+  }
+  function adoptSources() {
+    document.querySelectorAll(sourceSelector).forEach(node => register(node,
+      node.id === 'storageStatus' ? 100 : node.id === 'thresholdUpdateNotice' ? 40 : node.id === 'installBar' ? 5 : node.matches('.export-image-progress') ? 90 : 80,
+      node.closest('.yt-set, .spec-sheet')));
+  }
+  function persistentCandidate() {
+    let chosen = null, priority = -1;
+    for (const [node, info] of sources) {
+      if (!node.isConnected || node.hidden || (info.owner && (info.owner.hidden || info.owner.dataset.modalClosing === '1')) || !node.textContent.trim()) continue;
+      if (node.id === 'installBar' && !node.classList.contains('show')) continue;
+      if (info.priority > priority) { chosen = node; priority = info.priority; }
+    }
+    return chosen;
+  }
+  function alertOpen() { return !!$('#appAlert')?.classList.contains('show'); }
+  function isBlocked(priority = 0) {
+    adoptSources(); const candidate = persistentCandidate();
+    return alertOpen() || !!(candidate && sources.get(candidate).priority >= priority);
+  }
+  function writeProperty(name, value) {
+    const style = document.documentElement.style;
+    if (style.getPropertyValue(name) !== value) style.setProperty(name, value);
+  }
+  function updatePosition() {
+    if (positioning) return;
+    positioning = true;
+    try {
+      adoptSources();
+      const vv = window.visualViewport;
+      const viewTop = vv?.offsetTop || 0, viewLeft = vv?.offsetLeft || 0;
+      const viewWidth = vv?.width || window.innerWidth, viewBottom = viewTop + (vv?.height || window.innerHeight);
+      let anchor;
+      try { anchor = measureKeyboardAnchor(); } catch (_) { anchor = { top: viewBottom * .6, width: viewWidth, left: viewLeft }; }
+      const edge = Math.min(anchor.top, viewBottom) - 16;
+      const width = Math.max(160, Math.min(viewWidth - 24, anchor.width - 24, 560));
+      const center = Math.max(viewLeft + width / 2 + 12, Math.min(anchor.left + anchor.width / 2, viewLeft + viewWidth - width / 2 - 12));
+      // rect 使用視窗座標；absolute left/bottom 使用各自容器座標，扣除捲軸留白原點。
+      const layerRect = layer.getBoundingClientRect();
+      const alertRect = $('#appAlert')?.getBoundingClientRect();
+      writeProperty('--loan-notice-center', (center - layerRect.left) + 'px');
+      writeProperty('--loan-notice-bottom', Math.max(0, layerRect.bottom - edge) + 'px');
+      writeProperty('--loan-alert-center', (center - (alertRect?.left || 0)) + 'px');
+      writeProperty('--loan-alert-bottom', Math.max(0, (alertRect?.bottom || window.innerHeight) - edge) + 'px');
+      writeProperty('--loan-notice-width', width + 'px');
+      writeProperty('--loan-notice-max-height', Math.max(64, edge - viewTop - 12) + 'px');
+      const modal = alertOpen();
+      let candidate = modal || toast._toastHolding ? null : persistentCandidate();
+      if (candidate && toast.classList.contains('show') && toast._toastPriority > sources.get(candidate).priority) candidate = null;
+      for (const [node] of sources) node.classList.toggle('loan-notice-active', node === candidate);
+      const suppressed = modal || !!candidate;
+      if (toast.classList.contains('show')) {
+        if (suppressed && toast._toastSuspendedAt === null) {
+          toast._toastSuspendedAt = loanNoticeNow(); clearTimeout(toast._toastTimer);
+        } else if (!suppressed && toast._toastSuspendedAt !== null) {
+          toast._toastHideAt += loanNoticeNow() - toast._toastSuspendedAt;
+          toast._toastSuspendedAt = null; continueToastTimer(toast);
+        }
+        toast.classList.toggle('loan-notice-suppressed', suppressed);
+        toast.setAttribute('aria-hidden', suppressed ? 'true' : 'false');
+      }
+    } finally { positioning = false; }
+  }
+  function schedulePosition() {
+    if (positionQueued) return;
+    positionQueued = true;
+    requestAnimationFrame(() => { positionQueued = false; updatePosition(); flushQueuedToast(); scheduleCalcViewportChange(); });
+  }
+  function getTop() {
+    let top = null;
+    for (const node of document.querySelectorAll('#toast.show:not(.loan-notice-suppressed), .loan-persistent.loan-notice-active:not([hidden]), #appAlert.show .app-alert-card')) {
+      const r = node.getBoundingClientRect();
+      if (r.height > 0 && getComputedStyle(node).visibility !== 'hidden') top = top === null ? r.top : Math.min(top, r.top);
+    }
+    return top;
+  }
+  function showPersistent(id, text, opts = {}) {
+    let node = document.getElementById('loanPersistent-' + id);
+    if (!node) { node = document.createElement('div'); node.id = 'loanPersistent-' + id; node.setAttribute('role', 'alert'); register(node, opts.priority ?? 110, null); }
+    node.replaceChildren();
+    const message = document.createElement('div'); message.textContent = text; node.append(message);
+    if (typeof opts.onAction === 'function') {
+      const action = document.createElement('button'); action.type = 'button'; action.textContent = opts.actionText || '重試';
+      action.addEventListener('click', opts.onAction); node.append(action);
+    }
+    node.hidden = false; schedulePosition();
+  }
+  function dismissPersistent(id) { const node = document.getElementById('loanPersistent-' + id); if (node) node.hidden = true; schedulePosition(); }
+  function showReset() {
+    showToast('', { kind: 'reset', scope: 'global', duration: 4800, storageCommitted: true,
+      html: '<span class="toast-reset-title">舊資料無法讀取，已重設</span><span class="toast-reset-line">輸入已清空，設定已恢復預設</span><span class="toast-reset-line">請重新確認（齒輪門檻設定值）</span>' });
+  }
+  new MutationObserver(records => {
+    if (records.some(r => (r.type === 'attributes' && (r.target === document.body || r.target === $('#appAlert') || r.target.matches?.('.yt-set, .spec-sheet, .loan-persistent')))
+      || (r.type === 'childList' && (r.target.closest?.('.loan-persistent') || [...r.addedNodes].some(n => n.nodeType === 1 && (n.matches(sourceSelector) || n.querySelector(sourceSelector))))))) schedulePosition();
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class', 'data-threshold-loading', 'data-mode', 'data-modal-closing'] });
+  new MutationObserver(() => {
+    if (toast._toastScope !== 'global' && toast._toastMode !== document.body.dataset.mode) hideContextToast();
+  }).observe(document.body, { attributes: true, attributeFilter: ['data-mode'] });
+  if (window.ResizeObserver) new ResizeObserver(schedulePosition).observe(layer);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) schedulePosition(); });
+  const api = { show: showToast, showReset, showPersistent, dismissPersistent, updatePosition, getTop, isBlocked, schedulePosition };
+  window.loanNotifications = api;
+  schedulePosition();
+  return api;
+})();
 
 /* 所有浮層共用鍵盤範圍。計算鍵盤下方的有效欄位仍可用滑鼠／觸控換欄，
    只有已關閉／正在關閉的浮層設為 inert；不把整個底層表單停用。 */
@@ -8646,7 +9119,8 @@ function appModalFocusable(el) {
 }
 
 function appModalFocusables(modal) {
-  return [...modal.querySelectorAll('button, input, select, textarea, a[href], [tabindex], [contenteditable="true"]')]
+  const noticeButtons = modal.id === 'appAlert' ? [] : document.querySelectorAll('#loanNoticeLayer .loan-notice-active button');
+  return [...modal.querySelectorAll('button, input, select, textarea, a[href], [tabindex], [contenteditable="true"]'), ...noticeButtons]
     .filter(appModalFocusable);
 }
 
@@ -8706,6 +9180,7 @@ document.addEventListener('focusin', e => {
   if (appModalRedirectingFocus) return;
   const modal = getTopAppModal();
   if (!modal) return;
+  if (modal.id !== 'appAlert' && e.target.closest('#loanNoticeLayer .loan-notice-active')) return;
   if (modal.contains(e.target)) { appModalLastFocus.set(modal, e.target); return; }
   /* 換欄的 pointerdown 會先讓 readonly 欄位取得焦點，pointerup 才換計算鍵盤。
      此時允許真正被點到的欄位，避免焦點防護吃掉既有換欄操作。 */
@@ -8719,10 +9194,16 @@ document.addEventListener('focusin', e => {
 document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
   const modal = getTopAppModal();
+  const onNotice = !!e.target.closest?.('#loanNoticeLayer .loan-notice-active');
+  if (onNotice && e.key !== 'Tab') {
+    if (e.key === 'Escape') { e.preventDefault(); if (modal) focusAppModal(modal); }
+    e.stopImmediatePropagation(); return;
+  }
   if (!modal) return;
   if (e.key === 'Tab') {
     e.preventDefault(); e.stopImmediatePropagation();
-    if (modal.matches('[data-calc-backdrop]') && switchCalcTabField(e.shiftKey ? -1 : 1)) return;
+    const noticeAction = document.querySelector('#loanNoticeLayer .loan-notice-active:not([hidden]) button:not([disabled])');
+    if (!onNotice && !noticeAction && modal.matches('[data-calc-backdrop]') && switchCalcTabField(e.shiftKey ? -1 : 1)) return;
     const fields = appModalFocusables(modal);
     if (!fields.length) { focusAppModal(modal); return; }
     const at = fields.indexOf(document.activeElement);
@@ -8759,6 +9240,8 @@ function closeAppAlert() {
   backdrop.classList.remove('show');
   backdrop.hidden = true;
   backdrop.classList.remove('app-alert-bd-budget');
+  loanNotifications.updatePosition();
+  setTimeout(flushQueuedToast, 0);
   const cb = appAlertOnClose;
   appAlertOnClose = null;
   const returnFocus = appAlertReturnFocus;
@@ -8804,7 +9287,7 @@ function syncAprExportDisplay() {
 }
 
 function showAprInfo() {
-  showAppAlert(APR_INFO_HTML, null, { html: true });
+  showAppAlert(APR_INFO_HTML, null, { html: true, kind: 'info' });
 }
 
 /* 兩種還款方式差異說明：三個面板共用同一份內容 */
@@ -8820,7 +9303,7 @@ const METHOD_INFO_HTML = `<div class="mi-block">
 <p class="mi-note">設有寬限期時，兩者於寬限期內均只繳利息，期滿後才開始攤還本金。</p>`;
 
 function showMethodInfo() {
-  showAppAlert(METHOD_INFO_HTML, null, { html: true });
+  showAppAlert(METHOD_INFO_HTML, null, { html: true, kind: 'info' });
 }
 
 function showAppAlert(message, onClose, opts) {
@@ -8828,6 +9311,8 @@ function showAppAlert(message, onClose, opts) {
   const backdrop = $('#appAlert');
   const textEl = $('#appAlertText');
   if (!backdrop || !textEl) return;
+  hideContextToast();
+  backdrop.classList.toggle('app-alert-warning', opts.kind !== 'info');
   backdrop.classList.toggle('app-alert-bd-budget', opts.variant === 'bd-budget-zero');
   textEl.classList.toggle('app-alert-text-html', !!opts.html);
   if (opts.html) textEl.innerHTML = message;
@@ -8837,6 +9322,7 @@ function showAppAlert(message, onClose, opts) {
   backdrop.hidden = false;
   beginAppModalOpen(backdrop, closeAppAlert);
   backdrop.classList.add('show');
+  loanNotifications.updatePosition();
   try { if (navigator.vibrate) navigator.vibrate([30, 50, 30]); } catch {}
   $('#appAlertBtn')?.focus({ preventScroll: true });
 }
@@ -9359,24 +9845,9 @@ function getYtGraceMaxValue() {
 }
 const PRICE_MAX_WAN = 9999999;
 
-const LUX_DEFAULT_ROWS = [
-{ name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
-{ name: '新北市', amount: '6000', ratio: '30', grace: '0' },
-{ name: '其他縣市', amount: '4000', ratio: '30', grace: '0' }
-];
-const HH_DEFAULT_ROWS = [
-{ ratio: '', grace: '' },     // 首購且名下無房：規定未設限
-{ ratio: '', grace: '0' },    // 無房貸但已有房屋：不得有寬限期
-{ ratio: '70', grace: '0' },  // 已有 1 戶房貸：七成、不得有寬限期
-{ ratio: '30', grace: '0' }   // 已有 2 戶以上：三成、不得有寬限期
-];
-const YR_DEFAULT_ROWS = [
-  { name: '臺北市', amount: '3500' },
-  { name: '新北・新竹', amount: '2500' },
-  { name: '其他縣市', amount: '2000' }
-];
 await thresholdSettings.init({
   bootstrap: action => appStorage.bootstrapThreshold(action),
+  onUnavailable(){appStorage.close();appStorage=window.loanDataRecovery.createMemoryStorage();},
   defaultsRows:{hh:HH_DEFAULT_ROWS,lux:LUX_DEFAULT_ROWS,yr:YR_DEFAULT_ROWS},
   alert: message => showAppAlert(message),
   parseLegacy(group, parsed) {
@@ -11251,6 +11722,7 @@ function closeCalcKeyboard(applyValue) {
   clearCalcKeyboardBodyPad();
   unbindCalcKeyboardViewportScroll();
   detachCalcKeyListener();
+  updateCalcNotificationPosition();
 }
 
 function calcKeyFromEvent(e) {
@@ -11603,11 +12075,9 @@ function syncCalcKeyboardLayout() {
   grid.classList.toggle('integer-mode', calcKeyboard.integerOnly);
 }
 
-function renderCalcSheet() {
-  const backdrop = document.createElement('div');
-  backdrop.className = 'calc-backdrop' + (calcKeyboard.tabNavigation ? ' calc-tab-navigation' : '');
-  backdrop.dataset.calcBackdrop = 'true';
-  backdrop.innerHTML = `
+/* 實際鍵盤與純測高副本共用相同內容，不借用開啟／提交／焦點流程。 */
+function calcKeyboardPanelMarkup() {
+  return `
     <div class="calc-sheet-panel">
       <div class="calc-grid">
         <button type="button" class="calc-btn calc-btn-fn" data-key="C">C</button>
@@ -11632,6 +12102,13 @@ function renderCalcSheet() {
       </div>
       <button type="button" class="calc-btn-done">完成</button>
     </div>`;
+}
+
+function renderCalcSheet() {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'calc-backdrop' + (calcKeyboard.tabNavigation ? ' calc-tab-navigation' : '');
+  backdrop.dataset.calcBackdrop = 'true';
+  backdrop.innerHTML = calcKeyboardPanelMarkup();
   backdrop.addEventListener('click', (e) => {
     if (calcIsOpenGuarded(backdrop)) {
       e.preventDefault();
@@ -11715,7 +12192,7 @@ function switchCalcTabField(delta) {
   }
   const position = { left: window.scrollX, top: window.scrollY };
   // 與點選換欄相同：先清舊提示，再沿用原本完成程序；新提示不能被下一欄清掉。
-  hideToast($('#toast'));
+  hideContextToast();
   closeCalcKeyboard(true);
   if (!panel.isConnected || panel.hidden || panel.id !== modeIds[document.body.dataset.mode]) return true;
   // 提交期數、年限時可能重建利率列、停用寬限期；只取得提交後的新節點。
@@ -11756,10 +12233,8 @@ function scrollCalcTabFieldIntoView(el) {
     const sheet = calcKeyboard.backdropEl.querySelector('.calc-sheet-panel');
     if (!sheet) return;
     applyCalcKeyboardBodyPad();
-    const viewport = window.visualViewport;
-    const viewportTop = viewport?.offsetTop || 0;
-    const viewportBottom = viewportTop + (viewport?.height || window.innerHeight);
-    const keyboardTop = Math.min(viewportBottom, sheet.getBoundingClientRect().top);
+    const viewportTop = measureKeyboardAnchor().viewportTop;
+    const keyboardTop = getCalcContentBottom();
     const sticky = document.querySelector('.sticky-top');
     const scaled = document.body.classList.contains('is-app-scaled-transform');
     const bounds = () => {
@@ -11796,9 +12271,71 @@ function getCalcScrollTarget(el) {
   return el.closest('.input-box') || el.closest('.rate-row-line') || el.closest('.form-row') || el;
 }
 
+/* 座標與 getBoundingClientRect 一致。測高副本不帶 data-calc-backdrop、
+   不綁事件／不進 modal，且 inert／不可聚焦；保留原 CSS 與 safe-area 高度。 */
+function getCalcKeyboardMeasurePanel() {
+  let host = document.querySelector('[data-notification-measure]');
+  if (!host) {
+    host = document.createElement('div');
+    host.dataset.notificationMeasure = 'true';
+    host.setAttribute('aria-hidden', 'true');
+    host.inert = true;
+    host.style.cssText = 'position:fixed;left:0;right:0;bottom:0;visibility:hidden;pointer-events:none;z-index:-1;display:flex;justify-content:center;';
+    host.innerHTML = calcKeyboardPanelMarkup();
+    const panel = host.querySelector('.calc-sheet-panel');
+    panel.style.animation = 'none';
+    panel.querySelectorAll('button').forEach(button => {
+      button.tabIndex = -1;
+      button.disabled = true;
+      button.removeAttribute('data-key');
+    });
+    document.body.appendChild(host);
+    if (typeof MutationObserver === 'function') {
+      // gate 會統一解除 body 子節點的 inert；在下一次繪製前恢復副本限制。
+      const inertObserver = new MutationObserver(() => { if (!host.inert) host.inert = true; });
+      inertObserver.observe(host, { attributes: true, attributeFilter: ['inert'] });
+      host._calcMeasureInertObserver = inertObserver;
+    }
+  }
+  // 啟動 gate 解除時會清除 body 子節點的 inert；副本始終維持不可互動。
+  host.inert = true;
+  if (!host._calcMeasureObserver && isCalcGeometryReady() && typeof ResizeObserver === 'function') {
+    const observer = new ResizeObserver(scheduleCalcViewportChange);
+    observer.observe(host.querySelector('.calc-sheet-panel'));
+    host._calcMeasureObserver = observer;
+  }
+  return host.querySelector('.calc-sheet-panel');
+}
+
+function measureKeyboardAnchor() {
+  const viewport = window.visualViewport;
+  const viewportTop = viewport?.offsetTop || 0;
+  const viewportBottom = viewportTop + (viewport?.height || window.innerHeight);
+  const panel = document.querySelector('[data-calc-backdrop] > .calc-sheet-panel');
+  const measured = panel || getCalcKeyboardMeasurePanel();
+  const measuredRect = measured.getBoundingClientRect();
+  const height = measuredRect.height, width = measuredRect.width;
+  // 用最後停靠位置，避免 0.2 秒滑入動畫讓提示及欄位跟著跳動。
+  const bottom = measured.parentElement.getBoundingClientRect().bottom;
+  const left = measuredRect.left;
+  return { top: bottom - height, height, width, left, bottom, viewportTop, viewportBottom };
+}
+
+function updateCalcNotificationPosition() {
+  if (typeof loanNotifications !== 'undefined') loanNotifications.updatePosition();
+}
+
+function getCalcContentBottom() {
+  const anchor = measureKeyboardAnchor();
+  const keyboardOpen = !!document.querySelector('[data-calc-backdrop]');
+  let bottom = keyboardOpen ? Math.min(anchor.top, anchor.viewportBottom) : anchor.viewportBottom;
+  const noticeTop = typeof loanNotifications !== 'undefined' ? loanNotifications.getTop() : null;
+  if (Number.isFinite(noticeTop)) bottom = Math.min(bottom, noticeTop);
+  return Math.max(anchor.viewportTop, bottom);
+}
+
 function getCalcKeyboardOverlayHeight() {
-  const panel = document.querySelector('.calc-sheet-panel');
-  return panel ? panel.getBoundingClientRect().height : 0;
+  return measureKeyboardAnchor().height;
 }
 
 /* 設定視窗（高價住宅／貸款戶數／購屋縣市／持買比率／預設基準利率共用同一組 .yt-set）
@@ -11822,16 +12359,12 @@ function applyOverlayCardKeyboardSpace(el) {
   const card = el && el.closest('.yt-set-card');
   const dlg = card && card.parentElement;
   if (!card || !dlg || !dlg.classList.contains('yt-set')) return;
-  const panel = document.querySelector('.calc-sheet-panel');
-  if (!panel) return;
+  const kbTop = getCalcContentBottom();
   const anchor = desktopOverlayKeyboardAnchor;
   if (window.matchMedia('(hover: hover) and (pointer: fine)').matches && anchor && anchor.dlg === dlg) {
     const rect = dlg.getBoundingClientRect();
     const scale = dlg.offsetHeight > 0 ? rect.height / dlg.offsetHeight : 1;
     if (!(scale > 0)) return;
-    const panelRect = panel.getBoundingClientRect();
-    // 滑入動畫尚未完成時，也以鍵盤最後停靠的上緣預留空間。
-    const kbTop = Math.min(panelRect.top, panel.parentElement.getBoundingClientRect().bottom - panelRect.height);
     const bottom = (kbTop - rect.top) / scale - 12;
     const room = Math.floor(bottom - 10);
     if (room < 48) return;
@@ -11844,7 +12377,6 @@ function applyOverlayCardKeyboardSpace(el) {
     dlg.style.setProperty('--set-kb-top', top + 'px');
     return;
   }
-  const kbTop = panel.getBoundingClientRect().top;
   const dlgTop = dlg.getBoundingClientRect().top;
   const padTop = 10, gap = 12;
   /* 實際可用高度就是鍵盤上緣到視窗起點之間那一段。
@@ -11867,7 +12399,8 @@ function clearOverlayCardKeyboardSpace() {
 }
 
 function applyCalcKeyboardBodyPad() {
-  const keyboardH = getCalcKeyboardOverlayHeight() || 380;
+  const anchor = measureKeyboardAnchor();
+  const keyboardH = Math.max(anchor.height, anchor.bottom - getCalcContentBottom());
   const extra = 32;
   document.body.classList.add('calc-keyboard-open');
   document.body.style.setProperty('--calc-kb-pad', `${keyboardH + extra}px`);
@@ -11877,6 +12410,7 @@ function clearCalcKeyboardBodyPad() {
   document.body.classList.remove('calc-keyboard-open', 'calc-header-flow');
   document.body.style.removeProperty('--calc-kb-pad');
   clearOverlayCardKeyboardSpace();
+  clearCalcNativeSheetSpace();
 }
 
 // 判斷欄位是否位於 position:fixed 的浮層內（例如預設基準利率設定視窗）
@@ -11899,8 +12433,6 @@ function scrollOverlayFieldIntoView(el) {
     // 先把卡片高度壓到鍵盤上方，內部捲動範圍才夠把末段欄位帶上來
     applyOverlayCardKeyboardSpace(el);
     if (card.scrollHeight <= card.clientHeight + 1) return;
-    const kb = getCalcKeyboardOverlayHeight() || 380;
-    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     const cr = card.getBoundingClientRect();
     const r = el.getBoundingClientRect();
     /* 可視上緣不能只用 card.top + 8：卡片內有固定標題（.yt-set-title），
@@ -11909,11 +12441,11 @@ function scrollOverlayFieldIntoView(el) {
        捲入目標要連欄位的標籤一起帶出來，不是只讓數字框露出來。 */
     const title = card.querySelector('.yt-set-title, .gl-set-title');
     const titleBottom = title ? title.getBoundingClientRect().bottom : cr.top;
-    const visTop = Math.max(cr.top, titleBottom) + 8;
+    const visTop = Math.max(cr.top, titleBottom, measureKeyboardAnchor().viewportTop) + 8;
     const label = el.closest('.field, .yt-set-row, .gl-set-row') || el;
     const lr = label.getBoundingClientRect();
     const topEdge = Math.min(r.top, lr.top);
-    const visBottom = Math.min(cr.bottom, vh - kb - 16);
+    const visBottom = Math.min(cr.bottom, getCalcContentBottom() - 16);
     let d = 0;
     if (r.bottom > visBottom) d = r.bottom - visBottom;
     else if (topEdge < visTop) d = topEdge - visTop;
@@ -11967,18 +12499,18 @@ function scrollCalcTriggerIntoView(el) {
     if (calcKeyboard.openSeq !== seq) return;
     if (calcKeyboard.inputEl !== el || !calcKeyboard.backdropEl) return;
     applyCalcKeyboardBodyPad();
-    const keyboardH = getCalcKeyboardOverlayHeight() || 380;
-    const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const viewportTop = measureKeyboardAnchor().viewportTop;
+    const contentBottom = getCalcContentBottom();
     const scaled = document.body.classList.contains('is-app-scaled-transform');
     const headerHeight = sticky && !scaled ? sticky.getBoundingClientRect().height : 0;
     const bounds = getCalcMainFieldBounds(el);
-    const needsFlow = viewportH - keyboardH - padTop - padBottom - headerHeight < bounds.height;
+    const needsFlow = contentBottom - viewportTop - padTop - padBottom - headerHeight < bounds.height;
     document.body.classList.toggle('calc-header-flow', needsFlow && !scaled);
     const pinned = sticky && ['sticky', 'fixed'].includes(getComputedStyle(sticky).position);
-    const stickyH = pinned && !scaled ? Math.max(0, sticky.getBoundingClientRect().bottom) : 0;
-    const gapScale = Math.min(1, Math.max(0, viewportH - keyboardH - stickyH - bounds.height) / (padTop + padBottom));
+    const stickyH = pinned && !scaled ? Math.max(viewportTop, sticky.getBoundingClientRect().bottom) : viewportTop;
+    const gapScale = Math.min(1, Math.max(0, contentBottom - stickyH - bounds.height) / (padTop + padBottom));
     const visibleTop = stickyH + padTop * gapScale;
-    const visibleBottom = viewportH - keyboardH - padBottom * gapScale;
+    const visibleBottom = contentBottom - padBottom * gapScale;
     const rect = getCalcMainFieldBounds(el);
     let desiredScrollY = window.scrollY;
 
@@ -12003,33 +12535,157 @@ function scrollCalcTriggerIntoView(el) {
   setTimeout(adjust, 360);
 }
 
-let calcViewportScrollBound = false;
-function onCalcTabWindowResize() {
-  if (calcKeyboard.tabNavigation) onCalcViewportChange();
+/* 通知初始化可早於本段，並跨過 threshold 的 await。
+   狀態掛在已提升的函式上，避免晚段 let 的 TDZ，也不重設先前排入的 frame。 */
+function getCalcViewportState() {
+  return scheduleCalcViewportChange.state || (scheduleCalcViewportChange.state = {
+    ready: false, bound: false, frame: null, nativeAvoidance: false
+  });
 }
+function isCalcGeometryReady() {
+  return getCalcViewportState().ready && document.body?.dataset.thresholdLoading !== '1';
+}
+function scheduleCalcViewportChange() {
+  const state = getCalcViewportState();
+  if (!isCalcGeometryReady() || state.frame !== null) return;
+  state.frame = requestAnimationFrame(() => {
+    state.frame = null;
+    onCalcViewportChange();
+  });
+}
+
+/* 名稱／搜尋欄使用系統文字鍵盤。只在它實際取得焦點時避讓，
+   不提交數值、不開啟自訂鍵盤，也不對已離開的欄位執行延遲捲動。 */
+function clearCalcNativeSheetSpace() {
+  const state = getCalcViewportState(), saved = state.nativeSheet;
+  if (!saved) return;
+  for (const [element, properties] of saved.styles) {
+    for (const [name, value, priority] of properties) {
+      if (value) element.style.setProperty(name, value, priority);
+      else element.style.removeProperty(name);
+    }
+  }
+  saved.head.scrollTop = saved.scrollTop;
+  state.nativeSheet = null;
+}
+
+function scrollCalcNativeSheetFieldIntoView(el, anchor, contentBottom) {
+  const sheet = el.closest('.spec-sheet'), head = el.closest('.spec-sheet-head');
+  if (!sheet || !head) return false;
+  const state = getCalcViewportState();
+  if (state.nativeSheet && state.nativeSheet.sheet !== sheet) clearCalcNativeSheetSpace();
+  let field = getCalcMainFieldBounds(el);
+  const visibleTop = anchor.viewportTop + 8, visibleBottom = contentBottom - 12;
+  // 一般查詢畫面完全不改版；只有搜尋框被通知或可視區遮住才縮限 header。
+  if (!state.nativeSheet && field.top >= visibleTop && field.bottom <= visibleBottom) return true;
+  if (!state.nativeSheet) {
+    const capture = (element, names) => [element, names.map(name => [name,
+      element.style.getPropertyValue(name), element.style.getPropertyPriority(name)])];
+    state.nativeSheet = { sheet, head, scrollTop: head.scrollTop, styles: [
+      capture(sheet, ['top', 'bottom']), capture(head, ['max-height', 'overflow-y'])
+    ] };
+  }
+  sheet.style.setProperty('top', anchor.viewportTop + 'px');
+  sheet.style.setProperty('bottom', Math.max(0, window.innerHeight - anchor.viewportBottom) + 'px');
+  head.style.setProperty('max-height', Math.max(0, visibleBottom - anchor.viewportTop) + 'px');
+  head.style.setProperty('overflow-y', 'auto');
+  const hr = head.getBoundingClientRect();
+  field = getCalcMainFieldBounds(el);
+  const top = Math.max(anchor.viewportTop, hr.top), bottom = Math.min(visibleBottom, hr.bottom);
+  const gap = Math.min(8, Math.max(0, (bottom - top - field.height) / 2));
+  let delta = field.bottom > bottom - gap ? field.bottom - (bottom - gap) : 0;
+  if (field.top - delta < top + gap) delta = field.top - (top + gap);
+  if (Math.abs(delta) > 1) head.scrollTop += delta;
+  return true;
+}
+
+function scrollCalcNativeFieldIntoView() {
+  if (!isCalcGeometryReady()) return;
+  const state = getCalcViewportState();
+  const el = document.activeElement;
+  const editable = el?.matches('input:not([readonly]):not([disabled]):not([type="hidden"]), textarea:not([readonly]):not([disabled]), [contenteditable="true"]');
+  const anchor = measureKeyboardAnchor();
+  const noticeTop = typeof loanNotifications !== 'undefined' ? loanNotifications.getTop() : null;
+  const obscured = Number.isFinite(noticeTop) || anchor.viewportBottom < anchor.bottom - 2;
+  if (state.nativeSheet && (!editable || !obscured || !state.nativeSheet.sheet.contains(el))) clearCalcNativeSheetSpace();
+  if (!editable || !obscured || !el.getBoundingClientRect().height) {
+    if (state.nativeAvoidance) {
+      clearCalcKeyboardBodyPad();
+      state.nativeAvoidance = false;
+    }
+    return;
+  }
+  state.nativeAvoidance = true;
+  if (scrollCalcNativeSheetFieldIntoView(el, anchor, getCalcContentBottom())) return;
+  const card = el.closest('.yt-set-card');
+  if (card) applyOverlayCardKeyboardSpace(el);
+  const field = getCalcMainFieldBounds(el);
+  const bottom = getCalcContentBottom() - 12;
+  if (card) {
+    const cr = card.getBoundingClientRect();
+    const title = card.querySelector('.yt-set-title, .gl-set-title');
+    const top = Math.max(anchor.viewportTop, cr.top, title?.getBoundingClientRect().bottom || cr.top) + 8;
+    const visibleBottom = Math.min(bottom, cr.bottom - 8);
+    let delta = field.bottom > visibleBottom ? field.bottom - visibleBottom : 0;
+    if (field.top - delta < top) delta = field.top - top;
+    if (Math.abs(delta) > 1) card.scrollTop += delta;
+  } else if (!isInFixedOverlay(el)) {
+    document.body.classList.add('calc-keyboard-open');
+    document.body.style.setProperty('--calc-kb-pad', Math.max(0, anchor.bottom - bottom + 20) + 'px');
+    const sticky = document.querySelector('.sticky-top');
+    const pinned = sticky && ['sticky', 'fixed'].includes(getComputedStyle(sticky).position);
+    const top = Math.max(anchor.viewportTop, pinned ? sticky.getBoundingClientRect().bottom : anchor.viewportTop) + 8;
+    let delta = field.bottom > bottom ? field.bottom - bottom : 0;
+    if (field.top - delta < top) delta = field.top - top;
+    if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' });
+  }
+}
+
 function onCalcViewportChange() {
+  if (!isCalcGeometryReady()) return;
+  updateCalcNotificationPosition();
   if (calcKeyboard.inputEl && calcKeyboard.backdropEl) {
+    clearCalcNativeSheetSpace();
+    getCalcViewportState().nativeAvoidance = false;
     scrollCalcTriggerIntoView(calcKeyboard.inputEl);
+  } else {
+    scrollCalcNativeFieldIntoView();
   }
 }
 function bindCalcKeyboardViewportScroll() {
-  if (calcViewportScrollBound || !window.visualViewport) return;
-  calcViewportScrollBound = true;
-  window.addEventListener('resize', onCalcTabWindowResize);
-  window.visualViewport.addEventListener('resize', onCalcViewportChange);
-  window.visualViewport.addEventListener('scroll', onCalcViewportChange);
+  const state = getCalcViewportState();
+  state.ready = true;
+  if (state.bound) return;
+  state.bound = true;
+  // 通知在鍵盤關閉時仍存在，監聽保留至此頁卸載；每個事件只綁一次。
+  window.addEventListener('resize', scheduleCalcViewportChange);
+  window.addEventListener('orientationchange', scheduleCalcViewportChange);
+  window.visualViewport?.addEventListener('resize', scheduleCalcViewportChange);
+  window.visualViewport?.addEventListener('scroll', scheduleCalcViewportChange);
+  document.addEventListener('focusin', scheduleCalcViewportChange);
+  document.addEventListener('focusout', scheduleCalcViewportChange);
+  document.fonts?.addEventListener('loadingdone', scheduleCalcViewportChange);
+  document.fonts?.ready.then(scheduleCalcViewportChange);
+  if (typeof MutationObserver === 'function') {
+    // DOMContentLoaded 可能已過但 threshold gate 還在等資料；解除後補首次量測。
+    state.gateObserver = new MutationObserver(scheduleCalcViewportChange);
+    state.gateObserver.observe(document.body, { attributes: true, attributeFilter: ['data-threshold-loading'] });
+  }
+  scheduleCalcViewportChange();
 }
 function unbindCalcKeyboardViewportScroll() {
-  if (!calcViewportScrollBound || !window.visualViewport) return;
-  calcViewportScrollBound = false;
-  window.removeEventListener('resize', onCalcTabWindowResize);
-  window.visualViewport.removeEventListener('resize', onCalcViewportChange);
-  window.visualViewport.removeEventListener('scroll', onCalcViewportChange);
+  // 原呼叫點保留；只重算關閉後幾何，不解除共用通知的視窗監聽。
+  scheduleCalcViewportChange();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bindCalcKeyboardViewportScroll, { once: true });
+} else {
+  bindCalcKeyboardViewportScroll();
 }
 
 function openCalcKeyboard(inputEl, options) {
   options = options || {};
-  if (!options.preserveCommitHint) hideToast($('#toast'));
+  if (!options.preserveCommitHint) hideContextToast();
   if (inputEl?.id === 'grace' && isTermMissing()) {
     promptTermBeforeGrace();
     return;
@@ -20834,9 +21490,10 @@ window.addEventListener('resize', () => {
       }
       appStorage.markTrialAction();
       applyBase(v);
-      try { appStorage.confirmShared(BASE_DEFAULT_KEY); if (!(await appStorage.flush())) return; } catch (_) { return; }
+      try { appStorage.confirmShared(BASE_DEFAULT_KEY); if (!(await appStorage.flush()) && !appStorage.temporary) return; } catch (_) { return; }
       closeDlg();
-      showToast('', { html: toastLines('已設定預設為', '基準利率 ' + tOk(v + '%')) });
+      if (appStorage.temporary) showToast('已套用，本次使用；目前無法保存', { kind: 'warning', storageCommitted: true });
+      else showToast('', { html: toastLines('已設定預設為', '基準利率 ' + tOk(v + '%')) });
     });
     /* 與高價住宅設定視窗相同：Enter 直接儲存並套用，不讓下層頁面捲動 */
     dlg.addEventListener('keydown', (e) => {
@@ -20862,7 +21519,7 @@ window.addEventListener('resize', () => {
     });
   })();
 
-  Y('#ytAprInfoBtn')?.addEventListener('click', () => showAppAlert(APR_INFO_HTML_YT, null, { html: true }));
+  Y('#ytAprInfoBtn')?.addEventListener('click', () => showAppAlert(APR_INFO_HTML_YT, null, { html: true, kind: 'info' }));
   /* 不含利率的基本必填。利率是否必要，要等貸款組成算出來才知道，
      見 requiredRateFields()。 */
   const REQUIRED = [
@@ -21524,12 +22181,13 @@ function getBadgeDefault(mode, key, fallback) {
     try { appStorage.setItem(storageKey(selected.mode), JSON.stringify(latest)); appStorage.confirmShared(storageKey(selected.mode)); saved = await appStorage.flush(); }
     catch (_) { return; }
     finally { saveButton.disabled = false; }
-    if (!saved) return;
+    if (!saved && !appStorage.temporary) return;
     // A successful transaction may merge a different field saved by another page.
     values[selected.mode] = readMode(selected.mode);
     refreshBadges();
     closeDlg();
-    if (saved) showToast('已更新默認值');
+    if (appStorage.temporary) showToast('已套用，本次使用；目前無法保存', { kind: 'warning', storageCommitted: true });
+    else if (saved) showToast('已更新默認值');
   });
   dlg.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || dlg.hidden || document.querySelector('[data-calc-backdrop]') || e.target.tagName === 'BUTTON') return;
@@ -21691,7 +22349,11 @@ function getBadgeDefault(mode, key, fallback) {
 })();
 await appStorage.finish();
 thresholdSettings.finish();
-})().catch(error => thresholdSettings.bootFailure(error));
+await window.loanDataRecovery.bootReady(appStorage);
+})().catch(async error => {
+  if(await window.loanDataRecovery?.recover(error))return;
+  thresholdSettings.bootFailure(error);
+});
 </script>
 </body>
 </html>
