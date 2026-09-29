@@ -6369,7 +6369,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
 (function (root) {
   'use strict';
 
-  const SCHEMA = 1, PROTOCOL = 1, STORE = 'state', RECORD_KEY = 'thresholds';
+  const SCHEMA = 2, PROTOCOL = 2, STORE = 'state', RECORD_KEY = 'thresholds';
   const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
   const integer = value => Number.isSafeInteger(value) && value >= 0;
@@ -6436,9 +6436,9 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
   function candidateContent(candidate) {
     return stable({ source: candidate.source, values: candidate.values, raw: candidate.raw, issues: candidate.issues });
   }
-  function validateRecord(record) {
-    if (!object(record) || record.schema !== SCHEMA || record.protocol !== PROTOCOL
-        || !integer(record.minWriter) || record.minWriter < 1 || record.minWriter > PROTOCOL) {
+  function validateRecord(record, allowLegacy) {
+    const legacy = allowLegacy === true && object(record) && record.schema === 1 && record.protocol === 1 && record.minWriter === 1;
+    if (!object(record) || (!legacy && (record.schema !== SCHEMA || record.protocol !== PROTOCOL || record.minWriter !== PROTOCOL))) {
       fail('UNSUPPORTED_SCHEMA', 'This version cannot read or write the saved threshold format.');
     }
     if (typeof record.generation !== 'string' || !record.generation || !integer(record.revision)
@@ -6456,8 +6456,8 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
       const cell = record.fields[key];
       if (!object(cell) || !['default', 'custom', 'legacy'].includes(cell.source)
           || !integer(cell.rev) || cell.rev > record.revision
-          || (cell.source !== 'default' && typeof cell.value !== 'string')
-          || (cell.source === 'default' && own(cell, 'value'))) {
+          || (legacy ? ((cell.source !== 'default' && typeof cell.value !== 'string')
+              || (cell.source === 'default' && own(cell, 'value'))) : typeof cell.value !== 'string')) {
         fail('CORRUPT_RECORD', 'Saved threshold cell is invalid.', { field: key });
       }
     }
@@ -6475,11 +6475,13 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
     return record;
   }
   function snapshot(record, extra) {
-    validateRecord(record);
+    // Reading v1 is allowed solely so startup can discover its existing import
+    // state. Every mutation upgrades atomically before producing a v2 record.
+    validateRecord(record, true);
     const fields = dict(), values = dict();
     for (const key of Object.keys(record.fields)) {
       const cell = record.fields[key];
-      const value = cell.source === 'default' ? record.defaults.values[key] : cell.value;
+      const value = record.schema === 1 && cell.source === 'default' ? record.defaults.values[key] : cell.value;
       values[key] = value;
       fields[key] = { source: cell.source, value, rev: cell.rev };
     }
@@ -6531,7 +6533,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
     const candidates = normalizeCandidates(args.legacyCandidates, defaults.values);
     const chosen = legacyChoices(candidates, defaults.values, args.selectedLegacyId);
     const fields = dict();
-    for (const key of Object.keys(defaults.values)) fields[key] = { source: 'default', rev: 0 };
+    for (const key of Object.keys(defaults.values)) fields[key] = { source: 'default', value: defaults.values[key], rev: 0 };
     const record = {
       schema: SCHEMA, protocol: PROTOCOL, minWriter: PROTOCOL,
       generation: args.generation, revision: 0, defaults, fields,
@@ -6547,27 +6549,54 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
     validateRecord(record);
     return record;
   }
+  function upgradeRecord(existing) {
+    validateRecord(existing, true);
+    const record = clone(existing);
+    if (record.schema === SCHEMA) return { record, changed: false };
+    // Freeze the OLD catalog's effective values before replacing the restore
+    // catalog. A value equal to a default remains a saved device value.
+    record.revision += 1;
+    for (const key of Object.keys(record.fields)) {
+      const cell = record.fields[key];
+      record.fields[key] = Object.assign({}, cell, {
+        value: cell.source === 'default' ? record.defaults.values[key] : cell.value,
+        rev: record.revision
+      });
+    }
+    record.schema = SCHEMA;
+    record.protocol = PROTOCOL;
+    record.minWriter = PROTOCOL;
+    validateRecord(record);
+    return { record, changed: true };
+  }
   function initializeRecord(existing, args) {
     const incoming = normalizeDefaults(args.defaults, args.defaultsRevision);
     if (existing === undefined) {
       const record = createRecord(args);
       return { record, changed: true, value: snapshot(record) };
     }
-    validateRecord(existing);
-    const record = clone(existing), warnings = [];
-    if (stable(Object.keys(incoming.values).sort()) !== stable(Object.keys(record.defaults.values).sort())) {
-      fail('UNSUPPORTED_FIELDS', 'Saved threshold fields differ from this application version.');
-    }
-    let changed = false;
-    if (incoming.revision === record.defaults.revision && stable(incoming.values) !== stable(record.defaults.values)) {
+    const upgraded = upgradeRecord(existing);
+    const record = upgraded.record, warnings = [];
+    let changed = upgraded.changed;
+    const incomingKeys = Object.keys(incoming.values);
+    const addedKeys = incomingKeys.filter(key => !own(record.fields, key));
+    if (incoming.revision === record.defaults.revision && incomingKeys.some(key =>
+        own(record.defaults.values, key) && incoming.values[key] !== record.defaults.values[key])) {
       fail('DEFAULTS_REVISION_MISMATCH', 'One defaults revision cannot describe different default values.');
     }
-    if (incoming.revision > record.defaults.revision) {
+    if (incoming.revision > record.defaults.revision || addedKeys.length) {
       record.revision += 1;
-      for (const key of Object.keys(record.fields)) {
-        if (record.fields[key].source === 'default' && incoming.values[key] !== record.defaults.values[key]) record.fields[key].rev = record.revision;
+      const catalog = clone(record.defaults.values);
+      if (incoming.revision > record.defaults.revision) {
+        // Retain fields an older/newer UI does not know. Catalog changes never
+        // rewrite any already-saved field, including source=default fields.
+        Object.assign(catalog, incoming.values);
       }
-      record.defaults = incoming;
+      for (const key of addedKeys) {
+        catalog[key] = incoming.values[key];
+        record.fields[key] = { source: 'default', value: incoming.values[key], rev: record.revision };
+      }
+      record.defaults = { revision: Math.max(record.defaults.revision, incoming.revision), values: catalog };
       changed = true;
     }
     // Existing authority is usable even when obsolete sources cannot be decoded.
@@ -6609,7 +6638,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
   // Import only once, using the values this device already had. Completed
   // authority always wins; archived snapshots never become later writers.
   function initializePreservedRecord(existing, args) {
-    if (existing !== undefined) validateRecord(existing);
+    if (existing !== undefined) validateRecord(existing, true);
     const needsImport = existing === undefined || existing.migration.status === 'pending';
     const seed = existing === undefined
       ? createRecord(Object.assign({}, args, { legacyCandidates: [], selectedLegacyId: undefined }))
@@ -6642,7 +6671,10 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
         if (!ordered.some(item => item.id === candidate.id)) ordered.push(candidate);
       });
       const groups = dict(), selectedByField = dict();
-      for (const key of Object.keys(record.defaults.values)) {
+      // Truly new fields have already received their first value. They must
+      // not make an otherwise complete old group appear incomplete.
+      const importKeys = Object.keys(existing === undefined ? args.defaults : existing.defaults.values);
+      for (const key of importKeys) {
         const group = key.split('.')[0];
         if (!own(groups, group)) groups[group] = [];
         groups[group].push(key);
@@ -6653,7 +6685,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
       }
       for (const [group, keys] of Object.entries(groups)) {
         if (defaultGroups.includes(group)) {
-          keys.forEach(key => { updates[key] = { source: 'default' }; });
+          keys.forEach(key => { updates[key] = { source: 'default', value: record.defaults.values[key] }; });
           continue;
         }
         const selected = ordered.find(candidate => keys.every(key => own(candidate.values, key)));
@@ -6698,7 +6730,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
       fail('STALE_BASELINE', 'The editing baseline belongs to another settings generation.');
     }
   }
-  function normalizedChanges(changes, record, allowLegacy) {
+  function normalizedChanges(changes, record, allowLegacy, baseline) {
     if (!object(changes)) fail('INVALID_INPUT', 'A threshold patch must contain a field map.');
     const out = dict();
     for (const key of Object.keys(changes)) {
@@ -6708,7 +6740,16 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
       if (!object(item) || !['default', 'custom', ...(allowLegacy ? ['legacy'] : [])].includes(item.source)) {
         fail('INVALID_PATCH', 'Patches must explicitly select default or custom.', { field: key });
       }
-      if (item.source === 'default') out[key] = { source: 'default' };
+      if (item.source === 'default') {
+        if (!object(baseline.defaults) || !integer(baseline.defaultsRevision)
+            || typeof baseline.defaults[key] !== 'string') {
+          fail('INVALID_BASELINE', 'Restoring defaults requires the displayed default catalog.', { field: key });
+        }
+        if (own(item, 'value') && item.value !== baseline.defaults[key]) {
+          fail('INVALID_PATCH', 'The restored value differs from the displayed default.', { field: key });
+        }
+        out[key] = { source: 'default', value: baseline.defaults[key] };
+      }
       else {
         if (typeof item.value !== 'string') fail('INVALID_PATCH', 'Custom values must be strings.', { field: key });
         out[key] = { source: item.source, value: item.value };
@@ -6720,7 +6761,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
     validateRecord(existing);
     if (existing.migration.status === 'pending') fail('LEGACY_CHOICE_REQUIRED', 'Select a legacy settings candidate before editing.');
     checkBaseline(existing, args.baseline);
-    const changes = normalizedChanges(args.changes, existing, allowLegacy);
+    const changes = normalizedChanges(args.changes, existing, allowLegacy, args.baseline);
     const signature = stable(changes);
     if (args.operationId !== undefined && (typeof args.operationId !== 'string' || !args.operationId)) fail('INVALID_INPUT', 'operationId must be a nonempty string.');
     const previous = args.operationId && existing.appliedOperations.find(item => item.id === args.operationId);
@@ -6728,11 +6769,18 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
       if (previous.signature !== signature) fail('OPERATION_ID_REUSED', 'One operation ID cannot identify different edits.');
       return { record: existing, changed: false, value: snapshot(existing, { alreadyCommitted: true }) };
     }
+    const changedDefaults = Object.keys(changes).filter(key => changes[key].source === 'default'
+      && (args.baseline.defaultsRevision !== existing.defaults.revision || changes[key].value !== existing.defaults.values[key]));
+    if (changedDefaults.length) {
+      fail('DEFAULTS_CHANGED', 'The default catalog changed after the settings dialog opened.', {
+        fields: changedDefaults, snapshot: snapshot(existing)
+      });
+    }
     const conflicts = [], changedKeys = [];
     for (const key of Object.keys(changes)) {
       const current = existing.fields[key], desired = changes[key], before = args.baseline.fields[key];
       if (!object(before) || !integer(before.rev)) fail('INVALID_BASELINE', 'The baseline is missing an edited field.', { field: key });
-      const equal = current.source === desired.source && (desired.source === 'default' || current.value === desired.value);
+      const equal = current.source === desired.source && current.value === desired.value;
       if (equal) continue; // A completed save may be safely retried after page interruption.
       if (current.rev !== before.rev) conflicts.push({ field: key, baseline: clone(before), current: snapshot(existing).fields[key], desired: clone(desired) });
       else changedKeys.push(key);
@@ -6888,7 +6936,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
     Object.defineProperty(api, 'ready', { enumerable: true, get: () => readyPromise });
     return Object.freeze(api);
   }
-  thresholdStoreFactory.pure = Object.freeze({ normalizeCandidates, validateRecord, createRecord, initializeRecord, initializePreservedRecord, snapshot, applyPatch, chooseLegacy, adoptLegacy, stable });
+  thresholdStoreFactory.pure = Object.freeze({ normalizeCandidates, validateRecord, createRecord, upgradeRecord, initializeRecord, initializePreservedRecord, snapshot, applyPatch, chooseLegacy, adoptLegacy, stable });
   thresholdStoreFactory.ThresholdStoreError = ThresholdStoreError;
   thresholdStoreFactory.SCHEMA = SCHEMA;
   root.thresholdStoreFactory = thresholdStoreFactory;
@@ -7139,7 +7187,7 @@ function createThresholdUI() {
     return el;
   }
   function bootFailure(error) {
-    const el = gate('目前無法讀取門檻設定', '為保留原本的設定，暫停載入。請重新載入再試一次。');
+    const el = gate('目前無法載入本機保存資料', '為保留原本的數值與設定，暫停載入。請重新載入再試一次。');
     el.dataset.error = error?.code || 'READ_FAILED';
     const button = document.createElement('button'); button.type='button'; button.textContent='重新載入';
     button.onclick = () => location.reload(); el.querySelector('.threshold-boot-actions').append(button);
@@ -7330,7 +7378,7 @@ function createThresholdUI() {
           try{channel?.postMessage({revision:result.revision});}catch(_){/* A notification failure cannot undo a committed setting. */}
           return rowsOf(group,result);
         } catch(err) {
-          error(err.code==='CONFLICT' ? '同一欄位已在其他分頁更新，本次尚未儲存。你的輸入仍保留；請先取消並重開設定，核對最新數值。' : '門檻設定尚未儲存，你的輸入仍保留。請再按「儲存並套用」重試。');
+          error(err.code==='DEFAULTS_CHANGED' ? '預設值已更新，本次尚未儲存。你的輸入仍保留；請先取消並重開設定，再確認恢復預設。' : err.code==='CONFLICT' ? '同一欄位已在其他分頁更新，本次尚未儲存。你的輸入仍保留；請先取消並重開設定，核對最新數值。' : '門檻設定尚未儲存，你的輸入仍保留。請再按「儲存並套用」重試。');
           return null;
         } finally {busy=false;buttons.forEach((el,i)=>{el.disabled=disabled[i];});}
       }
@@ -7342,7 +7390,81 @@ function createThresholdUI() {
 
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.26C";
+const APP_VERSION = "2026.09.26D";
+/* 首次採用的裝置預設只補缺，不取代各分頁已保存的輸入。
+   獨立記錄避免舊分頁保存整包快照時刪掉尚未存在於舊版的預設。 */
+const deviceDefaults = await (async () => {
+  const keys = new Set([
+    'mortgage_form_state_v4', 'mortgage_burden_state_v1', 'youth_form_state_v3',
+    'mortgage_defaults_general_v1', 'mortgage_defaults_youth_v1', 'mortgage_defaults_burden_v1',
+    'youth_base_default_v1', 'mortgage_calc_mode_v1', 'mortgage-period-unit-v1',
+    'mortgage-cum-interest-general-v1', 'mortgage-cum-interest-burden-v1', 'mortgage-cum-interest-youth-v1',
+    'mortgage-total-unit-v1', 'mortgage-burden-total-unit-v1',
+    'mortgage_badge_lock_general_v1', 'mortgage_badge_lock_youth_v1',
+    'mortgage_lux_on_v1', 'mortgage_hh_on_v1', 'youth_region_on_v1',
+    'mortgage-burden-flow-collapsed-v1', 'mortgage-burden-summary-decimals-v1',
+    'mortgage-export-include-detail', 'cb_spec_sheet_view_v1', 'youth_spec_sheet_view_v1'
+  ]);
+  function validate(record) {
+    if (record === undefined) return Object.create(null);
+    if (!record || record.schema !== 1 || !record.values || typeof record.values !== 'object' || Array.isArray(record.values))
+      throw new Error('無法讀取裝置保存的初始設定；原資料未修改。');
+    const result = Object.create(null);
+    for (const [key, value] of Object.entries(record.values)) {
+      // Future fields remain opaque; never discard them when an older version opens the record.
+      if (typeof value !== 'string') throw new Error('裝置初始設定格式錯誤；原資料未修改。');
+      result[key] = value;
+    }
+    return result;
+  }
+  const db = await new Promise((resolve, reject) => {
+    const req = indexedDB.open('mortgage_device_defaults_v1', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('state');
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error('裝置設定正由另一個頁面更新，請重新載入。'));
+    req.onsuccess = () => { req.result.onversionchange = () => req.result.close(); resolve(req.result); };
+  });
+  async function transaction(pending) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('state', pending ? 'readwrite' : 'readonly');
+      const store = tx.objectStore('state');
+      let result, error;
+      const req = store.get('defaults');
+      req.onsuccess = () => {
+        try {
+          result = validate(req.result);
+          if (pending) {
+            let changed = req.result === undefined;
+            for (const [key, value] of Object.entries(pending)) {
+              if (!(key in result)) { result[key] = value; changed = true; }
+              else if (result[key] !== value) {
+                throw new Error('另一個頁面已保存裝置初始設定，請重新載入以沿用已保存值。');
+              }
+            }
+            if (changed) store.put({schema: 1, values: result}, 'defaults');
+          }
+        } catch (e) { error = e; tx.abort(); }
+      };
+      tx.oncomplete = () => resolve(result);
+      tx.onabort = tx.onerror = () => reject(error || tx.error || req.error || new Error('裝置初始設定未能儲存。'));
+    });
+  }
+  let saved;
+  try { saved = await transaction(null); } catch (error) { db.close(); throw error; }
+  const pending = Object.create(null);
+  return Object.freeze({
+    get(key) { return keys.has(key) && Object.hasOwn(saved, key) ? saved[key] : null; },
+    seed(key, value) {
+      if (!keys.has(key) || typeof value !== 'string') throw new Error('Invalid device default');
+      if (!Object.hasOwn(saved, key) && !Object.hasOwn(pending, key)) pending[key] = value;
+    },
+    restore(values) {
+      for (const key of keys) if (!Object.hasOwn(values, key) && Object.hasOwn(saved, key)) values[key] = saved[key];
+    },
+    async commit() { try { saved = await transaction(pending); } finally { db.close(); } }
+  });
+})();
+
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -7492,6 +7614,7 @@ const appStorage = (() => {
       updateStatus();
       return;
     }
+    deviceDefaults.restore(values);
     try { persistSession(); } catch (_) {}
     updateStatus();
   }
@@ -7667,8 +7790,7 @@ const appStorage = (() => {
     document.addEventListener(type, markUserAction, true);
   }
   initializeState();
-  if (document.readyState === 'complete') initializeLatestIfMissing();
-  else window.addEventListener('load', initializeLatestIfMissing, { once: true });
+  // 完成所有模式的初始值保存後才建立首次完整快照。
 
   return Object.freeze({
     getItem(key) {
@@ -7680,6 +7802,17 @@ const appStorage = (() => {
     setItem(key, value) { perform(String(key), { value: String(value), remove: false }); },
     removeItem(key) { perform(String(key), { remove: true }); },
     setItems(entries) { performBatch(entries); },
+    getDeviceDefault(key) { checkKey(key); return deviceDefaults.get(key); },
+    seedDeviceDefault(key, value) {
+      checkKey(key);
+      if (readBlocked) throw new Error('Saving paused after a storage read failure');
+      deviceDefaults.seed(key, value);
+    },
+    async finishInitialization() {
+      if (readBlocked) throw new Error('無法讀取原本保存的資料，已暫停初始化。');
+      await deviceDefaults.commit();
+      initializeLatestIfMissing();
+    },
     hasFailure() { return readBlocked || sessionFailed || latestFailed; },
     // 僅供模式列完成橫向意圖、命中新模式後呼叫；游標移動本身不會觸發。
     markModeDragAction(event) {
@@ -18107,12 +18240,17 @@ window.addEventListener('resize', scheduleFitPaymentTable);
   syncIncomeUnitField();
   syncRateUI();
   try { const c = appStorage.getItem(CLEAR_STORE); if (c) bdCleared = JSON.parse(c) || null; } catch (e) {}
+  let bdNeedsInitialSave = false;
   try {
     const v = appStorage.getItem(STORE);
     if (v !== null) { let value; try { value = JSON.parse(v); } catch (_) { value = null; } apply(value); }
+    else bdNeedsInitialSave = true;
   } catch (e) {}
   syncChoices();
   applyBdCaps({ quiet: true });
+  if (bdNeedsInitialSave) {
+    try { appStorage.seedDeviceDefault(STORE, JSON.stringify(capture())); persist(); } catch (_) {}
+  }
 })();
 
 // ===== 模式切換（一般貸款 / 新青安3.0 / 個人評估；比照房地合一 成屋/預售）=====
@@ -18460,12 +18598,20 @@ window.addEventListener('resize', () => {
   function loadBaseDefault() {
     try {
       const stored = appStorage.getItem(BASE_DEFAULT_KEY);
+      if (stored === null) {
+        // 首次採用的預設也是這台裝置的設定；之後更新不再換成新版預設。
+        const initial = appStorage.getDeviceDefault(BASE_DEFAULT_KEY) ?? String(BASE_OFFICIAL);
+        const adopted = baseDefaultOf(initial);
+        if (adopted === null) return BASE_OFFICIAL;
+        appStorage.seedDeviceDefault(BASE_DEFAULT_KEY, initial);
+        appStorage.setItem(BASE_DEFAULT_KEY, initial);
+        return adopted;
+      }
       const v = baseDefaultOf(stored);
-      /* 超出範圍就是無效設定，一律回退內建預設值。
-         不夾成 16、也不把 0 補成 0.01——那是拿一個使用者沒設定過的數字冒充他的設定。 */
+      /* 超出範圍沿用原本備援顯示，不以它覆寫原始設定。
+         合法存檔的原字串亦保留，計算使用原有驗證後的正式值。 */
       if (v !== null) {
-        // baseDefaultOf 已按原文字驗界線並截位；只回存同一正式值。
-        if (String(v) !== String(stored).trim()) saveBaseDefault(v);
+        appStorage.seedDeviceDefault(BASE_DEFAULT_KEY, stored);
         return v;
       }
     } catch (_) {}
@@ -18659,11 +18805,9 @@ window.addEventListener('resize', () => {
     const fm = Y('#ytFormula');
     if (hasBase) {
       const d = derivedSteps(b0);
-      STEP_IDS.forEach((id, i) => {
-        if (force) { setCalcFieldStoredValue(Y(id), d[i]); return; }
-        // 使用者手動清空的格子保持空白，由必填檢查提示，不靜默回填
-        if (!stepsTouched[i] && !ytIssues[id] && raw(Y(id)) !== '') setCalcFieldStoredValue(Y(id), d[i]);
-      });
+      // 一般同步只更新說明；已保存的數字及空白不因新版政策重新生成。
+      // 首次使用、實際改基準、還原自動利率與清空才明確傳入 force。
+      if (force) STEP_IDS.forEach((id, i) => setCalcFieldStoredValue(Y(id), d[i]));
       if (fb) fb.textContent = b0;
       if (fo) fo.textContent = Math.round((b0 + SPREAD) * 1000) / 1000;
       if (fm) fm.hidden = false;
@@ -18676,8 +18820,13 @@ window.addEventListener('resize', () => {
     // 只計入畫面上看得到的格子，被年限收掉的段落不該影響提示。
     if (fn) {
       const touched = stepsTouched.slice(0, shown).filter(Boolean).length;
-      fn.hidden = touched === 0;
-      if (touched) {
+      const derived = hasBase ? derivedSteps(b0) : null;
+      const preserved = derived && STEP_IDS.slice(0, shown).some((id, i) =>
+        !stepsTouched[i] && !ytIssues[id] && raw(Y(id)) !== '' && Math.abs(num(Y(id)) - derived[i]) > 1e-9);
+      fn.hidden = touched === 0 && !preserved;
+      if (preserved) {
+        fn.innerHTML = '<span class="nw">沿用已儲存利率，</span><span class="nw">實際以下方數值為準</span>';
+      } else if (touched) {
         // 拆成兩個不可斷的子句：窄機折行時會斷在逗號後，
         // 不會像自動換行那樣把「修改」拆成兩行
         fn.innerHTML = shown === 1
@@ -21099,17 +21248,20 @@ window.addEventListener('resize', () => {
   };
 
   /* ---------- 啟動 ---------- */
-  /* 預設基準利率是獨立保存鍵，平常只有齒輪與「清空數值」會讀它。
-     舊版可能留下 1.7209 這種第 4 位，不在啟動時讀一次就永遠不會被清掉——
-     使用者要等到下次開齒輪才會合法化。loadBaseDefault() 現在會自我修復並寫回，
-     所以這裡呼叫一次就夠，合法值不會被動到。 */
+  /* 預設基準利率獨立保存。啟動時只補上尚未保存的目前預設；
+     已有存檔保留原文，讀取時仍使用原本的有效範圍與精度驗證。 */
   loadBaseDefault();
   /* 啟動載入不是使用者操作，期間的 persist() 不可打「已修改」旗標，
      否則一開頁就會被當成清空後又輸入了新資料。 */
   ytSuppressDirty++;
   try { const c=appStorage.getItem(CLEAR_STORE);if(c!==null&&c!=='null'){let value;try{value=JSON.parse(c);}catch(e){value=null;}ytCleared=normalizeYouthState(value);persistCleared();} } catch(e){}
-  try { const saved=appStorage.getItem(STORE);if(saved!==null&&saved!=='null'){let value;try{value=JSON.parse(saved);}catch(e){value=null;}apply(value);} } catch(e){console.error(e);}
-  syncChoices(); clampInputs(); syncSteps(false); markStale();
+  let ytNeedsInitialSteps = false;
+  try {
+    const saved=appStorage.getItem(STORE);
+    if(saved===null)ytNeedsInitialSteps=true;
+    else if(saved!=='null'){let value;try{value=JSON.parse(saved);}catch(e){value=null;}apply(value);}
+  } catch(e){console.error(e);}
+  syncChoices(); clampInputs(); syncSteps(ytNeedsInitialSteps); markStale();
   if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
   const spEl = Y('#ytSpread'); if (spEl) spEl.value = SPREAD;   // 與計算共用同一常數
   persist();ytObservedFingerprint=ytStateFingerprint();
@@ -21166,16 +21318,36 @@ function getBadgeDefault(mode, key, fallback) {
     if (Number(normalized) !== value || !calcDecimalRoundtrips(normalized)) return null;
     return normalized;
   }
-  function readMode(mode) {
-    const raw = appStorage.getItem(storageKey(mode));
-    let saved;
-    try { saved = raw === null ? {} : JSON.parse(raw); } catch (_) { saved = {}; }
-    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-    const result = {};
+  function readMode(mode, preserveStored = false) {
+    const key = storageKey(mode), raw = appStorage.getItem(key);
+    let saved, canSeed = true;
+    try { saved = raw === null ? {} : JSON.parse(raw); } catch (_) { saved = {}; canSeed = false; }
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) { saved = {}; canSeed = false; }
+    let deviceDefault = {};
+    const initial = appStorage.getDeviceDefault(key);
+    try {
+      const parsed = initial === null ? {} : JSON.parse(initial);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) deviceDefault = parsed;
+      else canSeed = false;
+    } catch (_) { canSeed = false; }
+    const stored = { ...saved }, result = {};
+    let missing = raw === null;
     SPECS.filter(spec => spec.mode === mode).forEach(spec => {
-      result[spec.key] = validValue(spec, saved[spec.key]) ?? String(spec.factory);
+      const present = Object.prototype.hasOwnProperty.call(saved, spec.key);
+      const fallback = Object.prototype.hasOwnProperty.call(deviceDefault, spec.key)
+        ? deviceDefault[spec.key] : String(spec.factory);
+      const adopted = present ? saved[spec.key] : fallback;
+      const valid = validValue(spec, adopted);
+      // 合法原字串原樣保留；非法原資料仍留在存檔，不以畫面備援值覆寫。
+      result[spec.key] = valid !== null ? String(adopted) : String(spec.factory);
+      if (!present) { stored[spec.key] = fallback; missing = true; }
     });
-    return result;
+    if (canSeed) {
+      const serialized = JSON.stringify(stored);
+      appStorage.seedDeviceDefault(key, serialized);
+      if (missing) appStorage.setItem(key, serialized);
+    }
+    return preserveStored ? stored : result;
   }
   MODES.forEach(mode => {
     values[mode] = Object.fromEntries(SPECS.filter(spec => spec.mode === mode).map(spec => [spec.key, String(spec.factory)]));
@@ -21255,7 +21427,7 @@ function getBadgeDefault(mode, key, fallback) {
     }
     let latest;
     // 儲存前讀最新同模式偏好再合併，避免另一分頁剛存的其他欄位被舊整包蓋回。
-    try { latest = readMode(selected.mode); } catch (_) { return; }
+    try { latest = readMode(selected.mode, true); } catch (_) { return; }
     latest[selected.key] = normalized;
     let saved = false;
     try { appStorage.setItem(storageKey(selected.mode), JSON.stringify(latest)); saved = true; }
@@ -21264,7 +21436,7 @@ function getBadgeDefault(mode, key, fallback) {
     try {
       if (appStorage.getItem(storageKey(selected.mode)) !== JSON.stringify(latest)) return;
     } catch (_) { return; }
-    values[selected.mode] = latest;
+    try { values[selected.mode] = readMode(selected.mode); } catch (_) { return; }
     refreshBadges();
     closeDlg();
     if (saved) showToast('已更新默認值');
@@ -21423,6 +21595,27 @@ function getBadgeDefault(mode, key, fallback) {
   });
   refreshBadges();
 })();
+// 這些偏好原本在未保存時使用固定備援值；首次採用即具體保存。
+// 不包含清空快照、遷移標記或門檻記錄，避免重建已刪除的歷史狀態。
+const initialPreferences = {
+  'mortgage_calc_mode_v1': 'general', 'mortgage-period-unit-v1': 'period',
+  'mortgage-cum-interest-general-v1': '0', 'mortgage-cum-interest-burden-v1': '0', 'mortgage-cum-interest-youth-v1': '0',
+  'mortgage-total-unit-v1': 'yuan', 'mortgage-burden-total-unit-v1': 'yuan',
+  'mortgage_badge_lock_general_v1': '0', 'mortgage_badge_lock_youth_v1': '0',
+  'mortgage_lux_on_v1': '1', 'mortgage_hh_on_v1': '1', 'youth_region_on_v1': '1',
+  'mortgage-burden-flow-collapsed-v1': '{}', 'mortgage-burden-summary-decimals-v1': 'off',
+  'mortgage-export-include-detail': 'detail', 'cb_spec_sheet_view_v1': 'qa', 'youth_spec_sheet_view_v1': 'faq'
+};
+for (const [key, fallback] of Object.entries(initialPreferences)) {
+  let value = appStorage.getItem(key);
+  if (value === null) { value = fallback; appStorage.setItem(key, value); }
+  appStorage.seedDeviceDefault(key, value);
+}
+for (const key of ['mortgage_form_state_v4', 'mortgage_burden_state_v1', 'youth_form_state_v3']) {
+  const value = appStorage.getItem(key);
+  if (value !== null) appStorage.seedDeviceDefault(key, value);
+}
+await appStorage.finishInitialization();
 thresholdSettings.finish();
 })().catch(error => thresholdSettings.bootFailure(error));
 </script>
