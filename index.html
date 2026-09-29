@@ -3950,9 +3950,8 @@ body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){v
 .loan-persistent.loan-notice-active:not([hidden]){display:block!important}
 #installBar.loan-persistent{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important}
 #installBar.loan-persistent.loan-notice-active{display:flex!important}
-.export-image-progress.loan-persistent{right:auto!important;background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important;font-size:15px!important;font-weight:500!important}
-.export-image-progress.loan-persistent.loan-notice-active{display:flex!important}
-.export-image-progress.loan-persistent button{margin-top:0;color:inherit;border-color:currentColor}
+/* 製作進度沿用底部專用樣式；必須確認的提醒仍優先。 */
+body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events:none}
 .loan-persistent button{font:inherit;font-size:15px;min-height:40px;margin:8px 4px 0;padding:6px 14px;border:1px solid #fff;border-radius:9px;background:#fff;color:#9b3030;cursor:pointer}
 #appAlert .app-alert-card{position:absolute;left:var(--loan-alert-center,50%);bottom:var(--loan-alert-bottom,40%);transform:translateX(-50%);width:max-content;max-width:min(420px,var(--loan-notice-width,calc(100vw - 24px)));max-height:var(--loan-notice-max-height,50vh);padding:16px;gap:10px;border-radius:14px;animation:none;box-sizing:border-box;overflow:hidden}
 #appAlert .app-alert-text{max-width:100%;overflow-wrap:anywhere}
@@ -7429,7 +7428,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.29A";
+const APP_VERSION = "2026.09.29B";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -8874,6 +8873,7 @@ function hideToast(toast) {
   toast._toastHolding = false;
   toast._toastHoldPointerId = null;
   toast._toastSuspendedAt = null;
+  toast._toastExportBusyOwner = null;
   toast._toastGeneration = (toast._toastGeneration || 0) + 1;
   toast.classList.remove('show', 'toast-hint', 'toast-hint-multiline', 'toast-warning', 'toast-reset', 'toast-held', 'loan-notice-suppressed');
   toast.textContent = '';
@@ -9059,6 +9059,7 @@ function dockCalcToast() {
 
 function showToast(msg, opts) {
   opts = { ...(opts || {}) };
+  if (opts.exportBusyOwner && !opts.exportBusyOwner.active) return;
   const request = opts._requestId || ++loanToastRequest;
   opts._requestId = request;
   opts._mode = opts._mode || document.body.dataset.mode;
@@ -9092,6 +9093,7 @@ function showToast(msg, opts) {
   toast._toastScope = opts.scope;
   toast._toastMode = opts._mode;
   toast._toastPriority = opts.priority;
+  toast._toastExportBusyOwner = opts.exportBusyOwner || null;
   toast._toastSuspendedAt = null;
   toast.classList.toggle('toast-warning', opts.kind === 'warning');
   toast.classList.toggle('toast-reset', opts.kind === 'reset');
@@ -9130,7 +9132,7 @@ const loanNotifications = (() => {
   toast.inert = false;
   const sources = new Map();
   let positionQueued = false, positioning = false;
-  const sourceSelector = '#storageStatus, #thresholdUpdateNotice, .threshold-save-error, #installBar, .export-image-progress';
+  const sourceSelector = '#storageStatus, #thresholdUpdateNotice, .threshold-save-error, #installBar';
   function register(node, priority, owner) {
     if (sources.has(node)) return;
     sources.set(node, { priority, owner });
@@ -9141,7 +9143,7 @@ const loanNotifications = (() => {
   }
   function adoptSources() {
     document.querySelectorAll(sourceSelector).forEach(node => register(node,
-      node.id === 'storageStatus' ? 100 : node.id === 'thresholdUpdateNotice' ? 40 : node.id === 'installBar' ? 5 : node.matches('.export-image-progress') ? 90 : 80,
+      node.id === 'storageStatus' ? 100 : node.id === 'thresholdUpdateNotice' ? 40 : node.id === 'installBar' ? 5 : 80,
       node.closest('.yt-set, .spec-sheet')));
   }
   function persistentCandidate() {
@@ -9208,7 +9210,7 @@ const loanNotifications = (() => {
   }
   function getTop() {
     let top = null;
-    for (const node of document.querySelectorAll('#toast.show:not(.loan-notice-suppressed), .loan-persistent.loan-notice-active:not([hidden]), #appAlert.show .app-alert-card')) {
+    for (const node of document.querySelectorAll('#toast.show:not(.loan-notice-suppressed), .loan-persistent.loan-notice-active:not([hidden]), .export-image-progress:not([hidden]), #appAlert.show .app-alert-card')) {
       const r = node.getBoundingClientRect();
       if (r.height > 0 && getComputedStyle(node).visibility !== 'hidden') top = top === null ? r.top : Math.min(top, r.top);
     }
@@ -9285,8 +9287,17 @@ function appModalFocusable(el) {
     && style.visibility !== 'hidden' && el.getAttribute('aria-disabled') !== 'true';
 }
 
+function appNoticeFocusables(modal) {
+  if (modal?.id === 'appAlert') return [];
+  return [...document.querySelectorAll('#loanNoticeLayer .loan-notice-active button, .export-image-progress button')].filter(appModalFocusable);
+}
+
+function isAppNoticeTarget(target, modal) {
+  return modal?.id !== 'appAlert' && !!target.closest?.('#loanNoticeLayer .loan-notice-active, .export-image-progress');
+}
+
 function appModalFocusables(modal) {
-  const noticeButtons = modal.id === 'appAlert' ? [] : document.querySelectorAll('#loanNoticeLayer .loan-notice-active button');
+  const noticeButtons = appNoticeFocusables(modal);
   return [...modal.querySelectorAll('button, input, select, textarea, a[href], [tabindex], [contenteditable="true"]'), ...noticeButtons]
     .filter(appModalFocusable);
 }
@@ -9347,7 +9358,7 @@ document.addEventListener('focusin', e => {
   if (appModalRedirectingFocus) return;
   const modal = getTopAppModal();
   if (!modal) return;
-  if (modal.id !== 'appAlert' && e.target.closest('#loanNoticeLayer .loan-notice-active')) return;
+  if (isAppNoticeTarget(e.target, modal)) return;
   if (modal.contains(e.target)) { appModalLastFocus.set(modal, e.target); return; }
   /* 換欄的 pointerdown 會先讓 readonly 欄位取得焦點，pointerup 才換計算鍵盤。
      此時允許真正被點到的欄位，避免焦點防護吃掉既有換欄操作。 */
@@ -9361,7 +9372,7 @@ document.addEventListener('focusin', e => {
 document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
   const modal = getTopAppModal();
-  const onNotice = !!e.target.closest?.('#loanNoticeLayer .loan-notice-active');
+  const onNotice = isAppNoticeTarget(e.target, modal);
   if (onNotice && e.key !== 'Tab') {
     if (e.key === 'Escape') { e.preventDefault(); if (modal) focusAppModal(modal); }
     e.stopImmediatePropagation(); return;
@@ -9369,7 +9380,7 @@ document.addEventListener('keydown', e => {
   if (!modal) return;
   if (e.key === 'Tab') {
     e.preventDefault(); e.stopImmediatePropagation();
-    const noticeAction = document.querySelector('#loanNoticeLayer .loan-notice-active:not([hidden]) button:not([disabled])');
+    const noticeAction = appNoticeFocusables(modal)[0];
     if (!onNotice && !noticeAction && modal.matches('[data-calc-backdrop]') && switchCalcTabField(e.shiftKey ? -1 : 1)) return;
     const fields = appModalFocusables(modal);
     if (!fields.length) { focusAppModal(modal); return; }
@@ -13007,6 +13018,7 @@ function initCalcFields(root) {
 }
 
 let exportBusy = false;
+let activeExportBusyNotice = null;
 const EXPORT_DETAIL_STORAGE_KEY = 'mortgage-export-include-detail';
 
 function getExportIncludeDetail() {
@@ -14452,6 +14464,23 @@ function watchExportNavigation(mode) {
   };
 }
 
+function beginExportBusyNotice(message) {
+  if (!message) return null;
+  const owner = { active: true };
+  activeExportBusyNotice = owner;
+  showToast(message, { exportBusyOwner: owner });
+  return owner;
+}
+
+function finishExportBusyNotice(owner = activeExportBusyNotice) {
+  if (!owner) return;
+  owner.active = false;
+  if (loanToastQueued?.opts.exportBusyOwner === owner) loanToastQueued = null;
+  const toast = $('#toast');
+  if (toast?._toastExportBusyOwner === owner) hideToast(toast);
+  if (activeExportBusyNotice === owner) activeExportBusyNotice = null;
+}
+
 async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
   if (exportBusy) return;
   const context = createExportContext();
@@ -14466,7 +14495,7 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
   exportBusy = true;
   if (activeBtn && busyLabel) setExportBtnBusy(activeBtn, busyLabel);
   syncExportFormatButtons();
-  if (busyMsg) showToast(busyMsg);
+  const busyNotice = beginExportBusyNotice(busyMsg);
   try {
     await task(context);
   } catch (err) {
@@ -14479,6 +14508,7 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
       showToast('', { html: toastLines('匯出失敗', '請稍後再試') });
     }
   } finally {
+    finishExportBusyNotice(busyNotice);
     if (activeBtn) clearExportBtnBusy(activeBtn);
     exportBusy = false;
     syncExportFormatButtons();
@@ -14567,6 +14597,7 @@ function assertImageExportActive(job) {
 }
 
 function showImageExportProgress(job, text) {
+  finishExportBusyNotice();
   if (!job.progressNodes) {
     job.progressNodes = [];
     [document.body].forEach(section => {
@@ -14576,11 +14607,13 @@ function showImageExportProgress(job, text) {
       cancel.addEventListener('click', () => {
         job.cancelled = true;
         job.progressNodes.forEach(node => { node.firstChild.textContent = '正在取消…'; node.lastChild.disabled = true; });
+        loanNotifications.schedulePosition();
       });
       row.append(label, cancel); section.appendChild(row); job.progressNodes.push(row);
     });
   }
   job.progressNodes.forEach(row => { row.firstChild.textContent = text; });
+  loanNotifications.schedulePosition();
 }
 
 function detailImageFileName(context, ext, part, index, total) {
@@ -14788,6 +14821,7 @@ async function runDetailImageExport(context, mime, ext, action) {
     showExportFilesDialog(images, context, action, ext);
   } finally {
     job.progressNodes?.forEach(node => node.remove());
+    loanNotifications.schedulePosition();
     if (job.cancelled) showToast('已取消匯出');
   }
 }
@@ -14898,6 +14932,7 @@ async function sharePreparedExportImages(state, index) {
 
 function showExportFilesDialog(images, context, action, ext) {
   if (!images.length) throw new Error('No complete export images');
+  finishExportBusyNotice();
   closeExportFilesDialog();
   const dialog = $('#exportFilesDialog');
   const state = { images, context, action, closed: false, busy: false, requestedIndices: new Set(), downloadJob: null, returnFocus: exportBtnOf(action === 'share' ? 'share' : ext) };
