@@ -3901,9 +3901,17 @@ if ("serviceWorker" in navigator) {
   <script src="./html2canvas.min.js"></script>
   <script src="./jspdf.umd.min.js"></script>
 <style id="threshold-protection-style">
+body[data-threshold-loading="1"]{background:#f0f0ee}
 body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){visibility:hidden}
 #thresholdBoot{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:#eef0f1;color:#222;box-sizing:border-box}
-#thresholdBoot[data-startup-wait]{background:var(--bg)}
+#thresholdBoot[data-startup-wait]{background:#f0f0ee;color:#333530;color-scheme:light}
+#thresholdBoot[data-startup-wait] .threshold-boot-card{width:auto;max-width:100%;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;text-align:center}
+#thresholdBoot[data-startup-wait] .threshold-boot-card::before{content:"";display:block;width:34px;height:34px;box-sizing:content-box;border:2px solid #e2ddd0;border-top-color:#bf943c;border-right-color:#bf943c;border-radius:50%;margin:0 auto 24px;animation:loanBootSpin 1.25s linear infinite}
+#thresholdBoot[data-startup-wait="pending"] .threshold-boot-card::before{animation-play-state:paused}
+#thresholdBoot[data-startup-wait] .threshold-boot-card h2{font-size:16px;font-weight:500;line-height:1.55;letter-spacing:.02em;color:#333530;margin:0}
+#thresholdBoot[data-startup-wait] .threshold-boot-card p{font-size:13px;font-weight:400;line-height:1.5;color:#777974;margin:7px 0 0}
+@keyframes loanBootSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#thresholdBoot[data-startup-wait] .threshold-boot-card::before{animation:none}}
 #thresholdBoot[data-startup-wait="pending"] .threshold-boot-card{visibility:hidden}
 .threshold-boot-card{width:min(100%,420px);max-height:90dvh;overflow:auto;background:#fff;border-radius:20px;padding:22px;box-sizing:border-box;font-size:15px;line-height:1.6}
 .threshold-boot-card h2{font-size:20px;margin:0 0 12px}.threshold-boot-actions{display:grid;gap:12px}
@@ -3923,6 +3931,7 @@ body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){v
 <style id="loan-notice-styles">
 /* 共用提示的底邊以正常鍵盤本體量測；提示不再成為鍵盤的一部分。 */
 #loanNoticeLayer{position:fixed;inset:0;z-index:700;pointer-events:none}
+#appAlert[data-require-confirmation="1"] #appAlertText{white-space:pre-line}
 #toast,.loan-persistent{position:absolute!important;left:var(--loan-notice-center,50%)!important;bottom:var(--loan-notice-bottom,40%)!important;transform:translateX(-50%)!important;width:max-content!important;max-width:var(--loan-notice-width,calc(100vw - 24px))!important;max-height:var(--loan-notice-max-height,50vh)!important;box-sizing:border-box;overflow:auto;overscroll-behavior:contain;text-align:center;margin:0!important;white-space:normal!important;overflow-wrap:anywhere}
 #toast{padding:14px 16px;border-radius:14px;font-size:24px;font-weight:700;line-height:1.4;transition:opacity .15s;box-shadow:0 6px 20px #0003;z-index:700;-webkit-touch-callout:none;touch-action:pan-y}
 #toast:not(.show),#toast.loan-notice-suppressed{visibility:hidden;pointer-events:none}
@@ -3954,6 +3963,32 @@ body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){v
 #appAlert.app-alert-warning .app-alert-btn{background:#fff;color:#9b3030;border-color:#fff}
 #appAlert .app-alert-icon{width:34px;height:34px;flex-shrink:0}
 #appAlert .app-alert-icon svg{width:22px;height:22px}
+/* 只有純未填欄位提醒使用兩欄簡潔款；輸入錯誤與其他警告維持原樣。 */
+#appAlert.app-alert-warning.app-alert-missing-only .app-alert-card{width:286px;padding:21px 20px 20px;gap:14px;background:#f0f0ee;border:0;color:#34362f;border-radius:18px}
+#appAlert.app-alert-warning.app-alert-missing-only :is(.app-alert-text,.am-lead,.am-lead b,.am-chip,.am-detail,.am-detail-label){color:#34362f}
+#appAlert.app-alert-warning.app-alert-missing-only .app-alert-icon{width:32px;height:32px;margin-bottom:3px;border-color:#bf943c66;background:#bf943c10;color:#af852d}
+#appAlert.app-alert-warning.app-alert-missing-only .app-alert-icon svg{width:21px;height:21px;color:#af852d}
+#appAlert.app-alert-warning.app-alert-missing-only .app-alert-btn{border:0;background:#bf943c;color:#fff;min-height:44px;font-size:15px;padding:10px 14px;border-radius:10px}
+#appAlert.app-alert-warning.app-alert-missing-only .am-lead{font-size:16px;font-weight:600;line-height:1.6;letter-spacing:0}
+#appAlert.app-alert-warning.app-alert-missing-only .am-lead b{color:#aa7f27}
+#appAlert.app-alert-warning.app-alert-missing-only .am-chips{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 12px;margin-top:15px;padding:13px 8px;background:#e6e5df;border-radius:10px}
+#appAlert.app-alert-warning.app-alert-missing-only .am-chip{font-size:15px;line-height:1.6;font-weight:500;background:transparent;padding:3px 0;border:0;border-radius:0;letter-spacing:0;box-shadow:none}
+@media(max-height:650px){
+  #appAlert.app-alert-warning.app-alert-missing-only .app-alert-card{padding:14px 12px;gap:10px}
+  #appAlert.app-alert-warning.app-alert-missing-only .app-alert-icon{width:28px;height:28px;margin-bottom:0}
+  #appAlert.app-alert-warning.app-alert-missing-only .am-chips{margin-top:10px;padding:9px 8px}
+}
+/* 暫時試算確認採整頁極簡款，與缺欄提醒的鍵盤上方位置分開。 */
+#appAlert.app-alert-temporary{padding:14px;background:#f0f0ee;backdrop-filter:none;-webkit-backdrop-filter:none;color-scheme:light}
+#appAlert.app-alert-temporary .app-alert-card{position:relative;left:auto;bottom:auto;transform:none;width:max-content;max-width:calc(100vw - 28px);max-height:calc(100dvh - 28px);padding:0;gap:0;background:transparent;border:0;box-shadow:none;border-radius:0;overflow:hidden;color:#333530;animation:none}
+#appAlert.app-alert-warning.app-alert-temporary .app-alert-icon{width:34px;height:34px;margin:0 auto 24px;border:1.6px solid #bf943c;background:transparent;color:#b18a36;font-size:22px;font-weight:400;line-height:1;animation:none}
+#appAlert.app-alert-temporary .app-alert-icon svg{display:none}
+#appAlert.app-alert-temporary .app-alert-icon::before{content:'!'}
+#appAlert.app-alert-warning.app-alert-temporary .app-alert-text{display:grid;gap:3px;font-size:15px;line-height:1.65;letter-spacing:0;font-weight:500;text-align:center;color:#333530}
+#appAlert.app-alert-temporary .app-alert-text :is(span,strong){display:block;white-space:nowrap}
+#appAlert.app-alert-temporary .app-alert-text strong{font-size:1.153846154em;font-weight:600;color:#b84b4b;line-height:1.45}
+#appAlert.app-alert-temporary .app-alert-btn{display:block;width:100%;height:44px;min-height:44px;margin:20px auto 0;padding:0;border:0;border-radius:10px;background:#bf943c;color:#fff;font-size:15px;font-weight:600}
+#appAlert.app-alert-temporary .app-alert-btn:focus-visible{outline:2px solid #876417;outline-offset:-2px}
 @media(max-width:360px){#toast{font-size:20px}#toast .toast-reset-title{font-size:20px}#toast .toast-reset-line{font-size:16px}}
 </style>
 </head>
@@ -6725,10 +6760,15 @@ root.LoanDetailJpeg = Object.freeze({
       dbPromise = new Promise((resolve, reject) => {
         if (!idb || typeof idb.open !== 'function') { reject(new ThresholdStoreError('STORAGE_UNAVAILABLE', 'IndexedDB is unavailable.')); return; }
         let request, settled = false;
-        const rejectOnce = error => { if (!settled) { settled = true; reject(error); } };
+        const guard = root.loanStartupStorage?.watch(error => { settled = true; reject(error); }, () => {
+          try { request?.transaction?.abort(); } catch (_) {}
+          try { request?.result?.close(); } catch (_) {}
+        });
+        const rejectOnce = error => { if (!settled) { settled = true; guard?.complete(); reject(error); } };
         try { request = idb.open(dbName, 1); }
         catch (error) { rejectOnce(error); return; }
         request.onupgradeneeded = () => {
+          if (guard && !guard.active()) { try { request.transaction?.abort(); } catch (_) {} return; }
           try { if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE); }
           catch (error) { rejectOnce(error); if (request.transaction) request.transaction.abort(); }
         };
@@ -6736,9 +6776,10 @@ root.LoanDetailJpeg = Object.freeze({
         request.onblocked = () => rejectOnce(new ThresholdStoreError('OPEN_BLOCKED', 'Another application version is blocking threshold storage.'));
         request.onsuccess = () => {
           const db = request.result;
-          if (settled) { db.close(); return; }
+          if (settled || (guard && !guard.active())) { db.close(); return; }
           if (!db.objectStoreNames.contains(STORE)) { db.close(); rejectOnce(new ThresholdStoreError('UNSUPPORTED_SCHEMA', 'The threshold object store is missing.')); return; }
           db.onversionchange = () => { db.close(); dbPromise = null; };
+          root.loanStartupStorage?.track(db); guard?.complete();
           settled = true;
           resolve(db);
         };
@@ -6749,22 +6790,26 @@ root.LoanDetailJpeg = Object.freeze({
       const db = await open();
       return new Promise((resolve, reject) => {
         let transaction, result, failure;
+        const guard = root.loanStartupStorage?.watch(reject, () => { try { transaction?.abort(); } catch (_) {} });
         try { transaction = db.transaction(STORE, mode); }
-        catch (error) { reject(error); return; }
-        transaction.oncomplete = () => resolve(result);
-        transaction.onabort = () => reject(failure || transaction.error || new ThresholdStoreError('TRANSACTION_ABORTED', 'Threshold settings were not saved.'));
+        catch (error) { guard?.complete(); reject(error); return; }
+        transaction.oncomplete = () => { if (guard && !guard.active()) return; guard?.complete(); resolve(result); };
+        transaction.onabort = () => { guard?.complete(); reject(failure || transaction.error || new ThresholdStoreError('TRANSACTION_ABORTED', 'Threshold settings were not saved.')); };
         transaction.onerror = event => { if (!failure) failure = event.target.error || transaction.error; };
         try {
           const store = transaction.objectStore(STORE);
           const request = store.get(RECORD_KEY);
           request.onsuccess = () => {
+            if (guard && !guard.active()) return;
             try {
               const outcome = action(request.result);
+              if (guard && !guard.active()) return;
               result = outcome.value;
               if (outcome.changed) {
                 if (mode !== 'readwrite') fail('INTERNAL_ERROR', 'A read transaction cannot mutate settings.');
                 store.put(outcome.record, RECORD_KEY);
               }
+              if (guard && !guard.active()) return;
             } catch (error) { failure = error; transaction.abort(); }
           };
         } catch (error) { failure = error; transaction.abort(); }
@@ -7084,7 +7129,7 @@ function createThresholdUI() {
     if (delayLoading) bootHintTimer = setTimeout(() => {
       bootHintTimer = null;
       if (el.isConnected && document.body.dataset.thresholdLoading === '1') el.dataset.startupWait = 'visible';
-    }, 300);
+    }, 1500);
     return el;
   }
   function bootFailure(error) {
@@ -7095,9 +7140,11 @@ function createThresholdUI() {
   }
   gate('正在讀取已儲存設定', '請稍候…', true);
   try {
-    captured.session = sessionStorage.getItem('mortgage_tab_state_v1');
-    captured.latest = localStorage.getItem('mortgage_latest_state_v1');
-    captured.standalone = Object.fromEntries(Object.values(groupKeys).map(key => [key,localStorage.getItem(key)]));
+    if (!window.loanStartupStorage?.isTemporaryStart()) {
+      captured.session = sessionStorage.getItem('mortgage_tab_state_v1');
+      captured.latest = localStorage.getItem('mortgage_latest_state_v1');
+      captured.standalone = Object.fromEntries(Object.values(groupKeys).map(key => [key,localStorage.getItem(key)]));
+    }
   } catch (error) { captureError=error; }
 
   async function candidates(repair=false) {
@@ -7149,7 +7196,7 @@ function createThresholdUI() {
     hooks=options; defaultsRows=clone(options.defaultsRows);
     defaults=Object.assign({},...Object.keys(groupKeys).map(group=>flatten(group,defaultsRows[group])));
     const factory=window.loanDataRecovery?.isTemporary()?window.loanDataRecovery.memoryThresholdStore:thresholdStoreFactory;
-    store=factory({indexedDB:window.indexedDB,bootstrap: options.bootstrap,validateSnapshot(state){
+    store=factory({indexedDB:window.loanDataRecovery?.isTemporary()?undefined:window.indexedDB,bootstrap: options.bootstrap,validateSnapshot(state){
       if(!state.needsLegacyChoice)Object.keys(groupKeys).forEach(group=>validateSavedRows(group,rowsOf(group,state)));
     }});
     try {
@@ -7164,6 +7211,7 @@ function createThresholdUI() {
     Object.keys(groupKeys).forEach(group=>validateSavedRows(group,rowsOf(group)));
     appliedValues=clone(snapshot.values);
     } catch(error) {
+      if(window.loanStartupStorage?.isExpired())return new Promise(()=>{});
       if(!window.loanDataRecovery?.isTemporary()){
         if(await window.loanDataRecovery?.recover(error))return new Promise(()=>{});
         if(window.loanDataRecovery?.isUnavailable(error)||window.loanDataRecovery?.recoveryFailed()){
@@ -7304,9 +7352,84 @@ function createThresholdUI() {
   return {init,rowsOf,wire,finish,bootFailure};
 }
 
+/* One startup deadline covers storage opening, reading, migration and confirmation.
+   A timeout starts a fresh memory-only document; the abandoned document stays fenced. */
+(function (root) {
+  const LIMIT_MS = 5000, FLAG = '__loan_startup_temporary';
+  const operations = new Set(), connections = new Set();
+  let timer = null, deadline = null, finished = false, expired = false, temporary = false;
+  let cleanUrl = null, timeoutUrl = null, forcedTemporary = false;
+  try {
+    const url = new URL(root.location.href);
+    forcedTemporary = url.searchParams.get(FLAG) === 'timeout';
+    url.searchParams.delete(FLAG); cleanUrl = url.href;
+    url.searchParams.set(FLAG, 'timeout'); timeoutUrl = url.href;
+    if (forcedTemporary) {
+      try { root.history.replaceState(root.history.state, '', cleanUrl); } catch (_) {}
+    }
+  } catch (_) {}
+  const now = () => root.performance?.now?.() ?? Date.now();
+  function timeoutError() {
+    const error = new Error('Startup storage did not complete within 5000 ms.');
+    error.name = 'LoanStartupTimeoutError'; error.code = 'STARTUP_TIMEOUT'; return error;
+  }
+  function navigationFallback() {
+    if (!root.document?.body) return;
+    let gate = root.document.getElementById('thresholdBoot');
+    if (!gate) { gate = root.document.createElement('div'); gate.id = 'thresholdBoot'; root.document.body.append(gate); }
+    root.document.body.dataset.thresholdLoading = '1';
+    Array.from(root.document.body.children).forEach(child => { if (child !== gate && !['SCRIPT','STYLE'].includes(child.tagName)) child.inert = true; });
+    delete gate.dataset.startupWait;
+    gate.innerHTML = '<div class="threshold-boot-card"><h2>資料讀取逾時</h2><p>若未自動開啟暫時試算，請按下方按鈕。</p><div class="threshold-boot-actions"></div></div>';
+    const link = root.document.createElement('a'); link.textContent = '開啟空白暫時試算';
+    link.href = timeoutUrl || cleanUrl || root.location.href; link.target = '_self';
+    link.style.cssText = 'display:block;padding:10px;text-align:center;background:#c99524;color:white;border-radius:10px;text-decoration:none';
+    gate.querySelector('.threshold-boot-actions').append(link);
+  }
+  function invalidate() {
+    for (const cancel of [...operations]) cancel(timeoutError());
+    for (const db of connections) { try { db.close(); } catch (_) {} }
+    connections.clear();
+  }
+  function expire() {
+    if (finished || expired || temporary || forcedTemporary) return;
+    expired = true; root.clearTimeout(timer); timer = null; invalidate();
+    // Visible fallback also covers browsers that decline a scripted navigation silently.
+    navigationFallback();
+    try { if (!timeoutUrl) throw timeoutError(); root.location.replace(timeoutUrl); } catch (_) {}
+  }
+  function assertActive() {
+    if (!finished && !temporary && !forcedTemporary && deadline !== null && now() >= deadline) expire();
+    if (expired || temporary || forcedTemporary) throw timeoutError();
+  }
+  root.loanStartupStorage = Object.freeze({
+    begin() { if (deadline !== null || forcedTemporary) return; deadline = now() + LIMIT_MS; timer = root.setTimeout(expire, LIMIT_MS); },
+    isTemporaryStart() { return forcedTemporary; },
+    isExpired() { return expired; },
+    reason() { return forcedTemporary || expired ? 'timeout' : null; },
+    assertActive,
+    track(db) {
+      if (expired || temporary || forcedTemporary) { try { db.close(); } catch (_) {} return false; }
+      if (!finished) connections.add(db); return true;
+    },
+    watch(reject, cancel) {
+      assertActive(); let settled = false;
+      const abort = error => { if (settled) return; settled = true; operations.delete(abort); try { cancel?.(); } catch (_) {} reject(error); };
+      if (!finished) operations.add(abort);
+      return {
+        active() { if (settled) return false; try { assertActive(); return true; } catch (_) { return false; } },
+        complete() { if (settled) return; settled = true; operations.delete(abort); }
+      };
+    },
+    enterTemporary() { temporary = true; root.clearTimeout(timer); timer = null; invalidate(); },
+    finish() { finished = true; root.clearTimeout(timer); timer = null; connections.clear(); },
+    retry() { if (cleanUrl) root.location.replace(cleanUrl); else root.location.reload(); }
+  });
+  root.loanStartupStorage.begin();
+})(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.28C";
+const APP_VERSION = "2026.09.29A";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -7531,13 +7654,23 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
       return new Promise((resolve, reject) => {
         if (!idb) { reject(new LoanStorageError('STORAGE_UNAVAILABLE', 'IndexedDB is unavailable.')); return; }
         let request;
-        try { request = idb.open(DB, 1); } catch (e) { reject(e); return; }
-        request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE); };
-        request.onerror = () => reject(request.error);
-        request.onblocked = () => reject(new LoanStorageError('OPEN_BLOCKED', 'Another page blocks storage.'));
+        const guard = root.loanStartupStorage?.watch(reject, () => {
+          try { request?.transaction?.abort(); } catch (_) {}
+          try { request?.result?.close(); } catch (_) {}
+        });
+        const failed = error => { guard?.complete(); reject(error); };
+        try { request = idb.open(DB, 1); } catch (e) { failed(e); return; }
+        request.onupgradeneeded = () => {
+          if (guard && !guard.active()) { try { request.transaction?.abort(); } catch (_) {} return; }
+          if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
+        };
+        request.onerror = () => failed(request.error);
+        request.onblocked = () => failed(new LoanStorageError('OPEN_BLOCKED', 'Another page blocks storage.'));
         request.onsuccess = () => {
           const result = request.result;
-          if (!result.objectStoreNames.contains(STORE)) { result.close(); reject(new LoanStorageError('UNSUPPORTED_RECORD', 'Missing data store.')); return; }
+          if (guard && !guard.active()) { result.close(); return; }
+          if (!result.objectStoreNames.contains(STORE)) { result.close(); failed(new LoanStorageError('UNSUPPORTED_RECORD', 'Missing data store.')); return; }
+          root.loanStartupStorage?.track(result); guard?.complete();
           result.onversionchange = () => result.close(); resolve(result);
         };
       });
@@ -7545,17 +7678,19 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     function transaction(mode, keys, apply) {
       return new Promise((resolve, reject) => {
         let tx, outcome, failure;
-        try { tx = db.transaction(STORE, mode); } catch (e) { reject(e); return; }
-        tx.oncomplete = () => resolve(outcome);
-        tx.onabort = () => reject(failure || tx.error || new LoanStorageError('TRANSACTION_ABORTED', 'The save did not complete.'));
+        const guard = root.loanStartupStorage?.watch(reject, () => { try { tx?.abort(); } catch (_) {} });
+        try { tx = db.transaction(STORE, mode); } catch (e) { guard?.complete(); reject(e); return; }
+        tx.oncomplete = () => { if (guard && !guard.active()) return; guard?.complete(); resolve(outcome); };
+        tx.onabort = () => { guard?.complete(); reject(failure || tx.error || new LoanStorageError('TRANSACTION_ABORTED', 'The save did not complete.')); };
         tx.onerror = event => { failure ||= event.target.error || tx.error; };
         const store = tx.objectStore(STORE), results = dict(); let left = keys.length;
         for (const key of keys) {
           const request = store.get(key);
           request.onsuccess = () => {
+            if (guard && !guard.active()) return;
             results[key] = request.result;
             if (--left) return;
-            try { outcome = apply(results, store); } catch (e) { failure = e; tx.abort(); }
+            try { outcome = apply(results, store); if (guard && !guard.active()) return; } catch (e) { failure = e; tx.abort(); }
           };
         }
       });
@@ -7563,6 +7698,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     function project(recordToUse, page) { return Object.assign(dict(), clone(page), projectShared(recordToUse)); }
     function journal() {
       if(restarting)return;
+      root.loanStartupStorage?.assertActive();
       const envelope = { model: MODEL, schema: 1, generation: record?.generation || null, tabId,
         values: trialValues(values), pending: pending ? clone(pending) : null, inFlight: active || recovery ? clone(active || recovery) : null,
         legacyPending: legacyPending ? clone(legacyPending) : null };
@@ -7585,6 +7721,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
       timer = host.setTimeout(() => { timer = 0; flush().catch(() => {}); }, 0);
     }
     function stage(entries) {
+      root.loanStartupStorage?.assertActive();
       const previous = values, next = Object.assign(dict(), values); let trialChanged = false, any = false;
       const changedSettings = dict();
       for (const [key, value] of entries) {
@@ -7640,6 +7777,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
       });
     }
     async function flush() {
+      root.loanStartupStorage?.assertActive();
       if (!ready) return false;
       if (committing) { await committing; if (pending || recovery) return flush(); return !error; }
       if (!pending && !recovery) return !error && !legacyPending;
@@ -7913,22 +8051,34 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
   async function recoveryTransaction(mode, action) {
     const db = await new Promise((resolve,reject) => {
       let request;
-      try { request=root.indexedDB.open(DB,1); } catch(error){reject(error);return;}
-      request.onerror=()=>reject(request.error);request.onblocked=()=>reject(new Error('Recovery storage is blocked.'));
-      request.onsuccess=()=>resolve(request.result);
+      const guard=root.loanStartupStorage?.watch(reject,()=>{
+        try{request?.transaction?.abort();}catch(_){}
+        try{request?.result?.close();}catch(_){}
+      });
+      const failed=error=>{guard?.complete();reject(error);};
+      try { request=root.indexedDB.open(DB,1); } catch(error){failed(error);return;}
+      request.onerror=()=>failed(request.error);request.onblocked=()=>failed(new Error('Recovery storage is blocked.'));
+      request.onupgradeneeded=()=>{if(guard&&!guard.active()){try{request.transaction?.abort();}catch(_){}}};
+      request.onsuccess=()=>{
+        if(guard&&!guard.active()){request.result.close();return;}
+        root.loanStartupStorage?.track(request.result);guard?.complete();resolve(request.result);
+      };
     });
     try { return await new Promise((resolve,reject) => {
       let tx,result,failure;
-      try {tx=db.transaction(STORE,mode);} catch(error){reject(error);return;}
-      tx.oncomplete=()=>resolve(result);tx.onabort=()=>reject(failure||tx.error);tx.onerror=event=>{failure ||= event.target.error;};
+      const guard=root.loanStartupStorage?.watch(reject,()=>{try{tx?.abort();}catch(_){}});
+      try {tx=db.transaction(STORE,mode);} catch(error){guard?.complete();reject(error);return;}
+      tx.oncomplete=()=>{if(guard&&!guard.active())return;guard?.complete();resolve(result);};
+      tx.onabort=()=>{guard?.complete();reject(failure||tx.error);};tx.onerror=event=>{failure ||= event.target.error;};
       const store=tx.objectStore(STORE),data={},requests=[RECORD,'thresholds',RESET],keysRequest=store.getAllKeys();let remaining=4;
-      function done(){if(--remaining)return;try{result=action(data,store,keysRequest.result);}catch(error){failure=error;tx.abort();}}
+      function done(){if(guard&&!guard.active())return;if(--remaining)return;try{result=action(data,store,keysRequest.result);if(guard&&!guard.active())return;}catch(error){failure=error;tx.abort();}}
       keysRequest.onsuccess=done;
-      requests.forEach(key=>{const request=store.get(key);request.onsuccess=()=>{data[key]=request.result;done();};});
+      requests.forEach(key=>{const request=store.get(key);request.onsuccess=()=>{if(guard&&!guard.active())return;data[key]=request.result;done();};});
     }); } finally {db.close();}
   }
-  function clearPageStorage() {root.sessionStorage.removeItem(SESSION);root.sessionStorage.removeItem(LEGACY_SESSION);}
+  function clearPageStorage() {root.loanStartupStorage?.assertActive();root.sessionStorage.removeItem(SESSION);root.sessionStorage.removeItem(LEGACY_SESSION);}
   async function completeCleanup(marker) {
+    root.loanStartupStorage?.assertActive();
     for(const key of [LEGACY_LATEST,...KEYS])root.localStorage.removeItem(key);
     clearPageStorage();
     return recoveryTransaction('readwrite',(data,store)=>{
@@ -7937,18 +8087,21 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     });
   }
   function recoveryFailure() {
+    if(root.loanStartupStorage?.isExpired())return;
     recoveryFailed=true;
     root.loanNotifications?.showPersistent('data-recovery','目前無法完成資料讀取或重設，尚未確認保存成功。請重新載入再試。',{
       actionText:'重新載入',onAction:()=>root.location.reload()});
   }
   function restart(kind,generation) {
     if(restarting)return;
+    root.loanStartupStorage?.assertActive();
     root.sessionStorage.setItem(RESTART,JSON.stringify({kind,generation:generation||null,attempt:1}));
-    restarting=true;bootDatabase?.close();root.location.reload();
+    restarting=true;root.loanStartupStorage?.finish();bootDatabase?.close();root.location.reload();
   }
   root.loanDataRecovery=Object.freeze({
     isUnavailable,recoveryFailed(){return recoveryFailed;},isTemporary(){return temporary;},
     createMemoryStorage(){
+      root.loanStartupStorage?.enterTemporary();
       temporary=true;bootDatabase?.close();
       const record=newRecord({},root.crypto.randomUUID(),'temporary');let values=projectShared(record);
       function stage(entries){for(const[key,value]of entries){if(!ALLOWED.has(key))fail('INVALID_KEY','Unknown application key.');if(value===null)delete values[key];else values[key]=String(value);}}
@@ -7976,6 +8129,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
       try{clearPageStorage();restart('follow',null);}catch(_){recoveryFailure();}
     },
     async recover(error){
+      if(root.loanStartupStorage?.isExpired())return false;
       const known=['LoanStorageError','ThresholdStoreError','LoanStoredDataError'].includes(error?.name);
       if(!known||(!contentErrors.has(error.code)&&error.code!=='STALE_GENERATION')){
         if(isUnavailable(error))recoveryFailure();
@@ -8020,7 +8174,8 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
     async bootReady(storage){
       if(storage.temporary){
         root.loanNotifications?.dismissPersistent('data-recovery');
-        root.loanNotifications?.showPersistent('temporary-storage','目前無法保存資料\n可暫時試算，離開後輸入不會保留',{actionText:'重新載入',onAction:()=>root.location.reload()});return;
+        root.loanNotifications?.dismissPersistent('temporary-storage');
+        root.loanNotifications?.confirmTemporary();return;
       }
       if(storage.hasFailure()){
         // 普通待保存狀態沿用 storageStatus，只有未完成的重設才顯示重設錯誤。
@@ -8040,7 +8195,7 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
           if(!marker.noticePending)return false;
           store.put({...marker,noticePending:false},RESET);return true;
         });
-        root.sessionStorage.removeItem(RESTART);
+        root.loanStartupStorage?.assertActive();root.sessionStorage.removeItem(RESTART);
         root.loanNotifications?.dismissPersistent('data-recovery');
         if(show)root.loanNotifications?.showReset();
         else if(restarted?.kind==='page')root.loanNotifications?.show('這個分頁的輸入無法讀取，已重新載入保存資料。',{kind:'warning',scope:'global',duration:4800});
@@ -8050,8 +8205,10 @@ function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION
 })(typeof window !== 'undefined' ? window : globalThis);
 
 let appStorage = await (async()=>{
+  if(window.loanStartupStorage.isTemporaryStart())return window.loanDataRecovery.createMemoryStorage();
   try{return await window.createLoanUserStorage();}
   catch(error){
+    if(window.loanStartupStorage.isExpired())return new Promise(()=>{});
     if(window.loanDataRecovery.isUnavailable(error))return window.loanDataRecovery.createMemoryStorage();
     if(await window.loanDataRecovery.recover(error))return new Promise(()=>{});
     if(window.loanDataRecovery.recoveryFailed())return window.loanDataRecovery.createMemoryStorage();
@@ -8661,6 +8818,7 @@ function buildCalcMissingAlertHtml(entries) {
   const issues = [...unique.values()];
   const missing = issues.filter(item => item.kind === 'missing');
   const invalid = issues.filter(item => item.kind === 'invalid');
+  const missingOnly = missing.length > 0 && invalid.length === 0;
   const soloTitle = issues.length === 1 && issues[0].title;
   const lead = soloTitle ? escapeAlertHtml(soloTitle)
     : missing.length && invalid.length ? '請補填或調整以下資料'
@@ -8679,7 +8837,7 @@ function buildCalcMissingAlertHtml(entries) {
       : `<div class="am-detail-label">${escapeAlertHtml(item.label)}</div>`;
     return `<div class="am-detail" data-kind="${item.kind === 'invalid' ? 'invalid' : 'missing'}">${label}${(item.details || []).map(text => `<p>${escapeAlertHtml(text)}</p>`).join('')}</div>`;
   }).join('');
-  return `<div class="app-alert-missing"><div class="am-lead">${lead}</div>${chips.length ? `<div class="am-chips">${items}</div>` : ''}${paragraphs.length ? `<div class="am-details">${details}</div>` : ''}</div>`;
+  return `<div class="app-alert-missing" data-missing-only="${missingOnly}"><div class="am-lead">${lead}</div>${chips.length ? `<div class="am-chips">${items}</div>` : ''}${paragraphs.length ? `<div class="am-details">${details}</div>` : ''}</div>`;
 }
 
 let loanToastRequest = 0;
@@ -9068,6 +9226,15 @@ const loanNotifications = (() => {
     node.hidden = false; schedulePosition();
   }
   function dismissPersistent(id) { const node = document.getElementById('loanPersistent-' + id); if (node) node.hidden = true; schedulePosition(); }
+  let temporaryConfirmationPending = false, temporaryConfirmationShown = false;
+  function confirmTemporary() {
+    if (temporaryConfirmationShown) return;
+    if (document.body.dataset.thresholdLoading === '1') { temporaryConfirmationPending = true; return; }
+    temporaryConfirmationPending = false; temporaryConfirmationShown = true;
+    showAppAlert('<span>目前無法讀取門檻設定及欄位資料</span><span>將以空白欄位及預設門檻進入試算</span><strong>本次輸入及門檻設定不會保存</strong>', null,
+      { html: true, kind: 'warning', variant: 'temporary-startup', requireConfirmation: true, confirmLabel: '確認' });
+  }
+  function flushTemporaryConfirmation() { if (temporaryConfirmationPending) confirmTemporary(); }
   function showReset() {
     showToast('', { kind: 'reset', scope: 'global', duration: 4800, storageCommitted: true,
       html: '<span class="toast-reset-title">舊資料無法讀取，已重設</span><span class="toast-reset-line">輸入已清空，設定已恢復預設</span><span class="toast-reset-line">請重新確認（齒輪門檻設定值）</span>' });
@@ -9081,7 +9248,7 @@ const loanNotifications = (() => {
   }).observe(document.body, { attributes: true, attributeFilter: ['data-mode'] });
   if (window.ResizeObserver) new ResizeObserver(schedulePosition).observe(layer);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) schedulePosition(); });
-  const api = { show: showToast, showReset, showPersistent, dismissPersistent, updatePosition, getTop, isBlocked, schedulePosition };
+  const api = { show: showToast, showReset, showPersistent, dismissPersistent, confirmTemporary, flushTemporaryConfirmation, updatePosition, getTop, isBlocked, schedulePosition };
   window.loanNotifications = api;
   schedulePosition();
   return api;
@@ -9233,13 +9400,19 @@ new MutationObserver(syncInactiveAppModals).observe(document.body, {
 let appAlertOnClose = null;
 let appAlertReturnFocus = null;
 
-function closeAppAlert() {
+function closeAppAlert(confirmed = false) {
   const backdrop = $('#appAlert');
   if (!backdrop) return;
+  if (backdrop.dataset.requireConfirmation === '1' && confirmed !== true) {
+    $('#appAlertBtn')?.focus({ preventScroll: true }); return;
+  }
   beginAppModalClose(backdrop);
   backdrop.classList.remove('show');
   backdrop.hidden = true;
   backdrop.classList.remove('app-alert-bd-budget');
+  backdrop.classList.remove('app-alert-missing-only');
+  backdrop.classList.remove('app-alert-temporary');
+  delete backdrop.dataset.requireConfirmation;
   loanNotifications.updatePosition();
   setTimeout(flushQueuedToast, 0);
   const cb = appAlertOnClose;
@@ -9314,10 +9487,18 @@ function showAppAlert(message, onClose, opts) {
   hideContextToast();
   backdrop.classList.toggle('app-alert-warning', opts.kind !== 'info');
   backdrop.classList.toggle('app-alert-bd-budget', opts.variant === 'bd-budget-zero');
+  backdrop.classList.toggle('app-alert-temporary', opts.variant === 'temporary-startup');
+  if (opts.requireConfirmation) backdrop.dataset.requireConfirmation = '1';
+  else delete backdrop.dataset.requireConfirmation;
+  const confirmButton = $('#appAlertBtn');
   textEl.classList.toggle('app-alert-text-html', !!opts.html);
   if (opts.html) textEl.innerHTML = message;
   else textEl.textContent = message;
-  appAlertOnClose = typeof onClose === 'function' ? onClose : null;
+  const missingOnly = !!opts.html && opts.kind !== 'info' && !opts.requireConfirmation
+    && !!textEl.querySelector('.app-alert-missing[data-missing-only="true"]');
+  backdrop.classList.toggle('app-alert-missing-only', missingOnly);
+  if (confirmButton) confirmButton.textContent = opts.confirmLabel || (missingOnly ? '點擊確認' : '我知道了');
+  appAlertOnClose = !missingOnly && typeof onClose === 'function' ? onClose : null;
   appAlertReturnFocus = document.activeElement;
   backdrop.hidden = false;
   beginAppModalOpen(backdrop, closeAppAlert);
@@ -9330,7 +9511,7 @@ function showAppAlert(message, onClose, opts) {
 // 三個面板的說明按鈕共用相同事件
 $$('[data-method-info]').forEach((b) => b.addEventListener('click', showMethodInfo));
 
-$('#appAlertBtn')?.addEventListener('click', closeAppAlert);
+$('#appAlertBtn')?.addEventListener('click', () => closeAppAlert(true));
 $('#appAlert')?.addEventListener('click', (e) => {
   if (e.target === $('#appAlert')) closeAppAlert();
 });
@@ -22348,10 +22529,17 @@ function getBadgeDefault(mode, key, fallback) {
   refreshBadges();
 })();
 await appStorage.finish();
-thresholdSettings.finish();
 await window.loanDataRecovery.bootReady(appStorage);
+if(window.loanStartupStorage.isExpired())return;
+if(!appStorage.temporary)window.loanStartupStorage.assertActive();
+window.loanStartupStorage.finish();
+thresholdSettings.finish();
+loanNotifications.flushTemporaryConfirmation();
 })().catch(async error => {
+  if(window.loanStartupStorage?.isExpired())return;
   if(await window.loanDataRecovery?.recover(error))return;
+  if(window.loanStartupStorage?.isExpired())return;
+  window.loanStartupStorage?.finish();
   thresholdSettings.bootFailure(error);
 });
 </script>
