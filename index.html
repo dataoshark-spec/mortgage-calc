@@ -7449,7 +7449,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.29E";
+const APP_VERSION = "2026.09.29F";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -21777,6 +21777,14 @@ window.addEventListener('resize', () => {
       clampInputs(); syncSteps(true); persist(); markStale();
     }
 
+    // 沿用默認值視窗的回焦點流程：先完成輸入，再由下一次 Enter 儲存。
+    fld.addEventListener('change', () => {
+      queueMicrotask(() => {
+        if (!calcKeyboard.backdropEl && getTopAppModal() === dlg) {
+          Y('#ytBaseSetSave')?.focus({ preventScroll: true });
+        }
+      });
+    });
     Y('#ytBaseSetBtn')?.addEventListener('click', (e) => { e.preventDefault(); openDlg(); });
     Y('#ytBaseSetCancel')?.addEventListener('click', closeDlg);
     Y('#ytBaseSetSave')?.addEventListener('click', async () => {
@@ -21790,12 +21798,13 @@ window.addEventListener('resize', () => {
       try { appStorage.confirmShared(BASE_DEFAULT_KEY); if (!(await appStorage.flush()) && !appStorage.temporary) return; } catch (_) { return; }
       closeDlg();
       if (appStorage.temporary) showToast('已套用，本次使用；目前無法保存', { kind: 'warning', storageCommitted: true });
-      else showToast('', { html: toastLines('已設定預設為', '基準利率 ' + tOk(v + '%')) });
+      else showToast('', { html: toastLines('已設定基準利率', '預設值為 ' + tOk(v + '%')) });
     });
     /* 與高價住宅設定視窗相同：Enter 直接儲存並套用，不讓下層頁面捲動 */
     dlg.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' || dlg.hidden) return;
+      if ((e.key !== 'Enter' && e.code !== 'NumpadEnter') || dlg.hidden) return;
       if (document.querySelector('[data-calc-backdrop]')) return;
+      if (e.repeat) { e.preventDefault(); return; }
       if (e.target && e.target.tagName === 'BUTTON') return;
       e.preventDefault();
       Y('#ytBaseSetSave')?.click();
@@ -22324,7 +22333,25 @@ window.addEventListener('resize', () => {
      否則一開頁就會被當成清空後又輸入了新資料。 */
   ytSuppressDirty++;
   try { const c=appStorage.getItem(CLEAR_STORE);if(c!==null&&c!=='null'){let value;try{value=JSON.parse(c);}catch(e){value=null;}ytCleared=normalizeYouthState(value);persistCleared();} } catch(e){}
-  try { const saved=appStorage.getItem(STORE);if(saved!==null&&saved!=='null'){let value;try{value=JSON.parse(saved);}catch(e){value=null;}apply(value);} } catch(e){console.error(e);}
+  try {
+    const saved = appStorage.getItem(STORE);
+    if (saved !== null && saved !== 'null') {
+      let value; try { value = JSON.parse(saved); } catch (e) { value = null; }
+      apply(value);
+    } else {
+      // 僅首次沒有青安表單時帶入預設；已保存的空白與手動階梯仍原樣還原。
+      setCalcFieldStoredValue(Y('#ytBase'), loadBaseDefault());
+      syncSteps(true);
+      // 與「清空數值」帶回預設時相同，超出欄位範圍的自動階梯留待確認。
+      STEP_IDS.forEach(id => {
+        const text = raw(Y(id));
+        if (text !== '' && !youthFieldValue(id, text, null).valid) {
+          ytIssues[id] = { original: text };
+          clearCalcField(Y(id));
+        }
+      });
+    }
+  } catch (e) { console.error(e); }
   syncChoices(); clampInputs(); syncSteps(false, true); markStale();
   if (typeof window.__syncRestoreBtn === 'function') window.__syncRestoreBtn();
   const spEl = Y('#ytSpread'); if (spEl) spEl.value = SPREAD;   // 與計算共用同一常數
