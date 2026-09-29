@@ -3948,8 +3948,6 @@ body[data-threshold-loading="1"] > :not(#thresholdBoot):not(script):not(style){v
 #toast .export-download-toast>div{white-space:normal}
 .loan-persistent{display:none!important;background:#C44E4E!important;color:#fff!important;border:0!important;border-radius:14px!important;padding:14px 16px!important;font-family:inherit!important;font-size:16px!important;font-weight:600!important;line-height:1.5!important;box-shadow:0 6px 20px #0003!important;pointer-events:auto;z-index:700}
 .loan-persistent.loan-notice-active:not([hidden]){display:block!important}
-#installBar.loan-persistent{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--border)!important}
-#installBar.loan-persistent.loan-notice-active{display:flex!important}
 /* 製作進度沿用底部專用樣式；必須確認的提醒仍優先。 */
 body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events:none}
 .loan-persistent button{font:inherit;font-size:15px;min-height:40px;margin:8px 4px 0;padding:6px 14px;border:1px solid #fff;border-radius:9px;background:#fff;color:#9b3030;cursor:pointer}
@@ -7428,7 +7426,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.29B";
+const APP_VERSION = "2026.09.29C";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -9132,7 +9130,8 @@ const loanNotifications = (() => {
   toast.inert = false;
   const sources = new Map();
   let positionQueued = false, positioning = false;
-  const sourceSelector = '#storageStatus, #thresholdUpdateNotice, .threshold-save-error, #installBar';
+  /* 安裝橫幅保留自己的底部定位，不交給鍵盤上方的共用提示層。 */
+  const sourceSelector = '#storageStatus, #thresholdUpdateNotice, .threshold-save-error';
   function register(node, priority, owner) {
     if (sources.has(node)) return;
     sources.set(node, { priority, owner });
@@ -9143,7 +9142,7 @@ const loanNotifications = (() => {
   }
   function adoptSources() {
     document.querySelectorAll(sourceSelector).forEach(node => register(node,
-      node.id === 'storageStatus' ? 100 : node.id === 'thresholdUpdateNotice' ? 40 : node.id === 'installBar' ? 5 : 80,
+      node.id === 'storageStatus' ? 100 : node.id === 'thresholdUpdateNotice' ? 40 : 80,
       node.closest('.yt-set, .spec-sheet')));
   }
   function persistentCandidate() {
