@@ -1182,7 +1182,7 @@ if ("serviceWorker" in navigator) {
 .export-files-feedback { flex: none; border-radius: 10px; padding: 10px 8px; background: #f4f5f6; }
 .export-files-feedback .export-files-status { margin: 0; color: #444; font-weight: 600; }
 .export-files-download-note { margin: 5px 0 0; color: #777; font-size: .72rem; line-height: 1.55; text-align: center; }
-.export-download-toast > div { font-weight: 600; }
+.export-download-toast > div { font-size: min(1.6em, calc((92vw - 47px) / 9)); font-weight: 700; line-height: 1.3; white-space: nowrap; }
 .export-download-toast > small { display: block; margin-top: 5px; font-size: .8em; line-height: 1.5; color: #777; white-space: normal; }
 @media(max-height: 540px) { .export-files-feedback { padding: 7px 6px; } }
 
@@ -3923,7 +3923,7 @@ if ("serviceWorker" in navigator) {
         <div class="hero-links">
           <button type="button" class="spec-btn" id="bdFlowBtn" title="公式流程" aria-haspopup="dialog" hidden>公式流程<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
           <span class="hero-links-sep" id="bdFlowSep" aria-hidden="true" hidden></span>
-          <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢新青安3.0問答集與貸款原則" aria-haspopup="dialog">青安相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
+          <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢青安3.0（問答集）與青安3.0（貸款原則）" aria-haspopup="dialog">青安相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
           <span class="hero-links-sep" aria-hidden="true"></span>
           <button type="button" class="spec-btn" id="cbSpecBtn" title="查詢中央銀行不動產抵押貸款業務規定問與答及修正規定" aria-haspopup="dialog">貸款相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
         </div>
@@ -4885,7 +4885,7 @@ if ("serviceWorker" in navigator) {
 <div class="spec-sheet" id="ytSpecSheet" role="dialog" aria-modal="true" aria-labelledby="ytSheetTitle" hidden>
   <div class="spec-sheet-head">
     <div class="spec-sheet-bar">
-      <h2 id="ytSheetTitle">新青安3.0（問答集）</h2>
+      <h2 id="ytSheetTitle">青安3.0（問答集）</h2>
       <button type="button" class="spec-sheet-close" id="ytSheetClose" aria-label="關閉">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -6344,7 +6344,7 @@ async function createLoanDetailRowSource(rootEl, options = {}) {
 
 </script>
 <script>
-const APP_VERSION = "2026.09.21H";
+const APP_VERSION = "2026.09.21I";
 /* 畫面版本列的唯一來源。兩處版本列都呼叫這裡，日期與發行版本由 APP_VERSION 帶入，
    不把日期硬寫死，也不會有一處改了另一處又寫回舊字串。 */
 function VERSION_LINE_TEXT() { return '貸款試算 · 更新日 ' + APP_VERSION; }
@@ -11731,7 +11731,7 @@ function dropEmptyAprBlockInExportClone(clone) {
   });
 }
 
-// 匯出／分享一律輸出「新青安3.0貸款原則」，不帶問答集
+// 匯出／分享一律輸出「青安3.0（貸款原則）」，不帶問答集
 function forceSpecRuleInExportClone(clone) {
   const block = clone.querySelector('#ytSpecBlock');
   if (block && typeof window.__ytSpecExportHTML === 'function') {
@@ -12661,7 +12661,7 @@ async function captureDetailedImageFiles(context, mime, ext, job) {
       parts.push({ blob, kind: '還款明細', group, width: source.width, height: source.height });
     } finally { source?.dispose(); node.remove(); }
   }
-  await captureSmallPart(await buildExportYouthRulesPart(context), '貸款原則');
+  await captureSmallPart(await buildExportYouthRulesPart(context), '青安3.0貸款原則');
   assertImageExportActive(job);
   return parts.map((part, index) => ({
     file: new File([part.blob], detailImageFileName(context, ext, part, index, parts.length), { type: mime }),
@@ -12852,7 +12852,7 @@ async function captureResultsImageFiles(context, mime, ext, imageRecords) {
     if (context.mode === 'youth') {
       // Always start the existing loan-principles content on its own image.
       await capturePart(await buildExportSummaryPart(context), '重點摘要');
-      await capturePart(await buildExportYouthRulesPart(context), '貸款原則');
+      await capturePart(await buildExportYouthRulesPart(context), '青安3.0貸款原則');
     } else {
       const clone = await buildExportCaptureNode(context);
       try {
@@ -18514,9 +18514,9 @@ window.addEventListener('resize', () => {
   const SPEC_RULE = [{"lv":1,"t":"一、承辦銀行：臺灣銀行股份有限公司、臺灣土地銀行股份有限公司、合作金庫商業銀行股份有限公司、第一商業銀行股份有限公司、華南商業銀行股份有限公司、彰化商業銀行股份有限公司、兆豐國際商業銀行股份有限公司及臺灣中小企業銀行股份有限公司。"},{"lv":1,"t":"二、貸款對象及資格條件："},{"lv":2,"t":"（一）借款人符合民法規定之成年年齡以上，申貸時未滿 50 歲，且借款人與其配偶及未成年子女均無自有住宅者。"},{"lv":2,"t":"（二）112 年 8 月 1 日以後經銀行核貸本優惠貸款者或經農業金融機構核貸青年安居購屋優惠貸款（下稱農安貸款）者，不得申貸本優惠貸款。"},{"lv":2,"t":"（三）自住用途：核貸時借款人須簽訂自用住宅使用切結書，並經承辦銀行查證確係作為自用住宅使用。"},{"lv":2,"t":"（四）所得限制：借款人本人年所得總額不得逾新臺幣（下同）200 萬元。"},{"lv":2,"t":"（五）購買住宅鑑價或買賣總價（二者取孰高），不得逾下列金額："},{"lv":3,"t":"１、臺北市 3,500 萬元。"},{"lv":3,"t":"２、新北市及新竹縣（市）2,500 萬元。"},{"lv":3,"t":"３、其他縣（市）2,000 萬元。"},{"lv":2,"t":"（六）限貸審核：承辦銀行應將撥貸戶資料報送財團法人金融聯合徵信中心建檔。承辦銀行於受理申貸時，應查詢資料檔確認借款人無再次申貸本優惠貸款或曾經農業金融機構核貸農安貸款之情形。"},{"lv":1,"t":"三、貸款條件如下："},{"lv":2,"t":"（一）貸款成數：最高 8 成核貸。"},{"lv":2,"t":"（二）貸款額度：最高 1,000 萬元；申請日前 2 年內完成結婚登記之家庭（下稱新婚家庭），最高 1,200 萬元；育有未成年子女家庭，最高 1,500 萬元。"},{"lv":2,"t":"（三）貸款年限及償還方式：貸款年限最長 40 年，含寬限期 5 年，本息分期平均攤還或本金分期平均攤還；且借款人申貸年齡加計核貸年限，合計不得逾 80。"},{"lv":2,"t":"（四）貸款利率：以中華郵政股份有限公司 2 年期定期儲金額度未達 500 萬元機動利率為基準利率，自 113 年 3 月 27 日起為 1.72%，計息方式採一段式機動利率、二段式機動利率或混合式固定利率擇一，一經選定不得變更。自 115 年 8 月 1 日起申貸案件取消二段式機動利率或混合式固定利率之計息方式。"},{"lv":2,"t":"（五）前款各計息方式，利率如下："},{"lv":3,"t":"按基準利率固定加 0.585% 機動計息。但自 110 年 1 月 1 日起新貸放案件，按基準利率固定加 0.555% 機動計息。","h":"１、一段式機動利率"},{"lv":3,"t":"前 2 年按基準利率固定加 0.345% 機動計息，第 3 年起按基準利率固定加 0.645% 機動計息。115 年 8 月 1 日起之申貸案件不適用本款計息方式。","h":"２、二段式機動利率"},{"lv":3,"t":"前 2 年採固定利率，第 1 年按「撥貸當時」基準利率固定加 0.525% 固定計息，第 2 年按「撥貸當時」基準利率固定加 0.625% 固定計息，第 3 年起按基準利率固定加 0.645% 機動計息。115 年 8 月 1 日起之申貸案件不適用本款計息方式。","h":"３、混合式固定利率"},{"lv":2,"t":"（六）自 115 年 8 月 1 日起利息優惠方式如下："},{"lv":3,"t":"１、112 年 7 月 31 日以前撥貸案件：115 年 8 月 1 日起至 116 年 7 月 31 日止，由內政部住宅基金補貼 0.25% 及基準利率減少調升 0.125%；116 年 8 月 1 日起至 117 年 7 月 31 日止，由內政部住宅基金補貼 0.125% 及基準利率減少調升 0.125%；117 年 8 月 1 日起至 118 年 7 月 31 日止，基準利率減少調升 0.125%。118 年 8 月 1 日起回復原貸款利率。"},{"lv":3,"t":"２、112 年 8 月 1 日起撥貸案件：自撥貸日起算 3 年內，由內政部住宅基金補貼 0.375%（113 年 3 月 26 日以前補貼 0.25%）及基準利率減少調升 0.125%。自上述 3 年屆滿次日起（以下均稱期滿後）第 1 年，由內政部住宅基金補貼 0.25% 及基準利率減少調升 0.125%；期滿後第 2 年，由內政部住宅基金補貼 0.125% 及基準利率減少調升 0.125%；期滿後第 3 年，基準利率減少調升 0.125%。期滿後第 4 年起回復原貸款利率。"},{"lv":2,"t":"（七）前款利息優惠，轉貸之借款人及新婚家庭增加之貸款額度於婚姻關係消滅當日起不適用之。"},{"lv":2,"t":"（八）各計息方式依第六款調整後利率參閱附表。"},{"lv":2,"t":"（九）貸款標的：申請日前 6 個月內因買賣取得所有權之住宅。"},{"lv":1,"t":"四、搭配措施：內政部「自購住宅貸款利息補貼」核定戶，若其住宅購置日期符合本項優惠貸款者，得搭配使用。"},{"lv":1,"t":"五、違規處置：倘貸後經承辦銀行查證借款人所購置住宅非供自住使用情形或有為符合貸款資格條件，提供虛偽不實之文件者，應自事實發生日起停止利息補貼，且借款人已溢領利息補貼者，應由承辦銀行追回，並依第二點第三款切結書及銀行貸款契約相關約款，重新核定貸款條件。"},{"lv":1,"t":"六、本優惠貸款申辦：日期至 118 年 7 月 31 日止。"}];  // 公股銀行辦理青安貸款原則 一～六，全文
   const SPEC_ORDER = ['faq', 'rule'];
   const SPEC_DEFAULT_VIEW = 'faq';   // 每次重新試算都回到問答集
-  const SPEC_TITLE = { faq: '新青安3.0問答集', rule: '新青安3.0貸款原則' };
+  const SPEC_TITLE = { faq: '青安3.0（問答集）', rule: '青安3.0（貸款原則）' };
   // 快捷查詢視窗的標題：加括號，讓「新青安3.0」是主體、視圖名是註記
-  const SHEET_TITLE = { faq: '新青安3.0（問答集）', rule: '新青安3.0（貸款原則）' };
+  const SHEET_TITLE = { faq: '青安3.0（問答集）', rule: '青安3.0（貸款原則）' };
   const SPEC_SRC = {
     quick: '',
     faq: '資料來源：財政部國庫署「公股銀行辦理青年安心成家購屋優惠貸款問與答」全 32 問，內容未經刪改。發布日期：115-07-28',
@@ -18631,7 +18631,7 @@ window.addEventListener('resize', () => {
 
   function renderSpec() { Y('#ytSpecBlock').innerHTML = specBlockHTML(specView, true); }
 
-  /* 匯出／分享固定輸出「新青安3.0貸款原則」，不受畫面上目前停在哪一個視圖影響 */
+  /* 匯出／分享固定輸出「青安3.0（貸款原則）」，不受畫面上目前停在哪一個視圖影響 */
   window.__ytSpecExportHTML = function () { return specBlockHTML("rule", false); };
 
   function setSpecView(next) {
