@@ -1257,6 +1257,7 @@ if ("serviceWorker" in navigator) {
     .yt-step-lab.field-label-flash {
       animation: fieldLabelFlash 1.1s ease-in-out 2;
     }
+    .missing-label-flash { animation: fieldLabelFlash 1.1s ease-in-out 2; }
     .input-box {
       width: 100%;
       display: flex;
@@ -7449,7 +7450,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.29F";
+const APP_VERSION = "2026.09.29G";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -9431,11 +9432,16 @@ new MutationObserver(syncInactiveAppModals).observe(document.body, {
 });
 
 let appAlertOnClose = null;
+let appAlertMissingConfirm = null;
 let appAlertReturnFocus = null;
+let missingFieldGuideSeq = 0;
+let missingFieldGuideFrame = 0;
+let missingFieldGuideTimer = 0;
+
 
 function closeAppAlert(confirmed = false) {
   const backdrop = $('#appAlert');
-  if (!backdrop) return;
+  if (!backdrop || backdrop.hidden) return;
   if (backdrop.dataset.requireConfirmation === '1' && confirmed !== true) {
     $('#appAlertBtn')?.focus({ preventScroll: true }); return;
   }
@@ -9449,10 +9455,13 @@ function closeAppAlert(confirmed = false) {
   loanNotifications.updatePosition();
   setTimeout(flushQueuedToast, 0);
   const cb = appAlertOnClose;
+  const missingConfirm = appAlertMissingConfirm;
   appAlertOnClose = null;
+  appAlertMissingConfirm = null;
   const returnFocus = appAlertReturnFocus;
   appAlertReturnFocus = null;
-  if (cb) cb();
+  if (confirmed === true && missingConfirm) missingConfirm();
+  else if (cb) cb();
   else if (returnFocus && returnFocus.isConnected && !returnFocus.closest('[inert]')) {
     returnFocus.focus({ preventScroll: true });
   } else {
@@ -9518,6 +9527,7 @@ function showAppAlert(message, onClose, opts) {
   const textEl = $('#appAlertText');
   if (!backdrop || !textEl) return;
   hideContextToast();
+  cancelMissingFieldGuide();
   backdrop.classList.toggle('app-alert-warning', opts.kind !== 'info');
   backdrop.classList.toggle('app-alert-bd-budget', opts.variant === 'bd-budget-zero');
   backdrop.classList.toggle('app-alert-temporary', opts.variant === 'temporary-startup');
@@ -9532,6 +9542,7 @@ function showAppAlert(message, onClose, opts) {
   backdrop.classList.toggle('app-alert-missing-only', missingOnly);
   if (confirmButton) confirmButton.textContent = opts.confirmLabel || (missingOnly ? '點擊確認' : '我知道了');
   appAlertOnClose = !missingOnly && typeof onClose === 'function' ? onClose : null;
+  appAlertMissingConfirm = missingOnly && typeof opts.onMissingConfirm === 'function' ? opts.onMissingConfirm : null;
   appAlertReturnFocus = document.activeElement;
   backdrop.hidden = false;
   beginAppModalOpen(backdrop, closeAppAlert);
@@ -15921,6 +15932,101 @@ function revealMissingFormField(el) {
   });
 }
 
+/* 純漏填確認專用：只取原驗證器列出的空白，不改必填判定或數值。 */
+function cancelMissingFieldGuide() {
+  missingFieldGuideSeq++;
+  cancelAnimationFrame(missingFieldGuideFrame);
+  clearTimeout(missingFieldGuideTimer);
+  document.querySelectorAll('.missing-label-flash').forEach(label => {
+    label.classList.remove('missing-label-flash');
+    label.removeEventListener('animationend', finishMissingFieldFlash);
+  });
+}
+function finishMissingFieldFlash(event) {
+  if (event.target !== event.currentTarget || event.animationName !== 'fieldLabelFlash') return;
+  const label = event.currentTarget;
+  label.classList.remove('missing-label-flash');
+  label.removeEventListener('animationend', finishMissingFieldFlash);
+}
+function missingFieldTargets(issues, mode) {
+  const root = document.getElementById({ general: 'modeGeneral', youth: 'modeYouth', burden: 'modeBurden' }[mode]);
+  if (!root) return [];
+  const fields = issues.filter(item => item.kind === 'missing').map(item => {
+    const key = String(item.key || '');
+    if (/^#[A-Za-z][\w-]*$/.test(key)) return document.getElementById(key.slice(1));
+    const match = mode === 'general' ? /^rate-(\d+)$/.exec(key)
+      : mode === 'burden' ? /^bdSegs\.(\d+)\.rate$/.exec(key) : null;
+    return match ? root.querySelector((mode === 'general' ? '#rateRows' : '#bdRateRows') + ' input.rate-val[data-i="' + match[1] + '"]') : null;
+  });
+  return [...new Set(fields)].filter(el => el && root.contains(el) && getCalcFieldRawString(el) === '');
+}
+function missingFieldPresentation(el) {
+  const row = el.closest('.rate-row-line');
+  if (row) return { field: el, target: row, label: row.querySelector('.row-seg') };
+  if (el.id === 'ytGenRate') {
+    const label = document.getElementById('ytGenRateLabel');
+    return { field: el, target: label || el, label };
+  }
+  return { field: el, target: getFormFieldScrollTarget(el), label: getFormFieldLabel(el) };
+}
+function revealMissingFormFields(issues, mode, prepare) {
+  cancelMissingFieldGuide();
+  const seq = missingFieldGuideSeq;
+  const fields = missingFieldTargets(issues, mode);
+  if (!fields.length) return;
+  if (typeof prepare === 'function') prepare(fields);
+  fields.forEach(el => {
+    const fold = el.closest('.yt-fold');
+    if (fold && !fold.classList.contains('open')) {
+      fold.classList.add('open');
+      fold.querySelector('.yt-fold-head')?.setAttribute('aria-expanded', 'true');
+    }
+  });
+  // 等收合區完成排版，再依畫面上下／左右次序決定第一個欄位。
+  missingFieldGuideFrame = requestAnimationFrame(() => {
+    missingFieldGuideFrame = requestAnimationFrame(() => {
+      if (seq !== missingFieldGuideSeq || getTopAppModal()) return;
+      const targets = fields.filter(el => el.isConnected && el.getClientRects().length && !el.closest('[hidden], .hidden'))
+        .map(missingFieldPresentation).filter(item => item.target && item.label);
+      targets.sort((a, b) => {
+        const ar = a.target.getBoundingClientRect(), br = b.target.getBoundingClientRect();
+        return Math.abs(ar.top - br.top) > 1 ? ar.top - br.top : ar.left - br.left;
+      });
+      if (!targets.length) return;
+      const first = targets[0];
+      const stickyH = document.querySelector('.sticky-top')?.getBoundingClientRect().height || 0;
+      const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const top = Math.min(max, Math.max(0, window.scrollY + first.target.getBoundingClientRect().top - stickyH - 12));
+      const started = performance.now();
+      let settled = 0;
+      window.scrollTo({ top, behavior: 'smooth' });
+      const finishScroll = () => {
+        if (seq !== missingFieldGuideSeq || getTopAppModal() || !first.field.isConnected || !first.field.getClientRects().length) return;
+        settled = Math.abs(window.scrollY - top) <= 2 ? settled + 1 : 0;
+        if (settled >= 2) {
+          const labels = [...new Set(targets.filter(item => getCalcFieldRawString(item.field) === '').map(item => item.label))];
+          // 一次加入所有標題；不逐欄呼叫會清除上一欄閃爍的舊單欄函式。
+          labels.forEach(label => label.classList.remove('missing-label-flash'));
+          void document.documentElement.offsetWidth;
+          labels.forEach(label => {
+            label.addEventListener('animationend', finishMissingFieldFlash);
+            label.classList.add('missing-label-flash');
+          });
+          // 以動畫完成事件收尾，避免效能較慢時被固定計時器截斷第二次閃爍。
+          missingFieldGuideTimer = setTimeout(() => {
+            if (seq === missingFieldGuideSeq) cancelMissingFieldGuide();
+          }, 10000);
+          return;
+        }
+        // 捲動被使用者中斷時，不再搶回位置或反覆觸發。
+        if (!settled && performance.now() - started > 1800) return;
+        missingFieldGuideFrame = requestAnimationFrame(finishScroll);
+      };
+      missingFieldGuideFrame = requestAnimationFrame(finishScroll);
+    });
+  });
+}
+
 function getRateValidationError() {
   const missing = getRateMissingError();
   if (missing) return missing;
@@ -16655,7 +16761,8 @@ function runCalcAction() {
         && !alertIssues.some(item => item.kind === 'invalid')) {
       alertIssues.push({ kind: 'invalid', label: calcErr.message });
     }
-    if (alertIssues.length) showAppAlert(buildCalcMissingAlertHtml(alertIssues), onClose, { html: true });
+    if (alertIssues.length) showAppAlert(buildCalcMissingAlertHtml(alertIssues), onClose, { html: true,
+      onMissingConfirm: () => revealMissingFormFields(alertIssues, 'general') });
     else if (calcErr.html) showAppAlert(calcErr.html, onClose, { html: true });
     else showAppAlert(calcErr.message, onClose);
     return;
@@ -18731,7 +18838,9 @@ window.addEventListener('resize', scheduleFitPaymentTable);
     bdForgetIssue('resultsVisible'); bdForgetIssue('autoHidden');
     const miss = bdMissingFields();
     if (miss) {
-      showAppAlert(buildCalcMissingAlertHtml(bdCalcAlertIssues(miss)), () => revealMissingFormField(miss.el), { html: true });
+      const issues = bdCalcAlertIssues(miss);
+      showAppAlert(buildCalcMissingAlertHtml(issues), () => revealMissingFormField(miss.el), { html: true,
+        onMissingConfirm: () => revealMissingFormFields(issues, 'burden') });
       return;
     }
     const probe = compute();
@@ -22033,7 +22142,11 @@ window.addEventListener('resize', () => {
     const miss = ytMissingFields();
     if (miss) {
       Y('#ytResults').classList.remove('show');last=null;ytStale=true;persist();updateYtButton();
-      showAppAlert(buildCalcMissingAlertHtml(ytCalcAlertIssues(miss)), () => ytRevealMissing(miss.el), { html: true });
+      const issues = ytCalcAlertIssues(miss);
+      showAppAlert(buildCalcMissingAlertHtml(issues), () => ytRevealMissing(miss.el), { html: true,
+        onMissingConfirm: () => revealMissingFormFields(issues, 'youth', fields => {
+          if (fields.includes(Y('#ytR5'))) { ytShowComparisonRate = true; syncStepScope(); }
+        }) });
       return;
     }
     try {
