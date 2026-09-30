@@ -7450,7 +7450,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.30A";
+const APP_VERSION = "2026.09.30B";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -16006,8 +16006,8 @@ function revealMissingFormFields(issues, mode, prepare) {
         if (seq !== missingFieldGuideSeq || getTopAppModal() || !first.field.isConnected || !first.field.getClientRects().length) return;
         settled = Math.abs(window.scrollY - top) <= 2 ? settled + 1 : 0;
         if (settled >= 2) {
-          const labels = [...new Set(targets.filter(item => getCalcFieldRawString(item.field) === '').map(item => item.label))];
-          // 一次加入所有標題；不逐欄呼叫會清除上一欄閃爍的舊單欄函式。
+          const labels = getCalcFieldRawString(first.field) === '' ? [first.label] : [];
+          // 只強調本次捲動到的第一個漏填標題，其他漏填仍列在確認窗。
           labels.forEach(label => label.classList.remove('missing-label-flash'));
           void document.documentElement.offsetWidth;
           labels.forEach(label => {
