@@ -3986,8 +3986,8 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 #appAlert.app-alert-warning .app-alert-btn{background:#fff;color:#9b3030;border-color:#fff}
 #appAlert .app-alert-icon{width:34px;height:34px;flex-shrink:0}
 #appAlert .app-alert-icon svg{width:22px;height:22px}
-/* 純未填欄位沿用 21F 的白底金框與淡紅兩欄；確認行為及定位獨立保留。 */
-#appAlert.app-alert-warning.app-alert-missing-only .app-alert-card{width:320px;padding:24px 22px 18px;gap:14px;background:#fff;border:1.5px solid rgba(201,146,42,.32);color:var(--text);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.14),0 0 0 1px rgba(201,146,42,.06)}
+/* 純未填欄位沿用 21F 外觀；垂直位置以可見視窗置中，不預留鍵盤高度。 */
+#appAlert.app-alert-warning.app-alert-missing-only .app-alert-card{top:var(--loan-missing-center-y,50%);bottom:auto;transform:translate(-50%,-50%);max-height:var(--loan-missing-max-height,calc(100dvh - 24px));width:320px;padding:24px 22px 18px;gap:14px;background:#fff;border:1.5px solid rgba(201,146,42,.32);color:var(--text);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.14),0 0 0 1px rgba(201,146,42,.06)}
 #appAlert.app-alert-warning.app-alert-missing-only :is(.app-alert-text,.am-lead){color:var(--text)}
 #appAlert.app-alert-warning.app-alert-missing-only .app-alert-icon{width:54px;height:54px;margin-bottom:0;border:1.5px solid rgba(201,146,42,.34);background:rgba(201,146,42,.1);color:var(--teal)}
 #appAlert.app-alert-warning.app-alert-missing-only .app-alert-icon svg{width:26px;height:26px;color:inherit}
@@ -3999,7 +3999,7 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 #appAlert.app-alert-warning.app-alert-missing-only .am-chip{font-size:clamp(.72rem,3.5vw,.82rem);line-height:1.45;font-weight:600;background:rgba(229,57,53,.07);padding:7px 6px;border:1px solid rgba(229,57,53,.26);border-radius:10px;color:#d0342f;letter-spacing:0;box-shadow:none}
 #appAlert.app-alert-warning.app-alert-missing-only .am-detail{background:rgba(229,57,53,.07);border:1px solid rgba(229,57,53,.26);color:#d0342f}
 #appAlert.app-alert-warning.app-alert-missing-only .am-detail-label{color:#d0342f}
-/* 暫時試算確認採整頁極簡款，與缺欄提醒的鍵盤上方位置分開。 */
+/* 暫時試算確認採整頁極簡款，與缺欄提醒分開定位。 */
 #appAlert.app-alert-temporary{padding:14px;background:#f0f0ee;backdrop-filter:none;-webkit-backdrop-filter:none;color-scheme:light}
 #appAlert.app-alert-temporary .app-alert-card{position:relative;left:auto;bottom:auto;transform:none;width:max-content;max-width:calc(100vw - 28px);max-height:calc(100dvh - 28px);padding:0;gap:0;background:transparent;border:0;box-shadow:none;border-radius:0;overflow:hidden;color:#333530;animation:none}
 #appAlert.app-alert-warning.app-alert-temporary .app-alert-icon{width:34px;height:34px;margin:0 auto 24px;border:1.6px solid #bf943c;background:transparent;color:#b18a36;font-size:22px;font-weight:400;line-height:1;animation:none}
@@ -7450,7 +7450,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.29G";
+const APP_VERSION = "2026.09.30A";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -9207,6 +9207,8 @@ const loanNotifications = (() => {
       writeProperty('--loan-notice-bottom', Math.max(0, layerRect.bottom - edge) + 'px');
       writeProperty('--loan-alert-center', (center - (alertRect?.left || 0)) + 'px');
       writeProperty('--loan-alert-bottom', Math.max(0, (alertRect?.bottom || window.innerHeight) - edge) + 'px');
+      writeProperty('--loan-missing-center-y', ((viewTop + viewBottom) / 2 - (alertRect?.top || 0)) + 'px');
+      writeProperty('--loan-missing-max-height', Math.max(0, viewBottom - viewTop - 24) + 'px');
       writeProperty('--loan-notice-width', width + 'px');
       writeProperty('--loan-notice-max-height', Math.max(64, edge - viewTop - 12) + 'px');
       const modal = alertOpen();
