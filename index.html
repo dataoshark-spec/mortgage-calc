@@ -1207,6 +1207,9 @@ if ("serviceWorker" in navigator) {
 .export-files-feedback { flex: none; border-radius: 10px; padding: 10px 8px; background: #f4f5f6; }
 .export-files-feedback .export-files-status { margin: 0; color: #444; font-weight: 600; }
 .export-files-download-note { margin: 5px 0 0; color: #777; font-size: .72rem; line-height: 1.55; text-align: center; }
+.export-files-error { margin-top: 8px; color: #666; font-size: .72rem; line-height: 1.5; }
+.export-files-error summary { cursor: pointer; text-align: center; }
+.export-files-error pre { margin: 6px 0 0; max-height: 84px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 .export-download-toast > div { font-size: min(1.6em, calc((92vw - 47px) / 9)); font-weight: 700; line-height: 1.3; white-space: nowrap; }
 .export-download-toast > small { display: block; margin-top: 5px; font-size: .8em; line-height: 1.5; color: #777; white-space: normal; }
 @media(max-height: 540px) { .export-files-feedback { padding: 7px 6px; } }
@@ -5312,6 +5315,10 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
     <div class="export-files-feedback">
       <p class="export-files-status" id="exportFilesStatus" role="status" aria-live="polite"></p>
       <p class="export-files-download-note">下載可能在背景執行，請查看下載通知。</p>
+      <details class="export-files-error" id="exportFilesError" hidden>
+        <summary tabindex="0">查看原因</summary>
+        <pre id="exportFilesErrorText"></pre>
+      </details>
     </div>
     <button type="button" class="export-files-close" id="exportFilesClose">關閉</button>
   </div>
@@ -7450,7 +7457,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.30B";
+const APP_VERSION = "2026.10.01A";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -9288,6 +9295,14 @@ const appModalCloseHandlers = new WeakMap();
 const appModalLastFocus = new WeakMap();
 let appModalRedirectingFocus = false;
 let appModalPointerTarget = null;
+// 原生分享的 Promise 可能早於接收程式完成；回到頁面主動操作前不自動導回焦點。
+const exportShareLifecycle = { pending: null, quietFocus: false };
+function resumeExportPageInteraction(event) {
+  if (event.isTrusted && !event.repeat && !exportShareLifecycle.pending && !document.hidden && document.hasFocus()) {
+    exportShareLifecycle.quietFocus = false;
+  }
+}
+document.addEventListener('pointerdown', resumeExportPageInteraction, true);
 
 function appModalIsOpen(el) {
   return !!el && el.isConnected && !el.hidden && el.dataset.modalClosing !== '1';
@@ -9328,6 +9343,7 @@ function appModalFocusables(modal) {
 }
 
 function focusAppModal(modal) {
+  if (modal?.id === 'exportFilesDialog' && exportShareLifecycle.quietFocus) return;
   const previous = appModalLastFocus.get(modal);
   const target = previous && modal.contains(previous) && appModalFocusable(previous)
     ? previous : appModalFocusables(modal)[0];
@@ -9383,6 +9399,7 @@ document.addEventListener('focusin', e => {
   if (appModalRedirectingFocus) return;
   const modal = getTopAppModal();
   if (!modal) return;
+  if (modal.id === 'exportFilesDialog' && exportShareLifecycle.quietFocus) return;
   if (isAppNoticeTarget(e.target, modal)) return;
   if (modal.contains(e.target)) { appModalLastFocus.set(modal, e.target); return; }
   /* 換欄的 pointerdown 會先讓 readonly 欄位取得焦點，pointerup 才換計算鍵盤。
@@ -9395,8 +9412,21 @@ document.addEventListener('focusin', e => {
 }, true);
 
 document.addEventListener('keydown', e => {
+  resumeExportPageInteraction(e);
   if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
   const modal = getTopAppModal();
+  if (modal?.id === 'exportFilesDialog' && e.repeat
+      && (['Enter', ' '].includes(e.key) || e.code === 'NumpadEnter')
+      && (exportShareLifecycle.quietFocus || e.target.closest?.('[data-share-index]'))) {
+    e.preventDefault(); e.stopImmediatePropagation(); return;
+  }
+  if (modal?.id === 'exportFilesDialog' && exportShareLifecycle.quietFocus) {
+    if (e.key === 'Escape' || (exportShareLifecycle.pending
+        && (['Tab', 'Enter', ' '].includes(e.key) || e.code === 'NumpadEnter'))) {
+      e.preventDefault(); e.stopImmediatePropagation();
+    }
+    return;
+  }
   const onNotice = isAppNoticeTarget(e.target, modal);
   if (onNotice && e.key !== 'Tab') {
     if (e.key === 'Escape') { e.preventDefault(); if (modal) focusAppModal(modal); }
@@ -13155,12 +13185,12 @@ function syncExportFormatButtons() {
   ].forEach(([sels, title]) => {
     sels.map((x) => $(x)).forEach((btn) => {
       if (!btn) return;
-      btn.disabled = exportBusy;
+      btn.disabled = exportBusy || !!exportShareLifecycle.pending;
       btn.title = title;
     });
   });
   [$('#exportPdfBtn'), $('#ytExportPdfBtn'), $('#bdExportPdfBtn')].forEach((btn) => {
-    if (btn) btn.disabled = exportBusy;
+    if (btn) btn.disabled = exportBusy || !!exportShareLifecycle.pending;
   });
 }
 
@@ -14516,8 +14546,8 @@ function finishExportBusyNotice(owner = activeExportBusyNotice) {
   if (activeExportBusyNotice === owner) activeExportBusyNotice = null;
 }
 
-async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
-  if (exportBusy) return;
+async function withExportLock(task, busyMsg, activeBtn, busyLabel, options = {}) {
+  if (exportBusy || exportShareLifecycle.pending) return;
   const context = createExportContext();
   if (!context) {
     showToast('', { html: toastLines('請先完成 ' + tEm('試算')) });
@@ -14549,7 +14579,7 @@ async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
     syncExportFormatButtons();
     const restoreScroll = navigation.restoreAllowed();
     navigation.dispose();
-    if (restoreScroll && document.body.dataset.mode === context.mode) window.scrollTo(savedX, savedY);
+    if (options.restoreScroll !== false && restoreScroll && document.body.dataset.mode === context.mode) window.scrollTo(savedX, savedY);
   }
 }
 
@@ -14926,14 +14956,14 @@ document.fonts?.addEventListener('loadingdone', fitExportFileNames);
 
 function closeExportFilesDialog() {
   const dialog = $('#exportFilesDialog');
-  if (!dialog || dialog.hidden) return;
+  if (!dialog || dialog.hidden || exportShareLifecycle.pending) return;
   const current = preparedExportImages;
   preparedExportImages = null;
   beginAppModalClose(dialog); dialog.hidden = true;
   $('#exportFilesList').replaceChildren(); $('#exportFilesActions').replaceChildren();
   if (current) {
     current.closed = true; current.images.length = 0;
-    if (current.returnFocus?.isConnected && !current.returnFocus.closest('[inert]')) current.returnFocus.focus({ preventScroll: true });
+    if (!exportShareLifecycle.quietFocus && current.returnFocus?.isConnected && !current.returnFocus.closest('[inert]')) current.returnFocus.focus({ preventScroll: true });
   }
 }
 
@@ -14961,7 +14991,7 @@ function refreshPreparedDownloadLabels(state) {
 }
 
 async function downloadPreparedExportImages(state, index) {
-  if (state.busy || state.closed) return;
+  if (state.busy || state.closed || preparedExportImages !== state || exportShareLifecycle.pending) return;
   const requests = index === undefined ? state.images.map((image, i) => ({ file: image.file, index: i })) : [{ file: state.images[index].file, index }];
   const job = { all: index === undefined, total: requests.length, sent: 0, activeIndex: null };
   state.downloadJob = job;
@@ -15007,29 +15037,84 @@ function setPreparedExportButtonsBusy(state, busy) {
   if (preparedExportImages !== state || state.closed) return;
   $('#exportFilesList').querySelectorAll('button').forEach(button => { button.disabled = busy; });
   $('#exportFilesActions').querySelectorAll('button').forEach(button => { button.disabled = busy; });
+  $('#exportFilesClose').disabled = !!exportShareLifecycle.pending;
+  $('#exportFilesDialog').setAttribute('aria-busy', busy ? 'true' : 'false');
 }
 
+function setPreparedShareError(state, error) {
+  if (preparedExportImages !== state || state.closed) return;
+  const details = $('#exportFilesError');
+  details.open = false;
+  details.hidden = !error;
+  $('#exportFilesErrorText').textContent = error
+    ? String(error.name || 'Error') + (error.message ? ': ' + String(error.message) : '') : '';
+}
+
+function refreshPreparedShareLabels(state) {
+  if (preparedExportImages !== state || state.closed) return;
+  $('#exportFilesDialog').querySelectorAll('[data-share-index]').forEach(button => {
+    const key = button.dataset.shareIndex;
+    const again = state.shareAttempts.has(key);
+    button.textContent = key === 'all'
+      ? (again ? '再次分享' : '分享') + (state.images.length === 1 ? '圖片' : '全部圖片')
+      : (again ? '再分享' : '分享');
+  });
+}
+
+// 所有分享都從已完成清單的真實點擊出發；這裡不製圖、不排程、不自動重試。
 async function sharePreparedExportImages(state, index) {
-  if (state.busy || state.closed) return;
+  if (state.busy || state.closed || preparedExportImages !== state || exportBusy || exportShareLifecycle.pending) return;
+  if (index !== undefined && !state.images[index]) return;
   const files = index === undefined ? state.images.map(x => x.file) : [state.images[index].file];
-  if (!canShareExportImages(files)) { setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return; }
-  state.busy = true; setPreparedExportButtonsBusy(state, true);
+  const shareData = { files };
+  setPreparedShareError(state, null);
   try {
-    // Called directly from the ready button, while this click is still active.
-    await navigator.share({ files, title: state.context.title, text: state.context.text });
-    setExportFilesStatus(state, '已交由系統分享。圖片仍可再次分享或下載。');
+    if (!files.length || !navigator.share || !navigator.canShare || !navigator.canShare(shareData)) {
+      setExportFilesStatus(state, '目前無法分享這組圖片。圖片已保留，可下載後傳送。');
+      return;
+    }
   } catch (error) {
-    setExportFilesStatus(state, error?.name === 'AbortError' ? '已取消分享。圖片仍可再次分享或下載。' : '分享未完成，請重試或改用下載。');
-  } finally { state.busy = false; setPreparedExportButtonsBusy(state, false); }
+    setExportFilesStatus(state, '目前無法開啟圖片分享。圖片已保留，可下載後傳送。');
+    setPreparedShareError(state, error);
+    return;
+  }
+  state.busy = true;
+  state.shareAttempts.add(index === undefined ? 'all' : String(index));
+  exportShareLifecycle.pending = state;
+  exportShareLifecycle.quietFocus = true;
+  setPreparedExportButtonsBusy(state, true);
+  syncExportFormatButtons();
+  setExportFilesStatus(state, '正在開啟系統分享，請在系統分享視窗完成操作。');
+  try {
+    // canShare 與 share 使用同一份只有 File 的資料，呼叫前沒有 await。
+    await navigator.share(shareData);
+    setExportFilesStatus(state, '已送出系統分享請求，請到接收的應用程式確認。若未開啟，可再次分享或下載。');
+  } catch (error) {
+    setExportFilesStatus(state, '分享未完成。圖片已保留，可再次分享或下載後傳送。');
+    setPreparedShareError(state, error);
+  } finally {
+    if (exportShareLifecycle.pending === state) exportShareLifecycle.pending = null;
+    state.busy = false;
+    refreshPreparedShareLabels(state);
+    setPreparedExportButtonsBusy(state, false);
+    syncExportFormatButtons();
+    // 不關閉清單、不清 File、不跳提示、不捲動，也不在交接期間復原焦點。
+  }
 }
 
 function showExportFilesDialog(images, context, action, ext) {
+  if (exportShareLifecycle.pending) return;
   if (!images.length) throw new Error('No complete export images');
   finishExportBusyNotice();
   closeExportFilesDialog();
+  if (preparedExportImages) return;
   const dialog = $('#exportFilesDialog');
-  const state = { images, context, action, closed: false, busy: false, requestedIndices: new Set(), downloadJob: null, returnFocus: exportBtnOf(action === 'share' ? 'share' : ext) };
+  const singleShare = action === 'share' && images.length === 1;
+  const state = { images, context, action, closed: false, busy: false, requestedIndices: new Set(), shareAttempts: new Set(), downloadJob: null, returnFocus: exportBtnOf(action === 'share' ? 'share' : ext) };
   preparedExportImages = state;
+  $('#exportFilesClose').disabled = false;
+  dialog.setAttribute('aria-busy', 'false');
+  setPreparedShareError(state, null);
   dialog.style.setProperty('--export-accent', context.template.style.getPropertyValue('--teal') || '#2e6da4');
   $('#exportFilesTitle').textContent = action === 'share' ? '分享圖片已準備完成' : '匯出圖片已準備完成';
   $('#exportFilesSummary').textContent = context.title + '・共 ' + images.length + ' 張・' + ext.toUpperCase();
@@ -15040,10 +15125,13 @@ function showExportFilesDialog(images, context, action, ext) {
     const number = document.createElement('span'); number.className = 'export-file-number'; number.textContent = String(index + 1).padStart(2, '0'); row.appendChild(number);
     const name = document.createElement('span'); name.className = 'export-files-name'; name.textContent = image.label; label.appendChild(name);
     const size = document.createElement('small'); size.textContent = image.file.size < 1048576 ? Math.ceil(image.file.size / 1024) + ' KB' : (image.file.size / 1048576).toFixed(1) + ' MB'; label.appendChild(size); row.appendChild(label);
-    const save = document.createElement('button'); save.type = 'button'; save.textContent = '下載'; save.dataset.downloadIndex = String(index); save.setAttribute('aria-label', '下載第 ' + (index + 1) + ' 張 ' + image.label);
-    save.addEventListener('click', () => downloadPreparedExportImages(state, index)); row.appendChild(save);
-    if (action === 'share' && canShareExportImages([image.file])) {
+    if (!singleShare) {
+      const save = document.createElement('button'); save.type = 'button'; save.textContent = '下載'; save.dataset.downloadIndex = String(index); save.setAttribute('aria-label', '下載第 ' + (index + 1) + ' 張 ' + image.label);
+      save.addEventListener('click', () => downloadPreparedExportImages(state, index)); row.appendChild(save);
+    }
+    if (action === 'share' && !singleShare && canShareExportImages([image.file])) {
       const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享'; share.setAttribute('aria-label', '分享第 ' + (index + 1) + ' 張 ' + image.label);
+      share.dataset.shareIndex = String(index);
       share.addEventListener('click', () => sharePreparedExportImages(state, index)); row.appendChild(share);
     }
     list.appendChild(row);
@@ -15051,17 +15139,17 @@ function showExportFilesDialog(images, context, action, ext) {
   const actions = $('#exportFilesActions'); actions.replaceChildren();
   const allFiles = images.map(x => x.file), shareable = action === 'share' && canShareExportImages(allFiles);
   if (shareable) {
-    const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享全部圖片'; share.id = 'exportFilesShareAll'; share.addEventListener('click', () => sharePreparedExportImages(state)); actions.appendChild(share);
+    const share = document.createElement('button'); share.type = 'button'; share.textContent = singleShare ? '分享圖片' : '分享全部圖片'; share.id = 'exportFilesShareAll'; share.dataset.shareIndex = 'all'; share.addEventListener('click', () => sharePreparedExportImages(state)); actions.appendChild(share);
   }
-  const save = document.createElement('button'); save.type = 'button'; save.textContent = '全部下載 ' + ext.toUpperCase(); save.id = 'exportFilesDownloadAll'; save.dataset.defaultLabel = save.textContent;
+  const save = document.createElement('button'); save.type = 'button'; save.textContent = (singleShare ? '下載 ' : '全部下載 ') + ext.toUpperCase(); save.id = 'exportFilesDownloadAll'; save.dataset.defaultLabel = save.textContent;
   if (shareable) save.className = 'export-files-secondary'; save.addEventListener('click', () => downloadPreparedExportImages(state)); actions.appendChild(save);
   const hasSingleShare = action === 'share' && images.some(image => canShareExportImages([image.file]));
   $('#exportFilesStatus').textContent = action === 'share' && !shareable
     ? (hasSingleShare ? '此裝置無法一次分享全部圖片，可逐張分享或下載。' : '此裝置不支援圖片分享，可下載後傳送。')
-    : '圖片已完整製作，可全部或逐張處理。';
+    : action === 'share' ? (singleShare ? '圖片已準備完成，按「分享圖片」選擇接收的應用程式。' : '圖片已準備完成，可分享全部圖片或逐張分享。') : '圖片已完整製作，可全部或逐張處理。';
   dialog.hidden = false; beginAppModalOpen(dialog, closeExportFilesDialog);
   fitExportFileNames();
-  (actions.querySelector('button') || $('#exportFilesClose')).focus({ preventScroll: true });
+  if (!exportShareLifecycle.quietFocus) (actions.querySelector('button') || $('#exportFilesClose')).focus({ preventScroll: true });
 }
 
 $('#exportFilesClose').addEventListener('click', closeExportFilesDialog);
@@ -15146,25 +15234,27 @@ async function exportAsImage(mime, ext) {
 }
 
 async function shareResults() {
+  let prepared = null;
   await withExportLock(async (context) => {
-    if (context.includeDetail) { await runDetailImageExport(context, 'image/jpeg', 'jpg', 'share'); return; }
-    const images = [];
-    const files = await captureResultsImageFiles(context, 'image/jpeg', 'jpg', images);
-    if (files.length > 1) { showExportFilesDialog(images, context, 'share', 'jpg'); return; }
-    const shareData = { title: context.title, text: context.text, files };
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      await navigator.share(shareData);
-      showToast('已開啟分享');
-      return;
+    if (context.includeDetail) {
+      const job = { cancelled: false, progressNodes: null };
+      try {
+        const images = await captureDetailedImageFiles(context, 'image/jpeg', 'jpg', job);
+        assertImageExportActive(job);
+        prepared = { images, context };
+      } finally {
+        job.progressNodes?.forEach(node => node.remove());
+        loanNotifications.schedulePosition();
+        if (job.cancelled) showToast('已取消製作分享圖片');
+      }
+    } else {
+      const images = [];
+      await captureResultsImageFiles(context, 'image/jpeg', 'jpg', images);
+      prepared = { images, context };
     }
-    if (navigator.share) {
-      await navigator.share({ title: shareData.title, text: shareData.text, url: context.url });
-      showToast('已開啟分享');
-      return;
-    }
-    files.forEach(file => downloadBlob(file, file.name));
-    showSingleExportDownloadNotice();
-  }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
+  }, '正在準備分享圖片…', exportBtnOf('share'), '分享  生成中', { restoreScroll: false });
+  // 匯出鎖的按鈕／通知收尾全部結束後，才提供下一次真正的分享點擊。
+  if (prepared) showExportFilesDialog(prepared.images, prepared.context, 'share', 'jpg');
 }
 
 
