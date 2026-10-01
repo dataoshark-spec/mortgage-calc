@@ -7458,7 +7458,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.01F";
+const APP_VERSION = "2026.10.01G";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -13323,7 +13323,7 @@ function exportFileName(ext, context) {
   return [...tags, snapshot.exportStamp].join('_') + '.' + ext;
 }
 
-function exportImageFileName(ext, context, part, index) {
+function exportImageFileName(ext, context, part, index, total) {
   const pad = value => String(value).padStart(2, '0');
   let content = part.kind === '青安3.0貸款原則' ? '青安貸款原則' : part.kind;
   if (part.group) {
@@ -13332,7 +13332,8 @@ function exportImageFileName(ext, context, part, index) {
   } else if (part.sectionPages > 1) {
     content += '第' + part.sectionPage + '頁';
   }
-  return [exportModeName(context.mode), pad(index + 1), content, context.exportStamp].join('_') + '.' + ext;
+  const sequence = total > 1 ? [pad(index + 1)] : [];
+  return [exportModeName(context.mode), ...sequence, content, context.exportStamp].join('_') + '.' + ext;
 }
 
 
@@ -14928,7 +14929,7 @@ async function captureDetailedImageFiles(context, mime, ext, job) {
   await captureSmallPart(await buildExportYouthRulesPart(context), '青安3.0貸款原則');
   assertImageExportActive(job);
   return parts.map((part, index) => ({
-    file: new File([part.blob], exportImageFileName(ext, context, part, index), { type: mime }),
+    file: new File([part.blob], exportImageFileName(ext, context, part, index, parts.length), { type: mime }),
     label: part.kind + (part.group ? (context.detailScope ? '・' + context.detailScope : '') + ' 第 ' + String(part.group.from).padStart(2, '0') + '～' + String(part.group.to).padStart(2, '0') + ' 年' : (part.sectionPages > 1 ? '（' + part.sectionPage + '／' + part.sectionPages + '）' : '')),
     kind: part.kind, group: part.group || null
   }));
@@ -15179,7 +15180,7 @@ async function captureResultsImageFiles(context, mime, ext, imageRecords) {
       });
       const sectionPages = parts.filter(part => part.kind === kind).length;
       const sectionPage = parts.slice(0, i + 1).filter(part => part.kind === kind).length;
-      const file = new File([blob], exportImageFileName(ext, context, { kind, sectionPages, sectionPage }, i), { type: mime });
+      const file = new File([blob], exportImageFileName(ext, context, { kind, sectionPages, sectionPage }, i, parts.length), { type: mime });
       files.push(file);
       if (imageRecords) {
         imageRecords.push({ file, kind, group: null, label: kind + (sectionPages > 1 ? '（' + sectionPage + '／' + sectionPages + '）' : '') });
