@@ -7450,7 +7450,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.30B";
+const APP_VERSION = "2026.10.01C-test2";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -14517,6 +14517,7 @@ function finishExportBusyNotice(owner = activeExportBusyNotice) {
 }
 
 async function withExportLock(task, busyMsg, activeBtn, busyLabel) {
+  if (windowsShareIsBusy()) { showWindowsShareBlockedStatus(); return; }
   if (exportBusy) return;
   const context = createExportContext();
   if (!context) {
@@ -15010,6 +15011,7 @@ function setPreparedExportButtonsBusy(state, busy) {
 }
 
 async function sharePreparedExportImages(state, index) {
+  if (useQuietWindowsShare) return shareWindowsPreparedImages(state, index);
   if (state.busy || state.closed) return;
   const files = index === undefined ? state.images.map(x => x.file) : [state.images[index].file];
   if (!canShareExportImages(files)) { setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return; }
@@ -15145,7 +15147,117 @@ async function exportAsImage(mime, ext) {
   }, `正在產生 ${tag}…`, btn, `${tag}  生成中`);
 }
 
+/* WINDOWS_QUIET_SHARE_START: derived directly from 30B, no test controls. */
+const useQuietWindowsShare = /win/i.test(navigator.userAgentData?.platform || navigator.platform || '');
+let windowsShareHandoff = null;
+let windowsSharePreparing = false;
+
+function windowsShareIsBusy() {
+  return useQuietWindowsShare && (windowsSharePreparing || !!windowsShareHandoff?.pending);
+}
+
+function showWindowsShareBlockedStatus() {
+  // Only called after another explicit button click, never on native return.
+  // Inline text does not open a dialog, toast, or move focus.
+  const section = exportBtnOf('share')?.closest('.export-section');
+  if (!section) return;
+  let message = section.querySelector('[data-windows-share-status]');
+  if (!message) {
+    message = document.createElement('p');
+    message.setAttribute('data-windows-share-status', '');
+    message.setAttribute('role', 'status');
+    section.appendChild(message);
+  }
+  message.textContent = windowsShareHandoff?.pending
+    ? '系統分享仍在進行。請先結束系統分享；若仍停住，關閉此程式再開啟。'
+    : '正在準備圖片，請稍候。';
+}
+
+async function shareWindowsResults() {
+  if (windowsShareIsBusy()) { showWindowsShareBlockedStatus(); return; }
+  if (exportBusy) return;
+  // Every explicit new request makes a fresh snapshot of current results.
+  // Never resend a stale mode, detail selection, rate, or repayment schedule.
+  const previousError = windowsShareHandoff?.error;
+  windowsShareHandoff = null;
+  exportBtnOf('share')?.closest('.export-section')?.querySelector('[data-windows-share-status]')?.remove();
+  let ready = null;
+  await withExportLock(async context => {
+    if (context.includeDetail) {
+      const job = { cancelled: false, progressNodes: null };
+      try {
+        const images = await captureDetailedImageFiles(context, 'image/jpeg', 'jpg', job);
+        assertImageExportActive(job);
+        ready = { images, context };
+      } finally {
+        job.progressNodes?.forEach(node => node.remove());
+        loanNotifications.schedulePosition();
+        if (job.cancelled) showToast('已取消匯出');
+      }
+    } else {
+      const images = [];
+      await captureResultsImageFiles(context, 'image/jpeg', 'jpg', images);
+      ready = { images, context };
+    }
+  }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
+  if (!ready) return;
+  windowsSharePreparing = true;
+  try {
+    // Finish rendering/busy-notice cleanup BEFORE offering a new share click.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (document.body.dataset.mode !== ready.context.mode) return;
+    showExportFilesDialog(ready.images, ready.context, 'share', 'jpg');
+    if (previousError) setExportFilesStatus(preparedExportImages, '上次系統回報分享未完成（' + previousError.name + '）。本次圖片已重新製作，可分享或下載。');
+  } finally { windowsSharePreparing = false; }
+}
+
+function shareWindowsPreparedImages(state, index) {
+  if (exportBusy || windowsShareIsBusy() || state.busy || state.closed) return;
+  const files = index === undefined ? state.images.map(image => image.file) : [state.images[index].file];
+  if (!canShareExportImages(files)) {
+    setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return;
+  }
+  const dialog = $('#exportFilesDialog');
+  if (!dialog || dialog.hidden || preparedExportImages !== state) return;
+  const otherModal = [...document.querySelectorAll(APP_MODAL_SELECTOR)].some(modal => {
+    if (modal === dialog || !appModalIsOpen(modal)) return false;
+    const style = getComputedStyle(modal);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  });
+  const toast = $('#toast');
+  if (otherModal || loanToastQueued || toast?.classList.contains('show') || toast?._toastTimer) {
+    setExportFilesStatus(state, '請等準備提示結束、關閉其他提示後，再按分享。'); return;
+  }
+  const payload = { files, title: state.context.title, text: state.context.text };
+  const handoff = {
+    pending: true, status: 'pending', files, mode: state.context.mode,
+    started: new Date().toISOString(), returned: null, error: null
+  };
+  windowsShareHandoff = handoff;
+  state.busy = true;
+  // Hide the app's sheet before the system sheet opens. Do NOT use
+  // closeExportFilesDialog(): it clears File references and restores focus.
+  beginAppModalClose(dialog);
+  dialog.hidden = true;
+  const settle = error => {
+    // Native completion is not LINE delivery. No DOM, focus, scrolling,
+    // timers, notifications, reopening, or automatic retries here.
+    handoff.pending = false;
+    handoff.status = error ? 'rejected' : 'resolved';
+    handoff.returned = new Date().toISOString();
+    if (error) handoff.error = { name: String(error.name || 'Error'), message: String(error.message || error) };
+    state.busy = false;
+  };
+  try {
+    // Still in the original prepared-button click; no await before share().
+    const promise = navigator.share(payload);
+    Promise.resolve(promise).then(() => settle(), error => settle(error));
+  } catch (error) { settle(error); }
+}
+/* WINDOWS_QUIET_SHARE_END */
+
 async function shareResults() {
+  if (useQuietWindowsShare) return shareWindowsResults();
   await withExportLock(async (context) => {
     if (context.includeDetail) { await runDetailImageExport(context, 'image/jpeg', 'jpg', 'share'); return; }
     const images = [];
@@ -16711,7 +16823,7 @@ function canDesktopEnterRunCalc() {
   if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
   if (calcKeyboard.backdropEl) return false;
   if ($('#appAlert')?.classList.contains('show')) return false;
-  if (exportBusy) return false;
+  if (exportBusy || windowsShareIsBusy()) return false;
   const el = document.activeElement;
   if (!el || el === document.body || el === document.documentElement) return true;
   const tag = el.tagName;
