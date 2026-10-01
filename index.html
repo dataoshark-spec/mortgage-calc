@@ -7458,7 +7458,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.01E";
+const APP_VERSION = "2026.10.01F";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -13295,16 +13295,44 @@ function createExportContext() {
   const prefix = mode === 'youth' ? '新青安3.0試算' : mode === 'burden' ? '個人購屋能力評估' : '房屋貸款試算';
   const detailScope = mode === 'youth' ? (template.querySelector('#ytDetailSeg .active')?.textContent.trim() || '合計') : '';
   const d = new Date(), pad = n => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
-  const tags = ['重點摘要', ...(includeDetail ? ['還款明細', ...(cum ? ['累積利息'] : [])] : [])];
+  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
   return Object.freeze({mode, text, template, includeDetail, includeGeneralLoan, cum, detailScope,
     width: EXPORT_LAYOUT_WIDTH, title: prefix + (mode === 'burden' ? '' : '結果'), url: location.href,
-    filename: prefix + '_' + stamp + '_' + tags.join('_')});
+    exportStamp: stamp});
 }
+function exportModeName(mode) {
+  return mode === 'youth' ? '青安貸款' : mode === 'burden' ? '個人評估' : '一般貸款';
+}
+
+function exportDetailName(context) {
+  if (context.mode !== 'youth') return '還款明細';
+  if (context.detailScope === '青安貸款') return '僅青安貸款明細';
+  if (context.detailScope === '一般貸款') return '僅一般貸款明細';
+  return '已合計貸款明細';
+}
+
+// PDF is one document; image filenames use the same frozen export timestamp.
 function exportFileName(ext, context) {
   const snapshot = context || createExportContext();
   if (!snapshot) throw new Error('no valid result');
-  return snapshot.filename + '.' + ext;
+  const tags = [exportModeName(snapshot.mode), '重點摘要'];
+  if (snapshot.includeDetail) {
+    tags.push(exportDetailName(snapshot));
+    if (snapshot.cum) tags.push('累積利息');
+  }
+  return [...tags, snapshot.exportStamp].join('_') + '.' + ext;
+}
+
+function exportImageFileName(ext, context, part, index) {
+  const pad = value => String(value).padStart(2, '0');
+  let content = part.kind === '青安3.0貸款原則' ? '青安貸款原則' : part.kind;
+  if (part.group) {
+    content = exportDetailName(context) + pad(part.group.from) + '-' + pad(part.group.to) + '年';
+    if (context.cum) content += '_累積利息';
+  } else if (part.sectionPages > 1) {
+    content += '第' + part.sectionPage + '頁';
+  }
+  return [exportModeName(context.mode), pad(index + 1), content, context.exportStamp].join('_') + '.' + ext;
 }
 
 
@@ -14717,14 +14745,6 @@ function showImageExportProgress(job, text) {
   loanNotifications.schedulePosition();
 }
 
-function detailImageFileName(context, ext, part, index, total) {
-  const stem = context.filename.replace(/_重點摘要(?:_還款明細(?:_累積利息)?)?$/, '');
-  const pad = n => String(n).padStart(2, '0');
-  const scope = part.kind === '還款明細' && context.detailScope ? '・' + context.detailScope : '';
-  const years = part.group ? '_第' + pad(part.group.from) + '-' + pad(part.group.to) + '年' : '';
-  const cum = part.group && context.cum ? '_累積利息' : '';
-  return stem + '_' + pad(index + 1) + '-' + pad(total) + '_' + part.kind + scope + years + cum + '.' + ext;
-}
 
 /* Prototype only. A fixed-pixel row source for a mounted ten-year detail clone.
    Rendering never allocates the full-height image. Caller receives RGBA rows.
@@ -14908,7 +14928,7 @@ async function captureDetailedImageFiles(context, mime, ext, job) {
   await captureSmallPart(await buildExportYouthRulesPart(context), '青安3.0貸款原則');
   assertImageExportActive(job);
   return parts.map((part, index) => ({
-    file: new File([part.blob], detailImageFileName(context, ext, part, index, parts.length), { type: mime }),
+    file: new File([part.blob], exportImageFileName(ext, context, part, index), { type: mime }),
     label: part.kind + (part.group ? (context.detailScope ? '・' + context.detailScope : '') + ' 第 ' + String(part.group.from).padStart(2, '0') + '～' + String(part.group.to).padStart(2, '0') + ' 年' : (part.sectionPages > 1 ? '（' + part.sectionPage + '／' + part.sectionPages + '）' : '')),
     kind: part.kind, group: part.group || null
   }));
@@ -15115,13 +15135,6 @@ $('#exportFilesClose').addEventListener('click', closeExportFilesDialog);
 $('#exportFilesDialog').addEventListener('click', e => { if (e.target === $('#exportFilesDialog')) closeExportFilesDialog(); });
 
 // C: image exports keep Youth's loan principles separate, using the existing safe page layout.
-function exportImagePartName(ext, context, kind, index, total) {
-  const original = exportFileName(ext, context);
-  if (total === 1) return original;
-  const stem = original.slice(0, -(ext.length + 1)).replace(/_重點摘要$/, '');
-  const pad = value => String(value).padStart(2, '0');
-  return stem + '_' + kind + '_' + pad(index + 1) + '-' + pad(total) + '.' + ext;
-}
 
 async function captureResultsImageFiles(context, mime, ext, imageRecords) {
   const parts = [];
@@ -15164,11 +15177,11 @@ async function captureResultsImageFiles(context, mime, ext, imageRecords) {
       const blob = await new Promise((resolve, reject) => {
         canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), mime, quality);
       });
-      const file = new File([blob], exportImagePartName(ext, context, kind, i, parts.length), { type: mime });
+      const sectionPages = parts.filter(part => part.kind === kind).length;
+      const sectionPage = parts.slice(0, i + 1).filter(part => part.kind === kind).length;
+      const file = new File([blob], exportImageFileName(ext, context, { kind, sectionPages, sectionPage }, i), { type: mime });
       files.push(file);
       if (imageRecords) {
-        const sectionPages = parts.filter(part => part.kind === kind).length;
-        const sectionPage = parts.slice(0, i + 1).filter(part => part.kind === kind).length;
         imageRecords.push({ file, kind, group: null, label: kind + (sectionPages > 1 ? '（' + sectionPage + '／' + sectionPages + '）' : '') });
       }
       canvas.width = canvas.height = 1;
