@@ -4012,6 +4012,20 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 #appAlert.app-alert-temporary .app-alert-btn:focus-visible{outline:2px solid #876417;outline-offset:-2px}
 @media(max-width:360px){#toast{font-size:20px}#toast .toast-reset-title{font-size:20px}#toast .toast-reset-line{font-size:16px}}
 </style>
+<style>
+/* SHARE_TRIAL_STYLE_START */
+.loan-share-trial-launch { display:block; margin:14px auto 0; border:1px solid #bbb; border-radius:8px; padding:8px 12px; background:#fff; color:#444; font:inherit; }
+#loanShareTrial { position:fixed; z-index:9000; right:12px; bottom:12px; width:min(380px,calc(100vw - 24px)); max-height:75vh; overflow:auto; box-sizing:border-box; padding:16px; border:1px solid #bbb; border-radius:14px; background:#fff; color:#222; box-shadow:0 4px 24px #0003; font:14px/1.5 system-ui,sans-serif; text-align:left; }
+#loanShareTrial[hidden] { display:none; }
+#loanShareTrial p { margin:8px 0; }
+#loanShareTrial .loan-share-trial-actions { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+#loanShareTrial button { border:1px solid #bbb; border-radius:8px; padding:8px 10px; background:#f4f4f4; color:#222; font:inherit; }
+#loanShareTrial button:disabled { opacity:.5; }
+#loanShareTrial label { display:block; }
+#loanShareTrial input { appearance:auto; -webkit-appearance:auto; display:inline-block; width:16px; height:16px; padding:0; margin:0 6px 0 0; vertical-align:middle; }
+#loanShareTrial pre { max-height:140px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font:11px/1.4 monospace; background:#f6f6f6; padding:8px; }
+/* SHARE_TRIAL_STYLE_END */
+</style>
 </head>
 <body data-threshold-loading="1">
 <div class="wrap" id="appShell">
@@ -7450,7 +7464,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.30B";
+const APP_VERSION = "2026.10.01C-test1";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -15010,13 +15024,14 @@ function setPreparedExportButtonsBusy(state, busy) {
 }
 
 async function sharePreparedExportImages(state, index) {
+  if (loanShareTrial.blocked()) return;
   if (state.busy || state.closed) return;
   const files = index === undefined ? state.images.map(x => x.file) : [state.images[index].file];
   if (!canShareExportImages(files)) { setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return; }
   state.busy = true; setPreparedExportButtonsBusy(state, true);
   try {
     // Called directly from the ready button, while this click is still active.
-    await navigator.share({ files, title: state.context.title, text: state.context.text });
+    await loanShareTrial.original({ files, title: state.context.title, text: state.context.text }, index === undefined ? 'prepared-all' : 'prepared-' + (index + 1));
     setExportFilesStatus(state, '已交由系統分享。圖片仍可再次分享或下載。');
   } catch (error) {
     setExportFilesStatus(state, error?.name === 'AbortError' ? '已取消分享。圖片仍可再次分享或下載。' : '分享未完成，請重試或改用下載。');
@@ -15145,7 +15160,174 @@ async function exportAsImage(mime, ext) {
   }, `正在產生 ${tag}…`, btn, `${tag}  生成中`);
 }
 
+/* SHARE_TRIAL_START: temporary opt-in comparison in the existing PWA. */
+function createLoanShareTrial() {
+  let enabled = false, pending = false, needsReturn = false;
+  let saved = null, last = null, sequence = 0, panel = null, ready = false, preparation = 0;
+  const attempts = [];
+  const stamp = () => new Date().toISOString();
+
+  function blocked() { return enabled && (pending || needsReturn); }
+  function remember(payload, source) {
+    // Keep the actual File objects. No encoding, hashing or await before share().
+    const retained = { ...payload };
+    if (payload.files) retained.files = Array.from(payload.files);
+    saved = { payload: retained, source, mode: document.body.dataset.mode };
+  }
+  function begin(kind, payload, source) {
+    pending = true; needsReturn = true;
+    const attempt = {
+      id: ++sequence, kind, source, mode: document.body.dataset.mode,
+      started: stamp(), status: 'pending', returned: null,
+      activation: navigator.userActivation?.isActive ?? null,
+      files: Array.from(payload.files || [], file => ({ name: file.name, size: file.size, type: file.type })),
+      hasTitle: typeof payload.title === 'string', hasText: typeof payload.text === 'string', hasUrl: typeof payload.url === 'string'
+    };
+    last = attempt; attempts.push(attempt);
+    if (attempts.length > 12) attempts.shift();
+    return attempt;
+  }
+  function settled(attempt, error) {
+    // Deliberately memory-only. No DOM/focus/scroll/timers/retry on handoff return.
+    attempt.returned = stamp();
+    attempt.status = error ? 'rejected' : 'resolved';
+    if (error) attempt.error = { name: String(error.name || 'Error'), message: String(error.message || error) };
+    pending = false;
+  }
+  function invoke(payload, kind, source) {
+    const attempt = begin(kind, payload, source);
+    let promise;
+    try { promise = navigator.share(payload); }
+    catch (error) { settled(attempt, error); throw error; }
+    // Observe the native promise without replacing the original A continuation.
+    Promise.resolve(promise).then(() => settled(attempt), error => settled(attempt, error));
+    return promise;
+  }
+  function original(payload, source) {
+    if (!enabled) return navigator.share(payload);
+    if (blocked()) return Promise.reject(new DOMException('請先結束上一輪分享並查看結果。', 'InvalidStateError'));
+    remember(payload, source);
+    return invoke(payload, 'original', source);
+  }
+  function makeButton(text, id, handler) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.id = id; button.textContent = text;
+    button.addEventListener('click', handler);
+    return button;
+  }
+  function ensurePanel() {
+    if (panel) return panel;
+    panel = document.createElement('aside'); panel.id = 'loanShareTrial'; panel.hidden = true;
+    panel.setAttribute('aria-label', '分享流程測試');
+    panel.innerHTML = '<strong>分享流程測試</strong><p>先照原方式分享一次。回到本頁、關閉原分享清單後，按「查看結果」。</p><p id="loanShareTrialStatus"></p><div class="loan-share-trial-actions"></div><label><input type="checkbox" id="loanShareTrialReturned"> 我已結束系統分享，並回到此頁</label><details><summary>本次紀錄</summary><pre id="loanShareTrialLog" hidden></pre></details>';
+    const actions = panel.querySelector('.loan-share-trial-actions');
+    actions.append(
+      makeButton('查看結果', 'loanShareTrialInspect', inspect),
+      makeButton('同一圖片，簡化分享', 'loanShareTrialQuiet', quiet),
+      makeButton('收起', 'loanShareTrialHide', () => { panel.hidden = true; }),
+      makeButton('結束測試', 'loanShareTrialStop', stop)
+    );
+    document.body.appendChild(panel);
+    return panel;
+  }
+  function status(text) { ensurePanel().querySelector('#loanShareTrialStatus').textContent = text; }
+  function show() {
+    if (getTopAppModal()) return;
+    enabled = true;
+    ensurePanel().hidden = false;
+    render();
+  }
+  function render() {
+    if (!panel || panel.hidden) return;
+    ready = false;
+    const generation = ++preparation;
+    const returnCheck = panel.querySelector('#loanShareTrialReturned');
+    returnCheck.checked = false;
+    returnCheck.disabled = pending || !last;
+    panel.querySelector('#loanShareTrialQuiet').disabled = true;
+    panel.querySelector('#loanShareTrialStop').disabled = pending;
+    if (!last) status('測試已啟用。請收起本面板，照原本方式按分享。');
+    else if (pending) status('瀏覽器尚未結束本次分享。請先完成或取消系統分享，再回來查看。若一直停住，結束系統分享後重新開啟本頁；不要重複按分享。');
+    else {
+      const label = last.kind === 'original' ? '原流程' : '簡化流程';
+      status(label + '：' + (last.status === 'resolved'
+        ? '瀏覽器已回報。是否開啟 LINE 聊天室，仍以實際畫面為準。'
+        : '分享未完成：' + last.error.name + '。' + last.error.message)
+        + (last.files.length ? ' 保留同一組 ' + last.files.length + ' 張圖片，可勾選下方確認後測試。' : ' 本次只分享文字／網址，不能作圖片對照。'));
+    }
+    const log = panel.querySelector('#loanShareTrialLog');
+    log.hidden = !last;
+    log.textContent = last ? JSON.stringify({ build: APP_VERSION, attempts }, null, 2) : '';
+    if (!pending && saved?.payload.files?.length) {
+      if (!pageIsQuiet()) { status('原流程的提示或製圖尚未結束。待提示消失、關閉分享清單後，再按「查看結果」。'); return; }
+      // This preparation happens on the user's Inspect click, never inside
+      // the native-share click. Drain pending layout/toast work first.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (generation !== preparation || !enabled || pending || panel.hidden) return;
+        ready = pageIsQuiet();
+        panel.querySelector('#loanShareTrialQuiet').disabled = !ready;
+        if (!ready) status('請等原流程提示消失，再按「查看結果」。');
+      }));
+    }
+  }
+  function pageIsQuiet() {
+    const toast = document.getElementById('toast');
+    return !exportBusy && !preparedExportImages?.busy && !getTopAppModal()
+      && !loanToastQueued && !toast?.classList.contains('show') && !toast?._toastTimer;
+  }
+  function inspect() {
+    if (getTopAppModal()) return;
+    render();
+    // A user acknowledgement is required even after native promise resolution.
+    // Inspection alone must not unlock another share.
+  }
+  function quiet() {
+    if (pending || exportBusy || preparedExportImages?.busy) return;
+    if (getTopAppModal()) { status('請先關閉原分享清單／其他提示，再按簡化分享。'); return; }
+    if (!ready || !pageIsQuiet()) { status('請等原流程提示消失，再按「查看結果」。'); return; }
+    if (!saved?.payload.files?.length) { status('請先照原方式分享圖片一次。'); return; }
+    const check = panel.querySelector('#loanShareTrialReturned');
+    if (!check.checked) { status('請先結束系統分享，並勾選「我已結束系統分享，並回到此頁」。'); return; }
+    if (saved.mode !== document.body.dataset.mode) { status('請切回剛才分享的試算模式，或結束測試後重新開始。'); return; }
+    needsReturn = false;
+    ready = false; preparation++;
+    check.checked = false; check.disabled = true;
+    panel.querySelector('#loanShareTrialQuiet').disabled = true;
+    panel.querySelector('#loanShareTrialStop').disabled = true;
+    status('系統分享交接中。回到此頁後按「查看結果」。');
+    try {
+      const promise = invoke(saved.payload, 'quiet', saved.source);
+      // Suppress unhandled rejection only; settled() keeps the actual error.
+      Promise.resolve(promise).catch(() => {});
+    } catch (_) { /* Result is read only when the user presses Inspect. */ }
+  }
+  function stop() {
+    if (pending || getTopAppModal()) return;
+    if (needsReturn && !panel.querySelector('#loanShareTrialReturned').checked) {
+      status('請先勾選已結束系統分享，再結束測試。'); return;
+    }
+    enabled = false; needsReturn = false; ready = false; preparation++; saved = null; last = null; attempts.length = 0;
+    panel.hidden = true;
+  }
+  function mount() {
+    // Candidate-only entry in the existing app. No storage key, navigation,
+    // separate app, installation, or automatic sharing is introduced.
+    ['exportSection', 'ytExportSection', 'bdExportSection'].forEach(id => {
+      const section = document.getElementById(id);
+      if (!section) return;
+      const button = makeButton('分享流程測試', id + 'ShareTrial', show);
+      button.className = 'loan-share-trial-launch'; section.appendChild(button);
+    });
+    if (new URL(location.href).searchParams.get('share-test') === '1') show();
+  }
+  return { blocked, original, mount };
+}
+const loanShareTrial = createLoanShareTrial();
+loanShareTrial.mount();
+/* SHARE_TRIAL_END */
+
 async function shareResults() {
+  if (loanShareTrial.blocked()) return;
   await withExportLock(async (context) => {
     if (context.includeDetail) { await runDetailImageExport(context, 'image/jpeg', 'jpg', 'share'); return; }
     const images = [];
@@ -15153,12 +15335,12 @@ async function shareResults() {
     if (files.length > 1) { showExportFilesDialog(images, context, 'share', 'jpg'); return; }
     const shareData = { title: context.title, text: context.text, files };
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      await navigator.share(shareData);
+      await loanShareTrial.original(shareData, 'single-image');
       showToast('已開啟分享');
       return;
     }
     if (navigator.share) {
-      await navigator.share({ title: shareData.title, text: shareData.text, url: context.url });
+      await loanShareTrial.original({ title: shareData.title, text: shareData.text, url: context.url }, 'text-url-fallback');
       showToast('已開啟分享');
       return;
     }
