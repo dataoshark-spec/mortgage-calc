@@ -2913,6 +2913,9 @@ if ("serviceWorker" in navigator) {
       line-height: 1.4;
     }
     .hidden { display: none !important; }
+    .share-receipt-tools { text-align: center; margin: 6px 0 10px; }
+    .share-receipt-tools[hidden] { display: none !important; }
+    .share-receipt-tools button { border: 1px solid #d5d8dc; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; padding: 7px 12px; cursor: pointer; }
     .ver-line {
       text-align: center;
       font-size: 0.76rem;
@@ -4291,6 +4294,7 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
   </div>
 
   <div class="ver-line" id="verLine"></div>
+  <div class="share-receipt-tools" hidden><button type="button" data-share-receipt-copy>複製分享紀錄</button></div>
   </div>
 
   <div class="mode-panel" id="modeYouth" hidden>
@@ -4672,6 +4676,7 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
   </div>
 
   <div class="ver-line" id="ytVerLine"></div>
+  <div class="share-receipt-tools" hidden><button type="button" data-share-receipt-copy>複製分享紀錄</button></div>
   </div>
 
   <div class="mode-panel" id="modeBurden" hidden>
@@ -4958,6 +4963,7 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
       </div>
   </div>
   <div class="ver-line" id="bdVerLine"></div>
+  <div class="share-receipt-tools" hidden><button type="button" data-share-receipt-copy>複製分享紀錄</button></div>
   </div>
 </div>
 
@@ -5314,6 +5320,7 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
       <p class="export-files-download-note">下載可能在背景執行，請查看下載通知。</p>
     </div>
     <button type="button" class="export-files-close" id="exportFilesClose">關閉</button>
+    <div class="share-receipt-tools" hidden><button type="button" data-share-receipt-copy>複製分享紀錄</button></div>
   </div>
 </div>
 
@@ -7450,7 +7457,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.09.30B";
+const APP_VERSION = "2026.10.01D-test1";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -15009,14 +15016,181 @@ function setPreparedExportButtonsBusy(state, busy) {
   $('#exportFilesActions').querySelectorAll('button').forEach(button => { button.disabled = busy; });
 }
 
+// Share receipts are confined to this page session. They never contain names,
+// title/text/URL values, file contents, or calculation values.
+const loanShareReceiptSession = (() => {
+  const BUILD = '2026.10.01D-test1';
+  const SCHEMA = 1;
+  const MAX_RECEIPTS = 6;
+  const loadedAt = new Date().toISOString();
+  const receipts = [];
+  let sequence = 0;
+  const routes = new Set(['summary-single', 'prepared-single', 'prepared-all']);
+  const modes = new Set(['general', 'youth', 'burden']);
+  const errorNames = new Set([
+    'AbortError', 'DataError', 'InvalidStateError', 'NotAllowedError',
+    'NotFoundError', 'NotSupportedError', 'SecurityError', 'TypeError',
+    'OperationError', 'UnknownError', 'NetworkError', 'Error'
+  ]);
+  const enabled = (() => {
+    try {
+      const ua = navigator.userAgent || '';
+      const hints = navigator.userAgentData;
+      if (hints?.mobile || /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(ua)) return false;
+      return hints?.platform === 'Windows' || /Windows NT/i.test(ua) || /^Win/i.test(navigator.platform || '');
+    } catch (_) { return false; }
+  })();
+
+  function begin(data, meta, phase) {
+    try {
+      // The application passes an Array<File>. Do not consume an arbitrary
+      // iterable or clone a Blob just to observe it.
+      const sourceFiles = data.files === undefined ? [] : data.files;
+      if (!Array.isArray(sourceFiles)) return null;
+      const files = sourceFiles.map(file => {
+        const size = file.size;
+        const type = file.type;
+        return {
+          bytes: Number.isSafeInteger(size) && size >= 0 ? size : null,
+          type: typeof type === 'string' && /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i.test(type) ? type.toLowerCase() : ''
+        };
+      });
+      const at = new Date().toISOString();
+      const receipt = {
+        schema: SCHEMA,
+        build: BUILD,
+        id: at + '-' + (++sequence),
+        at,
+        route: routes.has(meta?.route) ? meta.route : 'unknown',
+        mode: modes.has(meta?.mode) ? meta.mode : 'unknown',
+        fileCount: files.length,
+        files,
+        hasText: Boolean(data.text),
+        hasUrl: Boolean(data.url),
+        phase,
+        errorName: null
+      };
+      receipts.push(receipt);
+      if (receipts.length > MAX_RECEIPTS) receipts.splice(0, receipts.length - MAX_RECEIPTS);
+      return receipt;
+    } catch (_) {
+      // A receipt failure must not prevent or change the native share call.
+      return null;
+    }
+  }
+
+  function settle(receipt, phase, error) {
+    try {
+      if (!receipt) return;
+      receipt.phase = phase;
+      if (error !== undefined) {
+        let name;
+        try { name = error?.name; } catch (_) {}
+        receipt.errorName = errorNames.has(name) ? name : 'Error';
+      }
+    } catch (_) {}
+  }
+
+  function share(data, meta) {
+    if (!enabled) return navigator.share(data);
+    const receipt = begin(data, meta, 'requested');
+    let result;
+    try {
+      // Keep this call synchronous, exactly once, and pass the original object.
+      // No storage I/O, await, timer, DOM, focus, or clipboard action precedes it.
+      result = navigator.share(data);
+    } catch (error) {
+      settle(receipt, 'sync-error', error);
+      throw error;
+    }
+    try {
+      // Observe without replacing the promise returned to the application.
+      // "resolved" means the system accepted it, not that LINE delivered it.
+      result.then(
+        () => { settle(receipt, 'resolved'); },
+        error => { settle(receipt, 'rejected', error); }
+      );
+    } catch (_) {}
+    return result;
+  }
+
+  function unsupported(files, meta) {
+    if (!enabled) return;
+    try {
+      begin({ files, text: meta?.hasText === true, url: meta?.hasUrl === true }, meta, 'unsupported');
+    } catch (_) {}
+  }
+
+  function text() {
+    return JSON.stringify({
+      schema: SCHEMA,
+      build: BUILD,
+      scope: 'page-session',
+      sessionLoadedAt: loadedAt,
+      status: receipts.length ? '本頁分享紀錄' : '本頁尚未記錄分享',
+      resolvedMeaning: 'resolved 僅表示系統接受分享，不表示 LINE 已送達。',
+      unsupportedMeaning: 'unsupported 表示未呼叫系統分享。',
+      receipts
+    }, null, 2);
+  }
+
+  return { enabled, share, unsupported, text };
+})();
+
+function isWindowsShareReceiptEnabled() {
+  return loanShareReceiptSession.enabled;
+}
+
+function shareWithLocalReceipt(data, meta) {
+  return loanShareReceiptSession.share(data, meta);
+}
+
+function recordUnsupportedShare(files, meta) {
+  loanShareReceiptSession.unsupported(files, meta);
+}
+
+function getShareReceiptText() {
+  return loanShareReceiptSession.text();
+}
+
+// Called only by the user's explicit copy-receipt button. No automatic export.
+async function copyShareReceipt() {
+  const text = getShareReceiptText();
+  function notify(message) {
+    try { if (typeof showToast === 'function') showToast(message); } catch (_) {}
+  }
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      await navigator.clipboard.writeText(text);
+      notify('已複製分享紀錄');
+      return true;
+    }
+  } catch (_) {}
+  try {
+    downloadBlob(new Blob([text], { type: 'application/json;charset=utf-8' }), 'loan-share-receipts-2026.10.01D-test1.json');
+    notify('分享紀錄已交由瀏覽器下載');
+    return true;
+  } catch (_) {
+    notify('分享紀錄無法複製或下載');
+    return false;
+  }
+}
+
+
+// Receipt access is manual; there is no extra window or automatic clipboard operation.
+document.querySelectorAll('.share-receipt-tools').forEach(container => {
+  container.hidden = !isWindowsShareReceiptEnabled();
+  container.querySelector('[data-share-receipt-copy]').addEventListener('click', () => { void copyShareReceipt(); });
+});
+
 async function sharePreparedExportImages(state, index) {
   if (state.busy || state.closed) return;
   const files = index === undefined ? state.images.map(x => x.file) : [state.images[index].file];
-  if (!canShareExportImages(files)) { setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return; }
+  if (!canShareExportImages(files)) { recordUnsupportedShare(files, { route: index === undefined ? 'prepared-all' : 'prepared-single', mode: state.context.mode, hasText: Boolean(state.context.text), hasUrl: false }); setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return; }
   state.busy = true; setPreparedExportButtonsBusy(state, true);
   try {
     // Called directly from the ready button, while this click is still active.
-    await navigator.share({ files, title: state.context.title, text: state.context.text });
+    await shareWithLocalReceipt({ files, title: state.context.title, text: state.context.text }, { route: index === undefined ? 'prepared-all' : 'prepared-single', mode: state.context.mode });
     setExportFilesStatus(state, '已交由系統分享。圖片仍可再次分享或下載。');
   } catch (error) {
     setExportFilesStatus(state, error?.name === 'AbortError' ? '已取消分享。圖片仍可再次分享或下載。' : '分享未完成，請重試或改用下載。');
@@ -15153,13 +15327,14 @@ async function shareResults() {
     if (files.length > 1) { showExportFilesDialog(images, context, 'share', 'jpg'); return; }
     const shareData = { title: context.title, text: context.text, files };
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      await navigator.share(shareData);
+      await shareWithLocalReceipt(shareData, { route: 'summary-single', mode: context.mode });
       showToast('已開啟分享');
       return;
     }
+    recordUnsupportedShare(files, { route: 'summary-single', mode: context.mode, hasText: Boolean(context.text), hasUrl: false });
     if (navigator.share) {
-      await navigator.share({ title: shareData.title, text: shareData.text, url: context.url });
-      showToast('已開啟分享');
+      // Keep the prepared image files instead of substituting a text/link share.
+      showExportFilesDialog(images, context, 'share', 'jpg');
       return;
     }
     files.forEach(file => downloadBlob(file, file.name));
