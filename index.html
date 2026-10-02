@@ -4067,48 +4067,69 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 @container(max-width:350px){.qt-intro{padding-left:10px;padding-right:10px}.qt-intro-title{gap:4px}.qt-kicker{font-size:16px}.qt-rounding{font-size:9.5px}.qt-switch{margin-left:4px}.qt-description{font-size:10.5px}.qt-rate-col{width:64px}.qt-year{font-size:12px}.qt-table tbody th{font-size:11.5px}.qt-cell{font-size:10px}.qt-cards{padding-left:5px;padding-right:5px}.qt-range{padding:3px}.qt-actions button{font-size:11px}}
 @container(max-width:300px){.qt-kicker{font-size:15px}.qt-rounding{font-size:9px}}
 @media(max-width:420px){body[data-mode=burden] .hero-links .spec-btn{padding-left:4px;padding-right:4px;font-size:11px;gap:2px;letter-spacing:0}body[data-mode=burden] .hero-links .spec-btn:last-child{padding-right:0}}
-@media(hover:hover){.qt-actions button:not(:disabled):hover{background:#344b5b;color:#f3d593}.qt-table tbody tr:has(>th:hover)>td,.qt-table tbody tr:has(.qt-cell:hover)>td{background:#344956}.qt-table tbody tr:has(>th:hover)>th,.qt-table tbody tr:has(.qt-cell:hover)>th{background:#39586c;color:#f3d593}.qt-table tbody tr:has(>th:hover) .qt-cell:not([aria-pressed=true]),.qt-table tbody tr:has(.qt-cell:hover) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}.qt-year:hover{color:#f3d593}.qt-table thead th:has(.qt-year:hover){background:#476175}}
+@media(hover:hover){.qt-actions button:not(:disabled):hover{background:#344b5b;color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover)>td,#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover)>td{background:#344956}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover)>th,#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover)>th{background:#39586c;color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}#quickTableSheet:not(.qt-touch-input) .qt-year:hover{color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table thead th:has(.qt-year:hover){background:#476175}}
+
+/* A 排列：條件左、操作右；只作用於速算表。 */
+.qt-summary{display:grid;grid-template-columns:1fr auto;padding:16px 14px 14px;gap:0 5px}
+.qt-summary .qt-intro{display:contents}.qt-summary .qt-intro-title{grid-column:1/-1;margin-bottom:7px;gap:6px}
+.qt-summary .qt-kicker{color:#f3d593;font-size:20px;font-weight:650}
+.qt-summary .qt-actions{margin:0;padding:0;border:0;gap:3px;align-self:end}
+.qt-summary .qt-actions button{padding:7px 5px;font-size:11px;gap:3px}
+.qt-summary .qt-actions svg{width:13px;height:13px}.qt-summary .qt-description{font-size:11px;white-space:nowrap}
+.qt-summary .qt-rounding{font-size:10px}.qt-summary .qt-switch{width:19px;margin-left:4px}
+#quickTableSheet,#quickTableSheet .qt-scroll,#quickTableSheet .qt-year,#quickTableSheet .qt-cell,#quickTableSheet .qt-rate-button{touch-action:pan-y pinch-zoom!important}
+.qt-rate-button{display:block;width:100%;height:30px;padding:0;border:0;background:none;font:inherit;color:inherit;white-space:nowrap;cursor:default!important}
+#quickTableSheet.qt-touch-input .qt-rate-button{cursor:pointer!important}
+#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row>td,#quickTableSheet.qt-touch-input .qt-table td.qt-axis-col{background:#304654}
+#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row>th,#quickTableSheet.qt-touch-input .qt-table thead th.qt-axis-col{background:#3b5263;color:#f3d593}
+#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row>td.qt-axis-col{background:#3b5362}
+#quickTableSheet.qt-touch-input .qt-table .qt-axis-col .qt-cell:not([aria-pressed=true]),#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row .qt-cell:not([aria-pressed=true]){color:#e6eff5}
+#quickTableSheet.qt-touch-input .qt-table thead th.qt-axis-col .qt-year{color:#f3d593}
+.qt-year,.qt-rate-button{-webkit-tap-highlight-color:transparent}
+@container(min-width:600px){.qt-summary .qt-kicker{font-size:22px}.qt-summary .qt-rounding,.qt-summary .qt-actions button{font-size:12px}.qt-summary .qt-description{font-size:13px}.qt-rate-button{height:34px}}
+@container(max-width:350px){.qt-summary{padding:14px 10px 12px}.qt-summary .qt-kicker{font-size:18px}.qt-summary .qt-rounding{font-size:9px}.qt-summary .qt-switch{width:17px;margin-left:3px}.qt-summary .qt-description{font-size:10px}.qt-summary .qt-actions button{font-size:10px;padding-left:3px;padding-right:3px;gap:2px}.qt-summary .qt-actions svg{width:12px}.qt-summary .qt-intro-title{gap:3px}}
+@container(max-width:300px){.qt-summary .qt-kicker{font-size:16.5px}.qt-summary .qt-rounding{font-size:8.5px}}
 
 @media(hover:hover){
-.qt-table:has(thead th:nth-child(2) .qt-year:hover) tbody td:nth-child(2),.qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2){background:#344956}
-.qt-table:has(thead th:nth-child(2) .qt-year:hover) tbody td:nth-child(2) .qt-cell:not([aria-pressed=true]),.qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-.qt-table:has(tbody td:nth-child(2) .qt-cell:hover) thead th:nth-child(2),.qt-table:has(tbody td:nth-child(2) .qt-cell:hover) thead th:nth-child(2) .qt-year{background:#476175;color:#f3d593}
-.qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2):has(.qt-cell:hover){background:#435c6d}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(2) .qt-year:hover) tbody td:nth-child(2),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2){background:#344956}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(2) .qt-year:hover) tbody td:nth-child(2) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) thead th:nth-child(2),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) thead th:nth-child(2) .qt-year{background:#476175;color:#f3d593}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2):has(.qt-cell:hover){background:#435c6d}
 }
 
 @media(hover:hover){
-.qt-table:has(thead th:nth-child(3) .qt-year:hover) tbody td:nth-child(3),.qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3){background:#344956}
-.qt-table:has(thead th:nth-child(3) .qt-year:hover) tbody td:nth-child(3) .qt-cell:not([aria-pressed=true]),.qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-.qt-table:has(tbody td:nth-child(3) .qt-cell:hover) thead th:nth-child(3),.qt-table:has(tbody td:nth-child(3) .qt-cell:hover) thead th:nth-child(3) .qt-year{background:#476175;color:#f3d593}
-.qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3):has(.qt-cell:hover){background:#435c6d}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(3) .qt-year:hover) tbody td:nth-child(3),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3){background:#344956}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(3) .qt-year:hover) tbody td:nth-child(3) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) thead th:nth-child(3),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) thead th:nth-child(3) .qt-year{background:#476175;color:#f3d593}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3):has(.qt-cell:hover){background:#435c6d}
 }
 
 @media(hover:hover){
-.qt-table:has(thead th:nth-child(4) .qt-year:hover) tbody td:nth-child(4),.qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4){background:#344956}
-.qt-table:has(thead th:nth-child(4) .qt-year:hover) tbody td:nth-child(4) .qt-cell:not([aria-pressed=true]),.qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-.qt-table:has(tbody td:nth-child(4) .qt-cell:hover) thead th:nth-child(4),.qt-table:has(tbody td:nth-child(4) .qt-cell:hover) thead th:nth-child(4) .qt-year{background:#476175;color:#f3d593}
-.qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4):has(.qt-cell:hover){background:#435c6d}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(4) .qt-year:hover) tbody td:nth-child(4),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4){background:#344956}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(4) .qt-year:hover) tbody td:nth-child(4) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) thead th:nth-child(4),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) thead th:nth-child(4) .qt-year{background:#476175;color:#f3d593}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4):has(.qt-cell:hover){background:#435c6d}
 }
 
 @media(hover:hover){
-.qt-table:has(thead th:nth-child(5) .qt-year:hover) tbody td:nth-child(5),.qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5){background:#344956}
-.qt-table:has(thead th:nth-child(5) .qt-year:hover) tbody td:nth-child(5) .qt-cell:not([aria-pressed=true]),.qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-.qt-table:has(tbody td:nth-child(5) .qt-cell:hover) thead th:nth-child(5),.qt-table:has(tbody td:nth-child(5) .qt-cell:hover) thead th:nth-child(5) .qt-year{background:#476175;color:#f3d593}
-.qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5):has(.qt-cell:hover){background:#435c6d}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(5) .qt-year:hover) tbody td:nth-child(5),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5){background:#344956}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(5) .qt-year:hover) tbody td:nth-child(5) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) thead th:nth-child(5),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) thead th:nth-child(5) .qt-year{background:#476175;color:#f3d593}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5):has(.qt-cell:hover){background:#435c6d}
 }
 
 @media(hover:hover){
-.qt-table:has(thead th:nth-child(6) .qt-year:hover) tbody td:nth-child(6),.qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6){background:#344956}
-.qt-table:has(thead th:nth-child(6) .qt-year:hover) tbody td:nth-child(6) .qt-cell:not([aria-pressed=true]),.qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-.qt-table:has(tbody td:nth-child(6) .qt-cell:hover) thead th:nth-child(6),.qt-table:has(tbody td:nth-child(6) .qt-cell:hover) thead th:nth-child(6) .qt-year{background:#476175;color:#f3d593}
-.qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6):has(.qt-cell:hover){background:#435c6d}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(6) .qt-year:hover) tbody td:nth-child(6),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6){background:#344956}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(6) .qt-year:hover) tbody td:nth-child(6) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) thead th:nth-child(6),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) thead th:nth-child(6) .qt-year{background:#476175;color:#f3d593}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6):has(.qt-cell:hover){background:#435c6d}
 }
 
 @media(hover:hover){
-.qt-table:has(thead th:nth-child(7) .qt-year:hover) tbody td:nth-child(7),.qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7){background:#344956}
-.qt-table:has(thead th:nth-child(7) .qt-year:hover) tbody td:nth-child(7) .qt-cell:not([aria-pressed=true]),.qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-.qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7),.qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7) .qt-year{background:#476175;color:#f3d593}
-.qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7):has(.qt-cell:hover){background:#435c6d}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(7) .qt-year:hover) tbody td:nth-child(7),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7){background:#344956}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(7) .qt-year:hover) tbody td:nth-child(7) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7) .qt-year{background:#476175;color:#f3d593}
+#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7):has(.qt-cell:hover){background:#435c6d}
 }
 </style>
 </head>
@@ -5425,7 +5446,7 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
     <button type="button" id="quickTableClose" class="qt-close" aria-label="關閉速算表格"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18"/></svg></button>
   </div></header>
   <div class="spec-sheet-scroll qt-scroll"><div class="qt-content">
-    <div class="qt-intro"><div class="qt-intro-title">
+    <div class="qt-summary"><div class="qt-intro"><div class="qt-intro-title">
       <p class="qt-kicker">每貸款 100 萬元</p>
       <button type="button" id="quickTableRounding" class="qt-rounding"><span class="qt-round-prefix">目前：</span><span id="quickTableRoundValue"></span><span id="quickTableRoundDefault">（預設）</span><svg class="qt-switch" viewBox="0 0 24 20" aria-hidden="true"><path d="M3 6H21M17.5 2.5L21 6L17.5 9.5M21 14H3M6.5 10.5L3 14L6.5 17.5"/></svg></button>
     </div><p class="qt-description">· 本息平均攤還（方式）<br>· 每月應繳金額（元整）</p></div>
@@ -5433,7 +5454,7 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
       <button type="button" data-qt-all="open"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5L10 10L15 5M5 10L10 15L15 10"/></svg><span>全部展開</span></button>
       <button type="button" data-qt-all="close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10L10 5L15 10M5 15L10 10L15 15"/></svg><span>全部收合</span></button>
     </div>
-    <div id="quickTableCards" class="qt-cards"></div>
+    </div><div id="quickTableCards" class="qt-cards"></div>
   </div></div>
   <div id="quickTableStatus" class="qt-sr" role="status" aria-live="polite"></div>
 </section>
@@ -7579,7 +7600,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.02A";
+const APP_VERSION = "2026.10.02B";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -22991,7 +23012,13 @@ function quickTablePayment(rateIndex, years, rounding) {
   const groups = [{ label:'1.000%–4.000%', start:0, count:25 }, { label:'4.125%–7.000%', start:25, count:24 }, { label:'7.125%–10.000%', start:49, count:24 }];
   let prefs = defaults(), storageAvailable = !appStorage.temporary, warned = false;
   const marks = groups.map(() => new Set());
-  let lastFocus = null, editing = null, hold = null, suppressClickUntil = 0, sequence = 0, previousOverflow = null;
+  const axes = groups.map(() => ({ rate:null, year:null }));
+  const touchPointers = new Set();
+  const blockedPointers = new Map(), blockedFallbackTypes = new Set();
+  let lastFocus = null, editing = null, contact = null, sequence = 0, previousOverflow = null;
+  let touchInput = matchMedia('(hover: none) and (pointer: coarse)').matches;
+  let lastPointerType = touchInput ? 'touch' : 'mouse';
+  sheet.classList.toggle('qt-touch-input', touchInput);
   const rateLabel = index => (1 + index * 0.125).toFixed(3) + '%';
   const fmt = value => value.toLocaleString('en-US');
   function normalize(value) {
@@ -23019,7 +23046,41 @@ function quickTablePayment(rateIndex, years, rounding) {
     }
     if (!warned) { warned = true; showToast('速算表設定已套用，本次使用；目前無法保存', { kind:'warning', storageCommitted:true }); }
   }
-  function cancelHold() { if (hold) { clearTimeout(hold.timer); hold = null; } }
+  function blockContactClick(g) {
+    blockedPointers.set(g.id, g.type); blockedFallbackTypes.add(g.type);
+    if (blockedPointers.size > 32) blockedPointers.delete(blockedPointers.keys().next().value);
+  }
+  function cancelContact(block = true) {
+    if (!contact) return;
+    if (block) blockContactClick(contact);
+    clearTimeout(contact.timer); contact = null;
+  }
+  function clearAxes(g) { axes[g].rate = null; axes[g].year = null; }
+  function syncAxes() {
+    groups.forEach((_, g) => {
+      const tableEl = cards.querySelector(`.qt-table[data-qt-group="${g}"]`);
+      if (!tableEl) return;
+      tableEl.querySelectorAll('tbody tr').forEach(row => row.classList.toggle('qt-axis-row', touchInput && Number(row.dataset.qtRate) === axes[g].rate));
+      tableEl.querySelectorAll('td[data-qt-year]').forEach(cell => cell.classList.toggle('qt-axis-col', touchInput && Number(cell.dataset.qtYear) === axes[g].year));
+      tableEl.querySelectorAll('.qt-year').forEach(button => {
+        const on = touchInput && prefs.years[Number(button.dataset.qtCol)] === axes[g].year;
+        button.setAttribute('aria-pressed', String(on)); button.parentElement.classList.toggle('qt-axis-col', on);
+      });
+      tableEl.querySelectorAll('.qt-rate-button').forEach(button => {
+        button.setAttribute('aria-pressed', String(touchInput && Number(button.dataset.qtRate) === axes[g].rate));
+        button.tabIndex = touchInput ? 0 : -1;
+      });
+    });
+  }
+  function setInputMode(type) {
+    lastPointerType = type || 'mouse';
+    const next = type === 'touch';
+    if (next === touchInput) return;
+    touchInput = next; sheet.classList.toggle('qt-touch-input', next);
+    if (!next) groups.forEach((_, g) => clearAxes(g));
+    syncAxes();
+  }
+  sheet.addEventListener('pointerover', e => { if (e.pointerType === 'mouse' && touchInput) setInputMode('mouse'); });
   function updateControls() {
     const value = prefs.rounding === 'ceil' ? '無條件進位到元' : '四捨五入到元';
     document.getElementById('quickTableRoundValue').textContent = value;
@@ -23030,34 +23091,34 @@ function quickTablePayment(rateIndex, years, rounding) {
   }
   function table(g) {
     const group = groups[g];
-    return `<table class="qt-table" aria-label="${group.label}，每貸款100萬元，固定利率、無寬限期，每月應繳金額"><colgroup><col class="qt-rate-col">${prefs.years.map(() => '<col>').join('')}</colgroup><thead><tr><th scope="col" aria-label="條件：年利率與貸款年期">條件</th>${prefs.years.map((year, col) => `<th scope="col"><button type="button" class="qt-year" data-qt-col="${col}" data-qt-group="${g}" aria-label="${year}年，長按修改年期" aria-haspopup="dialog" title="長按修改年期；鍵盤可按 Enter">${year}年</button></th>`).join('')}</tr></thead><tbody>${Array.from({ length:group.count }, (_, k) => {
+    return `<table class="qt-table" data-qt-group="${g}" aria-label="${group.label}，每貸款100萬元，固定利率、無寬限期，每月應繳金額"><colgroup><col class="qt-rate-col">${prefs.years.map(() => '<col>').join('')}</colgroup><thead><tr><th scope="col" aria-label="條件：年利率與貸款年期">條件</th>${prefs.years.map((year, col) => `<th scope="col"><button type="button" class="qt-year" data-qt-col="${col}" data-qt-group="${g}" aria-pressed="false" aria-label="${year}年，觸控點選高亮，長按修改年期" aria-haspopup="dialog" title="長按修改年期；鍵盤可按 Enter">${year}年</button></th>`).join('')}</tr></thead><tbody>${Array.from({ length:group.count }, (_, k) => {
       const index = group.start + k;
-      return `<tr><th scope="row">${rateLabel(index)}</th>${prefs.years.map(year => { const value = fmt(quickTablePayment(index, year, prefs.rounding)); return `<td><button type="button" class="qt-cell" data-qt-group="${g}" data-qt-rate="${index}" data-qt-year="${year}" aria-pressed="${marks[g].has(index + ':' + year)}" aria-label="${rateLabel(index)}，${year}年，每月${value}元，點選標記">${value}</button></td>`; }).join('')}</tr>`;
+      return `<tr data-qt-rate="${index}"><th scope="row"><button type="button" class="qt-rate-button" data-qt-group="${g}" data-qt-rate="${index}" aria-pressed="false" aria-label="${rateLabel(index)}，觸控點選高亮整排" tabindex="${touchInput ? 0 : -1}">${rateLabel(index)}</button></th>${prefs.years.map(year => { const value = fmt(quickTablePayment(index, year, prefs.rounding)); return `<td data-qt-year="${year}"><button type="button" class="qt-cell" data-qt-group="${g}" data-qt-rate="${index}" data-qt-year="${year}" aria-pressed="${marks[g].has(index + ':' + year)}" aria-label="${rateLabel(index)}，${year}年，每月${value}元，點選標記">${value}</button></td>`; }).join('')}</tr>`;
     }).join('')}</tbody></table>`;
   }
   function render() {
-    cancelHold();
+    cancelContact();
     cards.innerHTML = groups.map((group, g) => `<section class="qt-range"><button type="button" class="qt-range-toggle" data-qt-range="${g}" aria-expanded="${prefs.opens[g]}" aria-controls="quickTableRange${g}"><span><b>${group.label}</b><small>${group.count} 組利率 · 間距 0.125%</small></span><svg class="qt-range-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7L10 12L15 7"/></svg></button><div id="quickTableRange${g}" class="qt-table-wrap" ${prefs.opens[g] ? '' : 'hidden'}>${table(g)}</div></section>`).join('');
-    updateControls();
+    updateControls(); syncAxes();
   }
   function setGroup(g, open, save = true) {
-    cancelHold();
+    cancelContact();
     prefs.opens[g] = open;
-    if (!open) { marks[g].clear(); cards.querySelectorAll(`.qt-cell[data-qt-group="${g}"]`).forEach(button => button.setAttribute('aria-pressed', 'false')); }
+    if (!open) { marks[g].clear(); clearAxes(g); cards.querySelectorAll(`.qt-cell[data-qt-group="${g}"]`).forEach(button => button.setAttribute('aria-pressed', 'false')); }
     cards.querySelector(`[data-qt-range="${g}"]`).setAttribute('aria-expanded', String(open));
     document.getElementById('quickTableRange' + g).hidden = !open;
-    updateControls();
+    updateControls(); syncAxes();
     if (save) persist('opens');
   }
   function closeEditor(restore = true) {
     if (editor.hidden) return;
-    cancelHold(); beginAppModalClose(editor); editor.classList.remove('show'); editor.hidden = true;
+    cancelContact(); beginAppModalClose(editor); editor.classList.remove('show'); editor.hidden = true;
     if (restore && editing && !sheet.hidden) cards.querySelector(`.qt-year[data-qt-group="${editing.group}"][data-qt-col="${editing.col}"]`)?.focus({ preventScroll:true });
     editing = null;
   }
   function openEditor(button) {
     if (!editor.hidden || sheet.hidden) return;
-    cancelHold();
+    cancelContact();
     editing = { col:Number(button.dataset.qtCol), group:Number(button.dataset.qtGroup) };
     input.value = String(prefs.years[editing.col]); error.textContent = '';
     editor.hidden = false; beginAppModalOpen(editor, closeEditor); editor.classList.add('show');
@@ -23065,7 +23126,7 @@ function quickTablePayment(rateIndex, years, rounding) {
   }
   function closeSheet() {
     if (sheet.hidden || sheet.dataset.modalClosing === '1') return;
-    cancelHold(); closeEditor(false); marks.forEach(set => set.clear());
+    cancelContact(); closeEditor(false); marks.forEach(set => set.clear()); groups.forEach((_, g) => clearAxes(g));
     beginAppModalClose(sheet); sheet.classList.remove('show');
     const closeSequence = ++sequence;
     setTimeout(() => { if (sequence === closeSequence) sheet.hidden = true; }, 150);
@@ -23074,7 +23135,7 @@ function quickTablePayment(rateIndex, years, rounding) {
   }
   document.getElementById('quickTableBtn').addEventListener('click', () => {
     if (!sheet.hidden && sheet.dataset.modalClosing !== '1') return;
-    prefs = readSaved(); marks.forEach(set => set.clear()); render();
+    prefs = readSaved(); marks.forEach(set => set.clear()); groups.forEach((_, g) => clearAxes(g)); render();
     lastFocus = document.activeElement;
     previousOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
     const openSequence = ++sequence;
@@ -23086,26 +23147,90 @@ function quickTablePayment(rateIndex, years, rounding) {
   roundButton.addEventListener('click', () => { prefs.rounding = prefs.rounding === 'round' ? 'ceil' : 'round'; persist('rounding'); render(); status.textContent = roundButton.getAttribute('aria-label').split('，')[0]; });
   sheet.querySelectorAll('[data-qt-all]').forEach(button => button.addEventListener('click', () => { groups.forEach((_, g) => setGroup(g, button.dataset.qtAll === 'open', false)); persist('opens'); }));
   cards.addEventListener('click', e => {
-    if (Date.now() < suppressClickUntil && e.detail !== 0) { e.preventDefault(); return; }
     const range = e.target.closest('[data-qt-range]');
     if (range) { const g = Number(range.dataset.qtRange); setGroup(g, !prefs.opens[g]); return; }
+    const axisButton = e.target.closest('.qt-rate-button,.qt-year');
+    if (axisButton) {
+      if (!touchInput) return;
+      const g = Number(axisButton.dataset.qtGroup);
+      if (axisButton.classList.contains('qt-rate-button')) { const rate = Number(axisButton.dataset.qtRate); axes[g].rate = axes[g].rate === rate ? null : rate; }
+      else { const year = prefs.years[Number(axisButton.dataset.qtCol)]; axes[g].year = axes[g].year === year ? null : year; }
+      syncAxes(); return;
+    }
     const button = e.target.closest('.qt-cell'); if (!button) return;
     const g = Number(button.dataset.qtGroup), id = button.dataset.qtRate + ':' + button.dataset.qtYear;
     marks[g].has(id) ? marks[g].delete(id) : marks[g].add(id);
     button.setAttribute('aria-pressed', String(marks[g].has(id)));
   });
-  cards.addEventListener('pointerdown', e => {
-    const button = e.target.closest('.qt-year'); if (!button || !e.isPrimary || e.button !== 0) return;
-    cancelHold();
-    hold = { id:e.pointerId, x:e.clientX, y:e.clientY, timer:setTimeout(() => { hold = null; suppressClickUntil = Date.now() + 600; openEditor(button); }, 550) };
-  }, { passive:true });
-  document.addEventListener('pointerdown', e => { if (hold && e.pointerId !== hold.id) cancelHold(); }, { capture:true, passive:true });
-  document.addEventListener('pointermove', e => { if (hold && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 8) cancelHold(); }, { passive:true });
-  document.addEventListener('pointerup', cancelHold, true); document.addEventListener('pointercancel', cancelHold, true);
-  scroller.addEventListener('scroll', cancelHold, { passive:true }); window.addEventListener('blur', cancelHold);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelHold(); });
+  // One contact owns tap, hold and swipe. Cancelling it keeps the click guard until a fresh press.
+  function gestureReady() { return !sheet.hidden && sheet.dataset.modalClosing !== '1' && editor.hidden && getTopAppModal() === sheet; }
+  function hasSelection() { const selection = window.getSelection(); return !!selection && !selection.isCollapsed; }
+  function gestureCurrent(g) { return gestureReady() && g.seq === sequence && !hasSelection() && Math.abs(scroller.scrollTop - g.scrollTop) <= 2 && Math.abs(window.scrollY - g.windowY) <= 2; }
+  function moveContact(g, e) {
+    const dx = Math.abs(e.clientX - g.x), dy = Math.abs(e.clientY - g.y);
+    g.maxY = Math.max(g.maxY, dy);
+    if (Math.hypot(dx, dy) > 8) { g.moved = true; blockContactClick(g); clearTimeout(g.timer); }
+    if (!gestureCurrent(g)) { g.rejected = true; clearTimeout(g.timer); return; }
+    if (!g.axis && !g.rejected) {
+      if (dx >= 12 && dx >= dy * 1.8) g.axis = 'horizontal';
+      else if (dy >= 8) g.rejected = true;
+    }
+    if (g.maxY > 40) g.rejected = true;
+  }
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') touchPointers.add(e.pointerId);
+    if (contact && e.pointerId !== contact.id) {
+      const previousType = contact.type; cancelContact();
+      // A fresh primary mouse press is a separate action, even if a finger remains down.
+      if (e.pointerType === previousType || e.pointerType !== 'mouse') { blockContactClick({ id:e.pointerId, type:e.pointerType }); return; }
+    }
+    if (!e.isPrimary || e.button !== 0 || (e.pointerType === 'touch' && touchPointers.size !== 1)) {
+      cancelContact(); if (e.pointerType === 'touch') blockContactClick({ id:e.pointerId, type:'touch' }); return;
+    }
+    blockedPointers.delete(e.pointerId); blockedFallbackTypes.delete(e.pointerType || 'mouse');
+    lastPointerType = e.pointerType || 'mouse';
+    if (!gestureReady() || !sheet.contains(e.target)) return;
+    setInputMode(e.pointerType);
+    const yearButton = e.target.closest('.qt-year'), isTouch = e.pointerType === 'touch';
+    if (!isTouch && !yearButton) return;
+    cancelContact(false);
+    const control = e.target.closest('button,a,input,textarea,select,[contenteditable]:not([contenteditable="false"])');
+    const safeControl = !control || control.matches('.qt-cell,.qt-year,.qt-rate-button');
+    const g = contact = { id:e.pointerId, type:e.pointerType || 'mouse', x:e.clientX, y:e.clientY, scrollTop:scroller.scrollTop, windowY:window.scrollY,
+      seq:sequence, started:Date.now(), timer:0, moved:false, rejected:false, axis:'', maxY:0,
+      canSwipe:isTouch && safeControl && e.clientX > 20 && e.clientX < window.innerWidth - 20 };
+    if (yearButton) g.timer = setTimeout(() => {
+      if (contact !== g || g.moved || g.rejected || !gestureCurrent(g)) return;
+      blockContactClick(g); openEditor(yearButton);
+    }, 550);
+  }, { capture:true, passive:true });
+  document.addEventListener('pointermove', e => { if (contact?.id === e.pointerId) moveContact(contact, e); }, { capture:true, passive:true });
+  document.addEventListener('pointerup', e => {
+    touchPointers.delete(e.pointerId);
+    const g = contact; if (!g || g.id !== e.pointerId) return;
+    moveContact(g, e); clearTimeout(g.timer); contact = null;
+    const dx = Math.abs(e.clientX - g.x), dy = Math.abs(e.clientY - g.y);
+    if (g.canSwipe && !g.rejected && !touchPointers.size && g.axis === 'horizontal' && gestureCurrent(g)
+        && dx >= 64 && dx >= dy * 1.8 && Date.now() - g.started <= 1000) {
+      blockContactClick(g); closeSheet();
+    }
+  }, true);
+  document.addEventListener('pointercancel', e => { touchPointers.delete(e.pointerId); if (contact?.id === e.pointerId) cancelContact(); }, true);
+  document.addEventListener('click', e => {
+    if (e.detail === 0 && !e.pointerType && !e.sourceCapabilities?.firesTouchEvents) return;
+    const type = e.pointerType || (e.sourceCapabilities?.firesTouchEvents ? 'touch' : lastPointerType);
+    const knownPointer = Number.isFinite(e.pointerId) && e.pointerId >= 0;
+    if (knownPointer ? !blockedPointers.has(e.pointerId) : !blockedFallbackTypes.has(type)) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+  }, true);
+  scroller.addEventListener('scroll', () => cancelContact(), { passive:true });
+  window.addEventListener('scroll', () => cancelContact(), { passive:true });
+  window.addEventListener('blur', () => { cancelContact(); touchPointers.clear(); });
+  window.addEventListener('resize', () => cancelContact());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { cancelContact(); touchPointers.clear(); } });
+  document.addEventListener('selectionchange', () => { if (hasSelection()) cancelContact(); });
   cards.addEventListener('contextmenu', e => { if (e.target.closest('.qt-year')) e.preventDefault(); });
-  cards.addEventListener('dblclick', e => { const button = e.target.closest('.qt-year'); if (button) openEditor(button); });
+  cards.addEventListener('dblclick', e => { const button = e.target.closest('.qt-year'); if (button && lastPointerType !== 'touch') openEditor(button); });
   cards.addEventListener('keydown', e => { const button = e.target.closest('.qt-year'); if (button && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!e.repeat) openEditor(button); } });
   document.getElementById('quickTableYearCancel').addEventListener('click', () => closeEditor());
   document.getElementById('quickTableYearForm').addEventListener('submit', e => {
@@ -23115,6 +23240,7 @@ function quickTablePayment(rateIndex, years, rounding) {
     if (year !== oldYear && prefs.years.includes(year)) { error.textContent = '這個年期已經在表內，請選擇其他年期。'; input.focus(); return; }
     if (year !== oldYear) {
       marks.forEach(set => [...set].forEach(id => { if (Number(id.split(':')[1]) === oldYear) set.delete(id); }));
+      axes.forEach(axis => { if (axis.year === oldYear) axis.year = null; });
       prefs.years[editing.col] = year; persist('years'); render();
     }
     closeEditor(); status.textContent = '年期已更新為' + year + '年';
