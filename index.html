@@ -732,12 +732,16 @@ if ("serviceWorker" in navigator) {
     @media(max-width:384px) {
       .app-hero-row { min-height: 60px; }
     }
-    /* 三模式共用靠右定位及尺寸；公式流程僅向左延伸。 */
-    .hero-links { margin-left: auto; }
-    .hero-links .spec-btn { padding-left: 10px; padding-right: 10px; gap: 4px; }
+    /* 三模式共用字級與緊湊間距；桌面隨 app 整體等比例放大。 */
+    .hero-links { margin-left: auto; flex-shrink: 0; }
+    .hero-links .spec-btn { padding-left: 4px; padding-right: 4px; gap: 2px; font-size: 14px; letter-spacing: 0; }
     .hero-links .spec-btn:last-child { padding-right: 0; }
-    @media(max-width:360px) {
-      .hero-links .spec-btn { padding-left: 7px; padding-right: 7px; font-size: 12px; letter-spacing: 0; }
+    @media(max-width:374px) {
+      .hero-links .spec-btn { padding-left: 0; padding-right: 0; gap: 1px; }
+    }
+    /* 極窄畫面仍共用同一字級，不單獨縮小個人評估。 */
+    @media(max-width:344px) {
+      .hero-links .spec-btn { gap: 0; font-size: 13px; }
     }
     #bdFlowSheet { --teal: #2E6DA4; --teal-dark: #1D4B76; --teal-light: #E6EFF8; }
     #bdFlowSheet .spec-sheet-scroll { padding: 14px 12px calc(28px + var(--safe-bottom)); }
@@ -4066,7 +4070,6 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 @container(min-width:600px){.qt-cards{padding-left:18px;padding-right:18px}.qt-rate-col{width:115px}.qt-year{font-size:16px}.qt-table tbody th{font-size:15px}.qt-cell{font-size:13px;height:34px;line-height:34px}.qt-table thead th:first-child{font-size:14px}.qt-description{font-size:13px}.qt-rounding{font-size:12px}}
 @container(max-width:350px){.qt-intro{padding-left:10px;padding-right:10px}.qt-intro-title{gap:4px}.qt-kicker{font-size:16px}.qt-rounding{font-size:9.5px}.qt-switch{margin-left:4px}.qt-description{font-size:10.5px}.qt-rate-col{width:64px}.qt-year{font-size:12px}.qt-table tbody th{font-size:11.5px}.qt-cell{font-size:10px}.qt-cards{padding-left:5px;padding-right:5px}.qt-range{padding:3px}.qt-actions button{font-size:11px}}
 @container(max-width:300px){.qt-kicker{font-size:15px}.qt-rounding{font-size:9px}}
-@media(max-width:420px){body[data-mode=burden] .hero-links .spec-btn{padding-left:4px;padding-right:4px;font-size:11px;gap:2px;letter-spacing:0}body[data-mode=burden] .hero-links .spec-btn:last-child{padding-right:0}}
 @media(hover:hover){.qt-actions button:not(:disabled):hover{background:#344b5b;color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover)>td,#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover)>td{background:#344956}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover)>th,#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover)>th{background:#39586c;color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}#quickTableSheet:not(.qt-touch-input) .qt-year:hover{color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table thead th:has(.qt-year:hover){background:#476175}}
 
 /* A 排列：條件左、操作右；只作用於速算表。 */
@@ -7600,7 +7603,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.02B";
+const APP_VERSION = "2026.10.02C";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
