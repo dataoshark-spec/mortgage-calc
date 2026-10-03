@@ -7450,7 +7450,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.03A";
+const APP_VERSION = "2026.10.03B";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -14887,8 +14887,17 @@ async function runDetailImageExport(context, mime, ext, action) {
   }
 }
 
+function isWindowsShareUnreliable() {
+  try {
+    if (navigator.userAgentData && /Windows/i.test(navigator.userAgentData.platform || '')) return true;
+  } catch (_) {}
+  return /Windows/i.test(navigator.userAgent || '');
+}
+
 function pickSharePayload(files, context) {
   if (!files.length || !navigator.share) return null;
+  // Win11 的系統分享對網頁圖檔常是 canShare 通過、實際沒面板或立刻 AbortError／Permission denied。
+  if (isWindowsShareUnreliable()) return null;
   const title = context?.title || '';
   const text = context?.text || '';
   const candidates = [];
@@ -15035,7 +15044,10 @@ async function sharePreparedExportImages(state, index) {
     await navigator.share(payload);
     setExportFilesStatus(state, '已交由系統分享。圖片仍可再次分享或下載。');
   } catch (error) {
-    setExportFilesStatus(state, error?.name === 'AbortError' ? '已取消分享。圖片仍可再次分享或下載。' : '分享未完成，請重試或改用下載。');
+    const silentOsAbort = error?.name === 'AbortError' && isWindowsShareUnreliable();
+    setExportFilesStatus(state, error?.name === 'AbortError' && !silentOsAbort
+      ? '已取消分享。圖片仍可再次分享或下載。'
+      : '此電腦無法開啟系統分享，請改用下載。');
   } finally { state.busy = false; setPreparedExportButtonsBusy(state, false); }
 }
 
@@ -15073,7 +15085,10 @@ function showExportFilesDialog(images, context, action, ext) {
   if (shareable) save.className = 'export-files-secondary'; save.addEventListener('click', () => downloadPreparedExportImages(state)); actions.appendChild(save);
   const hasSingleShare = action === 'share' && images.some(image => canShareExportImages([image.file]));
   $('#exportFilesStatus').textContent = action === 'share' && !shareable
-    ? (hasSingleShare ? '此裝置無法一次分享全部圖片，可逐張分享或下載。' : '此裝置不支援圖片分享，可下載後傳送。')
+    ? (hasSingleShare ? '此裝置無法一次分享全部圖片，可逐張分享或下載。'
+      : (isWindowsShareUnreliable()
+        ? 'Windows 無法用系統分享傳送這組圖片，請改用下載後再傳。'
+        : '此裝置不支援圖片分享，可下載後傳送。'))
     : '圖片已完整製作，可全部或逐張處理。';
   dialog.hidden = false; beginAppModalOpen(dialog, closeExportFilesDialog);
   fitExportFileNames();
@@ -15166,10 +15181,9 @@ async function shareResults() {
     if (context.includeDetail) { await runDetailImageExport(context, 'image/jpeg', 'jpg', 'share'); return; }
     const images = [];
     const files = await captureResultsImageFiles(context, 'image/jpeg', 'jpg', images);
-    // 出圖是非同步作業，多數瀏覽器在這之後已失去「使用者手勢」，
-    // 不能再直接開系統分享；多圖本來就走準備完成視窗。單圖先試一次，
-    // 失敗就改由視窗裡的分享鈕（新的點擊）送出圖檔，不再退回純文字網址。
-    if (files.length === 1) {
+    // 出圖後多數瀏覽器已失去使用者手勢。Windows 系統分享對網頁圖檔也不穩定
+    // （沒面板、立刻 AbortError，或卡住後當成取消）。單圖僅在非 Windows 先試一次。
+    if (files.length === 1 && !isWindowsShareUnreliable()) {
       const payload = pickSharePayload(files, context);
       if (payload) {
         try {
@@ -15177,7 +15191,10 @@ async function shareResults() {
           showToast('已開啟分享');
           return;
         } catch (error) {
-          if (error?.name === 'AbortError') return;
+          if (error?.name === 'AbortError') {
+            showExportFilesDialog(images, context, 'share', 'jpg');
+            return;
+          }
         }
       }
     }
