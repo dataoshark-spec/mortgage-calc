@@ -732,16 +732,12 @@ if ("serviceWorker" in navigator) {
     @media(max-width:384px) {
       .app-hero-row { min-height: 60px; }
     }
-    /* 三模式共用字級與緊湊間距；桌面隨 app 整體等比例放大。 */
-    .hero-links { margin-left: auto; flex-shrink: 0; }
-    .hero-links .spec-btn { padding-left: 4px; padding-right: 4px; gap: 2px; font-size: 14px; letter-spacing: 0; }
+    /* 三模式共用靠右定位及尺寸；公式流程僅向左延伸。 */
+    .hero-links { margin-left: auto; }
+    .hero-links .spec-btn { padding-left: 10px; padding-right: 10px; gap: 4px; }
     .hero-links .spec-btn:last-child { padding-right: 0; }
-    @media(max-width:374px) {
-      .hero-links .spec-btn { padding-left: 0; padding-right: 0; gap: 1px; }
-    }
-    /* 極窄畫面仍共用同一字級，不單獨縮小個人評估。 */
-    @media(max-width:344px) {
-      .hero-links .spec-btn { gap: 0; font-size: 13px; }
+    @media(max-width:360px) {
+      .hero-links .spec-btn { padding-left: 7px; padding-right: 7px; font-size: 12px; letter-spacing: 0; }
     }
     #bdFlowSheet { --teal: #2E6DA4; --teal-dark: #1D4B76; --teal-light: #E6EFF8; }
     #bdFlowSheet .spec-sheet-scroll { padding: 14px 12px calc(28px + var(--safe-bottom)); }
@@ -2811,14 +2807,6 @@ if ("serviceWorker" in navigator) {
       opacity: 0.45;
       cursor: not-allowed;
     }
-    .export-btn.desktop-share-disabled:disabled,
-    .export-files-card button.desktop-share-disabled:disabled {
-      opacity: 1;
-      background: #ededed;
-      border-color: #dedede;
-      color: #969696;
-      cursor: not-allowed;
-    }
     .export-btn.export-busy,
     .export-btn.export-busy:disabled {
       opacity: 1;
@@ -4024,117 +4012,6 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 #appAlert.app-alert-temporary .app-alert-btn:focus-visible{outline:2px solid #876417;outline-offset:-2px}
 @media(max-width:360px){#toast{font-size:20px}#toast .toast-reset-title{font-size:20px}#toast .toast-reset-line{font-size:16px}}
 </style>
-<style id="quick-table-style">
-/* 速算表使用自己的類別，不套用到三模式的主試算／還款明細。 */
-#quickTableSheet{background:#142332;color:#e0e9f2;color-scheme:dark}
-#quickTableSheet button,#quickTableYearDialog button{font-family:inherit;cursor:pointer;touch-action:manipulation}
-#quickTableSheet button:focus-visible,#quickTableYearDialog :is(button,input):focus-visible{outline:2px solid #f3d593;outline-offset:2px}
-.qt-head{flex:none;padding:calc(var(--safe-top) + 10px) 14px 10px;background:#1b4668}
-.qt-head-inner{max-width:752px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.qt-head h2{font-size:16px;font-weight:500;letter-spacing:.5px;margin:0;line-height:1.5;color:#e0e9f2}
-.qt-close{width:32px;height:32px;padding:0;flex:none;display:grid;place-items:center;border:1px solid #8099ab;border-radius:7px;background:transparent;color:#fff}
-.qt-close svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;pointer-events:none}
-#quickTableSheet .qt-scroll{flex:1;min-height:0;padding:0 0 calc(18px + var(--safe-bottom));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
-.qt-content{width:100%;max-width:780px;margin:auto;container-type:inline-size}
-.qt-intro{padding:18px 14px 9px}.qt-intro-title{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:32px;margin-bottom:8px}
-.qt-kicker{font-size:18px;font-weight:600;line-height:1.4;margin:0;white-space:nowrap}
-.qt-rounding{display:inline-flex;align-items:center;justify-content:flex-end;gap:0;flex:none;min-height:32px;padding:6px 0;background:transparent;border:0;border-radius:4px;white-space:nowrap;color:#f3d593;font-size:10.5px;font-weight:500;line-height:20px}
-.qt-round-prefix,#quickTableRoundDefault{color:#9bafbc}#quickTableRoundDefault[hidden]{display:none!important}.qt-switch{width:20px;height:16px;display:block;flex:none;margin-left:5px;fill:none;stroke:#9bafbc;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-.qt-description{margin:0;font-size:11.5px;color:#b6c7d4;line-height:1.85}
-.qt-actions{display:flex;justify-content:flex-end;align-items:center;gap:5px;margin:2px 14px 12px;padding-top:10px;border-top:1px solid #2c4252}
-.qt-actions button{display:inline-flex;justify-content:center;align-items:center;gap:5px;min-height:36px;padding:8px 7px;background:transparent;border:0;border-radius:6px;color:#c6d5df;font-size:11.5px;line-height:1.2;white-space:nowrap}
-.qt-actions button:disabled{color:#6d8494;cursor:default}
-.qt-actions svg{width:14px;height:14px;display:block;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
-.qt-cards{padding:0 8px 4px}.qt-range{padding:5px;margin-bottom:9px;border:1px solid #344958;border-radius:9px;background:#1d2d3b;overflow:hidden}
-.qt-range-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;padding:8px 9px;border:1px solid #625a403b;border-radius:5px;background:linear-gradient(115deg,#3b392f,#343530);color:#e1e8ec;text-align:left;gap:8px}
-.qt-range-toggle b{display:block;font-size:14px;font-weight:600;letter-spacing:.3px;line-height:1.4}.qt-range-toggle small{display:block;font-size:9px;color:#9ea9ad;margin-top:3px;line-height:1.4}
-.qt-range-arrow{width:14px;height:14px;display:block;fill:none;stroke:#dcc591;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex:none}.qt-range-toggle[aria-expanded=true] .qt-range-arrow{transform:rotate(180deg)}
-.qt-table-wrap{padding-top:7px}.qt-table-wrap[hidden]{display:none!important}
-.qt-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-family:Arial,"Microsoft JhengHei",sans-serif;font-variant-numeric:tabular-nums;text-align:center}
-.qt-rate-col{width:70px}.qt-table th,.qt-table td{padding:0;text-align:center;font-weight:400;border:0}
-.qt-table thead th{height:40px;background:#344b5d;color:#e4edf3;font-size:12px}.qt-table thead th:first-child{font-family:"Microsoft JhengHei",sans-serif;letter-spacing:0}
-.qt-table tbody th{font-size:12px;font-weight:600;letter-spacing:.1px;background:#273e4c;color:#d2e4ef;border-bottom:1px solid #344958;white-space:nowrap}
-.qt-table tbody td{height:30px;background:#1d2d3b;border-bottom:1px solid #344958}.qt-table tbody tr:nth-child(even) td{background:#223440}
-.qt-year{display:block;width:100%;height:40px;padding:0;background:transparent;border:0;color:inherit;font-family:Arial,"Microsoft JhengHei",sans-serif!important;font-size:13px;font-weight:600;letter-spacing:.1px;white-space:nowrap;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y!important}
-.qt-cell{display:block;width:100%;height:30px;line-height:30px;padding:0;background:transparent;border:0;border-radius:0;color:#c7d8e4;font-family:Arial,sans-serif!important;font-size:11px;font-weight:400;font-variant-numeric:tabular-nums;white-space:nowrap;position:relative;z-index:0}
-.qt-cell[aria-pressed=true]{color:#ffe9b7;font-weight:500}.qt-cell[aria-pressed=true]::before{content:"";position:absolute;inset:4px 2px;border-radius:5px;background:linear-gradient(140deg,#cda66530,#cba75e12);box-shadow:inset 0 0 0 1px #dbbd7b8c,0 1px 3px #06111a33;z-index:-1}
-#quickTableSheet .qt-cell:focus-visible{outline:1px solid #d8c28b;outline-offset:-2px}
-.qt-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-#quickTableYearDialog{z-index:540;background:#06121d99;padding:20px;color:#e1e9ef;color-scheme:dark}
-.qt-year-card{width:min(330px,100%);max-height:calc(100dvh - 40px);overflow:auto;padding:24px;background:linear-gradient(150deg,#263e4e,#1b2e3c);border:1px solid #5d788b;border-radius:16px;box-shadow:0 14px 50px #0006}
-.qt-year-card h3{font-size:18px;font-weight:600;line-height:1.5;color:#e1e9ef;margin:0 0 24px}
-.qt-year-input{position:relative}.qt-year-input input{box-sizing:border-box;width:100%;max-width:none;min-height:58px;padding:13px 48px 13px 16px;background:#122837;border:1px solid #57788c;border-radius:9px;color:#fff;font:26px/1.2 Arial,sans-serif;text-align:center}
-.qt-year-input>span{position:absolute;right:17px;top:50%;transform:translateY(-50%);font-size:13px;color:#93aabb;pointer-events:none}
-#quickTableYearError{font-size:11px;line-height:1.6;color:#ffd2ab}#quickTableYearError:not(:empty){padding-top:10px}
-.qt-year-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}.qt-year-actions button{min-height:40px;padding:11px;border:1px solid #718895;border-radius:8px;background:transparent;color:#d9e6ef;font-size:13px;line-height:1.2}.qt-year-actions button[type=submit]{background:#d1b276;border-color:#d1b276;color:#1f303a;font-weight:600}
-@container(min-width:600px){.qt-cards{padding-left:18px;padding-right:18px}.qt-rate-col{width:115px}.qt-year{font-size:16px}.qt-table tbody th{font-size:15px}.qt-cell{font-size:13px;height:34px;line-height:34px}.qt-table thead th:first-child{font-size:14px}.qt-description{font-size:13px}.qt-rounding{font-size:12px}}
-@container(max-width:350px){.qt-intro{padding-left:10px;padding-right:10px}.qt-intro-title{gap:4px}.qt-kicker{font-size:16px}.qt-rounding{font-size:9.5px}.qt-switch{margin-left:4px}.qt-description{font-size:10.5px}.qt-rate-col{width:64px}.qt-year{font-size:12px}.qt-table tbody th{font-size:11.5px}.qt-cell{font-size:10px}.qt-cards{padding-left:5px;padding-right:5px}.qt-range{padding:3px}.qt-actions button{font-size:11px}}
-@container(max-width:300px){.qt-kicker{font-size:15px}.qt-rounding{font-size:9px}}
-@media(hover:hover){.qt-actions button:not(:disabled):hover{background:#344b5b;color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover)>td,#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover)>td{background:#344956}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover)>th,#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover)>th{background:#39586c;color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(>th:hover) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table tbody tr:has(.qt-cell:hover) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}#quickTableSheet:not(.qt-touch-input) .qt-year:hover{color:#f3d593}#quickTableSheet:not(.qt-touch-input) .qt-table thead th:has(.qt-year:hover){background:#476175}}
-
-/* A 排列：條件左、操作右；只作用於速算表。 */
-.qt-summary{display:grid;grid-template-columns:1fr auto;padding:16px 14px 14px;gap:0 5px}
-.qt-summary .qt-intro{display:contents}.qt-summary .qt-intro-title{grid-column:1/-1;margin-bottom:7px;gap:6px}
-.qt-summary .qt-kicker{color:#f3d593;font-size:20px;font-weight:650}
-.qt-summary .qt-actions{margin:0;padding:0;border:0;gap:3px;align-self:end}
-.qt-summary .qt-actions button{padding:7px 5px;font-size:11px;gap:3px}
-.qt-summary .qt-actions svg{width:13px;height:13px}.qt-summary .qt-description{font-size:11px;white-space:nowrap}
-.qt-summary .qt-rounding{font-size:10px}.qt-summary .qt-switch{width:19px;margin-left:4px}
-#quickTableSheet,#quickTableSheet .qt-scroll,#quickTableSheet .qt-year,#quickTableSheet .qt-cell,#quickTableSheet .qt-rate-button{touch-action:pan-y pinch-zoom!important}
-.qt-rate-button{display:block;width:100%;height:30px;padding:0;border:0;background:none;font:inherit;color:inherit;white-space:nowrap;cursor:default!important}
-#quickTableSheet.qt-touch-input .qt-rate-button{cursor:pointer!important}
-#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row>td,#quickTableSheet.qt-touch-input .qt-table td.qt-axis-col{background:#304654}
-#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row>th,#quickTableSheet.qt-touch-input .qt-table thead th.qt-axis-col{background:#3b5263;color:#f3d593}
-#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row>td.qt-axis-col{background:#3b5362}
-#quickTableSheet.qt-touch-input .qt-table .qt-axis-col .qt-cell:not([aria-pressed=true]),#quickTableSheet.qt-touch-input .qt-table tr.qt-axis-row .qt-cell:not([aria-pressed=true]){color:#e6eff5}
-#quickTableSheet.qt-touch-input .qt-table thead th.qt-axis-col .qt-year{color:#f3d593}
-.qt-year,.qt-rate-button{-webkit-tap-highlight-color:transparent}
-@container(min-width:600px){.qt-summary .qt-kicker{font-size:22px}.qt-summary .qt-rounding,.qt-summary .qt-actions button{font-size:12px}.qt-summary .qt-description{font-size:13px}.qt-rate-button{height:34px}}
-@container(max-width:350px){.qt-summary{padding:14px 10px 12px}.qt-summary .qt-kicker{font-size:18px}.qt-summary .qt-rounding{font-size:9px}.qt-summary .qt-switch{width:17px;margin-left:3px}.qt-summary .qt-description{font-size:10px}.qt-summary .qt-actions button{font-size:10px;padding-left:3px;padding-right:3px;gap:2px}.qt-summary .qt-actions svg{width:12px}.qt-summary .qt-intro-title{gap:3px}}
-@container(max-width:300px){.qt-summary .qt-kicker{font-size:16.5px}.qt-summary .qt-rounding{font-size:8.5px}}
-
-@media(hover:hover){
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(2) .qt-year:hover) tbody td:nth-child(2),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2){background:#344956}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(2) .qt-year:hover) tbody td:nth-child(2) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) thead th:nth-child(2),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) thead th:nth-child(2) .qt-year{background:#476175;color:#f3d593}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(2) .qt-cell:hover) tbody td:nth-child(2):has(.qt-cell:hover){background:#435c6d}
-}
-
-@media(hover:hover){
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(3) .qt-year:hover) tbody td:nth-child(3),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3){background:#344956}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(3) .qt-year:hover) tbody td:nth-child(3) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) thead th:nth-child(3),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) thead th:nth-child(3) .qt-year{background:#476175;color:#f3d593}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(3) .qt-cell:hover) tbody td:nth-child(3):has(.qt-cell:hover){background:#435c6d}
-}
-
-@media(hover:hover){
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(4) .qt-year:hover) tbody td:nth-child(4),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4){background:#344956}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(4) .qt-year:hover) tbody td:nth-child(4) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) thead th:nth-child(4),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) thead th:nth-child(4) .qt-year{background:#476175;color:#f3d593}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(4) .qt-cell:hover) tbody td:nth-child(4):has(.qt-cell:hover){background:#435c6d}
-}
-
-@media(hover:hover){
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(5) .qt-year:hover) tbody td:nth-child(5),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5){background:#344956}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(5) .qt-year:hover) tbody td:nth-child(5) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) thead th:nth-child(5),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) thead th:nth-child(5) .qt-year{background:#476175;color:#f3d593}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(5) .qt-cell:hover) tbody td:nth-child(5):has(.qt-cell:hover){background:#435c6d}
-}
-
-@media(hover:hover){
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(6) .qt-year:hover) tbody td:nth-child(6),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6){background:#344956}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(6) .qt-year:hover) tbody td:nth-child(6) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) thead th:nth-child(6),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) thead th:nth-child(6) .qt-year{background:#476175;color:#f3d593}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(6) .qt-cell:hover) tbody td:nth-child(6):has(.qt-cell:hover){background:#435c6d}
-}
-
-@media(hover:hover){
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(7) .qt-year:hover) tbody td:nth-child(7),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7){background:#344956}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(thead th:nth-child(7) .qt-year:hover) tbody td:nth-child(7) .qt-cell:not([aria-pressed=true]),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7) .qt-cell:not([aria-pressed=true]){color:#f0f6fa}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7) .qt-year{background:#476175;color:#f3d593}
-#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7):has(.qt-cell:hover){background:#435c6d}
-}
-</style>
 </head>
 <body data-threshold-loading="1">
 <div class="wrap" id="appShell">
@@ -4161,14 +4038,12 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
           <button type="button" class="spec-btn" id="ytSpecBtn" title="查詢青安3.0（問答集）與青安3.0（貸款原則）" aria-haspopup="dialog">青安相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
           <span class="hero-links-sep" aria-hidden="true"></span>
           <button type="button" class="spec-btn" id="cbSpecBtn" title="查詢中央銀行不動產抵押貸款業務規定問與答及修正規定" aria-haspopup="dialog">貸款相關<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
-          <span class="hero-links-sep" aria-hidden="true"></span>
-          <button type="button" class="spec-btn" id="quickTableBtn" title="速算表格" aria-haspopup="dialog">速算表格<span class="spec-btn-arw" aria-hidden="true">＞</span></button>
         </div>
       </div>
     </header>
     <div class="ver-switch" role="tablist" aria-label="試算模式">
       <button class="ver-btn active" data-mode="general" type="button" role="tab" aria-selected="true">一般貸款</button>
-      <button class="ver-btn" data-mode="youth" type="button" role="tab" aria-selected="false">青安3.0</button>
+      <button class="ver-btn" data-mode="youth" type="button" role="tab" aria-selected="false">新青安3.0</button>
       <button class="ver-btn" data-mode="burden" type="button" role="tab" aria-selected="false">個人評估</button>
     </div>
   </div>
@@ -5440,34 +5315,6 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
     </div>
     <button type="button" class="export-files-close" id="exportFilesClose">關閉</button>
   </div>
-</div>
-
-<!-- 速算表只供固定條件查閱，與主試算資料及匯出內容分離。 -->
-<section id="quickTableSheet" class="spec-sheet" role="dialog" aria-modal="true" aria-labelledby="quickTableTitle" hidden>
-  <header class="qt-head"><div class="qt-head-inner">
-    <h2 id="quickTableTitle">速算表格</h2>
-    <button type="button" id="quickTableClose" class="qt-close" aria-label="關閉速算表格"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18"/></svg></button>
-  </div></header>
-  <div class="spec-sheet-scroll qt-scroll"><div class="qt-content">
-    <div class="qt-summary"><div class="qt-intro"><div class="qt-intro-title">
-      <p class="qt-kicker">每貸款 100 萬元</p>
-      <button type="button" id="quickTableRounding" class="qt-rounding"><span class="qt-round-prefix">目前：</span><span id="quickTableRoundValue"></span><span id="quickTableRoundDefault">（預設）</span><svg class="qt-switch" viewBox="0 0 24 20" aria-hidden="true"><path d="M3 6H21M17.5 2.5L21 6L17.5 9.5M21 14H3M6.5 10.5L3 14L6.5 17.5"/></svg></button>
-    </div><p class="qt-description">· 本息平均攤還（方式）<br>· 每月應繳金額（元整）</p></div>
-    <div class="qt-actions">
-      <button type="button" data-qt-all="open"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5L10 10L15 5M5 10L10 15L15 10"/></svg><span>全部展開</span></button>
-      <button type="button" data-qt-all="close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10L10 5L15 10M5 15L10 10L15 15"/></svg><span>全部收合</span></button>
-    </div>
-    </div><div id="quickTableCards" class="qt-cards"></div>
-  </div></div>
-  <div id="quickTableStatus" class="qt-sr" role="status" aria-live="polite"></div>
-</section>
-<div id="quickTableYearDialog" class="yt-set" role="dialog" aria-modal="true" aria-labelledby="quickTableYearTitle" hidden>
-  <form id="quickTableYearForm" class="qt-year-card" novalidate>
-    <h3 id="quickTableYearTitle">修改貸款年期</h3>
-    <div class="qt-year-input"><input id="quickTableYearInput" type="text" inputmode="numeric" maxlength="2" autocomplete="off" spellcheck="false" aria-label="貸款年期" aria-describedby="quickTableYearError"><span>年</span></div>
-    <div id="quickTableYearError" role="alert"></div>
-    <div class="qt-year-actions"><button type="button" id="quickTableYearCancel">取消</button><button type="submit">套用</button></div>
-  </form>
 </div>
 
 <script id="loan-offline-image-codecs">
@@ -7603,7 +7450,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.02C";
+const APP_VERSION = "2026.10.03A";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -13299,35 +13146,6 @@ function exportBtnOf(kind) {
   return $(MAP[kind]);
 }
 
-// Preserve phone/tablet sharing; disable it only in an installed desktop app.
-let lastDesktopInstalledShareMode = false;
-function isDesktopInstalledShareDisabled() {
-  const ua = navigator.userAgent || '';
-  const platform = navigator.userAgentData?.platform || navigator.platform || '';
-  const mobile = navigator.userAgentData?.mobile === true
-    || /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(ua)
-    || (/Mac/i.test(platform) && navigator.maxTouchPoints > 1);
-  if (mobile) return false;
-  const installed = !!(window.matchMedia && (
-    window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: window-controls-overlay)').matches
-    || window.matchMedia('(display-mode: minimal-ui)').matches
-  ));
-  if (installed) lastDesktopInstalledShareMode = true;
-  else if (!window.matchMedia || !window.matchMedia('(display-mode: fullscreen)').matches) lastDesktopInstalledShareMode = false;
-  return installed || lastDesktopInstalledShareMode;
-}
-
-// Also refresh when a browser window enters or leaves the installed app mode.
-if (window.matchMedia) {
-  ['standalone', 'window-controls-overlay', 'minimal-ui', 'fullscreen'].forEach(mode => {
-    const media = window.matchMedia('(display-mode: ' + mode + ')');
-    if (media.addEventListener) media.addEventListener('change', syncExportFormatButtons);
-    else if (media.addListener) media.addListener(syncExportFormatButtons);
-  });
-}
-window.addEventListener('pageshow', syncExportFormatButtons);
-
 function syncExportFormatButtons() {
   // 三組按鈕套用同一規則，避免只有一邊會反灰
   [
@@ -13337,16 +13155,13 @@ function syncExportFormatButtons() {
   ].forEach(([sels, title]) => {
     sels.map((x) => $(x)).forEach((btn) => {
       if (!btn) return;
-      const blockedShare = ['shareBtn', 'ytShareBtn', 'bdShareBtn'].includes(btn.id) && isDesktopInstalledShareDisabled();
-      btn.disabled = exportBusy || blockedShare;
-      btn.classList.toggle('desktop-share-disabled', blockedShare);
-      btn.title = blockedShare ? '電腦安裝版暫不支援分享，請使用 JPG、PNG 或 PDF 匯出' : title;
+      btn.disabled = exportBusy;
+      btn.title = title;
     });
   });
   [$('#exportPdfBtn'), $('#ytExportPdfBtn'), $('#bdExportPdfBtn')].forEach((btn) => {
     if (btn) btn.disabled = exportBusy;
   });
-  if (preparedExportImages) setPreparedExportButtonsBusy(preparedExportImages, preparedExportImages.busy);
 }
 
 // 累積利息欄以眼睛開關為準：預設關閉，使用者按過才會帶進匯出／分享
@@ -13356,7 +13171,7 @@ let dlgOpenByPointer = false;
 /* 記住視窗是「點開的」還是「鍵盤開的」。按 ESC 關閉會把瀏覽器切到鍵盤模式，
    此時把焦點還回齒輪就會亮起 focus 樣式，看起來像視窗沒關乾淨。 */
 document.addEventListener('click', (e) => {
-  const g = e.target && e.target.closest ? e.target.closest('.yt-gear-btn, #ytShareTag, #cbSpecBtn, #ytSpecBtn, #bdFlowBtn, #quickTableBtn') : null;
+  const g = e.target && e.target.closest ? e.target.closest('.yt-gear-btn, #ytShareTag, #cbSpecBtn, #ytSpecBtn, #bdFlowBtn') : null;
   if (g) dlgOpenByPointer = e.detail > 0;   // detail 為 0 代表由鍵盤觸發
 }, true);
 function restoreFocusQuietly(el) {
@@ -13440,45 +13255,16 @@ function createExportContext() {
   const prefix = mode === 'youth' ? '新青安3.0試算' : mode === 'burden' ? '個人購屋能力評估' : '房屋貸款試算';
   const detailScope = mode === 'youth' ? (template.querySelector('#ytDetailSeg .active')?.textContent.trim() || '合計') : '';
   const d = new Date(), pad = n => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const tags = ['重點摘要', ...(includeDetail ? ['還款明細', ...(cum ? ['累積利息'] : [])] : [])];
   return Object.freeze({mode, text, template, includeDetail, includeGeneralLoan, cum, detailScope,
     width: EXPORT_LAYOUT_WIDTH, title: prefix + (mode === 'burden' ? '' : '結果'), url: location.href,
-    exportStamp: stamp});
+    filename: prefix + '_' + stamp + '_' + tags.join('_')});
 }
-function exportModeName(mode) {
-  return mode === 'youth' ? '青安貸款' : mode === 'burden' ? '個人評估' : '一般貸款';
-}
-
-function exportDetailName(context) {
-  if (context.mode !== 'youth') return '還款明細';
-  if (context.detailScope === '青安貸款') return '僅青安貸款明細';
-  if (context.detailScope === '一般貸款') return '僅一般貸款明細';
-  return '已合計貸款明細';
-}
-
-// PDF is one document; image filenames use the same frozen export timestamp.
 function exportFileName(ext, context) {
   const snapshot = context || createExportContext();
   if (!snapshot) throw new Error('no valid result');
-  const tags = [exportModeName(snapshot.mode), '重點摘要'];
-  if (snapshot.includeDetail) {
-    tags.push(exportDetailName(snapshot));
-    if (snapshot.cum) tags.push('累積利息');
-  }
-  return [...tags, snapshot.exportStamp].join('_') + '.' + ext;
-}
-
-function exportImageFileName(ext, context, part, index, total) {
-  const pad = value => String(value).padStart(2, '0');
-  let content = part.kind === '青安3.0貸款原則' ? '青安貸款原則' : part.kind;
-  if (part.group) {
-    content = exportDetailName(context) + pad(part.group.from) + '-' + pad(part.group.to) + '年';
-    if (context.cum) content += '_累積利息';
-  } else if (part.sectionPages > 1) {
-    content += '第' + part.sectionPage + '頁';
-  }
-  const sequence = total > 1 ? [pad(index + 1)] : [];
-  return [exportModeName(context.mode), ...sequence, content, context.exportStamp].join('_') + '.' + ext;
+  return snapshot.filename + '.' + ext;
 }
 
 
@@ -14891,6 +14677,14 @@ function showImageExportProgress(job, text) {
   loanNotifications.schedulePosition();
 }
 
+function detailImageFileName(context, ext, part, index, total) {
+  const stem = context.filename.replace(/_重點摘要(?:_還款明細(?:_累積利息)?)?$/, '');
+  const pad = n => String(n).padStart(2, '0');
+  const scope = part.kind === '還款明細' && context.detailScope ? '・' + context.detailScope : '';
+  const years = part.group ? '_第' + pad(part.group.from) + '-' + pad(part.group.to) + '年' : '';
+  const cum = part.group && context.cum ? '_累積利息' : '';
+  return stem + '_' + pad(index + 1) + '-' + pad(total) + '_' + part.kind + scope + years + cum + '.' + ext;
+}
 
 /* Prototype only. A fixed-pixel row source for a mounted ten-year detail clone.
    Rendering never allocates the full-height image. Caller receives RGBA rows.
@@ -15074,7 +14868,7 @@ async function captureDetailedImageFiles(context, mime, ext, job) {
   await captureSmallPart(await buildExportYouthRulesPart(context), '青安3.0貸款原則');
   assertImageExportActive(job);
   return parts.map((part, index) => ({
-    file: new File([part.blob], exportImageFileName(ext, context, part, index, parts.length), { type: mime }),
+    file: new File([part.blob], detailImageFileName(context, ext, part, index, parts.length), { type: mime }),
     label: part.kind + (part.group ? (context.detailScope ? '・' + context.detailScope : '') + ' 第 ' + String(part.group.from).padStart(2, '0') + '～' + String(part.group.to).padStart(2, '0') + ' 年' : (part.sectionPages > 1 ? '（' + part.sectionPage + '／' + part.sectionPages + '）' : '')),
     kind: part.kind, group: part.group || null
   }));
@@ -15093,10 +14887,24 @@ async function runDetailImageExport(context, mime, ext, action) {
   }
 }
 
+function pickSharePayload(files, context) {
+  if (!files.length || !navigator.share) return null;
+  const title = context?.title || '';
+  const text = context?.text || '';
+  const candidates = [];
+  if (title && text) candidates.push({ files, title, text });
+  if (title) candidates.push({ files, title });
+  candidates.push({ files });
+  for (const data of candidates) {
+    try {
+      if (!navigator.canShare || navigator.canShare(data)) return data;
+    } catch (_) {}
+  }
+  return null;
+}
+
 function canShareExportImages(files) {
-  if (isDesktopInstalledShareDisabled()) return false;
-  try { return !!(files.length && navigator.share && navigator.canShare && navigator.canShare({ files })); }
-  catch { return false; }
+  return !!pickSharePayload(files);
 }
 
 function fitExportFileNames() {
@@ -15212,24 +15020,19 @@ function showSingleExportDownloadNotice() {
 
 function setPreparedExportButtonsBusy(state, busy) {
   if (preparedExportImages !== state || state.closed) return;
-  ['#exportFilesList', '#exportFilesActions'].forEach(selector => {
-    $(selector).querySelectorAll('button').forEach(button => {
-      const blocked = button.dataset.preparedShare === 'true' && isDesktopInstalledShareDisabled();
-      button.disabled = busy || blocked;
-      button.classList.toggle('desktop-share-disabled', blocked);
-    });
-  });
+  $('#exportFilesList').querySelectorAll('button').forEach(button => { button.disabled = busy; });
+  $('#exportFilesActions').querySelectorAll('button').forEach(button => { button.disabled = busy; });
 }
 
 async function sharePreparedExportImages(state, index) {
-  if (isDesktopInstalledShareDisabled()) return;
   if (state.busy || state.closed) return;
   const files = index === undefined ? state.images.map(x => x.file) : [state.images[index].file];
-  if (!canShareExportImages(files)) { setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return; }
+  const payload = pickSharePayload(files, state.context);
+  if (!payload) { setExportFilesStatus(state, '此裝置無法分享這組圖片，請改用下載。'); return; }
   state.busy = true; setPreparedExportButtonsBusy(state, true);
   try {
     // Called directly from the ready button, while this click is still active.
-    await navigator.share({ files, title: state.context.title, text: state.context.text });
+    await navigator.share(payload);
     setExportFilesStatus(state, '已交由系統分享。圖片仍可再次分享或下載。');
   } catch (error) {
     setExportFilesStatus(state, error?.name === 'AbortError' ? '已取消分享。圖片仍可再次分享或下載。' : '分享未完成，請重試或改用下載。');
@@ -15256,7 +15059,7 @@ function showExportFilesDialog(images, context, action, ext) {
     const save = document.createElement('button'); save.type = 'button'; save.textContent = '下載'; save.dataset.downloadIndex = String(index); save.setAttribute('aria-label', '下載第 ' + (index + 1) + ' 張 ' + image.label);
     save.addEventListener('click', () => downloadPreparedExportImages(state, index)); row.appendChild(save);
     if (action === 'share' && canShareExportImages([image.file])) {
-      const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享'; share.dataset.preparedShare = 'true'; share.setAttribute('aria-label', '分享第 ' + (index + 1) + ' 張 ' + image.label);
+      const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享'; share.setAttribute('aria-label', '分享第 ' + (index + 1) + ' 張 ' + image.label);
       share.addEventListener('click', () => sharePreparedExportImages(state, index)); row.appendChild(share);
     }
     list.appendChild(row);
@@ -15264,7 +15067,7 @@ function showExportFilesDialog(images, context, action, ext) {
   const actions = $('#exportFilesActions'); actions.replaceChildren();
   const allFiles = images.map(x => x.file), shareable = action === 'share' && canShareExportImages(allFiles);
   if (shareable) {
-    const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享全部圖片'; share.id = 'exportFilesShareAll'; share.dataset.preparedShare = 'true'; share.addEventListener('click', () => sharePreparedExportImages(state)); actions.appendChild(share);
+    const share = document.createElement('button'); share.type = 'button'; share.textContent = '分享全部圖片'; share.id = 'exportFilesShareAll'; share.addEventListener('click', () => sharePreparedExportImages(state)); actions.appendChild(share);
   }
   const save = document.createElement('button'); save.type = 'button'; save.textContent = '全部下載 ' + ext.toUpperCase(); save.id = 'exportFilesDownloadAll'; save.dataset.defaultLabel = save.textContent;
   if (shareable) save.className = 'export-files-secondary'; save.addEventListener('click', () => downloadPreparedExportImages(state)); actions.appendChild(save);
@@ -15281,6 +15084,13 @@ $('#exportFilesClose').addEventListener('click', closeExportFilesDialog);
 $('#exportFilesDialog').addEventListener('click', e => { if (e.target === $('#exportFilesDialog')) closeExportFilesDialog(); });
 
 // C: image exports keep Youth's loan principles separate, using the existing safe page layout.
+function exportImagePartName(ext, context, kind, index, total) {
+  const original = exportFileName(ext, context);
+  if (total === 1) return original;
+  const stem = original.slice(0, -(ext.length + 1)).replace(/_重點摘要$/, '');
+  const pad = value => String(value).padStart(2, '0');
+  return stem + '_' + kind + '_' + pad(index + 1) + '-' + pad(total) + '.' + ext;
+}
 
 async function captureResultsImageFiles(context, mime, ext, imageRecords) {
   const parts = [];
@@ -15323,11 +15133,11 @@ async function captureResultsImageFiles(context, mime, ext, imageRecords) {
       const blob = await new Promise((resolve, reject) => {
         canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), mime, quality);
       });
-      const sectionPages = parts.filter(part => part.kind === kind).length;
-      const sectionPage = parts.slice(0, i + 1).filter(part => part.kind === kind).length;
-      const file = new File([blob], exportImageFileName(ext, context, { kind, sectionPages, sectionPage }, i, parts.length), { type: mime });
+      const file = new File([blob], exportImagePartName(ext, context, kind, i, parts.length), { type: mime });
       files.push(file);
       if (imageRecords) {
+        const sectionPages = parts.filter(part => part.kind === kind).length;
+        const sectionPage = parts.slice(0, i + 1).filter(part => part.kind === kind).length;
         imageRecords.push({ file, kind, group: null, label: kind + (sectionPages > 1 ? '（' + sectionPage + '／' + sectionPages + '）' : '') });
       }
       canvas.width = canvas.height = 1;
@@ -15352,26 +15162,26 @@ async function exportAsImage(mime, ext) {
 }
 
 async function shareResults() {
-  if (isDesktopInstalledShareDisabled()) return;
   await withExportLock(async (context) => {
     if (context.includeDetail) { await runDetailImageExport(context, 'image/jpeg', 'jpg', 'share'); return; }
     const images = [];
     const files = await captureResultsImageFiles(context, 'image/jpeg', 'jpg', images);
-    if (files.length > 1) { showExportFilesDialog(images, context, 'share', 'jpg'); return; }
-    if (isDesktopInstalledShareDisabled()) return;
-    const shareData = { title: context.title, text: context.text, files };
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      await navigator.share(shareData);
-      showToast('已開啟分享');
-      return;
+    // 出圖是非同步作業，多數瀏覽器在這之後已失去「使用者手勢」，
+    // 不能再直接開系統分享；多圖本來就走準備完成視窗。單圖先試一次，
+    // 失敗就改由視窗裡的分享鈕（新的點擊）送出圖檔，不再退回純文字網址。
+    if (files.length === 1) {
+      const payload = pickSharePayload(files, context);
+      if (payload) {
+        try {
+          await navigator.share(payload);
+          showToast('已開啟分享');
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+        }
+      }
     }
-    if (navigator.share) {
-      await navigator.share({ title: shareData.title, text: shareData.text, url: context.url });
-      showToast('已開啟分享');
-      return;
-    }
-    files.forEach(file => downloadBlob(file, file.name));
-    showSingleExportDownloadNotice();
+    showExportFilesDialog(images, context, 'share', 'jpg');
   }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
 }
 
@@ -22994,263 +22804,6 @@ function getBadgeDefault(mode, key, fallback) {
   });
   refreshBadges();
 })();
-/* 速算表：獨立固定條件模型。不要改用它取代主試算的金融計算核心。 */
-function quickTablePayment(rateIndex, years, rounding) {
-  const r = (1 + rateIndex * 0.125) / 1200;
-  const raw = 1000000 * r / -Math.expm1(-years * 12 * Math.log1p(r));
-  return rounding === 'ceil' ? Math.ceil(raw) : Math.round(raw);
-}
-
-(function initQuickTable() {
-  const sheet = document.getElementById('quickTableSheet');
-  const cards = document.getElementById('quickTableCards');
-  const scroller = sheet.querySelector('.qt-scroll');
-  const editor = document.getElementById('quickTableYearDialog');
-  const input = document.getElementById('quickTableYearInput');
-  const error = document.getElementById('quickTableYearError');
-  const roundButton = document.getElementById('quickTableRounding');
-  const status = document.getElementById('quickTableStatus');
-  const KEY = 'mortgage-quick-table-ui-v1';
-  const defaults = () => ({ schema: 1, years: [15,20,25,30,35,40], opens: [true,false,false], rounding: 'round' });
-  const groups = [{ label:'1.000%–4.000%', start:0, count:25 }, { label:'4.125%–7.000%', start:25, count:24 }, { label:'7.125%–10.000%', start:49, count:24 }];
-  let prefs = defaults(), storageAvailable = !appStorage.temporary, warned = false;
-  const marks = groups.map(() => new Set());
-  const axes = groups.map(() => ({ rate:null, year:null }));
-  const touchPointers = new Set();
-  const blockedPointers = new Map(), blockedFallbackTypes = new Set();
-  let lastFocus = null, editing = null, contact = null, sequence = 0, previousOverflow = null;
-  let touchInput = matchMedia('(hover: none) and (pointer: coarse)').matches;
-  let lastPointerType = touchInput ? 'touch' : 'mouse';
-  sheet.classList.toggle('qt-touch-input', touchInput);
-  const rateLabel = index => (1 + index * 0.125).toFixed(3) + '%';
-  const fmt = value => value.toLocaleString('en-US');
-  function normalize(value) {
-    const result = defaults();
-    if (!value || typeof value !== 'object' || value.schema !== 1) return result;
-    if (Array.isArray(value.years) && value.years.length === 6 && new Set(value.years).size === 6 && value.years.every(n => Number.isInteger(n) && n >= 1 && n <= 50)) result.years = value.years.slice();
-    if (Array.isArray(value.opens) && value.opens.length === 3 && value.opens.every(n => typeof n === 'boolean')) result.opens = value.opens.slice();
-    if (value.rounding === 'round' || value.rounding === 'ceil') result.rounding = value.rounding;
-    return result;
-  }
-  function readSaved() {
-    if (!storageAvailable) return prefs;
-    try { const raw = localStorage.getItem(KEY); return raw ? normalize(JSON.parse(raw)) : defaults(); }
-    catch (_) { storageAvailable = false; return prefs; }
-  }
-  function persist(field) {
-    if (storageAvailable) {
-      try {
-        const saved = localStorage.getItem(KEY);
-        let latest; try { latest = saved ? normalize(JSON.parse(saved)) : defaults(); } catch (_) { latest = defaults(); }
-        latest[field] = Array.isArray(prefs[field]) ? prefs[field].slice() : prefs[field];
-        localStorage.setItem(KEY, JSON.stringify(latest));
-        return;
-      } catch (_) { storageAvailable = false; }
-    }
-    if (!warned) { warned = true; showToast('速算表設定已套用，本次使用；目前無法保存', { kind:'warning', storageCommitted:true }); }
-  }
-  function blockContactClick(g) {
-    blockedPointers.set(g.id, g.type); blockedFallbackTypes.add(g.type);
-    if (blockedPointers.size > 32) blockedPointers.delete(blockedPointers.keys().next().value);
-  }
-  function cancelContact(block = true) {
-    if (!contact) return;
-    if (block) blockContactClick(contact);
-    clearTimeout(contact.timer); contact = null;
-  }
-  function clearAxes(g) { axes[g].rate = null; axes[g].year = null; }
-  function syncAxes() {
-    groups.forEach((_, g) => {
-      const tableEl = cards.querySelector(`.qt-table[data-qt-group="${g}"]`);
-      if (!tableEl) return;
-      tableEl.querySelectorAll('tbody tr').forEach(row => row.classList.toggle('qt-axis-row', touchInput && Number(row.dataset.qtRate) === axes[g].rate));
-      tableEl.querySelectorAll('td[data-qt-year]').forEach(cell => cell.classList.toggle('qt-axis-col', touchInput && Number(cell.dataset.qtYear) === axes[g].year));
-      tableEl.querySelectorAll('.qt-year').forEach(button => {
-        const on = touchInput && prefs.years[Number(button.dataset.qtCol)] === axes[g].year;
-        button.setAttribute('aria-pressed', String(on)); button.parentElement.classList.toggle('qt-axis-col', on);
-      });
-      tableEl.querySelectorAll('.qt-rate-button').forEach(button => {
-        button.setAttribute('aria-pressed', String(touchInput && Number(button.dataset.qtRate) === axes[g].rate));
-        button.tabIndex = touchInput ? 0 : -1;
-      });
-    });
-  }
-  function setInputMode(type) {
-    lastPointerType = type || 'mouse';
-    const next = type === 'touch';
-    if (next === touchInput) return;
-    touchInput = next; sheet.classList.toggle('qt-touch-input', next);
-    if (!next) groups.forEach((_, g) => clearAxes(g));
-    syncAxes();
-  }
-  sheet.addEventListener('pointerover', e => { if (e.pointerType === 'mouse' && touchInput) setInputMode('mouse'); });
-  function updateControls() {
-    const value = prefs.rounding === 'ceil' ? '無條件進位到元' : '四捨五入到元';
-    document.getElementById('quickTableRoundValue').textContent = value;
-    document.getElementById('quickTableRoundDefault').hidden = prefs.rounding !== 'round';
-    roundButton.setAttribute('aria-label', '目前：' + value + (prefs.rounding === 'round' ? '（預設）' : '') + '，點擊切換取整方式');
-    sheet.querySelector('[data-qt-all="open"]').disabled = prefs.opens.every(Boolean);
-    sheet.querySelector('[data-qt-all="close"]').disabled = prefs.opens.every(open => !open);
-  }
-  function table(g) {
-    const group = groups[g];
-    return `<table class="qt-table" data-qt-group="${g}" aria-label="${group.label}，每貸款100萬元，固定利率、無寬限期，每月應繳金額"><colgroup><col class="qt-rate-col">${prefs.years.map(() => '<col>').join('')}</colgroup><thead><tr><th scope="col" aria-label="條件：年利率與貸款年期">條件</th>${prefs.years.map((year, col) => `<th scope="col"><button type="button" class="qt-year" data-qt-col="${col}" data-qt-group="${g}" aria-pressed="false" aria-label="${year}年，觸控點選高亮，長按修改年期" aria-haspopup="dialog" title="長按修改年期；鍵盤可按 Enter">${year}年</button></th>`).join('')}</tr></thead><tbody>${Array.from({ length:group.count }, (_, k) => {
-      const index = group.start + k;
-      return `<tr data-qt-rate="${index}"><th scope="row"><button type="button" class="qt-rate-button" data-qt-group="${g}" data-qt-rate="${index}" aria-pressed="false" aria-label="${rateLabel(index)}，觸控點選高亮整排" tabindex="${touchInput ? 0 : -1}">${rateLabel(index)}</button></th>${prefs.years.map(year => { const value = fmt(quickTablePayment(index, year, prefs.rounding)); return `<td data-qt-year="${year}"><button type="button" class="qt-cell" data-qt-group="${g}" data-qt-rate="${index}" data-qt-year="${year}" aria-pressed="${marks[g].has(index + ':' + year)}" aria-label="${rateLabel(index)}，${year}年，每月${value}元，點選標記">${value}</button></td>`; }).join('')}</tr>`;
-    }).join('')}</tbody></table>`;
-  }
-  function render() {
-    cancelContact();
-    cards.innerHTML = groups.map((group, g) => `<section class="qt-range"><button type="button" class="qt-range-toggle" data-qt-range="${g}" aria-expanded="${prefs.opens[g]}" aria-controls="quickTableRange${g}"><span><b>${group.label}</b><small>${group.count} 組利率 · 間距 0.125%</small></span><svg class="qt-range-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7L10 12L15 7"/></svg></button><div id="quickTableRange${g}" class="qt-table-wrap" ${prefs.opens[g] ? '' : 'hidden'}>${table(g)}</div></section>`).join('');
-    updateControls(); syncAxes();
-  }
-  function setGroup(g, open, save = true) {
-    cancelContact();
-    prefs.opens[g] = open;
-    if (!open) { marks[g].clear(); clearAxes(g); cards.querySelectorAll(`.qt-cell[data-qt-group="${g}"]`).forEach(button => button.setAttribute('aria-pressed', 'false')); }
-    cards.querySelector(`[data-qt-range="${g}"]`).setAttribute('aria-expanded', String(open));
-    document.getElementById('quickTableRange' + g).hidden = !open;
-    updateControls(); syncAxes();
-    if (save) persist('opens');
-  }
-  function closeEditor(restore = true) {
-    if (editor.hidden) return;
-    cancelContact(); beginAppModalClose(editor); editor.classList.remove('show'); editor.hidden = true;
-    if (restore && editing && !sheet.hidden) cards.querySelector(`.qt-year[data-qt-group="${editing.group}"][data-qt-col="${editing.col}"]`)?.focus({ preventScroll:true });
-    editing = null;
-  }
-  function openEditor(button) {
-    if (!editor.hidden || sheet.hidden) return;
-    cancelContact();
-    editing = { col:Number(button.dataset.qtCol), group:Number(button.dataset.qtGroup) };
-    input.value = String(prefs.years[editing.col]); error.textContent = '';
-    editor.hidden = false; beginAppModalOpen(editor, closeEditor); editor.classList.add('show');
-    input.focus({ preventScroll:true }); input.select();
-  }
-  function closeSheet() {
-    if (sheet.hidden || sheet.dataset.modalClosing === '1') return;
-    cancelContact(); closeEditor(false); marks.forEach(set => set.clear()); groups.forEach((_, g) => clearAxes(g));
-    beginAppModalClose(sheet); sheet.classList.remove('show');
-    const closeSequence = ++sequence;
-    setTimeout(() => { if (sequence === closeSequence) sheet.hidden = true; }, 150);
-    if (previousOverflow !== null) { document.body.style.overflow = previousOverflow; previousOverflow = null; }
-    restoreFocusQuietly(lastFocus); lastFocus = null;
-  }
-  document.getElementById('quickTableBtn').addEventListener('click', () => {
-    if (!sheet.hidden && sheet.dataset.modalClosing !== '1') return;
-    prefs = readSaved(); marks.forEach(set => set.clear()); groups.forEach((_, g) => clearAxes(g)); render();
-    lastFocus = document.activeElement;
-    previousOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden';
-    const openSequence = ++sequence;
-    sheet.hidden = false; beginAppModalOpen(sheet, closeSheet); scroller.scrollTop = 0;
-    requestAnimationFrame(() => { if (sequence === openSequence && !sheet.hidden) sheet.classList.add('show'); });
-    document.getElementById('quickTableClose').focus({ preventScroll:true });
-  });
-  document.getElementById('quickTableClose').addEventListener('click', closeSheet);
-  roundButton.addEventListener('click', () => { prefs.rounding = prefs.rounding === 'round' ? 'ceil' : 'round'; persist('rounding'); render(); status.textContent = roundButton.getAttribute('aria-label').split('，')[0]; });
-  sheet.querySelectorAll('[data-qt-all]').forEach(button => button.addEventListener('click', () => { groups.forEach((_, g) => setGroup(g, button.dataset.qtAll === 'open', false)); persist('opens'); }));
-  cards.addEventListener('click', e => {
-    const range = e.target.closest('[data-qt-range]');
-    if (range) { const g = Number(range.dataset.qtRange); setGroup(g, !prefs.opens[g]); return; }
-    const axisButton = e.target.closest('.qt-rate-button,.qt-year');
-    if (axisButton) {
-      if (!touchInput) return;
-      const g = Number(axisButton.dataset.qtGroup);
-      if (axisButton.classList.contains('qt-rate-button')) { const rate = Number(axisButton.dataset.qtRate); axes[g].rate = axes[g].rate === rate ? null : rate; }
-      else { const year = prefs.years[Number(axisButton.dataset.qtCol)]; axes[g].year = axes[g].year === year ? null : year; }
-      syncAxes(); return;
-    }
-    const button = e.target.closest('.qt-cell'); if (!button) return;
-    const g = Number(button.dataset.qtGroup), id = button.dataset.qtRate + ':' + button.dataset.qtYear;
-    marks[g].has(id) ? marks[g].delete(id) : marks[g].add(id);
-    button.setAttribute('aria-pressed', String(marks[g].has(id)));
-  });
-  // One contact owns tap, hold and swipe. Cancelling it keeps the click guard until a fresh press.
-  function gestureReady() { return !sheet.hidden && sheet.dataset.modalClosing !== '1' && editor.hidden && getTopAppModal() === sheet; }
-  function hasSelection() { const selection = window.getSelection(); return !!selection && !selection.isCollapsed; }
-  function gestureCurrent(g) { return gestureReady() && g.seq === sequence && !hasSelection() && Math.abs(scroller.scrollTop - g.scrollTop) <= 2 && Math.abs(window.scrollY - g.windowY) <= 2; }
-  function moveContact(g, e) {
-    const dx = Math.abs(e.clientX - g.x), dy = Math.abs(e.clientY - g.y);
-    g.maxY = Math.max(g.maxY, dy);
-    if (Math.hypot(dx, dy) > 8) { g.moved = true; blockContactClick(g); clearTimeout(g.timer); }
-    if (!gestureCurrent(g)) { g.rejected = true; clearTimeout(g.timer); return; }
-    if (!g.axis && !g.rejected) {
-      if (dx >= 12 && dx >= dy * 1.8) g.axis = 'horizontal';
-      else if (dy >= 8) g.rejected = true;
-    }
-    if (g.maxY > 40) g.rejected = true;
-  }
-  document.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'touch') touchPointers.add(e.pointerId);
-    if (contact && e.pointerId !== contact.id) {
-      const previousType = contact.type; cancelContact();
-      // A fresh primary mouse press is a separate action, even if a finger remains down.
-      if (e.pointerType === previousType || e.pointerType !== 'mouse') { blockContactClick({ id:e.pointerId, type:e.pointerType }); return; }
-    }
-    if (!e.isPrimary || e.button !== 0 || (e.pointerType === 'touch' && touchPointers.size !== 1)) {
-      cancelContact(); if (e.pointerType === 'touch') blockContactClick({ id:e.pointerId, type:'touch' }); return;
-    }
-    blockedPointers.delete(e.pointerId); blockedFallbackTypes.delete(e.pointerType || 'mouse');
-    lastPointerType = e.pointerType || 'mouse';
-    if (!gestureReady() || !sheet.contains(e.target)) return;
-    setInputMode(e.pointerType);
-    const yearButton = e.target.closest('.qt-year'), isTouch = e.pointerType === 'touch';
-    if (!isTouch && !yearButton) return;
-    cancelContact(false);
-    const control = e.target.closest('button,a,input,textarea,select,[contenteditable]:not([contenteditable="false"])');
-    const safeControl = !control || control.matches('.qt-cell,.qt-year,.qt-rate-button');
-    const g = contact = { id:e.pointerId, type:e.pointerType || 'mouse', x:e.clientX, y:e.clientY, scrollTop:scroller.scrollTop, windowY:window.scrollY,
-      seq:sequence, started:Date.now(), timer:0, moved:false, rejected:false, axis:'', maxY:0,
-      canSwipe:isTouch && safeControl && e.clientX > 20 && e.clientX < window.innerWidth - 20 };
-    if (yearButton) g.timer = setTimeout(() => {
-      if (contact !== g || g.moved || g.rejected || !gestureCurrent(g)) return;
-      blockContactClick(g); openEditor(yearButton);
-    }, 550);
-  }, { capture:true, passive:true });
-  document.addEventListener('pointermove', e => { if (contact?.id === e.pointerId) moveContact(contact, e); }, { capture:true, passive:true });
-  document.addEventListener('pointerup', e => {
-    touchPointers.delete(e.pointerId);
-    const g = contact; if (!g || g.id !== e.pointerId) return;
-    moveContact(g, e); clearTimeout(g.timer); contact = null;
-    const dx = Math.abs(e.clientX - g.x), dy = Math.abs(e.clientY - g.y);
-    if (g.canSwipe && !g.rejected && !touchPointers.size && g.axis === 'horizontal' && gestureCurrent(g)
-        && dx >= 64 && dx >= dy * 1.8 && Date.now() - g.started <= 1000) {
-      blockContactClick(g); closeSheet();
-    }
-  }, true);
-  document.addEventListener('pointercancel', e => { touchPointers.delete(e.pointerId); if (contact?.id === e.pointerId) cancelContact(); }, true);
-  document.addEventListener('click', e => {
-    if (e.detail === 0 && !e.pointerType && !e.sourceCapabilities?.firesTouchEvents) return;
-    const type = e.pointerType || (e.sourceCapabilities?.firesTouchEvents ? 'touch' : lastPointerType);
-    const knownPointer = Number.isFinite(e.pointerId) && e.pointerId >= 0;
-    if (knownPointer ? !blockedPointers.has(e.pointerId) : !blockedFallbackTypes.has(type)) return;
-    e.preventDefault(); e.stopImmediatePropagation();
-  }, true);
-  scroller.addEventListener('scroll', () => cancelContact(), { passive:true });
-  window.addEventListener('scroll', () => cancelContact(), { passive:true });
-  window.addEventListener('blur', () => { cancelContact(); touchPointers.clear(); });
-  window.addEventListener('resize', () => cancelContact());
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { cancelContact(); touchPointers.clear(); } });
-  document.addEventListener('selectionchange', () => { if (hasSelection()) cancelContact(); });
-  cards.addEventListener('contextmenu', e => { if (e.target.closest('.qt-year')) e.preventDefault(); });
-  cards.addEventListener('dblclick', e => { const button = e.target.closest('.qt-year'); if (button && lastPointerType !== 'touch') openEditor(button); });
-  cards.addEventListener('keydown', e => { const button = e.target.closest('.qt-year'); if (button && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!e.repeat) openEditor(button); } });
-  document.getElementById('quickTableYearCancel').addEventListener('click', () => closeEditor());
-  document.getElementById('quickTableYearForm').addEventListener('submit', e => {
-    e.preventDefault(); if (!editing) return;
-    const raw = input.value.trim(), year = Number(raw), oldYear = prefs.years[editing.col];
-    if (!/^\d+$/.test(raw) || !Number.isInteger(year) || year < 1 || year > 50) { error.textContent = '請輸入 1～50 的整數年期。'; input.focus(); return; }
-    if (year !== oldYear && prefs.years.includes(year)) { error.textContent = '這個年期已經在表內，請選擇其他年期。'; input.focus(); return; }
-    if (year !== oldYear) {
-      marks.forEach(set => [...set].forEach(id => { if (Number(id.split(':')[1]) === oldYear) set.delete(id); }));
-      axes.forEach(axis => { if (axis.year === oldYear) axis.year = null; });
-      prefs.years[editing.col] = year; persist('years'); render();
-    }
-    closeEditor(); status.textContent = '年期已更新為' + year + '年';
-  });
-  prefs = readSaved();
-})();
-
 await appStorage.finish();
 await window.loanDataRecovery.bootReady(appStorage);
 if(window.loanStartupStorage.isExpired())return;
