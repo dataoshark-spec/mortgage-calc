@@ -7603,7 +7603,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.02C";
+const APP_VERSION = "2026.10.12A";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -15232,7 +15232,7 @@ async function sharePreparedExportImages(state, index) {
     await navigator.share({ files, title: state.context.title, text: state.context.text });
     setExportFilesStatus(state, '已交由系統分享。圖片仍可再次分享或下載。');
   } catch (error) {
-    setExportFilesStatus(state, error?.name === 'AbortError' ? '已取消分享。圖片仍可再次分享或下載。' : '分享未完成，請重試或改用下載。');
+    setExportFilesStatus(state, error?.name === 'AbortError' ? '分享未完成或已取消。圖片仍可再次分享或下載。' : '分享未完成，請重試或改用下載。');
   } finally { state.busy = false; setPreparedExportButtonsBusy(state, false); }
 }
 
@@ -15357,21 +15357,24 @@ async function shareResults() {
     if (context.includeDetail) { await runDetailImageExport(context, 'image/jpeg', 'jpg', 'share'); return; }
     const images = [];
     const files = await captureResultsImageFiles(context, 'image/jpeg', 'jpg', images);
-    if (files.length > 1) { showExportFilesDialog(images, context, 'share', 'jpg'); return; }
+    // Slow capture may outlive this click; keep the files ready for a fresh click.
+    if (files.length > 1 || navigator.userActivation?.isActive === false) {
+      showExportFilesDialog(images, context, 'share', 'jpg'); return;
+    }
     if (isDesktopInstalledShareDisabled()) return;
+    if (!canShareExportImages(files)) {
+      showExportFilesDialog(images, context, 'share', 'jpg'); return;
+    }
     const shareData = { title: context.title, text: context.text, files };
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+    try {
       await navigator.share(shareData);
-      showToast('已開啟分享');
-      return;
+      showToast('已交由系統分享');
+    } catch (error) {
+      showExportFilesDialog(images, context, 'share', 'jpg');
+      setExportFilesStatus(preparedExportImages, error?.name === 'AbortError'
+        ? '分享未完成或已取消。圖片仍可再次分享或下載。'
+        : '分享未完成。圖片仍可再次分享或下載。');
     }
-    if (navigator.share) {
-      await navigator.share({ title: shareData.title, text: shareData.text, url: context.url });
-      showToast('已開啟分享');
-      return;
-    }
-    files.forEach(file => downloadBlob(file, file.name));
-    showSingleExportDownloadNotice();
   }, '正在準備分享…', exportBtnOf('share'), '分享  生成中');
 }
 
