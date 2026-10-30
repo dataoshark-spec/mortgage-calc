@@ -4059,6 +4059,12 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 .qt-cell{display:block;width:100%;height:30px;line-height:30px;padding:0;background:transparent;border:0;border-radius:0;color:#c7d8e4;font-family:Arial,sans-serif!important;font-size:11px;font-weight:400;font-variant-numeric:tabular-nums;white-space:nowrap;position:relative;z-index:0}
 .qt-cell[aria-pressed=true]{color:#ffe9b7;font-weight:500}.qt-cell[aria-pressed=true]::before{content:"";position:absolute;inset:4px 2px;border-radius:5px;background:linear-gradient(140deg,#cda66530,#cba75e12);box-shadow:inset 0 0 0 1px #dbbd7b8c,0 1px 3px #06111a33;z-index:-1}
 #quickTableSheet .qt-cell:focus-visible{outline:1px solid #d8c28b;outline-offset:-2px}
+#quickTableSheet .qt-year{position:relative}
+#quickTableSheet .qt-year:focus-visible{outline:1px solid #dbc28f;outline-offset:-3px}
+#quickTableSheet .qt-year.qt-pointer-return:focus-visible,#quickTableSheet .qt-year.qt-year-applied:focus-visible{outline:none}
+#quickTableSheet .qt-year.qt-year-applied::after{content:"";position:absolute;inset:2px;border:1px solid #dbc28f;border-radius:2px;pointer-events:none;opacity:0;animation:qt-year-applied .6s ease-out both}
+@keyframes qt-year-applied{0%,20%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){#quickTableSheet .qt-year.qt-year-applied::after{animation-duration:.01s}}
 .qt-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 #quickTableYearDialog{z-index:540;background:#06121d99;padding:20px;color:#e1e9ef;color-scheme:dark}
 .qt-year-card{width:min(330px,100%);max-height:calc(100dvh - 40px);overflow:auto;padding:24px;background:linear-gradient(150deg,#263e4e,#1b2e3c);border:1px solid #5d788b;border-radius:16px;box-shadow:0 14px 50px #0006}
@@ -4134,6 +4140,29 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
 #quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7),#quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) thead th:nth-child(7) .qt-year{background:#476175;color:#f3d593}
 #quickTableSheet:not(.qt-touch-input) .qt-table:has(tbody td:nth-child(7) .qt-cell:hover) tbody td:nth-child(7):has(.qt-cell:hover){background:#435c6d}
 }
+</style>
+<style>
+/* 還款方式說明：只調整此視窗的位置與可用高度。 */
+#appAlert.app-alert-method-info .app-alert-card {
+  top: var(--loan-missing-center-y, 50%);
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  max-height: var(--loan-missing-max-height, calc(100dvh - 24px));
+}
+</style>
+<style>
+/* 速算表單表：資訊區固定，原年份表頭釘選；保留原按鈕及互動事件。 */
+#quickTableSheet .qt-fixed-info{flex:none;background:#142332}
+#quickTableSheet .qt-summary .qt-intro-title{grid-column:1/-1}
+#quickTableSheet .qt-rounding-slot{align-self:end;justify-self:end;min-width:0}
+#quickTableSheet .qt-fixed-range{margin:0 8px;padding:5px 5px 7px;border:1px solid #344958;border-bottom:0;border-radius:9px 9px 0 0;background:#1d2d3b}
+#quickTableSheet .qt-range-static{cursor:default}
+#quickTableSheet .qt-range-single{margin-bottom:0;overflow:visible;border-top:0;border-radius:0 0 9px 9px;padding-top:0}
+#quickTableSheet .qt-table-wrap{padding-top:0}
+#quickTableSheet .qt-table thead th{position:sticky;top:0;z-index:3;box-shadow:0 1px 0 #607283}
+#quickTableSheet .qt-rounding-slot .qt-rounding{min-height:40px}
+@container(min-width:600px){#quickTableSheet .qt-fixed-range{margin-left:18px;margin-right:18px}}
+@container(max-width:350px){#quickTableSheet .qt-fixed-range{margin-left:5px;margin-right:5px;padding-left:3px;padding-right:3px}}
 </style>
 </head>
 <body data-threshold-loading="1">
@@ -5448,17 +5477,14 @@ body:has(#appAlert.show) .export-image-progress{visibility:hidden;pointer-events
     <h2 id="quickTableTitle">速算表格</h2>
     <button type="button" id="quickTableClose" class="qt-close" aria-label="關閉速算表格"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18"/></svg></button>
   </div></header>
-  <div class="spec-sheet-scroll qt-scroll"><div class="qt-content">
+  <div class="qt-fixed-info"><div class="qt-content">
     <div class="qt-summary"><div class="qt-intro"><div class="qt-intro-title">
       <p class="qt-kicker">每貸款 100 萬元</p>
-      <button type="button" id="quickTableRounding" class="qt-rounding"><span class="qt-round-prefix">目前：</span><span id="quickTableRoundValue"></span><span id="quickTableRoundDefault">（預設）</span><svg class="qt-switch" viewBox="0 0 24 20" aria-hidden="true"><path d="M3 6H21M17.5 2.5L21 6L17.5 9.5M21 14H3M6.5 10.5L3 14L6.5 17.5"/></svg></button>
     </div><p class="qt-description">· 本息平均攤還（方式）<br>· 每月應繳金額（元整）</p></div>
-    <div class="qt-actions">
-      <button type="button" data-qt-all="open"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5L10 10L15 5M5 10L10 15L15 10"/></svg><span>全部展開</span></button>
-      <button type="button" data-qt-all="close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10L10 5L15 10M5 15L10 10L15 15"/></svg><span>全部收合</span></button>
-    </div>
-    </div><div id="quickTableCards" class="qt-cards"></div>
+    <div class="qt-rounding-slot"><button type="button" id="quickTableRounding" class="qt-rounding"><span class="qt-round-prefix">目前：</span><span id="quickTableRoundValue"></span><span id="quickTableRoundDefault">（預設）</span><svg class="qt-switch" viewBox="0 0 24 20" aria-hidden="true"><path d="M3 6H21M17.5 2.5L21 6L17.5 9.5M21 14H3M6.5 10.5L3 14L6.5 17.5"/></svg></button></div></div>
+    <div class="qt-fixed-range"><div class="qt-range-toggle qt-range-static"><span><b>1.000%–16.000%</b><small>121 組利率 · 間距 0.125%</small></span></div></div>
   </div></div>
+  <div class="spec-sheet-scroll qt-scroll"><div class="qt-content"><div id="quickTableCards" class="qt-cards"></div></div></div>
   <div id="quickTableStatus" class="qt-sr" role="status" aria-live="polite"></div>
 </section>
 <div id="quickTableYearDialog" class="yt-set" role="dialog" aria-modal="true" aria-labelledby="quickTableYearTitle" hidden>
@@ -7603,7 +7629,7 @@ function createThresholdUI() {
 })(window);
 const thresholdSettings = createThresholdUI();
 (async () => {
-const APP_VERSION = "2026.10.12A";
+const APP_VERSION = "2026.10.30D";
 // The same catalog initializes both a fresh installation and an atomic data reset.
 const LUX_DEFAULT_ROWS = [
 { name: '臺北市', amount: '7000', ratio: '30', grace: '0' },
@@ -9603,6 +9629,7 @@ function closeAppAlert(confirmed = false) {
   beginAppModalClose(backdrop);
   backdrop.classList.remove('show');
   backdrop.hidden = true;
+  backdrop.classList.remove('app-alert-method-info');
   backdrop.classList.remove('app-alert-bd-budget');
   backdrop.classList.remove('app-alert-missing-only');
   backdrop.classList.remove('app-alert-temporary');
@@ -9673,7 +9700,7 @@ const METHOD_INFO_HTML = `<div class="mi-block">
 <p class="mi-note">設有寬限期時，兩者於寬限期內均只繳利息，期滿後才開始攤還本金。</p>`;
 
 function showMethodInfo() {
-  showAppAlert(METHOD_INFO_HTML, null, { html: true, kind: 'info' });
+  showAppAlert(METHOD_INFO_HTML, null, { html: true, kind: 'info', variant: 'method-info' });
 }
 
 function showAppAlert(message, onClose, opts) {
@@ -9684,6 +9711,7 @@ function showAppAlert(message, onClose, opts) {
   hideContextToast();
   cancelMissingFieldGuide();
   backdrop.classList.toggle('app-alert-warning', opts.kind !== 'info');
+  backdrop.classList.toggle('app-alert-method-info', opts.variant === 'method-info');
   backdrop.classList.toggle('app-alert-bd-budget', opts.variant === 'bd-budget-zero');
   backdrop.classList.toggle('app-alert-temporary', opts.variant === 'temporary-startup');
   if (opts.requireConfirmation) backdrop.dataset.requireConfirmation = '1';
@@ -23015,7 +23043,7 @@ function quickTablePayment(rateIndex, years, rounding) {
   const status = document.getElementById('quickTableStatus');
   const KEY = 'mortgage-quick-table-ui-v1';
   const defaults = () => ({ schema: 1, years: [15,20,25,30,35,40], opens: [true,false,false], rounding: 'round' });
-  const groups = [{ label:'1.000%–4.000%', start:0, count:25 }, { label:'4.125%–7.000%', start:25, count:24 }, { label:'7.125%–10.000%', start:49, count:24 }];
+  const groups = [{ label:'1.000%–16.000%', start:0, count:121 }];
   let prefs = defaults(), storageAvailable = !appStorage.temporary, warned = false;
   const marks = groups.map(() => new Set());
   const axes = groups.map(() => ({ rate:null, year:null }));
@@ -23092,8 +23120,6 @@ function quickTablePayment(rateIndex, years, rounding) {
     document.getElementById('quickTableRoundValue').textContent = value;
     document.getElementById('quickTableRoundDefault').hidden = prefs.rounding !== 'round';
     roundButton.setAttribute('aria-label', '目前：' + value + (prefs.rounding === 'round' ? '（預設）' : '') + '，點擊切換取整方式');
-    sheet.querySelector('[data-qt-all="open"]').disabled = prefs.opens.every(Boolean);
-    sheet.querySelector('[data-qt-all="close"]').disabled = prefs.opens.every(open => !open);
   }
   function table(g) {
     const group = groups[g];
@@ -23104,28 +23130,31 @@ function quickTablePayment(rateIndex, years, rounding) {
   }
   function render() {
     cancelContact();
-    cards.innerHTML = groups.map((group, g) => `<section class="qt-range"><button type="button" class="qt-range-toggle" data-qt-range="${g}" aria-expanded="${prefs.opens[g]}" aria-controls="quickTableRange${g}"><span><b>${group.label}</b><small>${group.count} 組利率 · 間距 0.125%</small></span><svg class="qt-range-arrow" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7L10 12L15 7"/></svg></button><div id="quickTableRange${g}" class="qt-table-wrap" ${prefs.opens[g] ? '' : 'hidden'}>${table(g)}</div></section>`).join('');
+    cards.innerHTML = groups.map((group, g) => `<section class="qt-range qt-range-single"><div id="quickTableRange${g}" class="qt-table-wrap">${table(g)}</div></section>`).join('');
     updateControls(); syncAxes();
-  }
-  function setGroup(g, open, save = true) {
-    cancelContact();
-    prefs.opens[g] = open;
-    if (!open) { marks[g].clear(); clearAxes(g); cards.querySelectorAll(`.qt-cell[data-qt-group="${g}"]`).forEach(button => button.setAttribute('aria-pressed', 'false')); }
-    cards.querySelector(`[data-qt-range="${g}"]`).setAttribute('aria-expanded', String(open));
-    document.getElementById('quickTableRange' + g).hidden = !open;
-    updateControls(); syncAxes();
-    if (save) persist('opens');
   }
   function closeEditor(restore = true) {
-    if (editor.hidden) return;
+    if (editor.hidden) return null;
     cancelContact(); beginAppModalClose(editor); editor.classList.remove('show'); editor.hidden = true;
-    if (restore && editing && !sheet.hidden) cards.querySelector(`.qt-year[data-qt-group="${editing.group}"][data-qt-col="${editing.col}"]`)?.focus({ preventScroll:true });
+    const button = restore && editing && !sheet.hidden ? cards.querySelector(`.qt-year[data-qt-group="${editing.group}"][data-qt-col="${editing.col}"]`) : null;
+    if (button) {
+      button.classList.toggle('qt-pointer-return', !editing.keyboard);
+      button.focus({ preventScroll:true });
+    }
     editing = null;
+    return button;
   }
-  function openEditor(button) {
+  function flashYearApplied(button) {
+    if (!button) return;
+    button.classList.add('qt-year-applied');
+    // Also clean up when motion is reduced or the animation is interrupted.
+    setTimeout(() => button.classList.remove('qt-year-applied'), 650);
+  }
+  function openEditor(button, keyboard = false) {
     if (!editor.hidden || sheet.hidden) return;
     cancelContact();
-    editing = { col:Number(button.dataset.qtCol), group:Number(button.dataset.qtGroup) };
+    cards.querySelectorAll('.qt-year-applied').forEach(el => el.classList.remove('qt-year-applied'));
+    editing = { col:Number(button.dataset.qtCol), group:Number(button.dataset.qtGroup), keyboard };
     input.value = String(prefs.years[editing.col]); error.textContent = '';
     editor.hidden = false; beginAppModalOpen(editor, closeEditor); editor.classList.add('show');
     input.focus({ preventScroll:true }); input.select();
@@ -23151,10 +23180,7 @@ function quickTablePayment(rateIndex, years, rounding) {
   });
   document.getElementById('quickTableClose').addEventListener('click', closeSheet);
   roundButton.addEventListener('click', () => { prefs.rounding = prefs.rounding === 'round' ? 'ceil' : 'round'; persist('rounding'); render(); status.textContent = roundButton.getAttribute('aria-label').split('，')[0]; });
-  sheet.querySelectorAll('[data-qt-all]').forEach(button => button.addEventListener('click', () => { groups.forEach((_, g) => setGroup(g, button.dataset.qtAll === 'open', false)); persist('opens'); }));
   cards.addEventListener('click', e => {
-    const range = e.target.closest('[data-qt-range]');
-    if (range) { const g = Number(range.dataset.qtRange); setGroup(g, !prefs.opens[g]); return; }
     const axisButton = e.target.closest('.qt-rate-button,.qt-year');
     if (axisButton) {
       if (!touchInput) return;
@@ -23235,9 +23261,21 @@ function quickTablePayment(rateIndex, years, rounding) {
   window.addEventListener('resize', () => cancelContact());
   document.addEventListener('visibilitychange', () => { if (document.hidden) { cancelContact(); touchPointers.clear(); } });
   document.addEventListener('selectionchange', () => { if (hasSelection()) cancelContact(); });
+  // Window capture runs before the shared modal's document-level Tab handler.
+  window.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const top = getTopAppModal();
+    if (top !== sheet && top !== editor) return;
+    cards.querySelectorAll('.qt-pointer-return').forEach(button => button.classList.remove('qt-pointer-return'));
+    if (editing) editing.keyboard = true;
+  }, true);
+  editor.addEventListener('pointerdown', () => { if (editing) editing.keyboard = false; }, { capture:true, passive:true });
+  cards.addEventListener('pointerdown', e => { e.target.closest('.qt-year')?.classList.add('qt-pointer-return'); }, { capture:true, passive:true });
+  cards.addEventListener('focusout', e => { e.target.closest('.qt-year')?.classList.remove('qt-pointer-return'); });
+  cards.addEventListener('animationend', e => { if (e.animationName === 'qt-year-applied') e.target.classList.remove('qt-year-applied'); });
   cards.addEventListener('contextmenu', e => { if (e.target.closest('.qt-year')) e.preventDefault(); });
   cards.addEventListener('dblclick', e => { const button = e.target.closest('.qt-year'); if (button && lastPointerType !== 'touch') openEditor(button); });
-  cards.addEventListener('keydown', e => { const button = e.target.closest('.qt-year'); if (button && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!e.repeat) openEditor(button); } });
+  cards.addEventListener('keydown', e => { const button = e.target.closest('.qt-year'); if (button && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); if (!e.repeat) openEditor(button, true); } });
   document.getElementById('quickTableYearCancel').addEventListener('click', () => closeEditor());
   document.getElementById('quickTableYearForm').addEventListener('submit', e => {
     e.preventDefault(); if (!editing) return;
@@ -23249,7 +23287,9 @@ function quickTablePayment(rateIndex, years, rounding) {
       axes.forEach(axis => { if (axis.year === oldYear) axis.year = null; });
       prefs.years[editing.col] = year; persist('years'); render();
     }
-    closeEditor(); status.textContent = '年期已更新為' + year + '年';
+    const button = closeEditor();
+    if (year !== oldYear) flashYearApplied(button);
+    status.textContent = '年期已更新為' + year + '年';
   });
   prefs = readSaved();
 })();
